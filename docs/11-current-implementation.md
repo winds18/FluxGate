@@ -29,6 +29,7 @@
 - 磁盘清理脚本。
 - 诊断采集脚本。
 - 页面截图验收脚本。
+- 本地 QA 套件退出自动清理临时产物。
 
 ## 2. 当前 API 骨架
 
@@ -80,15 +81,16 @@ scripts/db/migrate.sh
 scripts/qa/smoke.sh
 scripts/qa/api-flow.sh
 scripts/qa/screenshot.sh
+scripts/qa/local-suite.sh
 scripts/deploy/probe-env.sh
 DRY_RUN=true scripts/deploy/cleanup-disk.sh
 docker compose config
 ```
 
-页面截图：
+页面截图验收：
 
 ```text
-logs/qa/screenshots/20260428-082358/fluxgate.png
+KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退出会自动清理截图。
 ```
 
 截图结论：
@@ -119,5 +121,5 @@ logs/qa/screenshots/20260428-082358/fluxgate.png
 
 - `docker compose config` 已支持没有 `.env` 时做静态校验。
 - 生产部署仍应由 `scripts/deploy/bootstrap-remote.sh` 生成 `.env` 后再修改密钥。
-- 本地 QA 产生的 `data/`、`logs/`、`tmp/` 均被 `.gitignore` 排除。
+- 本地 QA 产生的 `data/`、`logs/`、`tmp/` 均被 `.gitignore` 排除，并默认在测试退出时清理。
 - Playwright Chromium 已在本机安装一次，后续截图脚本会复用缓存。

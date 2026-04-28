@@ -4,9 +4,17 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 
 BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
 OUT_DIR="${OUT_DIR:-$ROOT_DIR/logs/qa/api-flow/$(timestamp)}"
+KEEP_ARTIFACTS="${KEEP_ARTIFACTS:-false}"
 ensure_dir "$OUT_DIR"
 require_cmd curl
 require_cmd node
+
+cleanup() {
+  if [[ "$KEEP_ARTIFACTS" != "true" ]]; then
+    rm -rf "$OUT_DIR"
+  fi
+}
+trap cleanup EXIT
 
 json_value() {
   node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync(0,'utf8')); console.log($1);"
@@ -51,4 +59,8 @@ if ! grep -q 'FluxGate-HK' "$OUT_DIR/subscription.yaml"; then
   exit 1
 fi
 
-log "API flow passed; artifacts: $OUT_DIR"
+if [[ "$KEEP_ARTIFACTS" == "true" ]]; then
+  log "API flow passed; artifacts: $OUT_DIR"
+else
+  log "API flow passed; temporary artifacts will be removed"
+fi

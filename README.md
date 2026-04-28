@@ -88,6 +88,18 @@ scripts/qa/api-flow.sh
 scripts/qa/screenshot.sh
 ```
 
+推荐使用完整本地验收套件，退出时会自动清理临时数据库、日志、截图和构建产物：
+
+```bash
+scripts/qa/local-suite.sh
+```
+
+如需保留截图或 API 响应用于排查：
+
+```bash
+KEEP_ARTIFACTS=true scripts/qa/local-suite.sh
+```
+
 停止本地服务：
 
 ```bash

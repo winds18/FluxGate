@@ -14,6 +14,9 @@ type Config struct {
 	DBPath                    string
 	LogDir                    string
 	TokenSecret               string
+	SessionSecret             string
+	AdminBootstrapUsername    string
+	AdminBootstrapPassword    string
 	GatewayHost               string
 	DefaultVLESSPort          int
 	SingBoxConfigPath         string
@@ -30,6 +33,9 @@ func Load() Config {
 		DBPath:                    env("DB_PATH", "data/fluxgate.db"),
 		LogDir:                    env("LOG_DIR", "logs/fluxgate"),
 		TokenSecret:               env("TOKEN_SECRET", "dev-token-secret-change-me"),
+		SessionSecret:             env("SESSION_SECRET", "dev-session-secret-change-me"),
+		AdminBootstrapUsername:    env("ADMIN_BOOTSTRAP_USERNAME", ""),
+		AdminBootstrapPassword:    env("ADMIN_BOOTSTRAP_PASSWORD", ""),
 		GatewayHost:               env("GATEWAY_HOST", "127.0.0.1"),
 		DefaultVLESSPort:          envInt("DEFAULT_VLESS_PORT", 8443),
 		SingBoxConfigPath:         env("SING_BOX_CONFIG_PATH", "data/sing-box/config.json"),

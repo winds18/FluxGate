@@ -6,9 +6,11 @@ ENV_FILE="${ENV_FILE:-$ROOT_DIR/.env}"
 FLUXGATE_HOST_BIND="${FLUXGATE_HOST_BIND:-}"
 FLUXGATE_HTTP_PORT="${FLUXGATE_HTTP_PORT:-}"
 PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-}"
+ADMIN_BOOTSTRAP_USERNAME="${ADMIN_BOOTSTRAP_USERNAME:-}"
+ADMIN_BOOTSTRAP_PASSWORD="${ADMIN_BOOTSTRAP_PASSWORD:-}"
 
-if [[ -z "$FLUXGATE_HOST_BIND" && -z "$FLUXGATE_HTTP_PORT" && -z "$PUBLIC_BASE_URL" ]]; then
-  log "no access settings supplied; set FLUXGATE_HOST_BIND, FLUXGATE_HTTP_PORT or PUBLIC_BASE_URL"
+if [[ -z "$FLUXGATE_HOST_BIND" && -z "$FLUXGATE_HTTP_PORT" && -z "$PUBLIC_BASE_URL" && -z "$ADMIN_BOOTSTRAP_USERNAME" && -z "$ADMIN_BOOTSTRAP_PASSWORD" ]]; then
+  log "no runtime settings supplied; set access or bootstrap admin variables"
   exit 64
 fi
 
@@ -67,6 +69,8 @@ upsert_env() {
 upsert_env FLUXGATE_HOST_BIND "$FLUXGATE_HOST_BIND"
 upsert_env FLUXGATE_HTTP_PORT "$FLUXGATE_HTTP_PORT"
 upsert_env PUBLIC_BASE_URL "$PUBLIC_BASE_URL"
+upsert_env ADMIN_BOOTSTRAP_USERNAME "$ADMIN_BOOTSTRAP_USERNAME"
+upsert_env ADMIN_BOOTSTRAP_PASSWORD "$ADMIN_BOOTSTRAP_PASSWORD"
 
 log "access config updated: env=$ENV_FILE"
 if [[ -n "$FLUXGATE_HOST_BIND" ]]; then
@@ -77,4 +81,10 @@ if [[ -n "$FLUXGATE_HTTP_PORT" ]]; then
 fi
 if [[ -n "$PUBLIC_BASE_URL" ]]; then
   log "PUBLIC_BASE_URL configured"
+fi
+if [[ -n "$ADMIN_BOOTSTRAP_USERNAME" ]]; then
+  log "ADMIN_BOOTSTRAP_USERNAME configured"
+fi
+if [[ -n "$ADMIN_BOOTSTRAP_PASSWORD" ]]; then
+  log "ADMIN_BOOTSTRAP_PASSWORD configured"
 fi

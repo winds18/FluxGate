@@ -43,6 +43,16 @@ func main() {
 		logger.Info("database migrations completed")
 		return
 	}
+	bootstrap, err := db.BootstrapAdmin(ctx, cfg.AdminBootstrapUsername, cfg.AdminBootstrapPassword)
+	if err != nil {
+		logger.Error("failed to bootstrap admin", "error", err)
+		os.Exit(1)
+	}
+	if bootstrap.Created {
+		logger.Info("bootstrap admin created", "username", bootstrap.Admin.Username)
+	} else if bootstrap.Skipped {
+		logger.Info("bootstrap admin skipped")
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

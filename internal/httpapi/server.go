@@ -31,6 +31,13 @@ type Server struct {
 	mux    *http.ServeMux
 }
 
+const (
+	adminSessionCookie = "fg_admin_session"
+	adminSessionTTL    = 12 * time.Hour
+)
+
+type contextAdminKey struct{}
+
 func NewServer(cfg config.Config, store *store.Store, logger *slog.Logger) http.Handler {
 	server := &Server{
 		cfg:    cfg,
@@ -49,6 +56,9 @@ func (s *Server) routes() {
 
 	s.mux.HandleFunc("GET /healthz", s.handleHealth)
 	s.mux.HandleFunc("GET /readyz", s.handleReady)
+	s.mux.HandleFunc("GET /api/auth/session", s.handleAuthSession)
+	s.mux.HandleFunc("POST /api/auth/login", s.handleAuthLogin)
+	s.mux.HandleFunc("POST /api/auth/logout", s.handleAuthLogout)
 	s.mux.HandleFunc("GET /api/overview", s.handleOverview)
 
 	s.mux.HandleFunc("GET /api/sources", s.handleListSources)
@@ -81,7 +91,24 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		requestID := observability.NewRequestID()
 		started := time.Now()
 		w.Header().Set("x-request-id", requestID)
-		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), requestIDKey{}, requestID)))
+		ctx := context.WithValue(r.Context(), requestIDKey{}, requestID)
+		if s.requiresAdmin(r.URL.Path) {
+			admin, ok := s.currentAdmin(r)
+			if !ok {
+				writeError(w, http.StatusUnauthorized, "login required")
+				s.logger.Info("request completed",
+					"request_id", requestID,
+					"method", r.Method,
+					"path", redactedPath(r.URL.Path),
+					"remote_addr", r.RemoteAddr,
+					"duration_ms", time.Since(started).Milliseconds(),
+					"status", http.StatusUnauthorized,
+				)
+				return
+			}
+			ctx = context.WithValue(ctx, contextAdminKey{}, admin)
+		}
+		next.ServeHTTP(w, r.WithContext(ctx))
 		s.logger.Info("request completed",
 			"request_id", requestID,
 			"method", r.Method,
@@ -90,6 +117,10 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 			"duration_ms", time.Since(started).Milliseconds(),
 		)
 	})
+}
+
+func (s *Server) requiresAdmin(path string) bool {
+	return strings.HasPrefix(path, "/api/") && !strings.HasPrefix(path, "/api/auth/")
 }
 
 func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
@@ -122,6 +153,70 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"status": "ready"})
+}
+
+func (s *Server) handleAuthSession(w http.ResponseWriter, r *http.Request) {
+	admin, ok := s.currentAdmin(r)
+	if !ok {
+		writeError(w, http.StatusUnauthorized, "login required")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"admin": admin})
+}
+
+func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
+	var input struct {
+		Username string `json:"username"`
+		Password string `json:"password"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	admin, err := s.store.AuthenticateAdmin(r.Context(), input.Username, input.Password)
+	if err != nil {
+		writeError(w, http.StatusUnauthorized, "invalid username or password")
+		return
+	}
+	session, err := security.NewSessionToken(s.cfg.SessionSecret, admin.ID, time.Now().UTC(), adminSessionTTL)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to create session")
+		return
+	}
+	http.SetCookie(w, s.sessionCookie(session, int(adminSessionTTL.Seconds())))
+	writeJSON(w, http.StatusOK, map[string]any{"admin": admin})
+}
+
+func (s *Server) handleAuthLogout(w http.ResponseWriter, r *http.Request) {
+	http.SetCookie(w, s.sessionCookie("", -1))
+	writeJSON(w, http.StatusOK, map[string]any{"status": "logged_out"})
+}
+
+func (s *Server) currentAdmin(r *http.Request) (store.Admin, bool) {
+	cookie, err := r.Cookie(adminSessionCookie)
+	if err != nil || cookie.Value == "" {
+		return store.Admin{}, false
+	}
+	adminID, ok := security.VerifySessionToken(s.cfg.SessionSecret, cookie.Value, time.Now().UTC())
+	if !ok {
+		return store.Admin{}, false
+	}
+	admin, err := s.store.GetAdmin(r.Context(), adminID)
+	if err != nil || admin.Status != "active" {
+		return store.Admin{}, false
+	}
+	return admin, true
+}
+
+func (s *Server) sessionCookie(value string, maxAge int) *http.Cookie {
+	return &http.Cookie{
+		Name:     adminSessionCookie,
+		Value:    value,
+		Path:     "/",
+		MaxAge:   maxAge,
+		HttpOnly: true,
+		SameSite: http.SameSiteLaxMode,
+		Secure:   strings.HasPrefix(s.cfg.PublicBaseURL, "https://"),
+	}
 }
 
 func (s *Server) handleOverview(w http.ResponseWriter, r *http.Request) {

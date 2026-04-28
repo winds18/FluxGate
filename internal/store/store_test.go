@@ -112,3 +112,31 @@ func TestTokenCreation(t *testing.T) {
 		t.Fatalf("subscription URL missing")
 	}
 }
+
+func TestBootstrapAndAuthenticateAdmin(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	bootstrap, err := db.BootstrapAdmin(ctx, "admin", "admin-password")
+	if err != nil {
+		t.Fatalf("bootstrap admin: %v", err)
+	}
+	if !bootstrap.Created || bootstrap.Admin.Username != "admin" {
+		t.Fatalf("unexpected bootstrap result: %+v", bootstrap)
+	}
+
+	if _, err := db.AuthenticateAdmin(ctx, "admin", "admin-password"); err != nil {
+		t.Fatalf("authenticate admin: %v", err)
+	}
+	if _, err := db.AuthenticateAdmin(ctx, "admin", "wrong-password"); err == nil {
+		t.Fatal("wrong password should fail")
+	}
+
+	second, err := db.BootstrapAdmin(ctx, "other", "other-password")
+	if err != nil {
+		t.Fatalf("second bootstrap: %v", err)
+	}
+	if !second.Skipped || second.Created {
+		t.Fatalf("second bootstrap should skip: %+v", second)
+	}
+}

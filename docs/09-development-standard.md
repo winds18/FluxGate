@@ -85,6 +85,7 @@ scripts/
 ├── deploy/
 │   ├── probe-env.sh
 │   ├── bootstrap-remote.sh
+│   ├── configure-access.sh
 │   ├── cleanup-disk.sh
 │   ├── push-and-deploy.sh
 │   ├── remote-build.sh
@@ -98,6 +99,7 @@ scripts/
     ├── api-flow.sh
     ├── cleanup.sh
     ├── local-suite.sh
+    ├── public-scan.sh
     ├── screenshot.sh
     └── smoke.sh
 ```

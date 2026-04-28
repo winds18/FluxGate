@@ -12,10 +12,29 @@
         <h1>FluxGate</h1>
         <p>sing-box 数据面控制平台</p>
       </div>
-      <span id="status" class="status">连接中</span>
+      <div class="topbar-actions">
+        <span id="status" class="status">连接中</span>
+        <button id="logout" class="ghost-button" hidden>退出</button>
+      </div>
     </header>
 
-    <main>
+    <main id="login-view" class="login-view" hidden>
+      <form id="login-form" class="login-panel">
+        <h2>管理员登录</h2>
+        <label>
+          账号
+          <input id="login-username" name="username" autocomplete="username" required />
+        </label>
+        <label>
+          密码
+          <input id="login-password" name="password" type="password" autocomplete="current-password" required />
+        </label>
+        <button type="submit">登录</button>
+        <div id="login-error" class="form-error" role="alert"></div>
+      </form>
+    </main>
+
+    <main id="app-view" hidden>
       <section class="metrics" id="metrics"></section>
 
       <section class="panel">

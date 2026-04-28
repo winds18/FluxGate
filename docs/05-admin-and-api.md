@@ -157,10 +157,23 @@ GET /readyz
 ### 2.2 管理登录
 
 ```text
-POST /api/admin/login
-POST /api/admin/logout
-GET  /api/admin/me
+GET  /api/auth/session
+POST /api/auth/login
+POST /api/auth/logout
 ```
+
+当前实现使用管理员用户名/密码登录，登录成功后写入 HttpOnly、SameSite=Lax 的签名 Cookie。除以下接口外，`/api/*` 管理接口都要求登录：
+
+```text
+GET  /healthz
+GET  /readyz
+GET  /api/auth/session
+POST /api/auth/login
+POST /api/auth/logout
+GET  /sub/{token}
+```
+
+`/sub/{token}` 使用订阅 Token 自身鉴权，不依赖管理员会话。
 
 ### 2.3 团队
 

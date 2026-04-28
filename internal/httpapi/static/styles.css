@@ -23,6 +23,12 @@ body {
   padding: 18px 28px;
 }
 
+.topbar-actions {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+}
+
 h1,
 h2,
 p {
@@ -113,6 +119,50 @@ button {
   padding: 0 12px;
 }
 
+.ghost-button {
+  background: #ffffff;
+  border: 1px solid #cbd6e2;
+  color: #334e68;
+}
+
+.login-view {
+  min-height: calc(100vh - 80px);
+  place-items: center;
+}
+
+.login-panel {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+  display: grid;
+  gap: 14px;
+  max-width: 360px;
+  padding: 22px;
+  width: min(100%, 360px);
+}
+
+.login-panel label {
+  color: #52616f;
+  display: grid;
+  font-size: 13px;
+  gap: 6px;
+}
+
+input {
+  border: 1px solid #cbd6e2;
+  border-radius: 6px;
+  color: #1f2933;
+  font: inherit;
+  min-height: 38px;
+  padding: 0 10px;
+}
+
+.form-error {
+  color: #b42318;
+  font-size: 13px;
+  min-height: 18px;
+}
+
 .table {
   overflow-x: auto;
 }
@@ -155,6 +205,10 @@ td code {
     flex-direction: column;
     gap: 12px;
     padding: 16px;
+  }
+
+  .topbar-actions {
+    width: 100%;
   }
 
   main {

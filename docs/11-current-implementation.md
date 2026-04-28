@@ -8,7 +8,11 @@
 
 - Go HTTP API 服务。
 - SQLite migration 自动执行。
-- 嵌入式 Web 管理后台只读仪表盘。
+- 嵌入式 Web 管理后台登录页和只读仪表盘。
+- 管理员引导账号。
+- PBKDF2-SHA256 密码哈希。
+- 管理员签名 Cookie 会话。
+- 管理 API 登录保护。
 - 团队、用户、Token 基础创建和列表。
 - 上游来源创建和列表。
 - 上游来源自动前缀。
@@ -25,6 +29,7 @@
 - 订阅请求日志 Token 路径脱敏。
 - 结构化 JSON 服务日志。
 - 本地验证脚本。
+- 公开仓库脱敏扫描脚本。
 - 远程部署探测脚本。
 - 磁盘清理脚本。
 - 诊断采集脚本。
@@ -32,6 +37,7 @@
 - 首次远程部署最小 sing-box config bootstrap。
 - 远程 Docker build 支持 `GOPROXY`，默认优先使用 `goproxy.cn` 以避开 `proxy.golang.org` 超时。
 - 部署时宿主机 HTTP 端口默认使用 `127.0.0.1:18080`，避免和服务器已有 8080 服务冲突。
+- 部署侧可通过未跟踪配置打开局域网访问，不把真实环境信息提交到公开仓库。
 - 页面截图验收脚本。
 - 本地 QA 套件退出自动清理临时产物。
 
@@ -42,6 +48,9 @@
 ```text
 GET  /healthz
 GET  /readyz
+GET  /api/auth/session
+POST /api/auth/login
+POST /api/auth/logout
 GET  /api/overview
 
 GET  /api/teams
@@ -82,6 +91,7 @@ scripts/dev/test.sh
 scripts/dev/lint.sh
 scripts/dev/build.sh
 scripts/db/migrate.sh
+scripts/qa/public-scan.sh
 scripts/qa/smoke.sh
 scripts/qa/api-flow.sh
 scripts/qa/screenshot.sh
@@ -101,6 +111,8 @@ KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退�
 截图结论：
 
 - 页面可打开。
+- 未登录时展示管理员登录页。
+- 登录后可加载仪表盘数据。
 - 无白屏。
 - 无明显遮挡。
 - 表格和卡片未出现明显溢出。
@@ -110,7 +122,6 @@ KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退�
 
 下一步需要继续实现：
 
-- 管理后台登录和管理员权限。
 - 管理后台写操作 UI。
 - 上游订阅 URL 自动拉取和解析。
 - 完整协议 URI 到 sing-box outbound 的转换。
@@ -125,7 +136,8 @@ KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退�
 ## 5. 当前注意事项
 
 - `docker compose config` 已支持没有 `.env` 时做静态校验。
-- 生产部署仍应由 `scripts/deploy/bootstrap-remote.sh` 生成 `.env` 后再修改密钥。
+- 生产部署仍应由 `scripts/deploy/bootstrap-remote.sh` 生成 `.env` 后再修改密钥；管理员引导账号只在没有管理员记录时创建。
+- 管理 API 需要管理员会话；订阅接口 `/sub/{token}` 继续使用订阅 Token 鉴权，不依赖管理员登录。
 - 需要局域网访问管理后台时，通过部署侧配置 `FLUXGATE_HOST_BIND=0.0.0.0` 和 `FLUXGATE_HTTP_PORT`，公开仓库不保存真实访问地址。
 - 本地 QA 产生的 `data/`、`logs/`、`tmp/` 均被 `.gitignore` 排除，并默认在测试退出时清理。
 - Playwright Chromium 已在本机安装一次，后续截图脚本会复用缓存。

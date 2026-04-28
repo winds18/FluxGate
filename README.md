@@ -82,6 +82,14 @@ scripts/dev/build.sh
 scripts/dev/run.sh
 ```
 
+本地开发默认会引导管理员账号：
+
+```text
+admin / dev-admin-change-me
+```
+
+生产部署应在服务器 `.env` 或本机未跟踪部署配置中设置 `ADMIN_BOOTSTRAP_USERNAME`、`ADMIN_BOOTSTRAP_PASSWORD` 和 `SESSION_SECRET`；公开仓库不保存真实密码。
+
 基础验收：
 
 ```bash

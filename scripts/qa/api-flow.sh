@@ -5,6 +5,9 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 BASE_URL="${BASE_URL:-http://127.0.0.1:8080}"
 OUT_DIR="${OUT_DIR:-$ROOT_DIR/logs/qa/api-flow/$(timestamp)}"
 KEEP_ARTIFACTS="${KEEP_ARTIFACTS:-false}"
+ADMIN_USERNAME="${ADMIN_USERNAME:-${ADMIN_BOOTSTRAP_USERNAME:-}}"
+ADMIN_PASSWORD="${ADMIN_PASSWORD:-${ADMIN_BOOTSTRAP_PASSWORD:-}}"
+COOKIE_JAR="$OUT_DIR/cookies.txt"
 ensure_dir "$OUT_DIR"
 require_cmd curl
 require_cmd node
@@ -24,10 +27,20 @@ post_json() {
   local path="$1"
   local payload="$2"
   local out="$3"
-  run_logged curl -fsS -X POST "$BASE_URL$path" -H 'content-type: application/json' --data "$payload" -o "$out"
+  run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL$path" -H 'content-type: application/json' --data "$payload" -o "$out"
 }
 
 log "running API flow against $BASE_URL"
+if [[ -z "$ADMIN_USERNAME" || -z "$ADMIN_PASSWORD" ]]; then
+  log "ADMIN_USERNAME and ADMIN_PASSWORD are required for API flow"
+  exit 64
+fi
+
+log "+ curl -fsS -c $COOKIE_JAR -X POST $BASE_URL/api/auth/login -H content-type:application/json --data <redacted> -o $OUT_DIR/login.json"
+curl -fsS -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" \
+  -H 'content-type: application/json' \
+  --data "{\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}" \
+  -o "$OUT_DIR/login.json"
 
 post_json "/api/teams" '{"name":"QA Team","description":"automated smoke"}' "$OUT_DIR/team.json"
 team_id="$(json_value "data.id" <"$OUT_DIR/team.json")"
@@ -47,7 +60,7 @@ plain_token="$(json_value "data.plain_token" <"$OUT_DIR/token.json")"
 
 log "+ curl -fsS $BASE_URL/sub/<redacted>?target=clash -o $OUT_DIR/subscription.yaml"
 curl -fsS "$BASE_URL/sub/$plain_token?target=clash" -o "$OUT_DIR/subscription.yaml"
-run_logged curl -fsS -X POST "$BASE_URL/api/sing-box/config/generate" -o "$OUT_DIR/sing-box.json"
+run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/generate" -o "$OUT_DIR/sing-box.json"
 
 if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   log "unexpected auto prefix for duplicate source: $source_b_prefix"

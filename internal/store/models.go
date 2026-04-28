@@ -12,6 +12,20 @@ type Overview struct {
 	Version      string `json:"version"`
 }
 
+type Admin struct {
+	ID          int64   `json:"id"`
+	Username    string  `json:"username"`
+	Status      string  `json:"status"`
+	LastLoginAt *string `json:"last_login_at,omitempty"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+}
+
+type AdminWithPassword struct {
+	Admin
+	PasswordHash string `json:"-"`
+}
+
 type Source struct {
 	ID                     int64   `json:"id"`
 	Name                   string  `json:"name"`

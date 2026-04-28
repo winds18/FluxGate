@@ -29,6 +29,25 @@ report_matches() {
   fi
 }
 
+report_secret_env_matches() {
+  local matches
+  matches="$(
+    {
+      git ls-files -z |
+      xargs -0 rg -n --pcre2 --color=never '^[[:space:]]*[A-Z0-9_]*(SECRET|TOKEN|PASSWORD|API[_-]?KEY)[A-Z0-9_]*[[:space:]]*=[[:space:]]*["'\'']?(?!change-me|changeme|example|dev-|qa-|<|\$)[^[:space:]#]+' 2>/dev/null |
+      rg -v '\$\{' |
+      awk -F: '{print $1 ":" $2}' |
+      sort -u
+    } || true
+  )"
+
+  if [[ -n "$matches" ]]; then
+    log "public scan failed: non-placeholder secret env assignment"
+    printf '%s\n' "$matches"
+    fail=1
+  fi
+}
+
 tracked_env_files="$(git ls-files | rg '(^|/)\.env($|\.)' | rg -v '(^|/)\.env\.example$' || true)"
 if [[ -n "$tracked_env_files" ]]; then
   log "public scan failed: tracked env files are not allowed"
@@ -47,7 +66,7 @@ report_matches "private SSH alias" '(^|[^0-9A-Za-z_.-])66\.10([^0-9.]|$)|ssh[[:s
 report_matches "private key material" '-----BEGIN [A-Z ]*PRIVATE KEY-----'
 report_matches "GitHub access token pattern" 'github_pat_[A-Za-z0-9_]+|gh[pousr]_[A-Za-z0-9_]{20,}'
 report_matches "OpenAI-style API key pattern" 'sk-[A-Za-z0-9_-]{20,}'
-report_matches "non-placeholder secret env assignment" '^[[:space:]]*[A-Z0-9_]*(SECRET|TOKEN|PASSWORD|API[_-]?KEY)[A-Z0-9_]*[[:space:]]*=[[:space:]]*(?!change-me|changeme|example|dev-|<|\$\{?)[^[:space:]#]+'
+report_secret_env_matches
 
 if [[ "$fail" -ne 0 ]]; then
   log "public scan failed; keep sensitive values in ignored local config, server .env, or secret stores"

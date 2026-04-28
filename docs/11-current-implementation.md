@@ -8,21 +8,21 @@
 
 - Go HTTP API 服务。
 - SQLite migration 自动执行。
-- 嵌入式 Web 管理后台登录页和只读仪表盘。
+- 嵌入式 Web 管理后台登录页、仪表盘和基础写操作表单。
 - 管理员引导账号。
 - PBKDF2-SHA256 密码哈希。
 - 管理员签名 Cookie 会话。
 - 管理 API 登录保护。
 - 会话 Cookie 按实际请求协议设置 Secure，支持 HTTPS 反代和 HTTP 局域网调试。
-- 团队、用户、Token 基础创建和列表。
-- 上游来源创建和列表。
+- 团队、用户、Token 基础页面创建和列表。
+- 上游来源页面创建和列表。
 - 上游来源自动前缀。
 - 重复来源名前缀自动编号，例如 `[机场A]`、`[机场A-2]`。
-- 节点 URI 批量导入。
+- 节点 URI 页面批量导入。
 - 节点 `raw_name`、`display_name`、`name_mode`。
 - 单节点手动改名保护。
 - 单节点恢复自动命名。
-- 虚拟节点基础创建和列表。
+- 虚拟节点页面基础创建和列表。
 - Clash/Mihomo 订阅生成。
 - sing-box 客户端订阅生成。
 - sing-box 服务端配置生成骨架。
@@ -124,7 +124,6 @@ KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退�
 
 下一步需要继续实现：
 
-- 管理后台写操作 UI。
 - 上游订阅 URL 自动拉取和解析。
 - 完整协议 URI 到 sing-box outbound 的转换。
 - 策略管理。

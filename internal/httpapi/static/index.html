@@ -37,6 +37,126 @@
     <main id="app-view" hidden>
       <section class="metrics" id="metrics"></section>
 
+      <section class="workflow-grid">
+        <form id="team-form" class="panel form-panel">
+          <div class="panel-header">
+            <h2>创建团队</h2>
+          </div>
+          <div class="form-body">
+            <label>
+              名称
+              <input name="name" required />
+            </label>
+            <label>
+              备注
+              <input name="description" />
+            </label>
+            <button type="submit">创建</button>
+          </div>
+        </form>
+
+        <form id="user-form" class="panel form-panel">
+          <div class="panel-header">
+            <h2>创建成员</h2>
+          </div>
+          <div class="form-body">
+            <label>
+              团队
+              <select id="user-team" name="team_id"></select>
+            </label>
+            <label>
+              姓名
+              <input name="name" required />
+            </label>
+            <label>
+              邮箱
+              <input name="email" type="email" />
+            </label>
+            <button type="submit">创建</button>
+          </div>
+        </form>
+
+        <form id="source-form" class="panel form-panel">
+          <div class="panel-header">
+            <h2>添加来源</h2>
+          </div>
+          <div class="form-body">
+            <label>
+              名称
+              <input name="name" required />
+            </label>
+            <label>
+              类型
+              <select name="type">
+                <option value="manual">manual</option>
+                <option value="subscription">subscription</option>
+              </select>
+            </label>
+            <button type="submit">添加</button>
+          </div>
+        </form>
+
+        <form id="node-import-form" class="panel form-panel span-2">
+          <div class="panel-header">
+            <h2>导入节点</h2>
+          </div>
+          <div class="form-body">
+            <label>
+              来源
+              <select id="node-source" name="source_id" required></select>
+            </label>
+            <label>
+              节点内容
+              <textarea name="content" rows="3" required></textarea>
+            </label>
+            <button type="submit">导入</button>
+          </div>
+        </form>
+
+        <form id="virtual-node-form" class="panel form-panel">
+          <div class="panel-header">
+            <h2>创建虚拟节点</h2>
+          </div>
+          <div class="form-body">
+            <label>
+              名称
+              <input name="name" placeholder="FluxGate-HK" required />
+            </label>
+            <label>
+              端口
+              <input name="listen_port" type="number" min="1" max="65535" value="8443" required />
+            </label>
+            <button type="submit">创建</button>
+          </div>
+        </form>
+
+        <form id="token-form" class="panel form-panel span-2">
+          <div class="panel-header">
+            <h2>创建 Token</h2>
+          </div>
+          <div class="form-body token-form-grid">
+            <label>
+              成员
+              <select id="token-user" name="user_id" required></select>
+            </label>
+            <label>
+              名称
+              <input name="name" />
+            </label>
+            <label>
+              有效天数
+              <input name="expire_days" type="number" min="0" value="30" />
+            </label>
+            <label>
+              流量额度 MiB
+              <input name="quota_mib" type="number" min="0" value="1024" />
+            </label>
+            <button type="submit">创建</button>
+          </div>
+          <div id="token-result" class="result-box" hidden></div>
+        </form>
+      </section>
+
       <section class="panel">
         <div class="panel-header">
           <h2>上游来源</h2>
@@ -50,6 +170,27 @@
           <h2>节点池</h2>
         </div>
         <div id="nodes" class="table"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>团队</h2>
+        </div>
+        <div id="teams" class="table"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>成员</h2>
+        </div>
+        <div id="users" class="table"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>虚拟节点</h2>
+        </div>
+        <div id="virtual-nodes" class="table"></div>
       </section>
 
       <section class="panel">

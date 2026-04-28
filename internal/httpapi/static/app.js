@@ -7,15 +7,41 @@ const loginUsernameEl = document.querySelector("#login-username");
 const loginPasswordEl = document.querySelector("#login-password");
 const logoutEl = document.querySelector("#logout");
 const metricsEl = document.querySelector("#metrics");
+const teamsEl = document.querySelector("#teams");
+const usersEl = document.querySelector("#users");
 const sourcesEl = document.querySelector("#sources");
 const nodesEl = document.querySelector("#nodes");
+const virtualNodesEl = document.querySelector("#virtual-nodes");
 const tokensEl = document.querySelector("#tokens");
 const refreshEl = document.querySelector("#refresh");
+const teamForm = document.querySelector("#team-form");
+const userForm = document.querySelector("#user-form");
+const sourceForm = document.querySelector("#source-form");
+const nodeImportForm = document.querySelector("#node-import-form");
+const virtualNodeForm = document.querySelector("#virtual-node-form");
+const tokenForm = document.querySelector("#token-form");
+const userTeamSelect = document.querySelector("#user-team");
+const nodeSourceSelect = document.querySelector("#node-source");
+const tokenUserSelect = document.querySelector("#token-user");
+const tokenResultEl = document.querySelector("#token-result");
 
 refreshEl.addEventListener("click", load);
 logoutEl.addEventListener("click", logout);
 loginForm.addEventListener("submit", login);
+teamForm.addEventListener("submit", submitTeam);
+userForm.addEventListener("submit", submitUser);
+sourceForm.addEventListener("submit", submitSource);
+nodeImportForm.addEventListener("submit", submitNodeImport);
+virtualNodeForm.addEventListener("submit", submitVirtualNode);
+tokenForm.addEventListener("submit", submitToken);
 bootstrap();
+
+let appState = {
+  teams: [],
+  users: [],
+  sources: [],
+  virtualNodes: [],
+};
 
 async function bootstrap() {
   statusEl.textContent = "连接中";
@@ -47,6 +73,9 @@ async function login(event) {
 
 async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
+  appState = { teams: [], users: [], sources: [], virtualNodes: [] };
+  tokenResultEl.hidden = true;
+  tokenResultEl.textContent = "";
   showLogin();
 }
 
@@ -68,15 +97,23 @@ function showApp() {
 async function load() {
   statusEl.textContent = "刷新中";
   try {
-    const [overview, sources, nodes, tokens] = await Promise.all([
+    const [overview, teams, users, sources, nodes, virtualNodes, tokens] = await Promise.all([
       getJSON("/api/overview"),
+      getJSON("/api/teams"),
+      getJSON("/api/users"),
       getJSON("/api/sources"),
       getJSON("/api/nodes"),
+      getJSON("/api/virtual-nodes"),
       getJSON("/api/tokens"),
     ]);
+    appState = { teams, users, sources, virtualNodes };
     renderMetrics(overview);
+    renderSelectors();
+    renderTable(teamsEl, teams, ["id", "name", "description", "status"]);
+    renderTable(usersEl, users, ["id", "team_id", "name", "email", "status"]);
     renderTable(sourcesEl, sources, ["id", "name", "type", "display_prefix", "status"]);
     renderTable(nodesEl, nodes, ["id", "source_name", "raw_name", "display_name", "protocol", "status"]);
+    renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "status"]);
     renderTable(tokensEl, tokens, ["id", "user_id", "token_prefix", "name", "status", "quota_bytes"]);
     statusEl.textContent = "已连接";
   } catch (error) {
@@ -87,6 +124,102 @@ async function load() {
     statusEl.textContent = "异常";
     metricsEl.innerHTML = `<div class="empty">${escapeHTML(error.message)}</div>`;
   }
+}
+
+async function submitTeam(event) {
+  event.preventDefault();
+  const form = new FormData(teamForm);
+  await postAndReload("/api/teams", {
+    name: textField(form, "name"),
+    description: textField(form, "description"),
+  });
+  teamForm.reset();
+}
+
+async function submitUser(event) {
+  event.preventDefault();
+  const form = new FormData(userForm);
+  const teamID = numberField(form, "team_id");
+  await postAndReload("/api/users", {
+    team_id: teamID > 0 ? teamID : null,
+    name: textField(form, "name"),
+    email: textField(form, "email"),
+  });
+  userForm.reset();
+}
+
+async function submitSource(event) {
+  event.preventDefault();
+  const form = new FormData(sourceForm);
+  await postAndReload("/api/sources", {
+    name: textField(form, "name"),
+    type: textField(form, "type") || "manual",
+  });
+  sourceForm.reset();
+}
+
+async function submitNodeImport(event) {
+  event.preventDefault();
+  const form = new FormData(nodeImportForm);
+  await postAndReload("/api/nodes/import", {
+    source_id: numberField(form, "source_id"),
+    content: textField(form, "content"),
+  });
+  nodeImportForm.reset();
+}
+
+async function submitVirtualNode(event) {
+  event.preventDefault();
+  const form = new FormData(virtualNodeForm);
+  await postAndReload("/api/virtual-nodes", {
+    name: textField(form, "name"),
+    listen_protocol: "vless",
+    listen_port: numberField(form, "listen_port"),
+  });
+  virtualNodeForm.reset();
+}
+
+async function submitToken(event) {
+  event.preventDefault();
+  const form = new FormData(tokenForm);
+  const quotaMiB = numberField(form, "quota_mib");
+  const result = await postAndReload("/api/tokens", {
+    user_id: numberField(form, "user_id"),
+    name: textField(form, "name"),
+    expire_days: numberField(form, "expire_days"),
+    quota_bytes: quotaMiB * 1024 * 1024,
+  });
+  tokenResultEl.hidden = false;
+  tokenResultEl.innerHTML = `
+    <strong>订阅地址</strong>
+    <code>${escapeHTML(result.subscription)}</code>
+  `;
+  tokenForm.reset();
+}
+
+async function postAndReload(path, payload) {
+  statusEl.textContent = "保存中";
+  try {
+    const result = await postJSON(path, payload);
+    await load();
+    return result;
+  } catch (error) {
+    statusEl.textContent = "保存失败";
+    throw error;
+  }
+}
+
+function renderSelectors() {
+  renderOptions(userTeamSelect, appState.teams, "不绑定团队");
+  renderOptions(nodeSourceSelect, appState.sources, "选择来源");
+  renderOptions(tokenUserSelect, appState.users, "选择成员");
+}
+
+function renderOptions(target, rows, emptyLabel) {
+  const options = [`<option value="">${escapeHTML(emptyLabel)}</option>`].concat(
+    (rows || []).map((row) => `<option value="${row.id}">${escapeHTML(row.name)}</option>`),
+  );
+  target.innerHTML = options.join("");
 }
 
 async function getJSON(path) {
@@ -112,6 +245,15 @@ async function postJSON(path, payload) {
     throw error;
   }
   return response.json();
+}
+
+function textField(form, name) {
+  return String(form.get(name) || "").trim();
+}
+
+function numberField(form, name) {
+  const value = Number.parseInt(String(form.get(name) || "0"), 10);
+  return Number.isFinite(value) ? value : 0;
 }
 
 function renderMetrics(data) {

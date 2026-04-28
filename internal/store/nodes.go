@@ -5,14 +5,16 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"fmt"
 	"strings"
 
 	"github.com/winds18/FluxGate/internal/naming"
 )
 
 type ImportNodesInput struct {
-	SourceID int64  `json:"source_id"`
-	Content  string `json:"content"`
+	SourceID            int64  `json:"source_id"`
+	Content             string `json:"content"`
+	MarkMissingInactive bool   `json:"mark_missing_inactive"`
 }
 
 func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (ImportResult, error) {
@@ -22,6 +24,7 @@ func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (Import
 	}
 
 	var result ImportResult
+	var seenHashes []string
 	for _, line := range strings.Split(input.Content, "\n") {
 		uri := strings.TrimSpace(line)
 		if uri == "" || strings.HasPrefix(uri, "#") {
@@ -33,6 +36,7 @@ func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (Import
 		protocol := naming.ProtocolFromURI(uri)
 		server, port := naming.ServerFromURI(uri)
 		uriHash := hashURI(uri)
+		seenHashes = append(seenHashes, uriHash)
 
 		existing, err := s.nodeBySourceHash(ctx, input.SourceID, uriHash)
 		if err != nil && err != sql.ErrNoRows {
@@ -67,6 +71,14 @@ func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (Import
 			return result, err
 		}
 		result.Imported++
+	}
+
+	if input.MarkMissingInactive && len(seenHashes) > 0 {
+		inactivated, err := s.markMissingSourceNodesInactive(ctx, input.SourceID, seenHashes)
+		if err != nil {
+			return result, err
+		}
+		result.Inactivated = inactivated
 	}
 
 	if _, err := s.db.ExecContext(ctx, "UPDATE upstream_sources SET last_sync_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?", input.SourceID); err != nil {
@@ -157,6 +169,31 @@ func (s *Store) nodeBySourceHash(ctx context.Context, sourceID int64, uriHash st
 		WHERE n.source_id = ? AND n.uri_hash = ?
 	`, sourceID, uriHash)
 	return scanNode(row)
+}
+
+func (s *Store) markMissingSourceNodesInactive(ctx context.Context, sourceID int64, seenHashes []string) (int, error) {
+	placeholders := strings.TrimSuffix(strings.Repeat("?,", len(seenHashes)), ",")
+	args := make([]any, 0, len(seenHashes)+1)
+	args = append(args, sourceID)
+	for _, hash := range seenHashes {
+		args = append(args, hash)
+	}
+	result, err := s.db.ExecContext(ctx, fmt.Sprintf(`
+		UPDATE upstream_nodes
+		SET status = 'inactive',
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE source_id = ?
+		  AND status = 'active'
+		  AND uri_hash NOT IN (%s)
+	`, placeholders), args...)
+	if err != nil {
+		return 0, err
+	}
+	count, err := result.RowsAffected()
+	if err != nil {
+		return 0, err
+	}
+	return int(count), nil
 }
 
 type nodeScanner interface {

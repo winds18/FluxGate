@@ -130,7 +130,8 @@ type VirtualNode struct {
 }
 
 type ImportResult struct {
-	Imported int `json:"imported"`
-	Updated  int `json:"updated"`
-	Skipped  int `json:"skipped"`
+	Imported    int `json:"imported"`
+	Updated     int `json:"updated"`
+	Skipped     int `json:"skipped"`
+	Inactivated int `json:"inactivated"`
 }

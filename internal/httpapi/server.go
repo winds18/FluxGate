@@ -346,6 +346,7 @@ func (s *Server) handleRefreshSource(w http.ResponseWriter, r *http.Request) {
 		"imported", result.Imported,
 		"updated", result.Updated,
 		"skipped", result.Skipped,
+		"inactivated", result.Inactivated,
 	)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"source": updatedSource,
@@ -370,8 +371,9 @@ func (s *Server) refreshSource(ctx context.Context, source store.Source) (store.
 		return store.ImportResult{}, err
 	}
 	result, err := s.store.ImportNodes(ctx, store.ImportNodesInput{
-		SourceID: source.ID,
-		Content:  normalized,
+		SourceID:            source.ID,
+		Content:             normalized,
+		MarkMissingInactive: true,
 	})
 	if err != nil {
 		return result, err

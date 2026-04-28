@@ -3,6 +3,7 @@ package store
 import (
 	"context"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -81,6 +82,57 @@ func TestSourcePrefixAndNodeDisplayNames(t *testing.T) {
 	}
 	if node.DisplayName != "[新前缀] 香港 01" {
 		t.Fatalf("unexpected reset display name: %q", node.DisplayName)
+	}
+}
+
+func TestImportNodesMarksMissingSubscriptionNodesInactive(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	source, err := db.CreateSource(ctx, CreateSourceInput{Name: "订阅源A", Type: "subscription"})
+	if err != nil {
+		t.Fatalf("create source: %v", err)
+	}
+	result, err := db.ImportNodes(ctx, ImportNodesInput{
+		SourceID: source.ID,
+		Content: strings.Join([]string{
+			"vless://uuid-a@example.com:443#香港%2001",
+			"vless://uuid-b@example.net:443#新加坡%2001",
+		}, "\n"),
+		MarkMissingInactive: true,
+	})
+	if err != nil {
+		t.Fatalf("initial import: %v", err)
+	}
+	if result.Imported != 2 || result.Inactivated != 0 {
+		t.Fatalf("unexpected initial import result: %+v", result)
+	}
+
+	result, err = db.ImportNodes(ctx, ImportNodesInput{
+		SourceID:            source.ID,
+		Content:             "vless://uuid-b@example.net:443#新加坡%2001",
+		MarkMissingInactive: true,
+	})
+	if err != nil {
+		t.Fatalf("refresh import: %v", err)
+	}
+	if result.Updated != 1 || result.Inactivated != 1 {
+		t.Fatalf("unexpected refresh import result: %+v", result)
+	}
+
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		t.Fatalf("list nodes: %v", err)
+	}
+	statusByRawName := map[string]string{}
+	for _, node := range nodes {
+		statusByRawName[node.RawName] = node.Status
+	}
+	if statusByRawName["香港 01"] != "inactive" {
+		t.Fatalf("missing node should be inactive: %+v", statusByRawName)
+	}
+	if statusByRawName["新加坡 01"] != "active" {
+		t.Fatalf("seen node should stay active: %+v", statusByRawName)
 	}
 }
 

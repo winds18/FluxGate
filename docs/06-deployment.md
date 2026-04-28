@@ -285,12 +285,14 @@ scripts/deploy/push-and-deploy.sh
 
 - 推送当前分支到 GitHub。
 - SSH 到 `66.10`。
-- 在 `/home/wings/docker/FluxGate` clone 或更新同名分支。
+- 在 `/home/wings/docker/FluxGate` clone 或更新同名分支。服务器默认使用 HTTPS clone，避免依赖服务器 GitHub SSH key。
 - 执行远程环境探测。
 - 检查并按策略清理磁盘。
 - 在远程构建 FluxGate 镜像。
 - 启动 Docker Compose。
 - 执行远程健康检查。
+
+首次部署时如果还没有 sing-box 配置，`bootstrap-remote.sh` 会生成一个最小可启动配置；后续由 FluxGate 控制面发布正式配置。
 
 ## 7. 首次部署流程
 

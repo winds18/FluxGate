@@ -10,6 +10,31 @@ ensure_dir "$ROOT_DIR/logs/fluxgate"
 ensure_dir "$ROOT_DIR/logs/sing-box"
 ensure_dir "$ROOT_DIR/logs/diagnostics"
 
+if [[ ! -f "$ROOT_DIR/data/sing-box/config.json" ]]; then
+  cat >"$ROOT_DIR/data/sing-box/config.json" <<'JSON'
+{
+  "log": {
+    "level": "info"
+  },
+  "inbounds": [],
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "direct"
+    },
+    {
+      "type": "block",
+      "tag": "block"
+    }
+  ],
+  "route": {
+    "final": "direct"
+  }
+}
+JSON
+  log "minimal sing-box config created"
+fi
+
 if [[ ! -f "$ROOT_DIR/.env" && -f "$ROOT_DIR/.env.example" ]]; then
   run_logged cp "$ROOT_DIR/.env.example" "$ROOT_DIR/.env"
   log ".env created from .env.example; edit secrets before production use"

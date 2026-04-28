@@ -38,7 +38,7 @@ cleanup() {
 trap cleanup EXIT
 
 cat >"$TEST_FILE" <<'JS'
-const { test } = require("@playwright/test");
+const { expect, test } = require("@playwright/test");
 
 test("admin login reaches dashboard", async ({ page, context }) => {
   const baseURL = process.env.BASE_URL;
@@ -68,18 +68,23 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await page.fill("#login-username", username);
   await page.fill("#login-password", password);
   await page.click("#login-form button[type=submit]");
-  await page.waitForFunction(
-    () =>
-      document.querySelector("#login-view")?.hidden === true &&
-      document.querySelector("#app-view")?.hidden === false,
-    null,
-    { timeout: 10000 },
-  ).catch(() => {});
+  await expect(page.locator("#login-form")).toBeHidden({ timeout: 10000 });
+  await expect(page.locator("#app-view")).toBeVisible({ timeout: 10000 });
   await page.waitForTimeout(500);
 
   const state = await page.evaluate(() => ({
     loginHidden: document.querySelector("#login-view")?.hidden,
     appHidden: document.querySelector("#app-view")?.hidden,
+    loginVisible: Boolean(
+      document.querySelector("#login-form") &&
+        getComputedStyle(document.querySelector("#login-form")).display !== "none" &&
+        document.querySelector("#login-form").getClientRects().length > 0,
+    ),
+    appVisible: Boolean(
+      document.querySelector("#app-view") &&
+        getComputedStyle(document.querySelector("#app-view")).display !== "none" &&
+        document.querySelector("#app-view").getClientRects().length > 0,
+    ),
     status: document.querySelector("#status")?.textContent,
     error: document.querySelector("#login-error")?.textContent,
     url: window.location.href,
@@ -101,7 +106,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     consoleMessages,
   };
 
-  if (!state.loginHidden || state.appHidden || state.status !== "已连接") {
+  if (!state.loginHidden || state.loginVisible || state.appHidden || !state.appVisible || state.status !== "已连接") {
     throw new Error(JSON.stringify(result, null, 2));
   }
 

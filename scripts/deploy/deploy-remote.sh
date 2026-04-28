@@ -22,7 +22,14 @@ run_logged "$ROOT_DIR/scripts/sing-box/backup-config.sh"
 REMOTE_BUILD_ENABLED="${REMOTE_BUILD_ENABLED:-true}"
 if [[ "$REMOTE_BUILD_ENABLED" == "true" ]]; then
   run_logged "$ROOT_DIR/scripts/deploy/remote-build.sh"
-  run_logged docker compose pull sing-box
+  if ! docker compose pull sing-box; then
+    if docker image inspect ghcr.io/sagernet/sing-box:latest >/dev/null 2>&1; then
+      log "sing-box pull failed; using cached ghcr.io/sagernet/sing-box:latest image"
+    else
+      log "sing-box pull failed and no cached image is available"
+      exit 1
+    fi
+  fi
 else
   run_logged docker compose pull
 fi

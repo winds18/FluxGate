@@ -1,0 +1,194 @@
+package store
+
+import (
+	"context"
+	"crypto/sha256"
+	"database/sql"
+	"encoding/hex"
+	"strings"
+
+	"github.com/winds18/FluxGate/internal/naming"
+)
+
+type ImportNodesInput struct {
+	SourceID int64  `json:"source_id"`
+	Content  string `json:"content"`
+}
+
+func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (ImportResult, error) {
+	source, err := s.GetSource(ctx, input.SourceID)
+	if err != nil {
+		return ImportResult{}, err
+	}
+
+	var result ImportResult
+	for _, line := range strings.Split(input.Content, "\n") {
+		uri := strings.TrimSpace(line)
+		if uri == "" || strings.HasPrefix(uri, "#") {
+			result.Skipped++
+			continue
+		}
+		rawName := naming.RawNameFromURI(uri)
+		displayName := naming.DisplayName(source.DisplayPrefix, rawName)
+		protocol := naming.ProtocolFromURI(uri)
+		server, port := naming.ServerFromURI(uri)
+		uriHash := hashURI(uri)
+
+		existing, err := s.nodeBySourceHash(ctx, input.SourceID, uriHash)
+		if err != nil && err != sql.ErrNoRows {
+			return result, err
+		}
+		if err == nil {
+			_, err = s.db.ExecContext(ctx, `
+				UPDATE upstream_nodes
+				SET raw_name = ?,
+				    display_name = CASE WHEN name_mode = 'auto' THEN ? ELSE display_name END,
+				    uri = ?,
+				    protocol = ?,
+				    server = ?,
+				    server_port = ?,
+				    status = 'active',
+				    last_seen_at = CURRENT_TIMESTAMP,
+				    updated_at = CURRENT_TIMESTAMP
+				WHERE id = ?
+			`, rawName, displayName, uri, protocol, server, port, existing.ID)
+			if err != nil {
+				return result, err
+			}
+			result.Updated++
+			continue
+		}
+
+		_, err = s.db.ExecContext(ctx, `
+			INSERT INTO upstream_nodes(source_id, raw_name, display_name, name_mode, uri, uri_hash, protocol, server, server_port, status, last_seen_at)
+			VALUES (?, ?, ?, 'auto', ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
+		`, input.SourceID, rawName, displayName, uri, uriHash, protocol, server, port)
+		if err != nil {
+			return result, err
+		}
+		result.Imported++
+	}
+
+	if _, err := s.db.ExecContext(ctx, "UPDATE upstream_sources SET last_sync_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP WHERE id = ?", input.SourceID); err != nil {
+		return result, err
+	}
+	return result, nil
+}
+
+func (s *Store) ListNodes(ctx context.Context) ([]Node, error) {
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT n.id, n.source_id, s.name, n.raw_name, n.display_name, n.name_mode, n.uri, n.uri_hash,
+		       n.protocol, n.server, n.server_port, n.region, n.status, n.last_seen_at,
+		       n.last_checked_at, n.last_error, n.created_at, n.updated_at
+		FROM upstream_nodes n
+		JOIN upstream_sources s ON s.id = n.source_id
+		ORDER BY n.id DESC
+	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var nodes []Node
+	for rows.Next() {
+		node, err := scanNode(rows)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, node)
+	}
+	return nodes, rows.Err()
+}
+
+func (s *Store) GetNode(ctx context.Context, id int64) (Node, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT n.id, n.source_id, s.name, n.raw_name, n.display_name, n.name_mode, n.uri, n.uri_hash,
+		       n.protocol, n.server, n.server_port, n.region, n.status, n.last_seen_at,
+		       n.last_checked_at, n.last_error, n.created_at, n.updated_at
+		FROM upstream_nodes n
+		JOIN upstream_sources s ON s.id = n.source_id
+		WHERE n.id = ?
+	`, id)
+	return scanNode(row)
+}
+
+func (s *Store) UpdateNodeDisplayName(ctx context.Context, id int64, displayName string) (Node, error) {
+	displayName = strings.TrimSpace(displayName)
+	if displayName == "" {
+		displayName = "Unnamed"
+	}
+	if _, err := s.db.ExecContext(ctx, `
+		UPDATE upstream_nodes
+		SET display_name = ?, name_mode = 'manual', updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, displayName, id); err != nil {
+		return Node{}, err
+	}
+	return s.GetNode(ctx, id)
+}
+
+func (s *Store) ResetNodeDisplayName(ctx context.Context, id int64) (Node, error) {
+	node, err := s.GetNode(ctx, id)
+	if err != nil {
+		return Node{}, err
+	}
+	source, err := s.GetSource(ctx, node.SourceID)
+	if err != nil {
+		return Node{}, err
+	}
+	displayName := naming.DisplayName(source.DisplayPrefix, node.RawName)
+	if _, err := s.db.ExecContext(ctx, `
+		UPDATE upstream_nodes
+		SET display_name = ?, name_mode = 'auto', updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, displayName, id); err != nil {
+		return Node{}, err
+	}
+	return s.GetNode(ctx, id)
+}
+
+func (s *Store) nodeBySourceHash(ctx context.Context, sourceID int64, uriHash string) (Node, error) {
+	row := s.db.QueryRowContext(ctx, `
+		SELECT n.id, n.source_id, s.name, n.raw_name, n.display_name, n.name_mode, n.uri, n.uri_hash,
+		       n.protocol, n.server, n.server_port, n.region, n.status, n.last_seen_at,
+		       n.last_checked_at, n.last_error, n.created_at, n.updated_at
+		FROM upstream_nodes n
+		JOIN upstream_sources s ON s.id = n.source_id
+		WHERE n.source_id = ? AND n.uri_hash = ?
+	`, sourceID, uriHash)
+	return scanNode(row)
+}
+
+type nodeScanner interface {
+	Scan(dest ...any) error
+}
+
+func scanNode(scanner nodeScanner) (Node, error) {
+	var node Node
+	err := scanner.Scan(
+		&node.ID,
+		&node.SourceID,
+		&node.SourceName,
+		&node.RawName,
+		&node.DisplayName,
+		&node.NameMode,
+		&node.URI,
+		&node.URIHash,
+		&node.Protocol,
+		&node.Server,
+		&node.ServerPort,
+		&node.Region,
+		&node.Status,
+		&node.LastSeenAt,
+		&node.LastCheckedAt,
+		&node.LastError,
+		&node.CreatedAt,
+		&node.UpdatedAt,
+	)
+	return node, err
+}
+
+func hashURI(uri string) string {
+	sum := sha256.Sum256([]byte(strings.TrimSpace(uri)))
+	return hex.EncodeToString(sum[:])
+}

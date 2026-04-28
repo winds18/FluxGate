@@ -1,0 +1,470 @@
+package httpapi
+
+import (
+	"context"
+	"database/sql"
+	"embed"
+	"encoding/json"
+	"errors"
+	"log/slog"
+	"net"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
+	"github.com/winds18/FluxGate/internal/config"
+	"github.com/winds18/FluxGate/internal/observability"
+	"github.com/winds18/FluxGate/internal/security"
+	"github.com/winds18/FluxGate/internal/singbox"
+	"github.com/winds18/FluxGate/internal/store"
+	"github.com/winds18/FluxGate/internal/subscription"
+)
+
+//go:embed static/*
+var staticFiles embed.FS
+
+type Server struct {
+	cfg    config.Config
+	store  *store.Store
+	logger *slog.Logger
+	mux    *http.ServeMux
+}
+
+func NewServer(cfg config.Config, store *store.Store, logger *slog.Logger) http.Handler {
+	server := &Server{
+		cfg:    cfg,
+		store:  store,
+		logger: logger,
+		mux:    http.NewServeMux(),
+	}
+	server.routes()
+	return server.middleware(server.mux)
+}
+
+func (s *Server) routes() {
+	s.mux.HandleFunc("GET /", s.handleIndex)
+	s.mux.HandleFunc("GET /assets/app.js", s.handleStatic("static/app.js", "application/javascript; charset=utf-8"))
+	s.mux.HandleFunc("GET /assets/styles.css", s.handleStatic("static/styles.css", "text/css; charset=utf-8"))
+
+	s.mux.HandleFunc("GET /healthz", s.handleHealth)
+	s.mux.HandleFunc("GET /readyz", s.handleReady)
+	s.mux.HandleFunc("GET /api/overview", s.handleOverview)
+
+	s.mux.HandleFunc("GET /api/sources", s.handleListSources)
+	s.mux.HandleFunc("POST /api/sources", s.handleCreateSource)
+	s.mux.HandleFunc("PATCH /api/sources/{id}", s.handleUpdateSource)
+	s.mux.HandleFunc("POST /api/sources/{id}/regenerate-node-names", s.handleRegenerateSourceNodeNames)
+
+	s.mux.HandleFunc("GET /api/nodes", s.handleListNodes)
+	s.mux.HandleFunc("POST /api/nodes/import", s.handleImportNodes)
+	s.mux.HandleFunc("PATCH /api/nodes/{id}", s.handleUpdateNode)
+	s.mux.HandleFunc("POST /api/nodes/{id}/reset-display-name", s.handleResetNodeDisplayName)
+
+	s.mux.HandleFunc("GET /api/teams", s.handleListTeams)
+	s.mux.HandleFunc("POST /api/teams", s.handleCreateTeam)
+	s.mux.HandleFunc("GET /api/users", s.handleListUsers)
+	s.mux.HandleFunc("POST /api/users", s.handleCreateUser)
+	s.mux.HandleFunc("GET /api/tokens", s.handleListTokens)
+	s.mux.HandleFunc("POST /api/tokens", s.handleCreateToken)
+	s.mux.HandleFunc("POST /api/tokens/{id}/revoke", s.handleRevokeToken)
+
+	s.mux.HandleFunc("GET /api/virtual-nodes", s.handleListVirtualNodes)
+	s.mux.HandleFunc("POST /api/virtual-nodes", s.handleCreateVirtualNode)
+
+	s.mux.HandleFunc("POST /api/sing-box/config/generate", s.handleGenerateSingBoxConfig)
+	s.mux.HandleFunc("GET /sub/{token}", s.handleSubscription)
+}
+
+func (s *Server) middleware(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requestID := observability.NewRequestID()
+		started := time.Now()
+		w.Header().Set("x-request-id", requestID)
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), requestIDKey{}, requestID)))
+		s.logger.Info("request completed",
+			"request_id", requestID,
+			"method", r.Method,
+			"path", redactedPath(r.URL.Path),
+			"remote_addr", r.RemoteAddr,
+			"duration_ms", time.Since(started).Milliseconds(),
+		)
+	})
+}
+
+func (s *Server) handleIndex(w http.ResponseWriter, r *http.Request) {
+	s.serveEmbedded(w, "static/index.html", "text/html; charset=utf-8")
+}
+
+func (s *Server) handleStatic(name, contentType string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		s.serveEmbedded(w, name, contentType)
+	}
+}
+
+func (s *Server) serveEmbedded(w http.ResponseWriter, name, contentType string) {
+	bytes, err := staticFiles.ReadFile(name)
+	if err != nil {
+		http.NotFound(w, nil)
+		return
+	}
+	w.Header().Set("content-type", contentType)
+	_, _ = w.Write(bytes)
+}
+
+func (s *Server) handleHealth(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ok", "version": s.cfg.Version})
+}
+
+func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
+	if err := s.store.Ping(r.Context()); err != nil {
+		writeError(w, http.StatusServiceUnavailable, "database is not ready")
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "ready"})
+}
+
+func (s *Server) handleOverview(w http.ResponseWriter, r *http.Request) {
+	overview, err := s.store.Overview(r.Context(), s.cfg.Version)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, overview)
+}
+
+func (s *Server) handleListSources(w http.ResponseWriter, r *http.Request) {
+	items, err := s.store.ListSources(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) handleCreateSource(w http.ResponseWriter, r *http.Request) {
+	var input store.CreateSourceInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	source, err := s.store.CreateSource(r.Context(), input)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusCreated, source)
+}
+
+func (s *Server) handleUpdateSource(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	var input struct {
+		DisplayPrefix string `json:"display_prefix"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	source, err := s.store.UpdateSourcePrefix(r.Context(), id, input.DisplayPrefix)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, source)
+}
+
+func (s *Server) handleRegenerateSourceNodeNames(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	if err := s.store.RegenerateSourceNodeNames(r.Context(), id); err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"status": "regenerated"})
+}
+
+func (s *Server) handleListNodes(w http.ResponseWriter, r *http.Request) {
+	nodes, err := s.store.ListNodes(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, nodes)
+}
+
+func (s *Server) handleImportNodes(w http.ResponseWriter, r *http.Request) {
+	var input store.ImportNodesInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	result, err := s.store.ImportNodes(r.Context(), input)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	var input struct {
+		DisplayName string `json:"display_name"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	node, err := s.store.UpdateNodeDisplayName(r.Context(), id, input.DisplayName)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, node)
+}
+
+func (s *Server) handleResetNodeDisplayName(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	node, err := s.store.ResetNodeDisplayName(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, node)
+}
+
+func (s *Server) handleListTeams(w http.ResponseWriter, r *http.Request) {
+	teams, err := s.store.ListTeams(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, teams)
+}
+
+func (s *Server) handleCreateTeam(w http.ResponseWriter, r *http.Request) {
+	var input store.CreateTeamInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	team, err := s.store.CreateTeam(r.Context(), input)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, team)
+}
+
+func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request) {
+	users, err := s.store.ListUsers(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, users)
+}
+
+func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
+	var input store.CreateUserInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	user, err := s.store.CreateUser(r.Context(), input)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, user)
+}
+
+func (s *Server) handleListTokens(w http.ResponseWriter, r *http.Request) {
+	tokens, err := s.store.ListTokens(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, tokens)
+}
+
+func (s *Server) handleCreateToken(w http.ResponseWriter, r *http.Request) {
+	var input store.CreateTokenInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	result, err := s.store.CreateToken(r.Context(), s.cfg.TokenSecret, s.cfg.PublicBaseURL, input)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, result)
+}
+
+func (s *Server) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	token, err := s.store.RevokeToken(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, token)
+}
+
+func (s *Server) handleListVirtualNodes(w http.ResponseWriter, r *http.Request) {
+	nodes, err := s.store.ListVirtualNodes(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, nodes)
+}
+
+func (s *Server) handleCreateVirtualNode(w http.ResponseWriter, r *http.Request) {
+	var input store.CreateVirtualNodeInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	if input.ListenPort == 0 {
+		input.ListenPort = s.cfg.DefaultVLESSPort
+	}
+	node, err := s.store.CreateVirtualNode(r.Context(), input)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, node)
+}
+
+func (s *Server) handleGenerateSingBoxConfig(w http.ResponseWriter, r *http.Request) {
+	tokens, err := s.store.ListTokens(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	virtualNodes, err := s.store.ListVirtualNodes(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	config := singbox.BuildConfig(tokens, virtualNodes)
+	body, err := singbox.Marshal(config)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	w.Header().Set("content-type", "application/json; charset=utf-8")
+	_, _ = w.Write(body)
+}
+
+func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
+	plainToken := r.PathValue("token")
+	tokenHash := security.TokenHash(s.cfg.TokenSecret, plainToken)
+	token, err := s.store.TokenByHash(r.Context(), tokenHash)
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			writeError(w, http.StatusUnauthorized, "invalid token")
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	if ok, reason := subscription.TokenUsable(token, time.Now().UTC()); !ok {
+		writeError(w, http.StatusForbidden, reason)
+		return
+	}
+	virtualNodes, err := s.store.ListVirtualNodes(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	target := r.URL.Query().Get("target")
+	if target == "" {
+		target = inferTarget(r.UserAgent())
+	}
+	response, err := subscription.Build(subscription.Request{
+		Target:        target,
+		GatewayHost:   s.cfg.GatewayHost,
+		PublicBaseURL: s.cfg.PublicBaseURL,
+	}, token, virtualNodes)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	_ = s.store.TouchTokenUsed(r.Context(), token.ID)
+	subscription.SetUserInfoHeader(w.Header(), token)
+	w.Header().Set("content-type", response.ContentType)
+	_, _ = w.Write(response.Body)
+}
+
+func inferTarget(userAgent string) string {
+	ua := strings.ToLower(userAgent)
+	if strings.Contains(ua, "sing-box") || strings.Contains(ua, "singbox") {
+		return "sing-box"
+	}
+	return "clash"
+}
+
+func redactedPath(path string) string {
+	if strings.HasPrefix(path, "/sub/") {
+		return "/sub/<redacted>"
+	}
+	return path
+}
+
+func parseID(w http.ResponseWriter, r *http.Request) (int64, bool) {
+	raw := r.PathValue("id")
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || id <= 0 {
+		writeError(w, http.StatusBadRequest, "invalid id")
+		return 0, false
+	}
+	return id, true
+}
+
+func decodeJSON(w http.ResponseWriter, r *http.Request, target any) bool {
+	defer r.Body.Close()
+	if err := json.NewDecoder(r.Body).Decode(target); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid json")
+		return false
+	}
+	return true
+}
+
+func writeJSON(w http.ResponseWriter, status int, payload any) {
+	w.Header().Set("content-type", "application/json; charset=utf-8")
+	w.WriteHeader(status)
+	_ = json.NewEncoder(w).Encode(payload)
+}
+
+func writeStoreError(w http.ResponseWriter, err error) {
+	if errors.Is(err, sql.ErrNoRows) {
+		writeError(w, http.StatusNotFound, "not found")
+		return
+	}
+	writeError(w, http.StatusBadRequest, err.Error())
+}
+
+func writeError(w http.ResponseWriter, status int, message string) {
+	writeJSON(w, status, map[string]any{
+		"error": message,
+	})
+}
+
+func remoteIP(r *http.Request) string {
+	host, _, err := net.SplitHostPort(r.RemoteAddr)
+	if err != nil {
+		return r.RemoteAddr
+	}
+	return host
+}
+
+type requestIDKey struct{}

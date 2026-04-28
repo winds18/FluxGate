@@ -1,0 +1,11 @@
+#!/usr/bin/env bash
+set -euo pipefail
+source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
+
+log "starting FluxGate locally"
+cd "$ROOT_DIR"
+export APP_ENV="${APP_ENV:-development}"
+export HTTP_ADDR="${HTTP_ADDR:-127.0.0.1:8080}"
+export DB_PATH="${DB_PATH:-$ROOT_DIR/data/fluxgate.db}"
+export LOG_DIR="${LOG_DIR:-$ROOT_DIR/logs/fluxgate}"
+run_logged go run ./cmd/fluxgate

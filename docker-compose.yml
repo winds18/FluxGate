@@ -1,0 +1,36 @@
+services:
+  fluxgate:
+    image: ghcr.io/winds18/fluxgate:${FLUXGATE_IMAGE_TAG:-latest}
+    container_name: fluxgate
+    restart: unless-stopped
+    env_file:
+      - path: .env
+        required: false
+    volumes:
+      - ./data:/app/data
+      - ./logs/fluxgate:/app/logs
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      - sing-box
+    networks:
+      - fluxgate
+
+  sing-box:
+    image: ghcr.io/sagernet/sing-box:latest
+    container_name: fluxgate-sing-box
+    restart: unless-stopped
+    volumes:
+      - ./data/sing-box:/etc/sing-box
+      - ./logs/sing-box:/var/log/sing-box
+    command: -D /var/lib/sing-box -C /etc/sing-box run
+    ports:
+      - "8443:8443/tcp"
+      - "8444:8444/tcp"
+      - "8445:8445/tcp"
+    networks:
+      - fluxgate
+
+networks:
+  fluxgate:
+    name: fluxgate

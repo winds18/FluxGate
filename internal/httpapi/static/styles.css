@@ -1,0 +1,163 @@
+:root {
+  color-scheme: light;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #f5f7f8;
+  color: #1f2933;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+}
+
+.topbar {
+  align-items: center;
+  background: #ffffff;
+  border-bottom: 1px solid #d9e2ec;
+  display: flex;
+  justify-content: space-between;
+  min-height: 80px;
+  padding: 18px 28px;
+}
+
+h1,
+h2,
+p {
+  margin: 0;
+}
+
+h1 {
+  font-size: 24px;
+  font-weight: 720;
+}
+
+h2 {
+  font-size: 17px;
+}
+
+.topbar p {
+  color: #66788a;
+  margin-top: 4px;
+}
+
+.status {
+  background: #edf7f3;
+  border: 1px solid #b8dfd1;
+  border-radius: 999px;
+  color: #126b50;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+main {
+  display: grid;
+  gap: 18px;
+  margin: 0 auto;
+  max-width: 1180px;
+  padding: 24px;
+}
+
+.metrics {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+}
+
+.metric,
+.panel {
+  background: #ffffff;
+  border: 1px solid #d9e2ec;
+  border-radius: 8px;
+}
+
+.metric {
+  padding: 16px;
+}
+
+.metric span {
+  color: #66788a;
+  display: block;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.metric strong {
+  display: block;
+  font-size: 26px;
+  margin-top: 6px;
+}
+
+.panel {
+  overflow: hidden;
+}
+
+.panel-header {
+  align-items: center;
+  border-bottom: 1px solid #e5ebf0;
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+
+button {
+  background: #1f6feb;
+  border: 0;
+  border-radius: 6px;
+  color: #ffffff;
+  cursor: pointer;
+  font-weight: 650;
+  min-height: 34px;
+  padding: 0 12px;
+}
+
+.table {
+  overflow-x: auto;
+}
+
+table {
+  border-collapse: collapse;
+  min-width: 720px;
+  width: 100%;
+}
+
+th,
+td {
+  border-bottom: 1px solid #edf1f5;
+  font-size: 13px;
+  padding: 11px 14px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+th {
+  background: #fbfcfd;
+  color: #52616f;
+  font-weight: 680;
+}
+
+td code {
+  background: #f3f6f8;
+  border-radius: 5px;
+  padding: 3px 5px;
+}
+
+.empty {
+  color: #66788a;
+  padding: 16px;
+}
+
+@media (max-width: 720px) {
+  .topbar {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 12px;
+    padding: 16px;
+  }
+
+  main {
+    padding: 16px;
+  }
+}

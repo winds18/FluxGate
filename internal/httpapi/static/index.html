@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>FluxGate</title>
+    <link rel="stylesheet" href="/assets/styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>FluxGate</h1>
+        <p>sing-box 数据面控制平台</p>
+      </div>
+      <span id="status" class="status">连接中</span>
+    </header>
+
+    <main>
+      <section class="metrics" id="metrics"></section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>上游来源</h2>
+          <button id="refresh">刷新</button>
+        </div>
+        <div id="sources" class="table"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>节点池</h2>
+        </div>
+        <div id="nodes" class="table"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>Token</h2>
+        </div>
+        <div id="tokens" class="table"></div>
+      </section>
+    </main>
+
+    <script src="/assets/app.js"></script>
+  </body>
+</html>

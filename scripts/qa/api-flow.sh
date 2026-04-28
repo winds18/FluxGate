@@ -52,8 +52,12 @@ post_json "/api/sources" '{"name":"机场A","type":"manual"}' "$OUT_DIR/source-a
 source_a_id="$(json_value "data.id" <"$OUT_DIR/source-a.json")"
 post_json "/api/sources" '{"name":"机场A","type":"manual"}' "$OUT_DIR/source-b.json"
 source_b_prefix="$(json_value "JSON.stringify(data.display_prefix)" <"$OUT_DIR/source-b.json")"
+post_json "/api/sources" '{"name":"订阅源A","type":"subscription","raw_content":"vless://uuid@example.net:443#新加坡%2001"}' "$OUT_DIR/source-subscription.json"
+subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
 
 post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\"}" "$OUT_DIR/import.json"
+post_json "/api/sources/$subscription_source_id/refresh" '{}' "$OUT_DIR/source-refresh.json"
+source_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-refresh.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443}' "$OUT_DIR/virtual-node.json"
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
 plain_token="$(json_value "data.plain_token" <"$OUT_DIR/token.json")"
@@ -64,6 +68,11 @@ run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/gen
 
 if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   log "unexpected auto prefix for duplicate source: $source_b_prefix"
+  exit 1
+fi
+
+if [[ "$source_refresh_imported" != "1" ]]; then
+  log "unexpected subscription refresh import count: $source_refresh_imported"
   exit 1
 fi
 

@@ -215,7 +215,7 @@ GET   /api/sources
 POST  /api/sources
 GET   /api/sources/{id}
 PATCH /api/sources/{id}
-POST  /api/sources/{id}/sync
+POST  /api/sources/{id}/refresh
 POST  /api/sources/{id}/regenerate-node-names
 ```
 

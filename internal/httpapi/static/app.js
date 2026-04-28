@@ -34,6 +34,7 @@ sourceForm.addEventListener("submit", submitSource);
 nodeImportForm.addEventListener("submit", submitNodeImport);
 virtualNodeForm.addEventListener("submit", submitVirtualNode);
 tokenForm.addEventListener("submit", submitToken);
+sourcesEl.addEventListener("click", handleSourceAction);
 bootstrap();
 
 let appState = {
@@ -111,7 +112,7 @@ async function load() {
     renderSelectors();
     renderTable(teamsEl, teams, ["id", "name", "description", "status"]);
     renderTable(usersEl, users, ["id", "team_id", "name", "email", "status"]);
-    renderTable(sourcesEl, sources, ["id", "name", "type", "display_prefix", "status"]);
+    renderSources(sources);
     renderTable(nodesEl, nodes, ["id", "source_name", "raw_name", "display_name", "protocol", "status"]);
     renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "status"]);
     renderTable(tokensEl, tokens, ["id", "user_id", "token_prefix", "name", "status", "quota_bytes"]);
@@ -154,6 +155,7 @@ async function submitSource(event) {
   await postAndReload("/api/sources", {
     name: textField(form, "name"),
     type: textField(form, "type") || "manual",
+    url: textField(form, "url"),
   });
   sourceForm.reset();
 }
@@ -195,6 +197,20 @@ async function submitToken(event) {
     <code>${escapeHTML(result.subscription)}</code>
   `;
   tokenForm.reset();
+}
+
+async function handleSourceAction(event) {
+  const button = event.target.closest("button[data-action='refresh-source']");
+  if (!button) return;
+  button.disabled = true;
+  statusEl.textContent = "刷新来源中";
+  try {
+    await postJSON(`/api/sources/${button.dataset.sourceId}/refresh`, {});
+    await load();
+  } catch (error) {
+    statusEl.textContent = "刷新失败";
+    button.disabled = false;
+  }
 }
 
 async function postAndReload(path, payload) {
@@ -268,6 +284,47 @@ function renderMetrics(data) {
   metricsEl.innerHTML = items
     .map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value ?? 0}</strong></div>`)
     .join("");
+}
+
+function renderSources(rows) {
+  if (!rows || rows.length === 0) {
+    sourcesEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  sourcesEl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>name</th>
+          <th>type</th>
+          <th>display_prefix</th>
+          <th>last_sync_at</th>
+          <th>last_error</th>
+          <th>actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows
+          .map(
+            (row) => `
+              <tr>
+                <td>${formatCell(row.id)}</td>
+                <td>${formatCell(row.name)}</td>
+                <td>${formatCell(row.type)}</td>
+                <td>${formatCell(row.display_prefix)}</td>
+                <td>${formatCell(row.last_sync_at)}</td>
+                <td>${formatCell(row.last_error)}</td>
+                <td>
+                  <button class="table-button" data-action="refresh-source" data-source-id="${row.id}">刷新</button>
+                </td>
+              </tr>
+            `,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
 }
 
 function renderTable(target, rows, columns) {

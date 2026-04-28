@@ -16,6 +16,7 @@
 - 会话 Cookie 按实际请求协议设置 Secure，支持 HTTPS 反代和 HTTP 局域网调试。
 - 团队、用户、Token 基础页面创建和列表。
 - 上游来源页面创建和列表。
+- subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。
 - 上游来源自动前缀。
 - 重复来源名前缀自动编号，例如 `[机场A]`、`[机场A-2]`。
 - 节点 URI 页面批量导入。
@@ -69,6 +70,7 @@ POST /api/tokens/{id}/revoke
 GET   /api/sources
 POST  /api/sources
 PATCH /api/sources/{id}
+POST  /api/sources/{id}/refresh
 POST  /api/sources/{id}/regenerate-node-names
 
 GET   /api/nodes
@@ -128,7 +130,8 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 下一步需要继续实现：
 
-- 上游订阅 URL 自动拉取和解析。
+- 上游订阅定时同步。
+- 上游订阅更多协议格式解析和失效节点标记。
 - 完整协议 URI 到 sing-box outbound 的转换。
 - 策略管理。
 - Token 续期、追加额度、恢复。

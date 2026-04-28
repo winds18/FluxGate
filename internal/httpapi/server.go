@@ -19,6 +19,7 @@ import (
 	"github.com/winds18/FluxGate/internal/singbox"
 	"github.com/winds18/FluxGate/internal/store"
 	"github.com/winds18/FluxGate/internal/subscription"
+	"github.com/winds18/FluxGate/internal/upstream"
 )
 
 //go:embed static/*
@@ -64,6 +65,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/sources", s.handleListSources)
 	s.mux.HandleFunc("POST /api/sources", s.handleCreateSource)
 	s.mux.HandleFunc("PATCH /api/sources/{id}", s.handleUpdateSource)
+	s.mux.HandleFunc("POST /api/sources/{id}/refresh", s.handleRefreshSource)
 	s.mux.HandleFunc("POST /api/sources/{id}/regenerate-node-names", s.handleRegenerateSourceNodeNames)
 
 	s.mux.HandleFunc("GET /api/nodes", s.handleListNodes)
@@ -308,6 +310,73 @@ func (s *Server) handleUpdateSource(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, source)
+}
+
+func (s *Server) handleRefreshSource(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	source, err := s.store.GetSource(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	result, err := s.refreshSource(r.Context(), source)
+	if err != nil {
+		_ = s.store.SetSourceSyncError(r.Context(), source.ID, err.Error())
+		s.logger.Info("source refresh failed",
+			"request_id", requestIDFromContext(r.Context()),
+			"source_id", source.ID,
+			"source_type", source.Type,
+			"reason", err.Error(),
+		)
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	updatedSource, err := s.store.GetSource(r.Context(), source.ID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	s.logger.Info("source refresh succeeded",
+		"request_id", requestIDFromContext(r.Context()),
+		"source_id", source.ID,
+		"source_type", source.Type,
+		"imported", result.Imported,
+		"updated", result.Updated,
+		"skipped", result.Skipped,
+	)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"source": updatedSource,
+		"result": result,
+	})
+}
+
+func (s *Server) refreshSource(ctx context.Context, source store.Source) (store.ImportResult, error) {
+	content := source.RawContent
+	if strings.TrimSpace(source.URL) != "" {
+		fetched, err := upstream.Fetcher{}.Fetch(ctx, source.URL)
+		if err != nil {
+			return store.ImportResult{}, err
+		}
+		content = fetched
+	}
+	normalized, err := upstream.NormalizeContent(content)
+	if err != nil {
+		return store.ImportResult{}, err
+	}
+	if err := s.store.UpdateSourceRawContent(ctx, source.ID, normalized); err != nil {
+		return store.ImportResult{}, err
+	}
+	result, err := s.store.ImportNodes(ctx, store.ImportNodesInput{
+		SourceID: source.ID,
+		Content:  normalized,
+	})
+	if err != nil {
+		return result, err
+	}
+	return result, nil
 }
 
 func (s *Server) handleRegenerateSourceNodeNames(w http.ResponseWriter, r *http.Request) {

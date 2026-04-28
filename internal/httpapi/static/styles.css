@@ -154,6 +154,10 @@ button {
   padding: 0 12px;
 }
 
+.table-button {
+  min-height: 30px;
+}
+
 .ghost-button {
   background: #ffffff;
   border: 1px solid #cbd6e2;

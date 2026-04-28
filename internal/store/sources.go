@@ -4,10 +4,13 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"regexp"
 	"strings"
 
 	"github.com/winds18/FluxGate/internal/naming"
 )
+
+var whitespaceRE = regexp.MustCompile(`\s+`)
 
 type CreateSourceInput struct {
 	Name                   string `json:"name"`
@@ -167,6 +170,31 @@ func (s *Store) RegenerateSourceNodeNames(ctx context.Context, sourceID int64) e
 		WHERE source_id = ?
 		  AND name_mode = 'auto'
 	`, source.DisplayPrefix, sourceID)
+	return err
+}
+
+func (s *Store) UpdateSourceRawContent(ctx context.Context, id int64, rawContent string) error {
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE upstream_sources
+		SET raw_content = ?,
+		    last_error = '',
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, rawContent, id)
+	return err
+}
+
+func (s *Store) SetSourceSyncError(ctx context.Context, id int64, message string) error {
+	message = whitespaceRE.ReplaceAllString(strings.TrimSpace(message), " ")
+	if len(message) > 240 {
+		message = message[:240]
+	}
+	_, err := s.db.ExecContext(ctx, `
+		UPDATE upstream_sources
+		SET last_error = ?,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, message, id)
 	return err
 }
 

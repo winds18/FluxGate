@@ -38,7 +38,7 @@ log "disk:"
 df -h "$ROOT_DIR" || df -h .
 df -i "$ROOT_DIR" || true
 
-for port in 8080 8443 8444 8445; do
+for port in 8080 18080 8443 8444 8445; do
   if command -v lsof >/dev/null 2>&1; then
     if lsof -i TCP:"$port" -sTCP:LISTEN >/dev/null 2>&1; then
       log "port $port: occupied"

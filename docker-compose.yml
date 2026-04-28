@@ -10,7 +10,7 @@ services:
       - ./data:/app/data
       - ./logs/fluxgate:/app/logs
     ports:
-      - "127.0.0.1:8080:8080"
+      - "${FLUXGATE_HOST_BIND:-127.0.0.1}:${FLUXGATE_HTTP_PORT:-18080}:8080"
     depends_on:
       - sing-box
     networks:

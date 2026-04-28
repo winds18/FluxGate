@@ -43,7 +43,7 @@ SSH 别名：66.10
 端口：
 
 ```text
-8080/tcp  HTTP API，仅反代或内网访问
+18080/tcp  宿主机 HTTP API，仅反代或内网访问，容器内仍为 8080
 ```
 
 挂载：
@@ -110,7 +110,7 @@ services:
       - ./logs/fluxgate:/app/logs
       - /var/run/docker.sock:/var/run/docker.sock
     ports:
-      - "127.0.0.1:8080:8080"
+      - "${FLUXGATE_HOST_BIND:-127.0.0.1}:${FLUXGATE_HTTP_PORT:-18080}:8080"
     depends_on:
       - sing-box
 
@@ -151,6 +151,8 @@ networks:
 APP_ENV=production
 HTTP_ADDR=0.0.0.0:8080
 PUBLIC_BASE_URL=https://gateway.example.com
+FLUXGATE_HOST_BIND=127.0.0.1
+FLUXGATE_HTTP_PORT=18080
 
 DB_PATH=/app/data/fluxgate.db
 

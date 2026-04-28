@@ -2,7 +2,7 @@
 set -euo pipefail
 source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 
-BASE_URL="${PUBLIC_BASE_URL:-http://127.0.0.1:8080}"
+BASE_URL="${VERIFY_BASE_URL:-http://127.0.0.1:${FLUXGATE_HTTP_PORT:-18080}}"
 DEPLOY_ID="${DEPLOY_ID:-deploy-$(timestamp)}"
 LOG_DIR="$ROOT_DIR/logs/deploy"
 ensure_dir "$LOG_DIR"

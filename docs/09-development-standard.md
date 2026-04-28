@@ -91,12 +91,14 @@ scripts/
 │   ├── remote-build.sh
 │   ├── deploy-local.sh
 │   ├── deploy-remote.sh
+│   ├── remote-logs.sh
 │   ├── verify-remote.sh
 │   └── collect-diagnostics.sh
 ├── git/
 │   └── init-repo.sh
 └── qa/
     ├── api-flow.sh
+    ├── browser-login.sh
     ├── cleanup.sh
     ├── local-suite.sh
     ├── public-scan.sh
@@ -122,6 +124,8 @@ scripts/
 - `docker ps` 等状态查询命令
 - `docker compose ps` 等状态查询命令
 - 查看日志的只读命令
+
+Go 开发脚本统一使用项目内 `tmp/go-build-cache`，避免验证过程向用户系统缓存目录写入；测试结束由 `scripts/qa/cleanup.sh` 清理。
 
 禁止的临散 shell 写操作：
 

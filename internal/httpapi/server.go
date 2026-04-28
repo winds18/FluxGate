@@ -93,8 +93,14 @@ func (s *Server) middleware(next http.Handler) http.Handler {
 		w.Header().Set("x-request-id", requestID)
 		ctx := context.WithValue(r.Context(), requestIDKey{}, requestID)
 		if s.requiresAdmin(r.URL.Path) {
-			admin, ok := s.currentAdmin(r)
+			admin, reason, ok := s.currentAdmin(r)
 			if !ok {
+				s.logger.Info("admin session rejected",
+					"request_id", requestID,
+					"path", redactedPath(r.URL.Path),
+					"remote_addr", r.RemoteAddr,
+					"reason", reason,
+				)
 				writeError(w, http.StatusUnauthorized, "login required")
 				s.logger.Info("request completed",
 					"request_id", requestID,
@@ -156,8 +162,14 @@ func (s *Server) handleReady(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleAuthSession(w http.ResponseWriter, r *http.Request) {
-	admin, ok := s.currentAdmin(r)
+	admin, reason, ok := s.currentAdmin(r)
 	if !ok {
+		s.logger.Info("admin session rejected",
+			"request_id", requestIDFromContext(r.Context()),
+			"path", redactedPath(r.URL.Path),
+			"remote_addr", r.RemoteAddr,
+			"reason", reason,
+		)
 		writeError(w, http.StatusUnauthorized, "login required")
 		return
 	}
@@ -174,6 +186,12 @@ func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 	}
 	admin, err := s.store.AuthenticateAdmin(r.Context(), input.Username, input.Password)
 	if err != nil {
+		s.logger.Info("admin login failed",
+			"request_id", requestIDFromContext(r.Context()),
+			"username_present", strings.TrimSpace(input.Username) != "",
+			"remote_addr", r.RemoteAddr,
+			"reason", "invalid_credentials",
+		)
 		writeError(w, http.StatusUnauthorized, "invalid username or password")
 		return
 	}
@@ -183,28 +201,41 @@ func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	http.SetCookie(w, s.sessionCookie(r, session, int(adminSessionTTL.Seconds())))
+	s.logger.Info("admin login succeeded",
+		"request_id", requestIDFromContext(r.Context()),
+		"admin_id", admin.ID,
+		"remote_addr", r.RemoteAddr,
+		"secure_cookie", isHTTPSRequest(r),
+	)
 	writeJSON(w, http.StatusOK, map[string]any{"admin": admin})
 }
 
 func (s *Server) handleAuthLogout(w http.ResponseWriter, r *http.Request) {
 	http.SetCookie(w, s.sessionCookie(r, "", -1))
+	s.logger.Info("admin logout",
+		"request_id", requestIDFromContext(r.Context()),
+		"remote_addr", r.RemoteAddr,
+	)
 	writeJSON(w, http.StatusOK, map[string]any{"status": "logged_out"})
 }
 
-func (s *Server) currentAdmin(r *http.Request) (store.Admin, bool) {
+func (s *Server) currentAdmin(r *http.Request) (store.Admin, string, bool) {
 	cookie, err := r.Cookie(adminSessionCookie)
 	if err != nil || cookie.Value == "" {
-		return store.Admin{}, false
+		return store.Admin{}, "missing_cookie", false
 	}
 	adminID, ok := security.VerifySessionToken(s.cfg.SessionSecret, cookie.Value, time.Now().UTC())
 	if !ok {
-		return store.Admin{}, false
+		return store.Admin{}, "invalid_or_expired_session", false
 	}
 	admin, err := s.store.GetAdmin(r.Context(), adminID)
-	if err != nil || admin.Status != "active" {
-		return store.Admin{}, false
+	if err != nil {
+		return store.Admin{}, "admin_not_found", false
 	}
-	return admin, true
+	if admin.Status != "active" {
+		return store.Admin{}, "admin_inactive", false
+	}
+	return admin, "", true
 }
 
 func (s *Server) sessionCookie(r *http.Request, value string, maxAge int) *http.Cookie {
@@ -573,3 +604,8 @@ func remoteIP(r *http.Request) string {
 }
 
 type requestIDKey struct{}
+
+func requestIDFromContext(ctx context.Context) string {
+	requestID, _ := ctx.Value(requestIDKey{}).(string)
+	return requestID
+}

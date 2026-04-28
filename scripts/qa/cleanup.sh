@@ -20,8 +20,12 @@ if [[ "$KEEP_ARTIFACTS" != "true" ]]; then
   rm -rf "$ROOT_DIR/logs/qa"
   rm -rf "$ROOT_DIR/logs/deploy"
   rm -rf "$ROOT_DIR/logs/diagnostics"
+  rm -rf "$ROOT_DIR/test-results"
+  rm -rf "$ROOT_DIR/playwright-report"
 else
   rm -rf "$ROOT_DIR/tmp/build"
+  rm -rf "$ROOT_DIR/tmp/go-build-cache"
+  rm -rf "$ROOT_DIR/tmp/playwright-browser-login-output"
   rm -f "$ROOT_DIR/tmp/qa-server.log"
   find "$ROOT_DIR/tmp" -type d -empty -delete 2>/dev/null || true
 fi

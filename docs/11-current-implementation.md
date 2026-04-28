@@ -41,6 +41,7 @@
 - 部署时宿主机 HTTP 端口默认使用 `127.0.0.1:18080`，避免和服务器已有 8080 服务冲突。
 - 部署侧可通过未跟踪配置打开局域网访问，不把真实环境信息提交到公开仓库。
 - 页面截图验收脚本。
+- 浏览器登录验收脚本。
 - 本地 QA 套件退出自动清理临时产物。
 
 ## 2. 当前 API 骨架
@@ -96,8 +97,10 @@ scripts/db/migrate.sh
 scripts/qa/public-scan.sh
 scripts/qa/smoke.sh
 scripts/qa/api-flow.sh
+scripts/qa/browser-login.sh
 scripts/qa/screenshot.sh
 scripts/qa/local-suite.sh
+scripts/deploy/remote-logs.sh
 scripts/deploy/probe-env.sh
 scripts/deploy/push-and-deploy.sh
 DRY_RUN=true scripts/deploy/cleanup-disk.sh
@@ -108,6 +111,7 @@ docker compose config
 
 ```text
 KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退出会自动清理截图。
+scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录验收。
 ```
 
 截图结论：

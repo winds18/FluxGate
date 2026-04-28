@@ -145,10 +145,45 @@ logs/
 
 - 脚本日志必须有开始时间、结束时间、耗时和退出码。
 - 服务日志必须有 request id。
+- 管理员登录必须记录成功、失败、登出和会话拒绝原因。
 - 配置发布必须有 config version。
 - 统计采集必须记录采集周期和 delta。
 - Token 状态变化必须记录原因。
 - 部署失败必须自动收集诊断包。
+
+认证链路关键事件：
+
+```text
+admin login succeeded
+admin login failed
+admin logout
+admin session rejected
+```
+
+`admin session rejected` 必须包含 `reason` 字段，当前原因包括：
+
+```text
+missing_cookie
+invalid_or_expired_session
+admin_not_found
+admin_inactive
+```
+
+远程日志只读查看：
+
+```text
+scripts/deploy/remote-logs.sh fluxgate
+LINES=500 scripts/deploy/remote-logs.sh fluxgate
+FOLLOW=true scripts/deploy/remote-logs.sh all
+```
+
+局域网浏览器登录验收：
+
+```text
+scripts/qa/browser-login.sh http://<lan-host>:<port>
+```
+
+也可以在未跟踪的 `.env.deploy.local` 中设置 `REMOTE_BROWSER_BASE_URL`，脚本会自动读取。
 
 ## 6. 诊断采集
 

@@ -15,6 +15,7 @@ trap cleanup EXIT
 
 log "building FluxGate binary"
 cd "$ROOT_DIR"
+setup_go_cache
 run_logged go build -trimpath -o "$OUT_DIR/fluxgate" ./cmd/fluxgate
 if [[ "$KEEP_ARTIFACTS" == "true" ]]; then
   log "binary built: $OUT_DIR/fluxgate"

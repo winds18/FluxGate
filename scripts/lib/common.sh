@@ -23,6 +23,11 @@ require_cmd() {
   fi
 }
 
+setup_go_cache() {
+  export GOCACHE="${GOCACHE:-$ROOT_DIR/tmp/go-build-cache}"
+  ensure_dir "$GOCACHE"
+}
+
 run_logged() {
   log "+ $*"
   "$@"

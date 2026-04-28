@@ -182,12 +182,12 @@ func (s *Server) handleAuthLogin(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, "failed to create session")
 		return
 	}
-	http.SetCookie(w, s.sessionCookie(session, int(adminSessionTTL.Seconds())))
+	http.SetCookie(w, s.sessionCookie(r, session, int(adminSessionTTL.Seconds())))
 	writeJSON(w, http.StatusOK, map[string]any{"admin": admin})
 }
 
 func (s *Server) handleAuthLogout(w http.ResponseWriter, r *http.Request) {
-	http.SetCookie(w, s.sessionCookie("", -1))
+	http.SetCookie(w, s.sessionCookie(r, "", -1))
 	writeJSON(w, http.StatusOK, map[string]any{"status": "logged_out"})
 }
 
@@ -207,7 +207,7 @@ func (s *Server) currentAdmin(r *http.Request) (store.Admin, bool) {
 	return admin, true
 }
 
-func (s *Server) sessionCookie(value string, maxAge int) *http.Cookie {
+func (s *Server) sessionCookie(r *http.Request, value string, maxAge int) *http.Cookie {
 	return &http.Cookie{
 		Name:     adminSessionCookie,
 		Value:    value,
@@ -215,8 +215,18 @@ func (s *Server) sessionCookie(value string, maxAge int) *http.Cookie {
 		MaxAge:   maxAge,
 		HttpOnly: true,
 		SameSite: http.SameSiteLaxMode,
-		Secure:   strings.HasPrefix(s.cfg.PublicBaseURL, "https://"),
+		Secure:   isHTTPSRequest(r),
 	}
+}
+
+func isHTTPSRequest(r *http.Request) bool {
+	if r.TLS != nil {
+		return true
+	}
+	if strings.EqualFold(r.Header.Get("x-forwarded-proto"), "https") {
+		return true
+	}
+	return strings.Contains(strings.ToLower(r.Header.Get("forwarded")), "proto=https")
 }
 
 func (s *Server) handleOverview(w http.ResponseWriter, r *http.Request) {

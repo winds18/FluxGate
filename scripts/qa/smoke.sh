@@ -18,12 +18,17 @@ if [[ "$status_code" != "401" ]]; then
 fi
 if [[ -n "$ADMIN_USERNAME" && -n "$ADMIN_PASSWORD" ]]; then
   ensure_dir "$(dirname "$COOKIE_JAR")"
-  log "+ curl -fsS -c $COOKIE_JAR -X POST $BASE_URL/api/auth/login -H content-type:application/json --data <redacted> -o /dev/null"
-  curl -fsS -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" \
+  login_headers="$COOKIE_JAR.headers"
+  log "+ curl -fsS -D $login_headers -c $COOKIE_JAR -X POST $BASE_URL/api/auth/login -H content-type:application/json --data <redacted> -o /dev/null"
+  curl -fsS -D "$login_headers" -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" \
     -H 'content-type: application/json' \
     --data "{\"username\":\"$ADMIN_USERNAME\",\"password\":\"$ADMIN_PASSWORD\"}" \
     -o /dev/null
+  if [[ "$BASE_URL" == http://* ]] && grep -i '^Set-Cookie:.*Secure' "$login_headers" >/dev/null; then
+    log "HTTP login response must not set Secure cookies"
+    exit 1
+  fi
   run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/overview"
-  rm -f "$COOKIE_JAR"
+  rm -f "$COOKIE_JAR" "$login_headers"
 fi
 log "smoke tests passed"

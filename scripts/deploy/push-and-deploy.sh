@@ -70,7 +70,7 @@ if [[ -n "${REMOTE_FLUXGATE_HOST_BIND:-}" || -n "${REMOTE_FLUXGATE_HTTP_PORT:-}"
     scripts/deploy/configure-access.sh
 fi
 DEPLOY_ID="$DEPLOY_ID" REMOTE_BUILD_ENABLED=true scripts/deploy/deploy-remote.sh
-PUBLIC_BASE_URL="$VERIFY_BASE_URL" DEPLOY_ID="$DEPLOY_ID" scripts/deploy/verify-remote.sh
+PUBLIC_BASE_URL="$VERIFY_BASE_URL" DEPLOY_ID="$DEPLOY_ID" VERIFY_ADMIN_USERNAME="${REMOTE_ADMIN_BOOTSTRAP_USERNAME:-}" VERIFY_ADMIN_PASSWORD="${REMOTE_ADMIN_BOOTSTRAP_PASSWORD:-}" scripts/deploy/verify-remote.sh
 REMOTE
 
 log "push and deploy finished: deploy_id=$DEPLOY_ID"

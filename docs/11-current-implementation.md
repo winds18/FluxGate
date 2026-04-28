@@ -34,6 +34,7 @@
 - 磁盘清理脚本。
 - 诊断采集脚本。
 - 推送后远程部署脚本。
+- 远程验收健康检查重试。
 - 首次远程部署最小 sing-box config bootstrap。
 - 远程 Docker build 支持 `GOPROXY`，默认优先使用 `goproxy.cn` 以避开 `proxy.golang.org` 超时。
 - 部署时宿主机 HTTP 端口默认使用 `127.0.0.1:18080`，避免和服务器已有 8080 服务冲突。

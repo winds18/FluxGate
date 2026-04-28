@@ -173,6 +173,7 @@ DISK_WARN_PERCENT=80
 DISK_CRITICAL_PERCENT=90
 DEPLOY_ALLOW_DISK_CLEANUP=true
 REMOTE_BUILD_ENABLED=true
+GOPROXY=https://goproxy.cn,https://proxy.golang.org,direct
 ```
 
 ## 6. 部署脚本要求

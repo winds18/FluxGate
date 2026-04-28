@@ -30,6 +30,7 @@
 - 诊断采集脚本。
 - 推送后远程部署脚本。
 - 首次远程部署最小 sing-box config bootstrap。
+- 远程 Docker build 支持 `GOPROXY`，默认优先使用 `goproxy.cn` 以避开 `proxy.golang.org` 超时。
 - 页面截图验收脚本。
 - 本地 QA 套件退出自动清理临时产物。
 

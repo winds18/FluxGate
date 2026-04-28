@@ -13,5 +13,5 @@ exec > >(tee "$LOG_FILE") 2>&1
 require_cmd docker
 log "building image remotely: $IMAGE"
 cd "$ROOT_DIR"
-run_logged docker build -t "$IMAGE" .
+run_logged docker build --build-arg "GOPROXY=${GOPROXY:-https://goproxy.cn,https://proxy.golang.org,direct}" -t "$IMAGE" .
 log "remote build complete: $IMAGE"

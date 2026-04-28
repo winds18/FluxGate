@@ -18,6 +18,14 @@ export DRY_RUN="${DRY_RUN:-false}"
 run_logged "$ROOT_DIR/scripts/deploy/cleanup-disk.sh"
 run_logged "$ROOT_DIR/scripts/db/backup.sh"
 run_logged "$ROOT_DIR/scripts/sing-box/backup-config.sh"
-run_logged docker compose pull
+
+REMOTE_BUILD_ENABLED="${REMOTE_BUILD_ENABLED:-true}"
+if [[ "$REMOTE_BUILD_ENABLED" == "true" ]]; then
+  run_logged "$ROOT_DIR/scripts/deploy/remote-build.sh"
+  run_logged docker compose pull sing-box
+else
+  run_logged docker compose pull
+fi
+
 run_logged docker compose up -d
 log "deployment finished: $DEPLOY_ID"

@@ -86,6 +86,7 @@ scripts/
 │   ├── probe-env.sh
 │   ├── bootstrap-remote.sh
 │   ├── cleanup-disk.sh
+│   ├── push-and-deploy.sh
 │   ├── remote-build.sh
 │   ├── deploy-local.sh
 │   ├── deploy-remote.sh

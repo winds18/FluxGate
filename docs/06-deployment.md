@@ -185,6 +185,7 @@ REMOTE_BUILD_ENABLED=true
 scripts/deploy/probe-env.sh
 scripts/deploy/bootstrap-remote.sh
 scripts/deploy/cleanup-disk.sh
+scripts/deploy/push-and-deploy.sh
 scripts/deploy/remote-build.sh
 scripts/deploy/deploy-remote.sh
 scripts/deploy/verify-remote.sh
@@ -274,6 +275,23 @@ docker compose up -d
 
 只有在明确需要服务器构建时，才通过 `scripts/deploy/remote-build.sh` 执行。
 
+FluxGate 当前默认使用远程构建闭环：
+
+```text
+scripts/deploy/push-and-deploy.sh
+```
+
+该脚本会：
+
+- 推送当前分支到 GitHub。
+- SSH 到 `66.10`。
+- 在 `/home/wings/docker/FluxGate` clone 或更新同名分支。
+- 执行远程环境探测。
+- 检查并按策略清理磁盘。
+- 在远程构建 FluxGate 镜像。
+- 启动 Docker Compose。
+- 执行远程健康检查。
+
 ## 7. 首次部署流程
 
 ```bash
@@ -306,9 +324,7 @@ scripts/deploy/verify-remote.sh
 ssh 66.10
 cd /home/wings/docker/FluxGate
 git pull
-scripts/deploy/probe-env.sh
-scripts/deploy/deploy-remote.sh
-scripts/deploy/verify-remote.sh
+scripts/deploy/push-and-deploy.sh
 ```
 
 升级前建议：

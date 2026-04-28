@@ -28,6 +28,7 @@
 - 远程部署探测脚本。
 - 磁盘清理脚本。
 - 诊断采集脚本。
+- 推送后远程部署脚本。
 - 页面截图验收脚本。
 - 本地 QA 套件退出自动清理临时产物。
 
@@ -83,6 +84,7 @@ scripts/qa/api-flow.sh
 scripts/qa/screenshot.sh
 scripts/qa/local-suite.sh
 scripts/deploy/probe-env.sh
+scripts/deploy/push-and-deploy.sh
 DRY_RUN=true scripts/deploy/cleanup-disk.sh
 docker compose config
 ```

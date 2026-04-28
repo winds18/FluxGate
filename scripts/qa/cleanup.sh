@@ -13,15 +13,17 @@ rm -f "$ROOT_DIR/data/fluxgate.db" \
       "$ROOT_DIR/data/qa-fluxgate.db-shm" \
       "$ROOT_DIR/data/qa-fluxgate.db-wal"
 
-rm -rf "$ROOT_DIR/tmp/build"
-rm -f "$ROOT_DIR/tmp/qa-server.log"
-find "$ROOT_DIR/tmp" -type d -empty -delete 2>/dev/null || true
 rm -rf "$ROOT_DIR/logs/fluxgate" "$ROOT_DIR/logs/fluxgate-qa"
 
 if [[ "$KEEP_ARTIFACTS" != "true" ]]; then
+  rm -rf "$ROOT_DIR/tmp"
   rm -rf "$ROOT_DIR/logs/qa"
   rm -rf "$ROOT_DIR/logs/deploy"
   rm -rf "$ROOT_DIR/logs/diagnostics"
+else
+  rm -rf "$ROOT_DIR/tmp/build"
+  rm -f "$ROOT_DIR/tmp/qa-server.log"
+  find "$ROOT_DIR/tmp" -type d -empty -delete 2>/dev/null || true
 fi
 
 find "$ROOT_DIR" -name .DS_Store -type f -delete

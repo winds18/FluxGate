@@ -48,6 +48,15 @@ SSH 别名：<REMOTE_HOST>
 18080/tcp  宿主机 HTTP API，仅反代或内网访问，容器内仍为 8080
 ```
 
+默认绑定 `127.0.0.1`，适合只通过反代访问。需要局域网直接访问管理后台时，在服务器 `.env` 或本机未跟踪部署配置中设置：
+
+```text
+FLUXGATE_HOST_BIND=0.0.0.0
+FLUXGATE_HTTP_PORT=18080
+```
+
+公网环境不要裸露管理后台；如果必须开放端口，应配合防火墙、访问控制和 HTTPS 反代。
+
 挂载：
 
 ```text
@@ -189,6 +198,7 @@ GOPROXY=https://goproxy.cn,https://proxy.golang.org,direct
 ```text
 scripts/deploy/probe-env.sh
 scripts/deploy/bootstrap-remote.sh
+scripts/deploy/configure-access.sh
 scripts/deploy/cleanup-disk.sh
 scripts/deploy/push-and-deploy.sh
 scripts/deploy/remote-build.sh

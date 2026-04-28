@@ -113,3 +113,10 @@ KEEP_ARTIFACTS=true scripts/qa/local-suite.sh
 ```bash
 scripts/dev/stop.sh
 ```
+
+默认 Docker Compose 只绑定 `127.0.0.1`。如果需要在局域网访问管理后台，在部署侧未跟踪配置中设置：
+
+```bash
+REMOTE_FLUXGATE_HOST_BIND=0.0.0.0
+REMOTE_FLUXGATE_HTTP_PORT=18080
+```

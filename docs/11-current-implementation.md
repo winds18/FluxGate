@@ -126,5 +126,6 @@ KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退�
 
 - `docker compose config` 已支持没有 `.env` 时做静态校验。
 - 生产部署仍应由 `scripts/deploy/bootstrap-remote.sh` 生成 `.env` 后再修改密钥。
+- 需要局域网访问管理后台时，通过部署侧配置 `FLUXGATE_HOST_BIND=0.0.0.0` 和 `FLUXGATE_HTTP_PORT`，公开仓库不保存真实访问地址。
 - 本地 QA 产生的 `data/`、`logs/`、`tmp/` 均被 `.gitignore` 排除，并默认在测试退出时清理。
 - Playwright Chromium 已在本机安装一次，后续截图脚本会复用缓存。

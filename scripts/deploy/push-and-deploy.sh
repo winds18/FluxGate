@@ -12,6 +12,10 @@ REMOTE_HOST="${REMOTE_HOST:-}"
 REMOTE_DIR="${REMOTE_DIR:-}"
 REMOTE_URL="${REMOTE_URL:-$(git -C "$ROOT_DIR" config --get remote.origin.url || true)}"
 REMOTE_CLONE_URL="${REMOTE_CLONE_URL:-}"
+REMOTE_FLUXGATE_HOST_BIND="${REMOTE_FLUXGATE_HOST_BIND:-}"
+REMOTE_FLUXGATE_HTTP_PORT="${REMOTE_FLUXGATE_HTTP_PORT:-}"
+REMOTE_PUBLIC_BASE_URL="${REMOTE_PUBLIC_BASE_URL:-}"
+VERIFY_BASE_URL="${VERIFY_BASE_URL:-http://127.0.0.1:${REMOTE_FLUXGATE_HTTP_PORT:-18080}}"
 BRANCH_NAME="${BRANCH_NAME:-$(git -C "$ROOT_DIR" rev-parse --abbrev-ref HEAD)}"
 DEPLOY_ID="${DEPLOY_ID:-deploy-$(date -u +%Y%m%d-%H%M%S)-$(git -C "$ROOT_DIR" rev-parse --short HEAD)}"
 
@@ -34,7 +38,7 @@ log "push and deploy started: branch=$BRANCH_NAME deploy_id=$DEPLOY_ID"
 run_logged git push -u origin "$BRANCH_NAME"
 
 ssh "$REMOTE_HOST" \
-  "REMOTE_DIR='$REMOTE_DIR' REMOTE_CLONE_URL='$REMOTE_CLONE_URL' BRANCH_NAME='$BRANCH_NAME' DEPLOY_ID='$DEPLOY_ID' bash -s" <<'REMOTE'
+  "REMOTE_DIR='$REMOTE_DIR' REMOTE_CLONE_URL='$REMOTE_CLONE_URL' BRANCH_NAME='$BRANCH_NAME' DEPLOY_ID='$DEPLOY_ID' REMOTE_FLUXGATE_HOST_BIND='$REMOTE_FLUXGATE_HOST_BIND' REMOTE_FLUXGATE_HTTP_PORT='$REMOTE_FLUXGATE_HTTP_PORT' REMOTE_PUBLIC_BASE_URL='$REMOTE_PUBLIC_BASE_URL' VERIFY_BASE_URL='$VERIFY_BASE_URL' bash -s" <<'REMOTE'
 set -euo pipefail
 
 if [[ ! -d "$REMOTE_DIR/.git" ]]; then
@@ -55,8 +59,14 @@ git switch "$BRANCH_NAME"
 git reset --hard "origin/$BRANCH_NAME"
 
 scripts/deploy/bootstrap-remote.sh
+if [[ -n "${REMOTE_FLUXGATE_HOST_BIND:-}" || -n "${REMOTE_FLUXGATE_HTTP_PORT:-}" || -n "${REMOTE_PUBLIC_BASE_URL:-}" ]]; then
+  FLUXGATE_HOST_BIND="${REMOTE_FLUXGATE_HOST_BIND:-}" \
+    FLUXGATE_HTTP_PORT="${REMOTE_FLUXGATE_HTTP_PORT:-}" \
+    PUBLIC_BASE_URL="${REMOTE_PUBLIC_BASE_URL:-}" \
+    scripts/deploy/configure-access.sh
+fi
 DEPLOY_ID="$DEPLOY_ID" REMOTE_BUILD_ENABLED=true scripts/deploy/deploy-remote.sh
-PUBLIC_BASE_URL="${PUBLIC_BASE_URL:-http://127.0.0.1:8080}" DEPLOY_ID="$DEPLOY_ID" scripts/deploy/verify-remote.sh
+PUBLIC_BASE_URL="$VERIFY_BASE_URL" DEPLOY_ID="$DEPLOY_ID" scripts/deploy/verify-remote.sh
 REMOTE
 
 log "push and deploy finished: deploy_id=$DEPLOY_ID"

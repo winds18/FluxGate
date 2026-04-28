@@ -41,13 +41,15 @@ sing-box Data Plane
 
 FluxGate 不做真实代理转发，不解密 HTTPS 内容。它可以统计用户、节点和出口维度的流量、连接元数据和订阅访问情况，但不做 MITM 内容审计。
 
-## 计划部署位置
+## 部署配置
 
 ```text
-服务器 SSH 别名：66.10
-部署路径：/home/wings/docker/FluxGate
-远程仓库：git@github.com:winds18/FluxGate.git
+服务器 SSH 别名：通过本机未跟踪的 .env.deploy.local 配置
+部署路径：通过本机未跟踪的 .env.deploy.local 配置
+远程仓库：使用当前 Git remote 或显式 REMOTE_URL
 ```
+
+公开仓库不保存真实服务器别名、主机路径、生产域名、Token、密钥或部署探测日志。
 
 ## 文档目录
 
@@ -92,6 +94,12 @@ scripts/qa/screenshot.sh
 
 ```bash
 scripts/qa/local-suite.sh
+```
+
+推送或部署前执行公开仓库脱敏检查：
+
+```bash
+scripts/qa/public-scan.sh
 ```
 
 如需保留截图或 API 响应用于排查：

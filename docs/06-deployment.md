@@ -3,15 +3,17 @@
 ## 1. 目标环境
 
 ```text
-SSH 别名：66.10
-部署目录：/home/wings/docker/FluxGate
-远程仓库：git@github.com:winds18/FluxGate.git
+SSH 别名：<REMOTE_HOST>
+部署目录：<REMOTE_DIR>
+远程仓库：<REMOTE_URL>
 ```
+
+公开仓库不记录真实服务器别名、主机路径、生产域名、密钥、Token 或部署探测日志；这些值只允许放在本机未跟踪配置或服务器 `.env` 中。
 
 ## 2. 服务器目录结构
 
 ```text
-/home/wings/docker/FluxGate
+<REMOTE_DIR>
 ├── docker-compose.yml
 ├── .env
 ├── data/
@@ -287,8 +289,8 @@ scripts/deploy/push-and-deploy.sh
 该脚本会：
 
 - 推送当前分支到 GitHub。
-- SSH 到 `66.10`。
-- 在 `/home/wings/docker/FluxGate` clone 或更新同名分支。服务器默认使用 HTTPS clone，避免依赖服务器 GitHub SSH key。
+- SSH 到 `REMOTE_HOST` 指定的服务器。
+- 在 `REMOTE_DIR` 指定目录 clone 或更新同名分支。服务器默认使用 `REMOTE_CLONE_URL`，避免依赖服务器 GitHub SSH key。
 - 执行远程环境探测。
 - 检查并按策略清理磁盘。
 - 在远程构建 FluxGate 镜像。
@@ -300,8 +302,8 @@ scripts/deploy/push-and-deploy.sh
 ## 7. 首次部署流程
 
 ```bash
-ssh 66.10
-cd /home/wings/docker/FluxGate
+ssh <REMOTE_HOST>
+cd <REMOTE_DIR>
 scripts/deploy/bootstrap-remote.sh
 scripts/deploy/probe-env.sh
 scripts/deploy/deploy-remote.sh
@@ -326,8 +328,8 @@ scripts/deploy/verify-remote.sh
 ## 8. 更新流程
 
 ```bash
-ssh 66.10
-cd /home/wings/docker/FluxGate
+ssh <REMOTE_HOST>
+cd <REMOTE_DIR>
 git pull
 scripts/deploy/push-and-deploy.sh
 ```

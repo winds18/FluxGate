@@ -46,7 +46,7 @@ FluxGate 的开发、部署和调试必须形成自闭环：
 
 ```text
 本地测试通过
--> ssh 66.10
+-> ssh <REMOTE_HOST>
 -> scripts/deploy/remote-build.sh
 -> 服务器构建镜像
 -> scripts/deploy/deploy-remote.sh

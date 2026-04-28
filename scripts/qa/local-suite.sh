@@ -15,6 +15,7 @@ cleanup() {
 trap cleanup EXIT
 
 log "running local QA suite"
+"$ROOT_DIR/scripts/qa/public-scan.sh"
 PORT="$PORT" "$ROOT_DIR/scripts/dev/stop.sh" >/dev/null 2>&1 || true
 KEEP_ARTIFACTS="$KEEP_ARTIFACTS" "$ROOT_DIR/scripts/qa/cleanup.sh"
 ensure_dir "$ROOT_DIR/tmp"

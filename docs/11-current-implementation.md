@@ -120,7 +120,7 @@ KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退�
 - 超额自动阻断。
 - sing-box config 发布、check、回滚的 API 集成。
 - GitHub Actions 远程镜像构建。
-- 远程服务器 `66.10` 实际部署验证。
+- 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
 
 ## 5. 当前注意事项
 

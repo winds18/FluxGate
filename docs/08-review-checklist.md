@@ -58,8 +58,8 @@
 
 ## 8. 部署
 
-- [ ] 部署路径是否确认是 `/home/wings/docker/FluxGate`？
-- [ ] 远程仓库是否确认是 `git@github.com:winds18/FluxGate.git`？
+- [ ] 部署路径是否只存在于本机未跟踪配置或服务器 `.env` 中？
+- [ ] 远程仓库是否通过当前 Git remote 或显式 `REMOTE_URL` 配置？
 - [ ] 是否已有域名？
 - [ ] 是否已有反代 Caddy/Nginx？
 - [ ] 管理后台是否需要限制访问 IP？
@@ -69,6 +69,7 @@
 - [ ] 磁盘 warning/critical 阈值是否采用 80%/90%？
 - [ ] 磁盘快满时允许自动清理哪些内容？
 - [ ] 部署失败时是否必须自动采集诊断日志？
+- [ ] 推送前是否执行 `scripts/qa/public-scan.sh` 并通过？
 
 ## 9. MVP 验收
 

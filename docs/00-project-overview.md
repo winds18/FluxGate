@@ -75,4 +75,4 @@ MVP 先打通最短可运营闭环：
 - 原始上游节点不会直接暴露给团队成员。
 - FluxGate 可以看到每个用户的真实用量。
 - 禁用或过期用户后，新连接无法继续使用。
-- 服务器可以通过 Docker Compose 一键部署在 `/home/wings/docker/FluxGate`。
+- 服务器可以通过 Docker Compose 一键部署在运维侧配置的目标目录。

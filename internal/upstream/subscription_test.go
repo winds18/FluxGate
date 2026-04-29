@@ -132,6 +132,26 @@ func TestNormalizeContentJSONWrappedRawContentURIList(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONWrappedStructuredSubscription(t *testing.T) {
+	raw := `{
+  "data": {
+    "raw_content": "proxies:\n  - name: \"香港 JSON 包装\"\n    type: ss\n    server: wrapped-clash.example.net\n    port: 8388\n    cipher: aes-128-gcm\n    password: \"qa-placeholder\""
+  },
+  "embedded_sing_box": "{\"outbounds\":[{\"type\":\"direct\",\"tag\":\"直连 JSON 包装\"}]}"
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@wrapped-clash.example.net:8388#%E9%A6%99%E6%B8%AF%20JSON%20%E5%8C%85%E8%A3%85",
+		"direct://default#%E7%9B%B4%E8%BF%9E%20JSON%20%E5%8C%85%E8%A3%85",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON wrapped structured subscription: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONNamedObjectMap(t *testing.T) {
 	raw := `{
   "香港 03": "vless://00000000-0000-0000-0000-000000000082@example.com:443",

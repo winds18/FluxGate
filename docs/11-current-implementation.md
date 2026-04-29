@@ -26,7 +26,7 @@
 - 上游来源 `default_tags` 会在节点导入或刷新时同步到节点标签。
 - subscription 来源刷新时，本次订阅中消失的旧节点会标记为 `inactive`。
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
-- subscription 来源支持解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段内的 base64 URI 列表也会归一化。
+- subscription 来源支持解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段内的 URI 列表、Clash YAML、SIP008、sing-box JSON 和 base64 内嵌订阅内容也会归一化。
 - subscription 来源支持解析以节点名称为 key 的 JSON URI 对象映射；当 URI 缺少 fragment 时会使用映射 key 或对象内 `name` 作为节点名。
 - subscription 来源支持解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点。
 - Clash YAML 解析支持嵌套 `proxies` 列表，可兼容带内嵌 provider 节点清单的订阅结构。

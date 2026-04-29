@@ -258,8 +258,15 @@ func applyJSONURIName(normalized, name string) string {
 }
 
 func normalizedStringURIList(value string) string {
-	if normalized := URIList(value); normalized != "" {
-		return normalized
+	for _, normalize := range []func(string) string{
+		URIList,
+		ClashYAMLURIList,
+		SIP008URIList,
+		SingBoxJSONURIList,
+	} {
+		if normalized := normalize(value); normalized != "" {
+			return normalized
+		}
 	}
 	compact := strings.Map(func(r rune) rune {
 		switch r {
@@ -282,8 +289,16 @@ func normalizedStringURIList(value string) string {
 		if err != nil {
 			continue
 		}
-		if normalized := URIList(string(decoded)); normalized != "" {
-			return normalized
+		decodedContent := string(decoded)
+		for _, normalize := range []func(string) string{
+			URIList,
+			ClashYAMLURIList,
+			SIP008URIList,
+			SingBoxJSONURIList,
+		} {
+			if normalized := normalize(decodedContent); normalized != "" {
+				return normalized
+			}
 		}
 	}
 	return ""

@@ -76,7 +76,7 @@
 - 上游节点手动导入。
 - subscription 类型来源手动刷新导入。
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
-- subscription 来源可解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象。
+- subscription 来源可解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段中的内嵌 Clash YAML、SIP008、sing-box JSON 和 base64 订阅内容也会归一化。
 - subscription 来源可解析以节点名称为 key 的 JSON URI 对象映射。
 - subscription 来源支持按刷新间隔自动同步到期订阅。
 - subscription 来源可解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点。

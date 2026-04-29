@@ -1,6 +1,7 @@
 package singbox
 
 import (
+	"encoding/base64"
 	"testing"
 	"time"
 
@@ -49,6 +50,7 @@ func TestBuildConfigFiltersUnusableGatewayTokens(t *testing.T) {
 }
 
 func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
+	ssCredential := base64.RawURLEncoding.EncodeToString([]byte("aes-128-gcm:qa-placeholder"))
 	config := buildConfig(nil, []store.VirtualNode{
 		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
 	}, []store.Node{
@@ -75,8 +77,15 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         45,
-			URI:        "ss://placeholder@example.org:443#unsupported",
+			URI:        "ss://" + ssCredential + "@example.net:8388#ss",
 			Protocol:   "ss",
+			ServerPort: 8388,
+			Status:     "active",
+		},
+		{
+			ID:         46,
+			URI:        "vmess://placeholder#unsupported",
+			Protocol:   "vmess",
 			ServerPort: 443,
 			Status:     "active",
 		},
@@ -110,7 +119,17 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if !ok || trojanTLS["enabled"] != true || trojanTLS["server_name"] != "trojan.example.org" {
 		t.Fatalf("unexpected trojan tls config: %+v", trojan["tls"])
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_45") != nil {
+	shadowsocks := findOutbound(config.Outbounds, "up_45")
+	if shadowsocks == nil {
+		t.Fatalf("expected shadowsocks outbound up_45, got %+v", config.Outbounds)
+	}
+	if shadowsocks["type"] != "shadowsocks" || shadowsocks["server"] != "example.net" || shadowsocks["server_port"] != 8388 {
+		t.Fatalf("unexpected shadowsocks server fields: %+v", shadowsocks)
+	}
+	if shadowsocks["method"] != "aes-128-gcm" || shadowsocks["password"] != "qa-placeholder" {
+		t.Fatalf("unexpected shadowsocks auth fields: %+v", shadowsocks)
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_46") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -119,7 +138,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 2 || tags[0] != "up_42" || tags[1] != "up_44" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 3 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

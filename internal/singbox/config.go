@@ -1,9 +1,11 @@
 package singbox
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"net/url"
+	"strconv"
 	"strings"
 	"time"
 
@@ -143,6 +145,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildVLESSOutbound(node)
 	case "trojan":
 		return buildTrojanOutbound(node)
+	case "ss":
+		return buildShadowsocksOutbound(node)
 	default:
 		return nil, false
 	}
@@ -219,6 +223,107 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 		outbound["tls"] = tls
 	}
 	return outbound, true
+}
+
+func buildShadowsocksOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "ss" {
+		return nil, false
+	}
+	method, password, server, port, ok := parseShadowsocksURI(node.URI, node.ServerPort)
+	if !ok {
+		return nil, false
+	}
+	return map[string]any{
+		"type":        "shadowsocks",
+		"tag":         upstreamTag(node),
+		"server":      server,
+		"server_port": port,
+		"method":      method,
+		"password":    password,
+	}, true
+}
+
+func parseShadowsocksURI(rawURI string, fallbackPort int) (string, string, string, int, bool) {
+	parsed, err := url.Parse(strings.TrimSpace(rawURI))
+	if err != nil || parsed.Scheme != "ss" {
+		return "", "", "", 0, false
+	}
+	if parsed.User != nil && parsed.Hostname() != "" {
+		method, password, ok := shadowsocksUserInfo(parsed.User)
+		if !ok {
+			return "", "", "", 0, false
+		}
+		return method, password, parsed.Hostname(), portWithFallback(parsed.Port(), fallbackPort, 8388), true
+	}
+
+	encoded := strings.TrimPrefix(strings.TrimSpace(rawURI), "ss://")
+	encoded = strings.SplitN(encoded, "#", 2)[0]
+	encoded = strings.SplitN(encoded, "?", 2)[0]
+	decoded, ok := decodeBase64URL(encoded)
+	if !ok {
+		return "", "", "", 0, false
+	}
+	legacy, err := url.Parse("ss://" + decoded)
+	if err != nil || legacy.User == nil || legacy.Hostname() == "" {
+		return "", "", "", 0, false
+	}
+	method, password, ok := shadowsocksUserInfo(legacy.User)
+	if !ok {
+		return "", "", "", 0, false
+	}
+	return method, password, legacy.Hostname(), portWithFallback(legacy.Port(), fallbackPort, 8388), true
+}
+
+func shadowsocksUserInfo(user *url.Userinfo) (string, string, bool) {
+	if user == nil {
+		return "", "", false
+	}
+	method := strings.TrimSpace(user.Username())
+	password, hasPassword := user.Password()
+	password = strings.TrimSpace(password)
+	if hasPassword && method != "" && password != "" {
+		return method, password, true
+	}
+	decoded, ok := decodeBase64URL(method)
+	if !ok {
+		return "", "", false
+	}
+	method, password, ok = strings.Cut(decoded, ":")
+	method = strings.TrimSpace(method)
+	password = strings.TrimSpace(password)
+	return method, password, ok && method != "" && password != ""
+}
+
+func decodeBase64URL(value string) (string, bool) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", false
+	}
+	for _, encoding := range []*base64.Encoding{
+		base64.StdEncoding,
+		base64.RawStdEncoding,
+		base64.URLEncoding,
+		base64.RawURLEncoding,
+	} {
+		decoded, err := encoding.DecodeString(value)
+		if err == nil {
+			return string(decoded), true
+		}
+	}
+	return "", false
+}
+
+func portWithFallback(raw string, fallbackPort int, defaultPort int) int {
+	if raw != "" {
+		port, err := strconv.Atoi(raw)
+		if err == nil && port > 0 {
+			return port
+		}
+	}
+	if fallbackPort > 0 {
+		return fallbackPort
+	}
+	return defaultPort
 }
 
 func upstreamTag(node store.Node) string {

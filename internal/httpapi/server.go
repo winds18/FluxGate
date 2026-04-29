@@ -89,6 +89,7 @@ func (s *Server) routes() {
 
 	s.mux.HandleFunc("POST /api/sing-box/config/generate", s.handleGenerateSingBoxConfig)
 	s.mux.HandleFunc("POST /api/sing-box/config/check", s.handleCheckSingBoxConfig)
+	s.mux.HandleFunc("POST /api/sing-box/config/publish", s.handlePublishSingBoxConfig)
 	s.mux.HandleFunc("GET /sub/{token}", s.handleSubscription)
 }
 
@@ -611,6 +612,24 @@ func (s *Server) handleCheckSingBoxConfig(w http.ResponseWriter, r *http.Request
 		status = http.StatusUnprocessableEntity
 	}
 	writeJSON(w, status, result)
+}
+
+func (s *Server) handlePublishSingBoxConfig(w http.ResponseWriter, r *http.Request) {
+	config, err := s.buildSingBoxConfig(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	result, err := singbox.PublishConfig(config, s.cfg.SingBoxConfigPath, s.cfg.SingBoxPreviousConfigPath)
+	if err != nil {
+		if !result.Valid {
+			writeJSON(w, http.StatusUnprocessableEntity, result)
+			return
+		}
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) buildSingBoxConfig(ctx context.Context) (singbox.Config, error) {

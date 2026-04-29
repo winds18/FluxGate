@@ -108,6 +108,9 @@ run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/che
 config_check_valid="$(json_value "data.valid" <"$OUT_DIR/sing-box-check.json")"
 config_check_hash="$(json_value "data.config_hash" <"$OUT_DIR/sing-box-check.json")"
 config_check_upstreams="$(json_value "data.upstream_outbound_count" <"$OUT_DIR/sing-box-check.json")"
+run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/publish" -o "$OUT_DIR/sing-box-publish.json"
+config_publish_done="$(json_value "data.published" <"$OUT_DIR/sing-box-publish.json")"
+config_publish_hash="$(json_value "data.config_hash" <"$OUT_DIR/sing-box-publish.json")"
 
 if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   log "unexpected auto prefix for duplicate source: $source_b_prefix"
@@ -166,6 +169,11 @@ fi
 
 if [[ "$config_check_valid" != "true" || -z "$config_check_hash" || "$config_check_upstreams" -lt 1 ]]; then
   log "sing-box config check should pass with upstreams: valid=$config_check_valid hash=$config_check_hash upstreams=$config_check_upstreams"
+  exit 1
+fi
+
+if [[ "$config_publish_done" != "true" || "$config_publish_hash" != "$config_check_hash" ]]; then
+  log "sing-box config publish should persist checked config: published=$config_publish_done publish_hash=$config_publish_hash check_hash=$config_check_hash"
   exit 1
 fi
 

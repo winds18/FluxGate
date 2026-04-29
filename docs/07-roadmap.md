@@ -64,6 +64,7 @@
 - sing-box config.json 生成。
 - `sing-box check` 校验。
 - 管理后台可触发 sing-box config check 并查看配置摘要。
+- 管理后台可发布 sing-box config 文件并保存上一版。
 - 发布配置并重启容器。
 
 验收：

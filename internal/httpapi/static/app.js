@@ -15,6 +15,7 @@ const virtualNodesEl = document.querySelector("#virtual-nodes");
 const tokensEl = document.querySelector("#tokens");
 const refreshEl = document.querySelector("#refresh");
 const configCheckEl = document.querySelector("#config-check");
+const configPublishEl = document.querySelector("#config-publish");
 const configCheckResultEl = document.querySelector("#config-check-result");
 const teamForm = document.querySelector("#team-form");
 const userForm = document.querySelector("#user-form");
@@ -29,6 +30,7 @@ const tokenResultEl = document.querySelector("#token-result");
 
 refreshEl.addEventListener("click", load);
 configCheckEl.addEventListener("click", checkConfig);
+configPublishEl.addEventListener("click", publishConfig);
 logoutEl.addEventListener("click", logout);
 loginForm.addEventListener("submit", login);
 teamForm.addEventListener("submit", submitTeam);
@@ -259,6 +261,26 @@ async function checkConfig() {
     statusEl.textContent = "配置异常";
   } finally {
     configCheckEl.disabled = false;
+  }
+}
+
+async function publishConfig() {
+  configPublishEl.disabled = true;
+  statusEl.textContent = "发布配置中";
+  try {
+    const result = await postJSON("/api/sing-box/config/publish", {});
+    configCheckResultEl.hidden = false;
+    configCheckResultEl.innerHTML = `
+      <strong>${result.published ? "发布完成" : "发布失败"}</strong>
+      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} previous=${result.previous_saved ? "yes" : "no"} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
+    `;
+    statusEl.textContent = result.published ? "配置已发布" : "发布失败";
+  } catch (error) {
+    configCheckResultEl.hidden = false;
+    configCheckResultEl.innerHTML = `<strong>发布失败</strong><code>${escapeHTML(error.message)}</code>`;
+    statusEl.textContent = "发布失败";
+  } finally {
+    configPublishEl.disabled = false;
   }
 }
 

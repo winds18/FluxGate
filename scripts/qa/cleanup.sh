@@ -11,7 +11,9 @@ rm -f "$ROOT_DIR/data/fluxgate.db" \
       "$ROOT_DIR/data/fluxgate.db-wal" \
       "$ROOT_DIR/data/qa-fluxgate.db" \
       "$ROOT_DIR/data/qa-fluxgate.db-shm" \
-      "$ROOT_DIR/data/qa-fluxgate.db-wal"
+      "$ROOT_DIR/data/qa-fluxgate.db-wal" \
+      "$ROOT_DIR/data/sing-box/config.json" \
+      "$ROOT_DIR/data/sing-box/config.previous.json"
 
 rm -rf "$ROOT_DIR/logs/fluxgate" "$ROOT_DIR/logs/fluxgate-qa"
 
@@ -30,6 +32,8 @@ else
   find "$ROOT_DIR/tmp" -type d -empty -delete 2>/dev/null || true
 fi
 
+ensure_dir "$ROOT_DIR/data"
+ensure_dir "$ROOT_DIR/data/sing-box"
 find "$ROOT_DIR" -name .DS_Store -type f -delete
 
 log "QA temporary artifacts cleaned"

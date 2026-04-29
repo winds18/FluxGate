@@ -139,8 +139,17 @@ main {
   align-items: center;
   border-bottom: 1px solid #e5ebf0;
   display: flex;
+  gap: 12px;
   justify-content: space-between;
   padding: 14px 16px;
+}
+
+.button-row {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 button {

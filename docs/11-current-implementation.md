@@ -30,6 +30,7 @@
 - Clash YAML 解析支持常见块状和内联 `ws-opts`、`grpc-opts` 嵌套写法，能保留 WebSocket path/host 和 gRPC service name。
 - Clash YAML 解析支持行内和块状数组标量，例如 `alpn: [h2, http/1.1]`、`alpn: ... - h2` 和 WireGuard `allowed-ips`/`reserved` 列表。
 - subscription 来源支持解析 SIP008 Shadowsocks 订阅。
+- SIP008、Clash YAML 和 sing-box JSON 的 Shadowsocks 节点会保留 SIP003 `plugin`、`plugin_opts` 和 `network` 参数，并同步到 sing-box outbound。
 - subscription 来源支持解析 sing-box JSON `outbounds` 中的常见 Shadowsocks/Trojan/VLESS/VMess/Hysteria2/TUIC/AnyTLS/ShadowTLS/Hysteria/HTTP/SOCKS/SSH/WireGuard/Tor 节点。
 - subscription 来源支持解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
 - sing-box JSON `outbounds` 和 `endpoints` 支持数组、单个对象和按名称分组的对象映射；对象映射缺少 `tag`/`name` 时会使用映射键作为节点名。

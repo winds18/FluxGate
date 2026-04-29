@@ -63,6 +63,9 @@ proxies:
     port: 8388
     cipher: aes-128-gcm
     password: "qa-placeholder"
+    plugin: v2ray-plugin
+    plugin-opts: mode=websocket;host=ss-plugin.example.test
+    network: tcp
   - { name: "东京 01", type: trojan, server: trojan.example.test, port: 443, password: "trojan-placeholder", sni: edge.example.test, skip-cert-verify: true, disable-sni: true, alpn: "h2,http/1.1", network: ws, ws-opts: { path: /trojan, headers: { Host: ws.trojan.example.test } } }
   - name: "首尔 01"
     type: vless
@@ -173,7 +176,13 @@ proxy-groups:
 	if len(lines) != 14 {
 		t.Fatalf("expected 14 normalized nodes, got %d: %q", len(lines), got)
 	}
-	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388#")
+	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388?")
+	if !strings.Contains(lines[0], "plugin=v2ray-plugin") ||
+		!strings.Contains(lines[0], "plugin_opts=mode%3Dwebsocket%3Bhost%3Dss-plugin.example.test") ||
+		!strings.Contains(lines[0], "network=tcp") ||
+		!strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%2001") {
+		t.Fatalf("unexpected clash shadowsocks URI: %q", lines[0])
+	}
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.example.test:443?")
 	if !strings.Contains(lines[1], "sni=edge.example.test") ||
 		!strings.Contains(lines[1], "insecure=1") ||
@@ -469,7 +478,10 @@ func TestNormalizeContentSIP008(t *testing.T) {
       "server": "sip008.example.test",
       "server_port": 8388,
       "method": "aes-256-gcm",
-      "password": "qa-placeholder"
+      "password": "qa-placeholder",
+      "plugin": "obfs-local",
+      "plugin_opts": "obfs=http;obfs-host=sip008.example.test",
+      "network": "tcp"
     },
     {
       "remarks": "skip me",
@@ -487,8 +499,11 @@ func TestNormalizeContentSIP008(t *testing.T) {
 	if len(lines) != 1 {
 		t.Fatalf("expected 1 normalized node, got %d: %q", len(lines), got)
 	}
-	assertHasPrefix(t, lines[0], "ss://aes-256-gcm:qa-placeholder@sip008.example.test:8388#")
-	if !strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%2002") {
+	assertHasPrefix(t, lines[0], "ss://aes-256-gcm:qa-placeholder@sip008.example.test:8388?")
+	if !strings.Contains(lines[0], "plugin=obfs-local") ||
+		!strings.Contains(lines[0], "plugin_opts=obfs%3Dhttp%3Bobfs-host%3Dsip008.example.test") ||
+		!strings.Contains(lines[0], "network=tcp") ||
+		!strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%2002") {
 		t.Fatalf("unexpected SIP008 URI fragment: %q", lines[0])
 	}
 }
@@ -507,7 +522,10 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
       "server": "ss.singbox.example.test",
       "server_port": 8388,
       "method": "aes-128-gcm",
-      "password": "qa-placeholder"
+      "password": "qa-placeholder",
+      "plugin": "v2ray-plugin",
+      "plugin_opts": "mode=websocket;host=ss.singbox.example.test",
+      "network": "tcp"
     },
     {
       "type": "trojan",
@@ -717,7 +735,13 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	if len(lines) != 14 {
 		t.Fatalf("expected 14 normalized nodes, got %d: %q", len(lines), got)
 	}
-	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.singbox.example.test:8388#")
+	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.singbox.example.test:8388?")
+	if !strings.Contains(lines[0], "plugin=v2ray-plugin") ||
+		!strings.Contains(lines[0], "plugin_opts=mode%3Dwebsocket%3Bhost%3Dss.singbox.example.test") ||
+		!strings.Contains(lines[0], "network=tcp") ||
+		!strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%2003") {
+		t.Fatalf("unexpected sing-box shadowsocks URI: %q", lines[0])
+	}
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.singbox.example.test:443?")
 	if !strings.Contains(lines[1], "sni=edge.singbox.example.test") ||
 		!strings.Contains(lines[1], "insecure=1") ||

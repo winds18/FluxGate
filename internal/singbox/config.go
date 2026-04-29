@@ -444,14 +444,27 @@ func buildShadowsocksOutbound(node store.Node) (map[string]any, bool) {
 	if !ok {
 		return nil, false
 	}
-	return map[string]any{
+	outbound := map[string]any{
 		"type":        "shadowsocks",
 		"tag":         upstreamTag(node),
 		"server":      server,
 		"server_port": port,
 		"method":      method,
 		"password":    password,
-	}, true
+	}
+	if parsed, err := url.Parse(strings.TrimSpace(node.URI)); err == nil {
+		query := parsed.Query()
+		if plugin := strings.TrimSpace(query.Get("plugin")); plugin != "" {
+			outbound["plugin"] = plugin
+		}
+		if pluginOpts := firstNonEmpty(query.Get("plugin_opts"), query.Get("plugin-opts"), query.Get("plugin_options"), query.Get("plugin-options")); pluginOpts != "" {
+			outbound["plugin_opts"] = pluginOpts
+		}
+		if network := strings.TrimSpace(query.Get("network")); network != "" {
+			outbound["network"] = network
+		}
+	}
+	return outbound, true
 }
 
 func buildVMessOutbound(node store.Node) (map[string]any, bool) {

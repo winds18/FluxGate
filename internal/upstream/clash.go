@@ -135,12 +135,26 @@ func clashShadowsocksURI(proxy map[string]string) string {
 	if server == "" || port == "" || method == "" || password == "" {
 		return ""
 	}
-	return (&url.URL{
+	values := url.Values{}
+	if plugin := firstMapValue(proxy, "plugin"); plugin != "" {
+		values.Set("plugin", plugin)
+	}
+	if pluginOpts := firstMapValue(proxy, "plugin-opts", "plugin_opts", "plugin-options", "plugin_options"); pluginOpts != "" {
+		values.Set("plugin_opts", pluginOpts)
+	}
+	if network := firstMapValue(proxy, "network", "protocol"); network != "" {
+		values.Set("network", network)
+	}
+	result := &url.URL{
 		Scheme:   "ss",
 		User:     url.UserPassword(method, password),
 		Host:     net.JoinHostPort(server, port),
 		Fragment: firstMapValue(proxy, "name"),
-	}).String()
+	}
+	if len(values) > 0 {
+		result.RawQuery = values.Encode()
+	}
+	return result.String()
 }
 
 func clashTrojanURI(proxy map[string]string) string {

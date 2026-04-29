@@ -139,6 +139,11 @@ func singBoxShadowsocksURI(outbound map[string]any) string {
 		"method":   singBoxString(outbound, "method"),
 		"password": singBoxString(outbound, "password"),
 	}
+	for _, key := range []string{"plugin", "plugin_opts", "network"} {
+		if value := singBoxString(outbound, key); value != "" {
+			proxy[key] = value
+		}
+	}
 	return clashShadowsocksURI(proxy)
 }
 

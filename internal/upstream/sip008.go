@@ -37,12 +37,26 @@ func sip008ServerURI(server map[string]any) string {
 	if host == "" || port == "" || method == "" || password == "" {
 		return ""
 	}
-	return (&url.URL{
+	values := url.Values{}
+	if plugin := jsonFieldString(server, "plugin"); plugin != "" {
+		values.Set("plugin", plugin)
+	}
+	if pluginOpts := jsonFieldString(server, "plugin_opts", "pluginOpts", "plugin-options", "plugin_options"); pluginOpts != "" {
+		values.Set("plugin_opts", pluginOpts)
+	}
+	if network := jsonFieldString(server, "network"); network != "" {
+		values.Set("network", network)
+	}
+	result := &url.URL{
 		Scheme:   "ss",
 		User:     url.UserPassword(method, password),
 		Host:     net.JoinHostPort(host, port),
 		Fragment: firstNonEmptyString(jsonFieldString(server, "remarks", "name", "id"), host),
-	}).String()
+	}
+	if len(values) > 0 {
+		result.RawQuery = values.Encode()
+	}
+	return result.String()
 }
 
 func jsonFieldString(fields map[string]any, keys ...string) string {

@@ -94,7 +94,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         45,
-			URI:        "ss://" + ssCredential + "@example.net:8388#ss",
+			URI:        "ss://" + ssCredential + "@example.net:8388?plugin=v2ray-plugin&plugin_opts=mode%3Dwebsocket%3Bhost%3Dss.example.net&network=tcp#ss",
 			Protocol:   "ss",
 			ServerPort: 8388,
 			Status:     "active",
@@ -264,6 +264,9 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	}
 	if shadowsocks["method"] != "aes-128-gcm" || shadowsocks["password"] != "qa-placeholder" {
 		t.Fatalf("unexpected shadowsocks auth fields: %+v", shadowsocks)
+	}
+	if shadowsocks["plugin"] != "v2ray-plugin" || shadowsocks["plugin_opts"] != "mode=websocket;host=ss.example.net" || shadowsocks["network"] != "tcp" {
+		t.Fatalf("unexpected shadowsocks plugin fields: %+v", shadowsocks)
 	}
 	vmess := findOutbound(config.Outbounds, "up_46")
 	if vmess == nil {

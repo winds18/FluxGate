@@ -997,6 +997,45 @@ func TestBuildConfigPreservesVMessGRPCTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsVMessUserinfoURI(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         72,
+			URI:        "vmess://00000000-0000-0000-0000-000000000072@userinfo.vmess.example:443?encryption=auto&security=tls&type=ws&path=%2Fvmess&host=ws.vmess.example&sni=sni.vmess.example&alpn=h2,http%2F1.1&insecure=1&disable_sni=1#VMess%20Userinfo",
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_72")
+	if outbound == nil {
+		t.Fatalf("expected vmess outbound up_72, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "vmess" || outbound["server"] != "userinfo.vmess.example" || outbound["server_port"] != 443 {
+		t.Fatalf("unexpected vmess userinfo server fields: %+v", outbound)
+	}
+	if outbound["uuid"] != "00000000-0000-0000-0000-000000000072" || outbound["security"] != "auto" {
+		t.Fatalf("unexpected vmess userinfo auth fields: %+v", outbound)
+	}
+	tls, ok := outbound["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "sni.vmess.example" || tls["insecure"] != true || tls["disable_sni"] != true {
+		t.Fatalf("unexpected vmess userinfo tls config: %+v", outbound["tls"])
+	}
+	alpn, ok := tls["alpn"].([]string)
+	if !ok || len(alpn) != 2 || alpn[0] != "h2" || alpn[1] != "http/1.1" {
+		t.Fatalf("unexpected vmess userinfo alpn config: %+v", tls["alpn"])
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "ws" || transport["path"] != "/vmess" {
+		t.Fatalf("unexpected vmess userinfo transport config: %+v", outbound["transport"])
+	}
+	headers, ok := transport["headers"].(map[string]any)
+	if !ok || headers["Host"] != "ws.vmess.example" {
+		t.Fatalf("unexpected vmess userinfo transport headers: %+v", transport["headers"])
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

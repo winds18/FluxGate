@@ -86,6 +86,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan REALITY 的 public key、short id 和 uTLS fingerprint 参数，并同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan WebSocket/gRPC 传输参数，并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VMess gRPC 传输参数，并同步为 sing-box outbound transport。
+- VMess 可兼容 `vmess://uuid@host:port?...` userinfo 直连 URI，并保留 TLS、WebSocket、SNI、ALPN 和跳过证书校验参数。
 - Clash YAML 和 URI 导入链路会保留 Hysteria `recv_window_conn`、`recv_window` 和 `disable_mtu_discovery` 参数，并同步为 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 `up_mbps`、`down_mbps`、`insecure`、`disable_sni`、`alpn` 和证书 pin 参数，并同步为 sing-box outbound。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。

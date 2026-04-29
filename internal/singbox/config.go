@@ -1248,6 +1248,9 @@ func parseVMessURI(rawURI string) (map[string]any, bool) {
 	if !strings.HasPrefix(rawURI, "vmess://") {
 		return nil, false
 	}
+	if doc, ok := parseVMessUserinfoURI(rawURI); ok {
+		return doc, true
+	}
 	payload := strings.TrimPrefix(rawURI, "vmess://")
 	payload = strings.TrimSpace(payload)
 	if payload == "" {
@@ -1260,6 +1263,45 @@ func parseVMessURI(rawURI string) (map[string]any, bool) {
 	var doc map[string]any
 	if err := json.Unmarshal([]byte(decoded), &doc); err != nil {
 		return nil, false
+	}
+	return doc, true
+}
+
+func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
+	parsed, err := url.Parse(rawURI)
+	if err != nil || parsed.Scheme != "vmess" || parsed.Hostname() == "" || parsed.User == nil {
+		return nil, false
+	}
+	uuid := strings.TrimSpace(parsed.User.Username())
+	if uuid == "" {
+		return nil, false
+	}
+	query := parsed.Query()
+	doc := map[string]any{
+		"v":    "2",
+		"ps":   strings.TrimSpace(parsed.Fragment),
+		"add":  parsed.Hostname(),
+		"port": firstNonEmpty(parsed.Port(), "443"),
+		"id":   uuid,
+		"aid":  firstNonEmpty(query.Get("alterId"), query.Get("alterid"), query.Get("alter-id"), query.Get("aid"), "0"),
+		"scy":  firstNonEmpty(query.Get("encryption"), query.Get("scy"), query.Get("cipher"), "auto"),
+		"net":  firstNonEmpty(query.Get("type"), query.Get("net"), query.Get("network"), "tcp"),
+		"type": firstNonEmpty(query.Get("headerType"), query.Get("header-type"), query.Get("header_type")),
+		"host": firstNonEmpty(query.Get("host"), query.Get("authority")),
+		"path": query.Get("path"),
+		"sni":  firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name")),
+		"alpn": query.Get("alpn"),
+	}
+	if strings.EqualFold(query.Get("security"), "tls") ||
+		strings.EqualFold(query.Get("tls"), "tls") ||
+		boolQuery(query.Get("tls")) {
+		doc["tls"] = "tls"
+	}
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) {
+		doc["allowInsecure"] = "1"
+	}
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+		doc["disable_sni"] = "1"
 	}
 	return doc, true
 }

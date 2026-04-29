@@ -161,6 +161,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildNaiveOutbound(node)
 	case "hysteria":
 		return buildHysteriaOutbound(node)
+	case "http", "https":
+		return buildHTTPOutbound(node)
 	default:
 		return nil, false
 	}
@@ -637,6 +639,53 @@ func buildHysteriaOutbound(node store.Node) (map[string]any, bool) {
 		tls["alpn"] = alpn
 	}
 	outbound["tls"] = tls
+
+	return outbound, true
+}
+
+func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || (node.Protocol != "http" && node.Protocol != "https") {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" {
+		return nil, false
+	}
+
+	defaultPort := 80
+	if parsed.Scheme == "https" {
+		defaultPort = 443
+	}
+	outbound := map[string]any{
+		"type":        "http",
+		"tag":         upstreamTag(node),
+		"server":      parsed.Hostname(),
+		"server_port": portWithFallback(parsed.Port(), node.ServerPort, defaultPort),
+	}
+
+	username, password := userPassword(parsed.User)
+	if username != "" {
+		outbound["username"] = username
+	}
+	if password != "" {
+		outbound["password"] = password
+	}
+
+	query := parsed.Query()
+	if path := firstNonEmpty(query.Get("path"), parsed.EscapedPath()); path != "" && path != "/" {
+		outbound["path"] = path
+	}
+
+	if parsed.Scheme == "https" || strings.EqualFold(query.Get("security"), "tls") || boolQuery(query.Get("tls")) || firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name")) != "" {
+		tls := map[string]any{"enabled": true}
+		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+			tls["server_name"] = serverName
+		}
+		if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+			tls["insecure"] = true
+		}
+		outbound["tls"] = tls
+	}
 
 	return outbound, true
 }

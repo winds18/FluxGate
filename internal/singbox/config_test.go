@@ -147,6 +147,13 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         53,
+			URI:        "https://qa-user:qa-placeholder@example.proxy:8443/connect?sni=http-proxy.example.proxy&insecure=1#http",
+			Protocol:   "https",
+			ServerPort: 8443,
+			Status:     "active",
+		},
+		{
+			ID:         54,
 			URI:        "wireguard://placeholder@example.org:443#unsupported",
 			Protocol:   "wireguard",
 			ServerPort: 443,
@@ -326,7 +333,21 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if !ok || len(hysteriaALPN) != 1 || hysteriaALPN[0] != "h3" {
 		t.Fatalf("unexpected hysteria alpn config: %+v", hysteriaTLS["alpn"])
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_53") != nil {
+	httpProxy := findOutbound(config.Outbounds, "up_53")
+	if httpProxy == nil {
+		t.Fatalf("expected http outbound up_53, got %+v", config.Outbounds)
+	}
+	if httpProxy["type"] != "http" || httpProxy["server"] != "example.proxy" || httpProxy["server_port"] != 8443 {
+		t.Fatalf("unexpected http server fields: %+v", httpProxy)
+	}
+	if httpProxy["username"] != "qa-user" || httpProxy["password"] != "qa-placeholder" || httpProxy["path"] != "/connect" {
+		t.Fatalf("unexpected http auth or path fields: %+v", httpProxy)
+	}
+	httpTLS, ok := httpProxy["tls"].(map[string]any)
+	if !ok || httpTLS["enabled"] != true || httpTLS["server_name"] != "http-proxy.example.proxy" || httpTLS["insecure"] != true {
+		t.Fatalf("unexpected http tls config: %+v", httpProxy["tls"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_54") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -335,7 +356,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 10 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 11 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

@@ -218,19 +218,19 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			return
 		}
 		handled := map[string]bool{}
-		for _, key := range []string{"uri", "url", "link", "share"} {
+		for _, key := range []string{"uri", "url", "link", "share", "share_link"} {
 			handled[key] = true
 			if item, ok := typed[key]; ok {
 				collectJSONURIs(nodeName, item, uris)
 			}
 		}
-		for _, key := range []string{"content", "raw", "raw_content", "subscription"} {
+		for _, key := range []string{"content", "raw", "raw_content", "rawContent", "subscription", "sub", "payload", "body", "text", "result", "response"} {
 			handled[key] = true
 			if item, ok := typed[key]; ok {
 				collectJSONURIs("", item, uris)
 			}
 		}
-		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data"} {
+		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data", "results", "payloads"} {
 			handled[key] = true
 			if item, ok := typed[key]; ok {
 				collectJSONURIs("", item, uris)

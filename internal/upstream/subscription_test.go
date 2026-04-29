@@ -132,6 +132,37 @@ func TestNormalizeContentJSONWrappedRawContentURIList(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONCommonWrapperFields(t *testing.T) {
+	payload := base64.StdEncoding.EncodeToString([]byte(strings.Join([]string{
+		"vless://00000000-0000-0000-0000-000000000083@example.com:443",
+		"ss://aes-128-gcm:qa-placeholder@example.net:8388#首尔 05",
+	}, "\n")))
+	raw := `{
+  "code": 0,
+  "message": "ok",
+  "result": {
+    "payload": "` + payload + `",
+    "body": {
+      "links": [
+        "trojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京 05"
+      ]
+    }
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"vless://00000000-0000-0000-0000-000000000083@example.com:443",
+		"ss://aes-128-gcm:qa-placeholder@example.net:8388#首尔 05",
+		"trojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京 05",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON common wrapper fields: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONWrappedStructuredSubscription(t *testing.T) {
 	raw := `{
   "data": {

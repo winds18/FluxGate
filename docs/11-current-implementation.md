@@ -27,6 +27,7 @@
 - subscription 来源刷新时，本次订阅中消失的旧节点会标记为 `inactive`。
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
 - subscription 来源支持解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段内的 URI 列表、Clash YAML、SIP008、sing-box JSON 和 base64 内嵌订阅内容也会归一化。
+- JSON 包装订阅支持 `payload`、`result`、`response`、`body`、`text`、`sub` 等常见接口外层字段，不会把这些包装字段误当成节点名称。
 - subscription 来源支持解析以节点名称为 key 的 JSON URI 对象映射；当 URI 缺少 fragment 时会使用映射 key 或对象内 `name` 作为节点名。
 - subscription 来源支持解析裸 VMess JSON 单对象、数组、包装字符串和按名称映射对象，并转换为标准 `vmess://` URI。
 - subscription 来源支持解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI。

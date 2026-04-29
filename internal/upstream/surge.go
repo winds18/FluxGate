@@ -97,6 +97,38 @@ func surgeProxyURI(line string) string {
 			"udp-relay-mode", "udp_relay_mode",
 		)
 		return clashTUICURI(proxy)
+	case "hysteria":
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "auth-str", "auth_str", "password", "passwd", "token")
+		surgeCopyOptions(proxy, options,
+			"auth", "auth-base64", "auth_base64",
+			"up", "up-speed", "up_speed",
+			"down", "down-speed", "down_speed",
+			"up-mbps", "up_mbps", "upmbps",
+			"down-mbps", "down_mbps", "downmbps",
+			"obfs",
+			"recv-window-conn", "recv_window_conn",
+			"recv-window", "recv_window",
+		)
+		if surgeBoolOption(options, "disable-mtu-discovery", "disable_mtu_discovery") {
+			proxy["disable-mtu-discovery"] = "true"
+		}
+		return clashHysteriaURI(proxy)
+	case "anytls", "any-tls":
+		proxy["type"] = "anytls"
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "psk", "token")
+		surgeCopyOptions(proxy, options,
+			"idle-session-check-interval", "idle_session_check_interval",
+			"idle-session-timeout", "idle_session_timeout",
+			"min-idle-session", "min_idle_session",
+		)
+		return clashAnyTLSURI(proxy)
+	case "shadowtls", "shadow-tls":
+		proxy["type"] = "shadowtls"
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "psk", "token")
+		if version := surgeOption(options, "version"); version != "" {
+			proxy["version"] = version
+		}
+		return clashShadowTLSURI(proxy)
 	case "trojan":
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "psk")
 		if proxy["tls"] == "" {

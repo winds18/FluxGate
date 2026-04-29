@@ -1158,6 +1158,73 @@ func TestNormalizeContentSurgeProxyListHysteria2AndTUIC(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyListHysteriaAndTLSHelpers(t *testing.T) {
+	raw := `
+[Proxy]
+香港 Surge Hysteria = hysteria, hysteria.surge.example.test, 443, auth-str=hysteria-auth, up-mbps=25, down-mbps=100, obfs=obfs-placeholder, recv-window-conn=1048576, recv-window=4194304, disable-mtu-discovery=true, protocol=udp, sni=hysteria.surge.example.test, alpn=h3, skip-cert-verify=true
+新加坡 Surge AnyTLS = anytls, anytls.surge.example.test, 443, password=anytls-placeholder, idle-session-check-interval=20s, idle-session-timeout=45s, min-idle-session=2, sni=anytls.surge.example.test, alpn=h2, skip-cert-verify=true
+东京 Surge ShadowTLS = shadow-tls, shadowtls.surge.example.test, 443, password=shadow-placeholder, version=3, sni=shadowtls.surge.example.test, alpn=h2, skip-cert-verify=true
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 Surge Hysteria/TLS helper URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "hysteria://hysteria-auth@hysteria.surge.example.test:443?")
+	for _, want := range []string{
+		"up_mbps=25",
+		"down_mbps=100",
+		"obfs=obfs-placeholder",
+		"recv_window_conn=1048576",
+		"recv_window=4194304",
+		"disable_mtu_discovery=1",
+		"network=udp",
+		"sni=hysteria.surge.example.test",
+		"alpn=h3",
+		"insecure=1",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Surge Hysteria URI to contain %q: %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%20Surge%20Hysteria") {
+		t.Fatalf("unexpected Surge Hysteria fragment: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "anytls://anytls-placeholder@anytls.surge.example.test:443?")
+	for _, want := range []string{
+		"idle_session_check_interval=20s",
+		"idle_session_timeout=45s",
+		"min_idle_session=2",
+		"sni=anytls.surge.example.test",
+		"alpn=h2",
+		"insecure=1",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Surge AnyTLS URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20Surge%20AnyTLS") {
+		t.Fatalf("unexpected Surge AnyTLS fragment: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "shadowtls://shadow-placeholder@shadowtls.surge.example.test:443?")
+	for _, want := range []string{
+		"version=3",
+		"sni=shadowtls.surge.example.test",
+		"alpn=h2",
+		"insecure=1",
+	} {
+		if !strings.Contains(lines[2], want) {
+			t.Fatalf("expected Surge ShadowTLS URI to contain %q: %q", want, lines[2])
+		}
+	}
+	if !strings.HasSuffix(lines[2], "#%E4%B8%9C%E4%BA%AC%20Surge%20ShadowTLS") {
+		t.Fatalf("unexpected Surge ShadowTLS fragment: %q", lines[2])
+	}
+}
+
 func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

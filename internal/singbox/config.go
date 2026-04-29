@@ -479,7 +479,16 @@ func buildVMessOutbound(node store.Node) (map[string]any, bool) {
 		}
 		outbound["tls"] = tls
 	}
-	if strings.EqualFold(stringFromAny(doc["net"]), "ws") {
+	if transport := vmessTransportFromDoc(doc); transport != nil {
+		outbound["transport"] = transport
+	}
+	return outbound, true
+}
+
+func vmessTransportFromDoc(doc map[string]any) map[string]any {
+	transportType := strings.ToLower(strings.TrimSpace(stringFromAny(doc["net"])))
+	switch transportType {
+	case "ws", "websocket":
 		transport := map[string]any{"type": "ws"}
 		if path := strings.TrimSpace(stringFromAny(doc["path"])); path != "" {
 			transport["path"] = path
@@ -487,9 +496,22 @@ func buildVMessOutbound(node store.Node) (map[string]any, bool) {
 		if host := strings.TrimSpace(stringFromAny(doc["host"])); host != "" {
 			transport["headers"] = map[string]any{"Host": host}
 		}
-		outbound["transport"] = transport
+		return transport
+	case "grpc":
+		transport := map[string]any{"type": "grpc"}
+		if serviceName := firstNonEmpty(
+			stringFromAny(doc["path"]),
+			stringFromAny(doc["service_name"]),
+			stringFromAny(doc["serviceName"]),
+			stringFromAny(doc["grpc_service_name"]),
+			stringFromAny(doc["grpc-service-name"]),
+		); serviceName != "" {
+			transport["service_name"] = serviceName
+		}
+		return transport
+	default:
+		return nil
 	}
-	return outbound, true
 }
 
 func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {

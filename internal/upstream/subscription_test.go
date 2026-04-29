@@ -276,6 +276,39 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLVMessGRPC(t *testing.T) {
+	raw := `
+proxies:
+  - name: "大阪 VMess gRPC"
+    type: vmess
+    server: grpc.vmess.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000073
+    alter-id: 0
+    cipher: auto
+    tls: true
+    network: grpc
+    grpc-service-name: fluxgate-vmess
+    sni: grpc.vmess.example.test
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vmess://")
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(got, "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode clash vmess grpc URI: %v", err)
+	}
+	decodedText := string(decoded)
+	if !strings.Contains(decodedText, `"net":"grpc"`) ||
+		!strings.Contains(decodedText, `"path":"fluxgate-vmess"`) ||
+		!strings.Contains(decodedText, `"tls":"tls"`) ||
+		!strings.Contains(decodedText, `"sni":"grpc.vmess.example.test"`) {
+		t.Fatalf("unexpected clash vmess grpc document: %q", decodedText)
+	}
+}
+
 func TestNormalizeContentSIP008(t *testing.T) {
 	raw := `{
   "version": 1,
@@ -636,6 +669,44 @@ func TestNormalizeContentSingBoxJSONVLESSGRPC(t *testing.T) {
 		!strings.Contains(got, "service_name=fluxgate") ||
 		!strings.HasSuffix(got, "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20gRPC") {
 		t.Fatalf("unexpected sing-box vless grpc URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONVMessGRPC(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "vmess",
+      "tag": "东京 VMess gRPC",
+      "server": "grpc.vmess.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000074",
+      "tls": {
+        "enabled": true,
+        "server_name": "grpc.vmess.singbox.example.test"
+      },
+      "transport": {
+        "type": "grpc",
+        "service_name": "fluxgate-vmess"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vmess://")
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(got, "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode sing-box vmess grpc URI: %v", err)
+	}
+	decodedText := string(decoded)
+	if !strings.Contains(decodedText, `"net":"grpc"`) ||
+		!strings.Contains(decodedText, `"path":"fluxgate-vmess"`) ||
+		!strings.Contains(decodedText, `"tls":"tls"`) ||
+		!strings.Contains(decodedText, `"sni":"grpc.vmess.singbox.example.test"`) {
+		t.Fatalf("unexpected sing-box vmess grpc document: %q", decodedText)
 	}
 }
 

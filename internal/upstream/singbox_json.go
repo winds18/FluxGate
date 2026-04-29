@@ -143,6 +143,11 @@ func singBoxVMessURI(outbound map[string]any) string {
 			doc["net"] = transportType
 		}
 		doc["path"] = strings.TrimSpace(stringFromAnyValue(transport["path"]))
+		if strings.EqualFold(doc["net"], "grpc") {
+			if serviceName := strings.TrimSpace(stringFromAnyValue(transport["service_name"])); serviceName != "" {
+				doc["path"] = serviceName
+			}
+		}
 		if headers, ok := transport["headers"].(map[string]any); ok {
 			doc["host"] = strings.TrimSpace(stringFromAnyValue(headers["Host"]))
 			if doc["host"] == "" {

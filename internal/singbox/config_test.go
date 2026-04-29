@@ -641,6 +641,38 @@ func TestBuildConfigPreservesVLESSGRPCTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesVMessGRPCTransport(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID: 71,
+			URI: vmessURI(t, map[string]any{
+				"add":  "vmess.grpc.example",
+				"port": "443",
+				"id":   "00000000-0000-0000-0000-000000000071",
+				"aid":  "0",
+				"scy":  "auto",
+				"net":  "grpc",
+				"path": "fluxgate-vmess",
+				"tls":  "tls",
+				"sni":  "vmess.grpc.example",
+				"ps":   "vmess-grpc",
+			}),
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_71")
+	if outbound == nil {
+		t.Fatalf("expected vmess outbound up_71, got %+v", config.Outbounds)
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "grpc" || transport["service_name"] != "fluxgate-vmess" {
+		t.Fatalf("unexpected vmess grpc transport config: %+v", outbound["transport"])
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

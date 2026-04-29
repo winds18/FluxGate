@@ -160,6 +160,18 @@ func clashVMessURI(proxy map[string]string) string {
 	if server == "" || port == "" || uuid == "" {
 		return ""
 	}
+	network := firstMapValue(proxy, "network")
+	path := firstMapValue(proxy, "ws-path", "ws_path", "path")
+	serviceName := firstMapValue(proxy, "grpc-service-name", "grpc_service_name", "grpc-opts.grpc-service-name", "grpc_opts.grpc_service_name", "service-name", "service_name")
+	if network == "" && serviceName != "" {
+		network = "grpc"
+	}
+	if network == "" {
+		network = "tcp"
+	}
+	if strings.EqualFold(network, "grpc") && serviceName != "" {
+		path = serviceName
+	}
 	doc := map[string]string{
 		"v":    "2",
 		"ps":   firstMapValue(proxy, "name"),
@@ -168,10 +180,10 @@ func clashVMessURI(proxy map[string]string) string {
 		"id":   uuid,
 		"aid":  firstNonEmptyString(firstMapValue(proxy, "alterid", "alter-id", "alter_id"), "0"),
 		"scy":  firstNonEmptyString(firstMapValue(proxy, "cipher"), "auto"),
-		"net":  firstNonEmptyString(firstMapValue(proxy, "network"), "tcp"),
+		"net":  network,
 		"type": firstMapValue(proxy, "header-type", "header_type"),
 		"host": firstMapValue(proxy, "ws-headers.host", "host"),
-		"path": firstMapValue(proxy, "ws-path", "ws_path", "path"),
+		"path": path,
 		"tls":  "",
 		"sni":  firstMapValue(proxy, "sni", "servername", "server_name"),
 		"alpn": firstMapValue(proxy, "alpn"),

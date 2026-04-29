@@ -10,9 +10,10 @@ RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/fluxgate ./cmd/fluxgate
 
-FROM gcr.io/distroless/static-debian12
+FROM scratch
 
 WORKDIR /app
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /out/fluxgate /app/fluxgate
 
 ENV HTTP_ADDR=0.0.0.0:8080

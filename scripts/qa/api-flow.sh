@@ -36,6 +36,13 @@ post_json() {
   run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL$path" -H 'content-type: application/json' --data "$payload" -o "$out"
 }
 
+patch_json() {
+  local path="$1"
+  local payload="$2"
+  local out="$3"
+  run_logged curl -fsS -b "$COOKIE_JAR" -X PATCH "$BASE_URL$path" -H 'content-type: application/json' --data "$payload" -o "$out"
+}
+
 log "running API flow against $BASE_URL"
 if [[ -z "$ADMIN_USERNAME" || -z "$ADMIN_PASSWORD" ]]; then
   log "ADMIN_USERNAME and ADMIN_PASSWORD are required for API flow"
@@ -145,6 +152,13 @@ post_json "/api/sources/$singbox_source_id/refresh" '{}' "$OUT_DIR/source-sing-b
 singbox_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-sing-box-refresh.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes" -o "$OUT_DIR/nodes.json"
 qa_hk_tagged_count="$(json_value "data.filter((node) => (node.tags || []).includes('QA-HK')).length" <"$OUT_DIR/nodes.json")"
+first_node_id="$(json_value "data[0]?.id ?? 0" <"$OUT_DIR/nodes.json")"
+patch_json "/api/nodes/$first_node_id" '{"display_name":"QA 手动节点"}' "$OUT_DIR/node-update.json"
+node_manual_name="$(json_value "data.display_name" <"$OUT_DIR/node-update.json")"
+node_manual_mode="$(json_value "data.name_mode" <"$OUT_DIR/node-update.json")"
+post_json "/api/nodes/$first_node_id/reset-display-name" '{}' "$OUT_DIR/node-reset-name.json"
+node_reset_name="$(json_value "data.display_name" <"$OUT_DIR/node-reset-name.json")"
+node_reset_mode="$(json_value "data.name_mode" <"$OUT_DIR/node-reset-name.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443,"tag_selector":"{\"include\":[\"QA-HK\"]}"}' "$OUT_DIR/virtual-node.json"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-SG","listen_protocol":"vless","listen_port":8444}' "$OUT_DIR/virtual-node-sg.json"
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
@@ -231,6 +245,11 @@ fi
 
 if [[ "$qa_hk_tagged_count" -lt 1 ]]; then
   log "source default_tags should be attached to imported nodes"
+  exit 1
+fi
+
+if [[ "$first_node_id" -lt 1 || "$node_manual_name" != "QA 手动节点" || "$node_manual_mode" != "manual" || "$node_reset_mode" != "auto" || "$node_reset_name" == "QA 手动节点" ]]; then
+  log "node edit/reset should work: id=$first_node_id manual_name=$node_manual_name manual_mode=$node_manual_mode reset_name=$node_reset_name reset_mode=$node_reset_mode"
   exit 1
 fi
 

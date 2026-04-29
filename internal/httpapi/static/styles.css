@@ -236,6 +236,10 @@ main {
   min-width: 300px;
 }
 
+.node-actions {
+  min-width: 168px;
+}
+
 button {
   align-items: center;
   background: var(--primary);
@@ -335,6 +339,17 @@ textarea {
   min-height: 108px;
   padding: 10px 11px;
   resize: vertical;
+}
+
+.inline-edit-form {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 260px;
+}
+
+.inline-edit-form input {
+  min-width: 180px;
 }
 
 input::placeholder,

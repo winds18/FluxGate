@@ -51,6 +51,8 @@ virtualNodeForm.addEventListener("submit", submitVirtualNode);
 policyForm.addEventListener("submit", submitPolicy);
 tokenForm.addEventListener("submit", submitToken);
 sourcesEl.addEventListener("click", handleSourceAction);
+nodesEl.addEventListener("click", handleNodeAction);
+nodesEl.addEventListener("submit", handleNodeEditSubmit);
 tokensEl.addEventListener("click", handleTokenAction);
 bootstrap();
 
@@ -58,7 +60,9 @@ let appState = {
   teams: [],
   users: [],
   sources: [],
+  nodes: [],
   virtualNodes: [],
+  editingNodeID: null,
 };
 
 const columnLabels = {
@@ -73,6 +77,7 @@ const columnLabels = {
   source_name: "来源",
   raw_name: "原始名称",
   display_name: "展示名称",
+  name_mode: "命名模式",
   protocol: "协议",
   tags: "标签",
   listen_protocol: "监听协议",
@@ -141,7 +146,7 @@ async function login(event) {
 
 async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
-  appState = { teams: [], users: [], sources: [], virtualNodes: [] };
+  appState = { teams: [], users: [], sources: [], nodes: [], virtualNodes: [], editingNodeID: null };
   tokenResultEl.hidden = true;
   tokenResultEl.textContent = "";
   showLogin();
@@ -179,13 +184,13 @@ async function load() {
       getJSON("/api/traffic/outbounds?days=14"),
       getJSON("/api/traffic/tokens"),
     ]);
-    appState = { teams, users, sources, virtualNodes };
+    appState = { ...appState, teams, users, sources, nodes, virtualNodes };
     renderMetrics(overview);
     renderSelectors();
     renderTable(teamsEl, teams, ["id", "name", "description", "status"]);
     renderTable(usersEl, users, ["id", "team_id", "name", "email", "status"]);
     renderSources(sources);
-    renderTable(nodesEl, nodes, ["id", "source_name", "raw_name", "display_name", "protocol", "tags", "status"]);
+    renderNodes(nodes);
     renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "tag_selector", "status"]);
     renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "include_tags", "exclude_tags", "allowed_virtual_nodes", "max_nodes", "status"]);
     renderTokens(tokens);
@@ -306,6 +311,59 @@ async function handleSourceAction(event) {
   } catch (error) {
     statusEl.textContent = "刷新失败";
     button.disabled = false;
+  }
+}
+
+async function handleNodeAction(event) {
+  const button = event.target.closest("button[data-node-action]");
+  if (!button) return;
+  const id = Number.parseInt(button.dataset.nodeId || "0", 10);
+  if (!id) return;
+  const action = button.dataset.nodeAction;
+  if (action === "edit") {
+    appState.editingNodeID = id;
+    renderNodes(appState.nodes);
+    nodesEl.querySelector(`form[data-node-id="${id}"] input[name="display_name"]`)?.focus();
+    return;
+  }
+  if (action === "cancel") {
+    appState.editingNodeID = null;
+    renderNodes(appState.nodes);
+    return;
+  }
+  if (action !== "reset-name") return;
+  button.disabled = true;
+  statusEl.textContent = "恢复节点命名中";
+  try {
+    await postJSON(`/api/nodes/${id}/reset-display-name`, {});
+    appState.editingNodeID = null;
+    await load();
+  } catch (error) {
+    statusEl.textContent = "恢复失败";
+    button.disabled = false;
+  }
+}
+
+async function handleNodeEditSubmit(event) {
+  const form = event.target.closest("form[data-node-edit-form]");
+  if (!form) return;
+  event.preventDefault();
+  const id = Number.parseInt(form.dataset.nodeId || "0", 10);
+  if (!id) return;
+  const displayName = textField(new FormData(form), "display_name");
+  form.querySelectorAll("button").forEach((button) => {
+    button.disabled = true;
+  });
+  statusEl.textContent = "保存节点中";
+  try {
+    await patchJSON(`/api/nodes/${id}`, { display_name: displayName });
+    appState.editingNodeID = null;
+    await load();
+  } catch (error) {
+    statusEl.textContent = "保存失败";
+    form.querySelectorAll("button").forEach((button) => {
+      button.disabled = false;
+    });
   }
 }
 
@@ -461,8 +519,16 @@ async function getJSON(path) {
 }
 
 async function postJSON(path, payload) {
+  return sendJSON("POST", path, payload);
+}
+
+async function patchJSON(path, payload) {
+  return sendJSON("PATCH", path, payload);
+}
+
+async function sendJSON(method, path, payload) {
   const response = await fetch(path, {
-    method: "POST",
+    method,
     credentials: "same-origin",
     headers: { "content-type": "application/json" },
     body: JSON.stringify(payload),
@@ -541,6 +607,67 @@ function renderSources(rows) {
           .join("")}
       </tbody>
     </table>
+  `;
+}
+
+function renderNodes(rows) {
+  appState.nodes = rows || [];
+  if (!rows || rows.length === 0) {
+    nodesEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  nodesEl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>${labelForColumn("id")}</th>
+          <th>${labelForColumn("source_name")}</th>
+          <th>${labelForColumn("raw_name")}</th>
+          <th>${labelForColumn("display_name")}</th>
+          <th>${labelForColumn("name_mode")}</th>
+          <th>${labelForColumn("protocol")}</th>
+          <th>${labelForColumn("tags")}</th>
+          <th>${labelForColumn("status")}</th>
+          <th>${labelForColumn("actions")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((row) => renderNodeRow(row)).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderNodeRow(row) {
+  const isEditing = appState.editingNodeID === row.id;
+  return `
+    <tr>
+      <td>${formatCell(row.id, "id")}</td>
+      <td>${formatCell(row.source_name, "source_name")}</td>
+      <td>${formatCell(row.raw_name, "raw_name")}</td>
+      <td>${isEditing ? renderNodeEditForm(row) : formatCell(row.display_name, "display_name")}</td>
+      <td>${formatCell(row.name_mode, "name_mode")}</td>
+      <td>${formatCell(row.protocol, "protocol")}</td>
+      <td>${formatCell(row.tags, "tags")}</td>
+      <td>${formatCell(row.status, "status")}</td>
+      <td class="table-actions node-actions">
+        ${
+          isEditing
+            ? `<button class="table-button ghost-button" type="button" data-node-action="cancel" data-node-id="${row.id}">取消</button>`
+            : `<button class="table-button" type="button" data-node-action="edit" data-node-id="${row.id}">编辑</button>`
+        }
+        <button class="table-button ghost-button" type="button" data-node-action="reset-name" data-node-id="${row.id}" ${row.name_mode === "auto" ? "disabled" : ""}>恢复自动</button>
+      </td>
+    </tr>
+  `;
+}
+
+function renderNodeEditForm(row) {
+  return `
+    <form class="inline-edit-form" data-node-edit-form data-node-id="${row.id}">
+      <input name="display_name" value="${escapeHTML(row.display_name || "")}" required />
+      <button class="table-button" type="submit">保存</button>
+    </form>
   `;
 }
 

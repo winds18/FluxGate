@@ -35,6 +35,7 @@
 - 节点 `raw_name`、`display_name`、`name_mode`。
 - 单节点手动改名保护。
 - 单节点恢复自动命名。
+- 管理后台节点池支持行内编辑节点展示名，并可恢复来源前缀驱动的自动命名。
 - 虚拟节点页面基础创建和列表。
 - 虚拟节点 `tag_selector` 可按上游节点标签生成专属 sing-box selector，并生成入站到该 selector 的 route rule；无匹配上游时会路由到 `block`。
 - Clash/Mihomo 订阅生成。
@@ -167,6 +168,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 无明显遮挡。
 - 表格、卡片、按钮和输入控件未出现明显溢出或尺寸错位。
 - 来源前缀、节点展示名和 Token 前缀正常展示。
+- 有节点数据时，浏览器验收会确认节点池“编辑”入口可打开行内编辑表单。
 
 ## 4. 尚未完成
 

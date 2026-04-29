@@ -87,7 +87,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         44,
-			URI:        "trojan://qa-placeholder@example.org:443?security=tls&sni=trojan.example.org&skip-cert-verify=1&disable-sni=1&alpn=h2#trojan",
+			URI:        "trojan://qa-placeholder@example.org:443?security=tls&sni=trojan.example.org&skip-cert-verify=1&disable-sni=1&alpn=h2&type=ws&path=%2Ftrojan&host=ws.trojan.example.org#trojan",
 			Protocol:   "trojan",
 			ServerPort: 443,
 			Status:     "active",
@@ -246,6 +246,14 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	trojanALPN, ok := trojanTLS["alpn"].([]string)
 	if !ok || len(trojanALPN) != 1 || trojanALPN[0] != "h2" {
 		t.Fatalf("unexpected trojan alpn config: %+v", trojanTLS["alpn"])
+	}
+	trojanTransport, ok := trojan["transport"].(map[string]any)
+	if !ok || trojanTransport["type"] != "ws" || trojanTransport["path"] != "/trojan" {
+		t.Fatalf("unexpected trojan transport config: %+v", trojan["transport"])
+	}
+	trojanTransportHeaders, ok := trojanTransport["headers"].(map[string]any)
+	if !ok || trojanTransportHeaders["Host"] != "ws.trojan.example.org" {
+		t.Fatalf("unexpected trojan transport headers: %+v", trojanTransport["headers"])
 	}
 	shadowsocks := findOutbound(config.Outbounds, "up_45")
 	if shadowsocks == nil {

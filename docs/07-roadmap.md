@@ -48,6 +48,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan/VMess TLS 参数并同步进入 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS WebSocket 传输参数并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS gRPC 传输参数并同步为 sing-box outbound transport。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan WebSocket/gRPC 传输参数并同步为 sing-box outbound transport。
 - sing-box 服务端配置生成会过滤不可用 Token，避免已撤销、已过期或已超额用户继续进入网关配置。
 - 本地 smoke、API flow、页面截图验收脚本。
 - 远程部署探测、磁盘清理、诊断采集脚本骨架。

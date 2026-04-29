@@ -89,6 +89,7 @@ func singBoxTrojanURI(outbound map[string]any) string {
 		proxy["tls"] = "true"
 	}
 	appendSingBoxTLSProxyValues(outbound, proxy)
+	appendSingBoxTransportProxyValues(outbound, proxy)
 	return clashTrojanURI(proxy)
 }
 

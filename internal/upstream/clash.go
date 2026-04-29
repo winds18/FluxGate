@@ -129,6 +129,7 @@ func clashTrojanURI(proxy map[string]string) string {
 	if tlsEnabled(proxy) {
 		values.Set("security", "tls")
 	}
+	appendClashTransportQueryValues(proxy, values)
 	appendClashTLSQueryValues(proxy, values)
 	return proxyURL("trojan", password, server, port, values, firstMapValue(proxy, "name"))
 }

@@ -60,7 +60,7 @@ proxies:
     port: 8388
     cipher: aes-128-gcm
     password: "qa-placeholder"
-  - { name: "东京 01", type: trojan, server: trojan.example.test, port: 443, password: "trojan-placeholder", sni: edge.example.test, skip-cert-verify: true, disable-sni: true, alpn: "h2,http/1.1" }
+  - { name: "东京 01", type: trojan, server: trojan.example.test, port: 443, password: "trojan-placeholder", sni: edge.example.test, skip-cert-verify: true, disable-sni: true, alpn: "h2,http/1.1", network: ws, ws-path: /trojan, ws-headers.host: ws.trojan.example.test }
   - name: "首尔 01"
     type: vless
     server: vless.example.test
@@ -174,6 +174,9 @@ proxy-groups:
 		!strings.Contains(lines[1], "insecure=1") ||
 		!strings.Contains(lines[1], "disable_sni=1") ||
 		!strings.Contains(lines[1], "alpn=h2%2Chttp%2F1.1") ||
+		!strings.Contains(lines[1], "type=ws") ||
+		!strings.Contains(lines[1], "path=%2Ftrojan") ||
+		!strings.Contains(lines[1], "host=ws.trojan.example.test") ||
 		!strings.HasSuffix(lines[1], "#%E4%B8%9C%E4%BA%AC%2001") {
 		t.Fatalf("unexpected trojan URI: %q", lines[1])
 	}
@@ -335,6 +338,10 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
         "insecure": true,
         "disable_sni": true,
         "alpn": ["h2", "http/1.1"]
+      },
+      "transport": {
+        "type": "grpc",
+        "service_name": "trojan-flow"
       }
     },
     {
@@ -532,7 +539,9 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	if !strings.Contains(lines[1], "sni=edge.singbox.example.test") ||
 		!strings.Contains(lines[1], "insecure=1") ||
 		!strings.Contains(lines[1], "disable_sni=1") ||
-		!strings.Contains(lines[1], "alpn=h2%2Chttp%2F1.1") {
+		!strings.Contains(lines[1], "alpn=h2%2Chttp%2F1.1") ||
+		!strings.Contains(lines[1], "type=grpc") ||
+		!strings.Contains(lines[1], "service_name=trojan-flow") {
 		t.Fatalf("unexpected sing-box trojan URI: %q", lines[1])
 	}
 	assertHasPrefix(t, lines[2], "vless://00000000-0000-0000-0000-000000000052@vless.singbox.example.test:443?")

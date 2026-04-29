@@ -320,22 +320,7 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 		}
 		outbound["tls"] = tls
 	}
-	transportType := strings.ToLower(firstNonEmpty(query.Get("type"), query.Get("network"), query.Get("net")))
-	if transportType == "ws" || transportType == "websocket" {
-		transport := map[string]any{"type": "ws"}
-		if path := firstNonEmpty(query.Get("path"), query.Get("ws_path"), query.Get("ws-path")); path != "" {
-			transport["path"] = path
-		}
-		if host := firstNonEmpty(query.Get("host"), query.Get("ws_host"), query.Get("ws-host")); host != "" {
-			transport["headers"] = map[string]any{"Host": host}
-		}
-		outbound["transport"] = transport
-	}
-	if transportType == "grpc" {
-		transport := map[string]any{"type": "grpc"}
-		if serviceName := firstNonEmpty(query.Get("service_name"), query.Get("serviceName"), query.Get("grpc_service_name"), query.Get("grpc-service-name")); serviceName != "" {
-			transport["service_name"] = serviceName
-		}
+	if transport := transportFromQuery(query); transport != nil {
 		outbound["transport"] = transport
 	}
 	return outbound, true
@@ -386,7 +371,33 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 		}
 		outbound["tls"] = tls
 	}
+	if transport := transportFromQuery(query); transport != nil {
+		outbound["transport"] = transport
+	}
 	return outbound, true
+}
+
+func transportFromQuery(query url.Values) map[string]any {
+	transportType := strings.ToLower(firstNonEmpty(query.Get("type"), query.Get("network"), query.Get("net")))
+	switch transportType {
+	case "ws", "websocket":
+		transport := map[string]any{"type": "ws"}
+		if path := firstNonEmpty(query.Get("path"), query.Get("ws_path"), query.Get("ws-path")); path != "" {
+			transport["path"] = path
+		}
+		if host := firstNonEmpty(query.Get("host"), query.Get("ws_host"), query.Get("ws-host")); host != "" {
+			transport["headers"] = map[string]any{"Host": host}
+		}
+		return transport
+	case "grpc":
+		transport := map[string]any{"type": "grpc"}
+		if serviceName := firstNonEmpty(query.Get("service_name"), query.Get("serviceName"), query.Get("grpc_service_name"), query.Get("grpc-service-name")); serviceName != "" {
+			transport["service_name"] = serviceName
+		}
+		return transport
+	default:
+		return nil
+	}
 }
 
 func buildShadowsocksOutbound(node store.Node) (map[string]any, bool) {

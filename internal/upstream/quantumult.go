@@ -96,6 +96,15 @@ func quantumultXProxyURI(line string) string {
 			proxy["disable-mtu-discovery"] = "true"
 		}
 		return clashHysteriaURI(proxy)
+	case "anytls", "any-tls":
+		proxy["type"] = "anytls"
+		proxy["password"] = surgeFirstValue(options, positionals, 1, "password", "passwd", "pass", "psk", "token")
+		surgeCopyOptions(proxy, options,
+			"idle-session-check-interval", "idle_session_check_interval",
+			"idle-session-timeout", "idle_session_timeout",
+			"min-idle-session", "min_idle_session",
+		)
+		return clashAnyTLSURI(proxy)
 	case "trojan":
 		proxy["password"] = surgeFirstValue(options, positionals, 1, "password", "passwd", "pass")
 		if proxy["tls"] == "" {
@@ -139,7 +148,7 @@ func parseQuantumultXProxyLine(line string) (string, []string, bool) {
 	}
 	protocol = strings.ToLower(strings.TrimSpace(protocol))
 	switch protocol {
-	case "ss", "shadowsocks", "hysteria2", "hy2", "tuic", "hysteria", "trojan", "vless", "vmess", "vmess-aead", "http", "https", "socks", "socks5":
+	case "ss", "shadowsocks", "hysteria2", "hy2", "tuic", "hysteria", "anytls", "any-tls", "trojan", "vless", "vmess", "vmess-aead", "http", "https", "socks", "socks5":
 	default:
 		return "", nil, false
 	}

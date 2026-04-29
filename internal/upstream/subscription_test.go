@@ -1108,6 +1108,56 @@ func TestNormalizeContentSurgeProxyListVLESSAndVMess(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyListHysteria2AndTUIC(t *testing.T) {
+	raw := `
+[Proxy]
+首尔 Surge Hysteria2 = hysteria2, hy2.surge.example.test, 443, password=hy2-placeholder, obfs=salamander, obfs-password=obfs-placeholder, up-mbps=80, down-mbps=160, sni=hy2.surge.example.test, alpn=h3, skip-cert-verify=true, disable-sni=true, pinSHA256=surge-hy2-pin
+大阪 Surge TUIC = tuic, tuic.surge.example.test, 443, 00000000-0000-0000-0000-000000000091, tuic-placeholder, congestion-controller=bbr, udp-relay-mode=native, sni=tuic.surge.example.test, alpn=h3, skip-cert-verify=true
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Surge Hysteria2/TUIC URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "hysteria2://hy2-placeholder@hy2.surge.example.test:443?")
+	for _, want := range []string{
+		"obfs=salamander",
+		"obfs-password=obfs-placeholder",
+		"up_mbps=80",
+		"down_mbps=160",
+		"sni=hy2.surge.example.test",
+		"alpn=h3",
+		"insecure=1",
+		"disable_sni=1",
+		"pinSHA256=surge-hy2-pin",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Surge Hysteria2 URI to contain %q: %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#%E9%A6%96%E5%B0%94%20Surge%20Hysteria2") {
+		t.Fatalf("unexpected Surge Hysteria2 fragment: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "tuic://00000000-0000-0000-0000-000000000091:tuic-placeholder@tuic.surge.example.test:443?")
+	for _, want := range []string{
+		"congestion_control=bbr",
+		"udp_relay_mode=native",
+		"sni=tuic.surge.example.test",
+		"alpn=h3",
+		"insecure=1",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Surge TUIC URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#%E5%A4%A7%E9%98%AA%20Surge%20TUIC") {
+		t.Fatalf("unexpected Surge TUIC fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

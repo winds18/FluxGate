@@ -77,6 +77,26 @@ func surgeProxyURI(line string) string {
 			proxy["header-type"] = headerType
 		}
 		return clashVMessURI(proxy)
+	case "hysteria2", "hy2":
+		proxy["type"] = "hysteria2"
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "auth", "auth-str", "auth_str", "token")
+		surgeCopyOptions(proxy, options,
+			"obfs", "obfs-type", "obfs_type",
+			"obfs-password", "obfs_password",
+			"up-mbps", "up_mbps", "upmbps",
+			"down-mbps", "down_mbps", "downmbps",
+			"pinsha256", "pin-sha256", "pin_sha256",
+			"certificate-public-key-sha256", "certificate_public_key_sha256", "fingerprint",
+		)
+		return clashHysteria2URI(proxy)
+	case "tuic":
+		proxy["uuid"] = surgeFirstValue(options, positionals, 2, "uuid", "id", "username", "user")
+		proxy["password"] = surgeFirstValue(options, positionals, 3, "password", "passwd", "psk", "token")
+		surgeCopyOptions(proxy, options,
+			"congestion-control", "congestion_control", "congestion-controller", "congestion_controller",
+			"udp-relay-mode", "udp_relay_mode",
+		)
+		return clashTUICURI(proxy)
 	case "trojan":
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "psk")
 		if proxy["tls"] == "" {
@@ -194,6 +214,14 @@ func surgeOption(options map[string]string, keys ...string) string {
 	return ""
 }
 
+func surgeCopyOptions(proxy map[string]string, options map[string]string, keys ...string) {
+	for _, key := range keys {
+		if value := surgeOption(options, key); value != "" {
+			proxy[strings.ToLower(key)] = value
+		}
+	}
+}
+
 func surgeApplyTLSOptions(proxy map[string]string, options map[string]string) {
 	if sni := surgeOption(options, "sni", "tls-host", "tls_host", "servername", "server_name"); sni != "" {
 		proxy["sni"] = sni
@@ -206,6 +234,9 @@ func surgeApplyTLSOptions(proxy map[string]string, options map[string]string) {
 	}
 	if surgeBoolOption(options, "skip-cert-verify", "skip_cert_verify", "insecure") || strings.EqualFold(surgeOption(options, "tls-verification", "tls_verification"), "false") {
 		proxy["insecure"] = "true"
+	}
+	if surgeBoolOption(options, "disable-sni", "disable_sni") {
+		proxy["disable-sni"] = "true"
 	}
 }
 

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/winds18/FluxGate/internal/naming"
 )
@@ -94,6 +95,55 @@ func (s *Store) ListSources(ctx context.Context) ([]Source, error) {
 		FROM upstream_sources
 		ORDER BY id DESC
 	`)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var sources []Source
+	for rows.Next() {
+		var source Source
+		if err := rows.Scan(
+			&source.ID,
+			&source.Name,
+			&source.Type,
+			&source.URL,
+			&source.RawContent,
+			&source.PrefixMode,
+			&source.DisplayPrefix,
+			&source.DefaultTags,
+			&source.RefreshIntervalMinutes,
+			&source.Status,
+			&source.LastSyncAt,
+			&source.LastError,
+			&source.CreatedAt,
+			&source.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		sources = append(sources, source)
+	}
+	return sources, rows.Err()
+}
+
+func (s *Store) ListDueSubscriptionSources(ctx context.Context, now time.Time, limit int) ([]Source, error) {
+	if limit <= 0 {
+		limit = 20
+	}
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT id, name, type, url, raw_content, prefix_mode, display_prefix, default_tags,
+		       refresh_interval_minutes, status, last_sync_at, last_error, created_at, updated_at
+		FROM upstream_sources
+		WHERE type = 'subscription'
+		  AND status = 'active'
+		  AND refresh_interval_minutes > 0
+		  AND (
+		    last_sync_at IS NULL
+		    OR datetime(last_sync_at, '+' || refresh_interval_minutes || ' minutes') <= datetime(?)
+		  )
+		ORDER BY COALESCE(last_sync_at, created_at), id
+		LIMIT ?
+	`, now.UTC().Format("2006-01-02 15:04:05"), limit)
 	if err != nil {
 		return nil, err
 	}

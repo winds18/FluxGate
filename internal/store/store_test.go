@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 )
 
 func openTestStore(t *testing.T) *Store {
@@ -133,6 +134,66 @@ func TestImportNodesMarksMissingSubscriptionNodesInactive(t *testing.T) {
 	}
 	if statusByRawName["新加坡 01"] != "active" {
 		t.Fatalf("seen node should stay active: %+v", statusByRawName)
+	}
+}
+
+func TestListDueSubscriptionSources(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+	now := time.Date(2026, 4, 29, 3, 16, 0, 0, time.UTC)
+
+	neverSynced, err := db.CreateSource(ctx, CreateSourceInput{Name: "never", Type: "subscription", RawContent: "vless://uuid@example.com:443#A", RefreshIntervalMinutes: 15})
+	if err != nil {
+		t.Fatalf("create never synced source: %v", err)
+	}
+	oldSync, err := db.CreateSource(ctx, CreateSourceInput{Name: "old", Type: "subscription", RawContent: "vless://uuid@example.com:443#B", RefreshIntervalMinutes: 15})
+	if err != nil {
+		t.Fatalf("create old source: %v", err)
+	}
+	recentSync, err := db.CreateSource(ctx, CreateSourceInput{Name: "recent", Type: "subscription", RawContent: "vless://uuid@example.com:443#C", RefreshIntervalMinutes: 15})
+	if err != nil {
+		t.Fatalf("create recent source: %v", err)
+	}
+	manual, err := db.CreateSource(ctx, CreateSourceInput{Name: "manual", Type: "manual", RawContent: "vless://uuid@example.com:443#D", RefreshIntervalMinutes: 15})
+	if err != nil {
+		t.Fatalf("create manual source: %v", err)
+	}
+	inactive, err := db.CreateSource(ctx, CreateSourceInput{Name: "inactive", Type: "subscription", RawContent: "vless://uuid@example.com:443#E", RefreshIntervalMinutes: 15})
+	if err != nil {
+		t.Fatalf("create inactive source: %v", err)
+	}
+	disabledInterval, err := db.CreateSource(ctx, CreateSourceInput{Name: "disabled", Type: "subscription", RawContent: "vless://uuid@example.com:443#F", RefreshIntervalMinutes: 0})
+	if err != nil {
+		t.Fatalf("create disabled interval source: %v", err)
+	}
+
+	setLastSync := func(id int64, value time.Time) {
+		t.Helper()
+		if _, err := db.db.ExecContext(ctx, "UPDATE upstream_sources SET last_sync_at = ? WHERE id = ?", value.UTC().Format("2006-01-02 15:04:05"), id); err != nil {
+			t.Fatalf("set last sync: %v", err)
+		}
+	}
+	setLastSync(oldSync.ID, now.Add(-16*time.Minute))
+	setLastSync(recentSync.ID, now.Add(-14*time.Minute))
+	if _, err := db.db.ExecContext(ctx, "UPDATE upstream_sources SET status = 'inactive' WHERE id = ?", inactive.ID); err != nil {
+		t.Fatalf("set inactive: %v", err)
+	}
+
+	due, err := db.ListDueSubscriptionSources(ctx, now, 10)
+	if err != nil {
+		t.Fatalf("list due sources: %v", err)
+	}
+	got := map[int64]bool{}
+	for _, source := range due {
+		got[source.ID] = true
+	}
+	if !got[neverSynced.ID] || !got[oldSync.ID] {
+		t.Fatalf("expected never synced and old source to be due: %+v", due)
+	}
+	for _, source := range []Source{recentSync, manual, inactive, disabledInterval} {
+		if got[source.ID] {
+			t.Fatalf("source should not be due: %+v in %+v", source, due)
+		}
 	}
 }
 

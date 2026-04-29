@@ -54,6 +54,7 @@
 - 上游节点手动导入。
 - subscription 类型来源手动刷新导入。
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
+- subscription 来源支持按刷新间隔自动同步到期订阅。
 - 节点来源前缀和展示名规则。
 - 标签管理。
 - 虚拟节点管理。

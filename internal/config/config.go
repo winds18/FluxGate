@@ -21,6 +21,8 @@ type Config struct {
 	DefaultVLESSPort          int
 	SingBoxConfigPath         string
 	SingBoxPreviousConfigPath string
+	SourceSyncPollInterval    time.Duration
+	SourceSyncBatchLimit      int
 	StatsPollInterval         time.Duration
 	Version                   string
 }
@@ -40,6 +42,8 @@ func Load() Config {
 		DefaultVLESSPort:          envInt("DEFAULT_VLESS_PORT", 8443),
 		SingBoxConfigPath:         env("SING_BOX_CONFIG_PATH", "data/sing-box/config.json"),
 		SingBoxPreviousConfigPath: env("SING_BOX_PREVIOUS_CONFIG_PATH", "data/sing-box/config.previous.json"),
+		SourceSyncPollInterval:    time.Duration(envInt("SOURCE_SYNC_POLL_SECONDS", 60)) * time.Second,
+		SourceSyncBatchLimit:      envInt("SOURCE_SYNC_BATCH_LIMIT", 20),
 		StatsPollInterval:         time.Duration(envInt("STATS_POLL_INTERVAL_SECONDS", 30)) * time.Second,
 		Version:                   env("APP_VERSION", "dev"),
 	}

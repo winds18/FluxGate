@@ -19,7 +19,7 @@ import (
 	"github.com/winds18/FluxGate/internal/singbox"
 	"github.com/winds18/FluxGate/internal/store"
 	"github.com/winds18/FluxGate/internal/subscription"
-	"github.com/winds18/FluxGate/internal/upstream"
+	"github.com/winds18/FluxGate/internal/upstreamsync"
 )
 
 //go:embed static/*
@@ -325,7 +325,8 @@ func (s *Server) handleRefreshSource(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	result, err := s.refreshSource(r.Context(), source)
+	refresher := upstreamsync.Refresher{Store: s.store}
+	result, err := refresher.RefreshSource(r.Context(), source)
 	if err != nil {
 		_ = s.store.SetSourceSyncError(r.Context(), source.ID, err.Error())
 		s.logger.Info("source refresh failed",
@@ -355,33 +356,6 @@ func (s *Server) handleRefreshSource(w http.ResponseWriter, r *http.Request) {
 		"source": updatedSource,
 		"result": result,
 	})
-}
-
-func (s *Server) refreshSource(ctx context.Context, source store.Source) (store.ImportResult, error) {
-	content := source.RawContent
-	if strings.TrimSpace(source.URL) != "" {
-		fetched, err := upstream.Fetcher{}.Fetch(ctx, source.URL)
-		if err != nil {
-			return store.ImportResult{}, err
-		}
-		content = fetched
-	}
-	normalized, err := upstream.NormalizeContent(content)
-	if err != nil {
-		return store.ImportResult{}, err
-	}
-	if err := s.store.UpdateSourceRawContent(ctx, source.ID, normalized); err != nil {
-		return store.ImportResult{}, err
-	}
-	result, err := s.store.ImportNodes(ctx, store.ImportNodesInput{
-		SourceID:            source.ID,
-		Content:             normalized,
-		MarkMissingInactive: true,
-	})
-	if err != nil {
-		return result, err
-	}
-	return result, nil
 }
 
 func (s *Server) handleRegenerateSourceNodeNames(w http.ResponseWriter, r *http.Request) {

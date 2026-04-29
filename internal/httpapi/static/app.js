@@ -157,6 +157,7 @@ async function submitSource(event) {
     name: textField(form, "name"),
     type: textField(form, "type") || "manual",
     url: textField(form, "url"),
+    refresh_interval_minutes: numberField(form, "refresh_interval_minutes"),
   });
   sourceForm.reset();
 }
@@ -324,6 +325,7 @@ function renderSources(rows) {
           <th>name</th>
           <th>type</th>
           <th>display_prefix</th>
+          <th>refresh_min</th>
           <th>last_sync_at</th>
           <th>last_error</th>
           <th>actions</th>
@@ -338,6 +340,7 @@ function renderSources(rows) {
                 <td>${formatCell(row.name)}</td>
                 <td>${formatCell(row.type)}</td>
                 <td>${formatCell(row.display_prefix)}</td>
+                <td>${formatCell(row.refresh_interval_minutes)}</td>
                 <td>${formatCell(row.last_sync_at)}</td>
                 <td>${formatCell(row.last_error)}</td>
                 <td>

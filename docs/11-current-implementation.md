@@ -20,6 +20,7 @@
 - subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。
 - subscription 来源刷新时，本次订阅中消失的旧节点会标记为 `inactive`。
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
+- subscription 来源支持按 `refresh_interval_minutes` 定时同步；后台调度默认每 60 秒检查一批到期来源。
 - 上游来源自动前缀。
 - 重复来源名前缀自动编号，例如 `[机场A]`、`[机场A-2]`。
 - 节点 URI 页面批量导入。
@@ -138,7 +139,6 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 下一步需要继续实现：
 
-- 上游订阅定时同步。
 - 上游订阅 Clash YAML、SIP008 等结构化格式解析。
 - DNS 等更多协议 URI 到 sing-box outbound 的转换。
 - 策略管理。

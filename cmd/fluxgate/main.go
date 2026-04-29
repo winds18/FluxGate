@@ -14,6 +14,7 @@ import (
 	"github.com/winds18/FluxGate/internal/httpapi"
 	"github.com/winds18/FluxGate/internal/observability"
 	"github.com/winds18/FluxGate/internal/store"
+	"github.com/winds18/FluxGate/internal/upstreamsync"
 )
 
 func main() {
@@ -53,6 +54,9 @@ func main() {
 	} else if bootstrap.Skipped {
 		logger.Info("bootstrap admin skipped")
 	}
+
+	refresher := upstreamsync.Refresher{Store: db}
+	go refresher.RunScheduler(ctx, cfg.SourceSyncPollInterval, cfg.SourceSyncBatchLimit, logger)
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

@@ -129,12 +129,7 @@ func clashTrojanURI(proxy map[string]string) string {
 	if tlsEnabled(proxy) {
 		values.Set("security", "tls")
 	}
-	if sni := firstMapValue(proxy, "sni", "servername", "server_name"); sni != "" {
-		values.Set("sni", sni)
-	}
-	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
-		values.Set("insecure", "1")
-	}
+	appendClashTLSQueryValues(proxy, values)
 	return proxyURL("trojan", password, server, port, values, firstMapValue(proxy, "name"))
 }
 
@@ -152,9 +147,7 @@ func clashVLESSURI(proxy map[string]string) string {
 	if flow := firstMapValue(proxy, "flow"); flow != "" {
 		values.Set("flow", flow)
 	}
-	if sni := firstMapValue(proxy, "sni", "servername", "server_name"); sni != "" {
-		values.Set("sni", sni)
-	}
+	appendClashTLSQueryValues(proxy, values)
 	return proxyURL("vless", uuid, server, port, values, firstMapValue(proxy, "name"))
 }
 

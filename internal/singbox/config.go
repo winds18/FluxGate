@@ -163,6 +163,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildHysteriaOutbound(node)
 	case "http", "https":
 		return buildHTTPOutbound(node)
+	case "socks", "socks4", "socks4a", "socks5":
+		return buildSOCKSOutbound(node)
 	default:
 		return nil, false
 	}
@@ -690,6 +692,42 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 	return outbound, true
 }
 
+func buildSOCKSOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || !strings.HasPrefix(node.Protocol, "socks") {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || !strings.HasPrefix(parsed.Scheme, "socks") || parsed.Hostname() == "" {
+		return nil, false
+	}
+
+	query := parsed.Query()
+	outbound := map[string]any{
+		"type":        "socks",
+		"tag":         upstreamTag(node),
+		"server":      parsed.Hostname(),
+		"server_port": portWithFallback(parsed.Port(), node.ServerPort, 1080),
+	}
+	if version := socksVersion(parsed.Scheme, query.Get("version")); version != "" {
+		outbound["version"] = version
+	}
+	username, password := userPassword(parsed.User)
+	if username != "" {
+		outbound["username"] = username
+	}
+	if password != "" {
+		outbound["password"] = password
+	}
+	if network := firstNonEmpty(query.Get("network"), query.Get("protocol")); network != "" {
+		outbound["network"] = network
+	}
+	if boolQuery(firstNonEmpty(query.Get("udp_over_tcp"), query.Get("udp-over-tcp"), query.Get("uot"))) {
+		outbound["udp_over_tcp"] = true
+	}
+
+	return outbound, true
+}
+
 func parseVMessURI(rawURI string) (map[string]any, bool) {
 	rawURI = strings.TrimSpace(rawURI)
 	if !strings.HasPrefix(rawURI, "vmess://") {
@@ -879,6 +917,22 @@ func userPassword(user *url.Userinfo) (string, string) {
 		return username, ""
 	}
 	return username, password
+}
+
+func socksVersion(scheme string, queryVersion string) string {
+	version := strings.TrimSpace(queryVersion)
+	if version == "" {
+		version = strings.TrimPrefix(strings.ToLower(strings.TrimSpace(scheme)), "socks")
+	}
+	if version == "" {
+		version = "5"
+	}
+	switch strings.ToLower(version) {
+	case "4", "4a", "5":
+		return strings.ToLower(version)
+	default:
+		return ""
+	}
 }
 
 func boolQuery(value string) bool {

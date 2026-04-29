@@ -154,6 +154,13 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         54,
+			URI:        "socks5://qa-user:qa-placeholder@example.socks:1080?network=udp&udp_over_tcp=1#socks",
+			Protocol:   "socks5",
+			ServerPort: 1080,
+			Status:     "active",
+		},
+		{
+			ID:         55,
 			URI:        "wireguard://placeholder@example.org:443#unsupported",
 			Protocol:   "wireguard",
 			ServerPort: 443,
@@ -347,7 +354,20 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if !ok || httpTLS["enabled"] != true || httpTLS["server_name"] != "http-proxy.example.proxy" || httpTLS["insecure"] != true {
 		t.Fatalf("unexpected http tls config: %+v", httpProxy["tls"])
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_54") != nil {
+	socks := findOutbound(config.Outbounds, "up_54")
+	if socks == nil {
+		t.Fatalf("expected socks outbound up_54, got %+v", config.Outbounds)
+	}
+	if socks["type"] != "socks" || socks["server"] != "example.socks" || socks["server_port"] != 1080 {
+		t.Fatalf("unexpected socks server fields: %+v", socks)
+	}
+	if socks["version"] != "5" || socks["username"] != "qa-user" || socks["password"] != "qa-placeholder" {
+		t.Fatalf("unexpected socks auth fields: %+v", socks)
+	}
+	if socks["network"] != "udp" || socks["udp_over_tcp"] != true {
+		t.Fatalf("unexpected socks network fields: %+v", socks)
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_55") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -356,7 +376,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 11 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 12 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || tags[11] != "up_54" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

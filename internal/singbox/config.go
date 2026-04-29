@@ -666,8 +666,11 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 	if serverName := firstNonEmpty(query.Get("sni"), parsed.Hostname()); serverName != "" {
 		tls["server_name"] = serverName
 	}
-	if boolQuery(query.Get("insecure")) {
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
 		tls["insecure"] = true
+	}
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+		tls["disable_sni"] = true
 	}
 	if fingerprint := firstNonEmpty(query.Get("pinSHA256"), query.Get("pin-sha256"), query.Get("fingerprint")); fingerprint != "" {
 		tls["certificate_public_key_sha256"] = []string{fingerprint}

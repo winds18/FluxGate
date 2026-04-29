@@ -287,6 +287,9 @@ func clashHysteria2URI(proxy map[string]string) string {
 	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
 		values.Set("insecure", "1")
 	}
+	if boolMapValue(proxy, "disable-sni", "disable_sni") {
+		values.Set("disable_sni", "1")
+	}
 	return proxyURL("hysteria2", password, server, port, values, firstMapValue(proxy, "name"))
 }
 

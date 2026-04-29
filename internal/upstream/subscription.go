@@ -105,6 +105,9 @@ func NormalizeContent(content string) (string, error) {
 	if normalized := SingBoxJSONURIList(content); normalized != "" {
 		return normalized, nil
 	}
+	if normalized := V2RayJSONURIList(content); normalized != "" {
+		return normalized, nil
+	}
 
 	compact := strings.Map(func(r rune) rune {
 		switch r {
@@ -137,6 +140,9 @@ func NormalizeContent(content string) (string, error) {
 			return normalized, nil
 		}
 		if normalized := SingBoxJSONURIList(string(decoded)); normalized != "" {
+			return normalized, nil
+		}
+		if normalized := V2RayJSONURIList(string(decoded)); normalized != "" {
 			return normalized, nil
 		}
 	}
@@ -263,6 +269,7 @@ func normalizedStringURIList(value string) string {
 		ClashYAMLURIList,
 		SIP008URIList,
 		SingBoxJSONURIList,
+		V2RayJSONURIList,
 	} {
 		if normalized := normalize(value); normalized != "" {
 			return normalized
@@ -295,6 +302,7 @@ func normalizedStringURIList(value string) string {
 			ClashYAMLURIList,
 			SIP008URIList,
 			SingBoxJSONURIList,
+			V2RayJSONURIList,
 		} {
 			if normalized := normalize(decodedContent); normalized != "" {
 				return normalized

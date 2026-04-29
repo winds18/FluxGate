@@ -1762,6 +1762,168 @@ func TestNormalizeContentSingBoxJSONVMessGRPC(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSON(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray VMess",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "vmess.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000083",
+                "alterId": 0,
+                "security": "auto"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "vmess.v2ray.example.test",
+          "allowInsecure": true,
+          "alpn": ["h2", "http/1.1"]
+        },
+        "wsSettings": {
+          "path": "/ws",
+          "headers": {
+            "Host": "ws.v2ray.example.test"
+          }
+        }
+      }
+    },
+    {
+      "tag": "新加坡 V2Ray VLESS",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "vless.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000084",
+                "flow": "xtls-rprx-vision"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverName": "www.example.test",
+          "publicKey": "v2ray-reality-public-key",
+          "shortId": "aabbccdd",
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "tag": "东京 V2Ray Trojan",
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "address": "trojan.v2ray.example.test",
+            "port": 443,
+            "password": "trojan-placeholder"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "trojan.v2ray.example.test"
+        },
+        "grpcSettings": {
+          "serviceName": "fluxgate-v2ray"
+        }
+      }
+    },
+    {
+      "tag": "首尔 V2Ray SS",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "address": "ss.v2ray.example.test",
+            "port": 8388,
+            "method": "aes-128-gcm",
+            "password": "qa-placeholder"
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vmess://")
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[0], "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode v2ray vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	if !strings.Contains(decodedText, `"net":"ws"`) ||
+		!strings.Contains(decodedText, `"path":"/ws"`) ||
+		!strings.Contains(decodedText, `"host":"ws.v2ray.example.test"`) ||
+		!strings.Contains(decodedText, `"tls":"tls"`) ||
+		!strings.Contains(decodedText, `"allowInsecure":"1"`) ||
+		!strings.Contains(decodedText, `"sni":"vmess.v2ray.example.test"`) ||
+		!strings.Contains(decodedText, `"alpn":"h2,http/1.1"`) {
+		t.Fatalf("unexpected v2ray vmess document: %q", decodedText)
+	}
+	assertHasPrefix(t, lines[1], "vless://00000000-0000-0000-0000-000000000084@vless.v2ray.example.test:443?")
+	if !strings.Contains(lines[1], "security=reality") ||
+		!strings.Contains(lines[1], "pbk=v2ray-reality-public-key") ||
+		!strings.Contains(lines[1], "sid=aabbccdd") ||
+		!strings.Contains(lines[1], "fp=chrome") ||
+		!strings.Contains(lines[1], "sni=www.example.test") ||
+		!strings.Contains(lines[1], "flow=xtls-rprx-vision") {
+		t.Fatalf("unexpected v2ray vless URI: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "trojan://trojan-placeholder@trojan.v2ray.example.test:443?")
+	if !strings.Contains(lines[2], "security=tls") ||
+		!strings.Contains(lines[2], "type=grpc") ||
+		!strings.Contains(lines[2], "service_name=fluxgate-v2ray") {
+		t.Fatalf("unexpected v2ray trojan URI: %q", lines[2])
+	}
+	if lines[3] != "ss://aes-128-gcm:qa-placeholder@ss.v2ray.example.test:8388#%E9%A6%96%E5%B0%94%20V2Ray%20SS" {
+		t.Fatalf("unexpected v2ray shadowsocks URI: %q", lines[3])
+	}
+}
+
+func TestNormalizeContentJSONWrappedV2RayJSON(t *testing.T) {
+	raw := `{
+  "data": {
+    "raw_content": "{\"outbounds\":[{\"tag\":\"包装直连\",\"protocol\":\"freedom\"}]}"
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	if got != "direct://default#%E5%8C%85%E8%A3%85%E7%9B%B4%E8%BF%9E" {
+		t.Fatalf("unexpected wrapped v2ray JSON URI: %q", got)
+	}
+}
+
 func TestNormalizeContentRejectsUnsupportedContent(t *testing.T) {
 	if _, err := NormalizeContent("not a subscription"); err == nil {
 		t.Fatal("expected unsupported content error")

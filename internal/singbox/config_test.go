@@ -2,6 +2,7 @@ package singbox
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"testing"
 	"time"
 
@@ -51,6 +52,19 @@ func TestBuildConfigFiltersUnusableGatewayTokens(t *testing.T) {
 
 func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	ssCredential := base64.RawURLEncoding.EncodeToString([]byte("aes-128-gcm:qa-placeholder"))
+	vmessURI := vmessURI(t, map[string]any{
+		"add":  "vmess.example.net",
+		"port": "443",
+		"id":   "00000000-0000-0000-0000-000000000046",
+		"aid":  "0",
+		"scy":  "auto",
+		"net":  "ws",
+		"host": "ws.example.net",
+		"path": "/ws",
+		"tls":  "tls",
+		"sni":  "vmess.example.net",
+		"ps":   "vmess",
+	})
 	config := buildConfig(nil, []store.VirtualNode{
 		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
 	}, []store.Node{
@@ -84,8 +98,15 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         46,
-			URI:        "vmess://placeholder#unsupported",
+			URI:        vmessURI,
 			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         47,
+			URI:        "hysteria2://placeholder@example.org:443#unsupported",
+			Protocol:   "hysteria2",
 			ServerPort: 443,
 			Status:     "active",
 		},
@@ -129,7 +150,25 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if shadowsocks["method"] != "aes-128-gcm" || shadowsocks["password"] != "qa-placeholder" {
 		t.Fatalf("unexpected shadowsocks auth fields: %+v", shadowsocks)
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_46") != nil {
+	vmess := findOutbound(config.Outbounds, "up_46")
+	if vmess == nil {
+		t.Fatalf("expected vmess outbound up_46, got %+v", config.Outbounds)
+	}
+	if vmess["type"] != "vmess" || vmess["server"] != "vmess.example.net" || vmess["server_port"] != 443 {
+		t.Fatalf("unexpected vmess server fields: %+v", vmess)
+	}
+	if vmess["uuid"] != "00000000-0000-0000-0000-000000000046" || vmess["security"] != "auto" {
+		t.Fatalf("unexpected vmess auth fields: %+v", vmess)
+	}
+	vmessTLS, ok := vmess["tls"].(map[string]any)
+	if !ok || vmessTLS["enabled"] != true || vmessTLS["server_name"] != "vmess.example.net" {
+		t.Fatalf("unexpected vmess tls config: %+v", vmess["tls"])
+	}
+	transport, ok := vmess["transport"].(map[string]any)
+	if !ok || transport["type"] != "ws" || transport["path"] != "/ws" {
+		t.Fatalf("unexpected vmess transport config: %+v", vmess["transport"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_47") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -138,7 +177,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 3 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 4 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }
@@ -168,4 +207,13 @@ func findOutbound(outbounds []map[string]any, tag string) map[string]any {
 		}
 	}
 	return nil
+}
+
+func vmessURI(t *testing.T, doc map[string]any) string {
+	t.Helper()
+	payload, err := json.Marshal(doc)
+	if err != nil {
+		t.Fatalf("marshal vmess doc: %v", err)
+	}
+	return "vmess://" + base64.RawURLEncoding.EncodeToString(payload)
 }

@@ -147,6 +147,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildTrojanOutbound(node)
 	case "ss":
 		return buildShadowsocksOutbound(node)
+	case "vmess":
+		return buildVMessOutbound(node)
 	default:
 		return nil, false
 	}
@@ -243,6 +245,81 @@ func buildShadowsocksOutbound(node store.Node) (map[string]any, bool) {
 	}, true
 }
 
+func buildVMessOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "vmess" {
+		return nil, false
+	}
+	doc, ok := parseVMessURI(node.URI)
+	if !ok {
+		return nil, false
+	}
+	port := intFromAny(doc["port"])
+	if port <= 0 {
+		port = node.ServerPort
+	}
+	if port <= 0 {
+		port = 443
+	}
+	server := strings.TrimSpace(stringFromAny(doc["add"]))
+	uuid := strings.TrimSpace(stringFromAny(doc["id"]))
+	if server == "" || uuid == "" {
+		return nil, false
+	}
+
+	outbound := map[string]any{
+		"type":        "vmess",
+		"tag":         upstreamTag(node),
+		"server":      server,
+		"server_port": port,
+		"uuid":        uuid,
+	}
+	if security := strings.TrimSpace(stringFromAny(doc["scy"])); security != "" {
+		outbound["security"] = security
+	}
+	if alterID := intFromAny(doc["aid"]); alterID > 0 {
+		outbound["alter_id"] = alterID
+	}
+	if strings.EqualFold(stringFromAny(doc["tls"]), "tls") || strings.TrimSpace(stringFromAny(doc["sni"])) != "" {
+		tls := map[string]any{"enabled": true}
+		if serverName := firstNonEmpty(stringFromAny(doc["sni"]), stringFromAny(doc["host"]), server); serverName != "" {
+			tls["server_name"] = serverName
+		}
+		outbound["tls"] = tls
+	}
+	if strings.EqualFold(stringFromAny(doc["net"]), "ws") {
+		transport := map[string]any{"type": "ws"}
+		if path := strings.TrimSpace(stringFromAny(doc["path"])); path != "" {
+			transport["path"] = path
+		}
+		if host := strings.TrimSpace(stringFromAny(doc["host"])); host != "" {
+			transport["headers"] = map[string]any{"Host": host}
+		}
+		outbound["transport"] = transport
+	}
+	return outbound, true
+}
+
+func parseVMessURI(rawURI string) (map[string]any, bool) {
+	rawURI = strings.TrimSpace(rawURI)
+	if !strings.HasPrefix(rawURI, "vmess://") {
+		return nil, false
+	}
+	payload := strings.TrimPrefix(rawURI, "vmess://")
+	payload = strings.TrimSpace(payload)
+	if payload == "" {
+		return nil, false
+	}
+	decoded, ok := decodeBase64URL(payload)
+	if !ok {
+		return nil, false
+	}
+	var doc map[string]any
+	if err := json.Unmarshal([]byte(decoded), &doc); err != nil {
+		return nil, false
+	}
+	return doc, true
+}
+
 func parseShadowsocksURI(rawURI string, fallbackPort int) (string, string, string, int, bool) {
 	parsed, err := url.Parse(strings.TrimSpace(rawURI))
 	if err != nil || parsed.Scheme != "ss" {
@@ -324,6 +401,40 @@ func portWithFallback(raw string, fallbackPort int, defaultPort int) int {
 		return fallbackPort
 	}
 	return defaultPort
+}
+
+func stringFromAny(value any) string {
+	switch typed := value.(type) {
+	case string:
+		return typed
+	case json.Number:
+		return typed.String()
+	case float64:
+		if typed == float64(int64(typed)) {
+			return strconv.FormatInt(int64(typed), 10)
+		}
+		return strconv.FormatFloat(typed, 'f', -1, 64)
+	default:
+		return ""
+	}
+}
+
+func intFromAny(value any) int {
+	switch typed := value.(type) {
+	case float64:
+		return int(typed)
+	case json.Number:
+		result, err := typed.Int64()
+		if err == nil {
+			return int(result)
+		}
+	case string:
+		result, err := strconv.Atoi(strings.TrimSpace(typed))
+		if err == nil {
+			return result
+		}
+	}
+	return 0
 }
 
 func upstreamTag(node store.Node) string {

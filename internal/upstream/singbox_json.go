@@ -62,6 +62,8 @@ func singBoxOutboundURI(outbound map[string]any) string {
 		return singBoxWireGuardURI(outbound)
 	case "tor":
 		return singBoxTorURI(outbound)
+	case "dns":
+		return singBoxDNSURI(outbound)
 	default:
 		return ""
 	}
@@ -552,6 +554,15 @@ func singBoxTorURI(outbound map[string]any) string {
 		result.RawQuery = values.Encode()
 	}
 	return result.String()
+}
+
+func singBoxDNSURI(outbound map[string]any) string {
+	name := firstNonEmptyString(singBoxName(outbound), "DNS")
+	return (&url.URL{
+		Scheme:   "dns",
+		Host:     "default",
+		Fragment: name,
+	}).String()
 }
 
 func singBoxProxyURL(scheme, server, port, path string, user *url.Userinfo, values url.Values, fragment string) string {

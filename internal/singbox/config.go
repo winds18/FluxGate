@@ -157,11 +157,17 @@ func buildUpstreamOutbounds(nodes []store.Node) ([]map[string]any, []string, map
 			continue
 		}
 		tag := outbound["tag"].(string)
-		tags = append(tags, tag)
-		tagByNodeID[node.ID] = tag
+		if routeableUpstreamOutbound(outbound) {
+			tags = append(tags, tag)
+			tagByNodeID[node.ID] = tag
+		}
 		outbounds = append(outbounds, outbound)
 	}
 	return outbounds, tags, tagByNodeID
+}
+
+func routeableUpstreamOutbound(outbound map[string]any) bool {
+	return !strings.EqualFold(strings.TrimSpace(stringFromAny(outbound["type"])), "dns")
 }
 
 type routeTagSelector struct {
@@ -267,6 +273,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildWireGuardOutbound(node)
 	case "tor":
 		return buildTorOutbound(node)
+	case "dns":
+		return buildDNSOutbound(node)
 	default:
 		return nil, false
 	}
@@ -1097,6 +1105,20 @@ func buildTorOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	return outbound, true
+}
+
+func buildDNSOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "dns" {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || parsed.Scheme != "dns" {
+		return nil, false
+	}
+	return map[string]any{
+		"type": "dns",
+		"tag":  upstreamTag(node),
+	}, true
 }
 
 func parseVMessURI(rawURI string) (map[string]any, bool) {

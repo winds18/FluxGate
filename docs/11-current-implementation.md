@@ -54,6 +54,7 @@
 - sing-box config publish/rollback API 会返回 `restart_required`，管理后台会提示发布或回滚后需要重启 sing-box。
 - sing-box restart API 和管理后台重启入口已落地；发布/回滚可在 `SING_BOX_AUTO_RESTART=true` 时自动调用受配置保护的重启命令。
 - active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
+- DNS URI 和 sing-box JSON `dns` outbound 可导入为内部 DNS outbound；为避免误承接普通代理流量，DNS outbound 不进入默认上游 selector 和 V2Ray outbound stats 列表。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan/VMess 的 `insecure`/`skip-cert-verify`、`disable_sni` 和 `alpn` TLS 参数，并同步到 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS WebSocket 的 `type=ws`、`path` 和 `host` 参数，并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS gRPC 的 `type=grpc` 和 `service_name` 参数，并同步为 sing-box outbound transport。
@@ -201,7 +202,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 下一步需要继续实现：
 
 - 上游订阅更多结构化格式解析。
-- DNS 等更多协议 URI 到 sing-box outbound 的转换。
+- 更多特殊协议 URI 到 sing-box outbound 的转换。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
 
 ## 5. 当前注意事项

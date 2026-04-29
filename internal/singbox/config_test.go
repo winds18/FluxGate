@@ -524,6 +524,58 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	}
 }
 
+func TestBuildConfigAddsDNSOutboundWithoutSelectingIt(t *testing.T) {
+	config := buildConfig([]store.TokenWithAccount{
+		gatewayToken("active", "active", "vless", nil, 0, 0, 0, "dns-user"),
+	}, []store.VirtualNode{
+		{Name: "dns-only", ListenProtocol: "vless", ListenPort: 8443, TagSelector: `{"include":["DNS"]}`, Status: "active"},
+	}, []store.Node{
+		{
+			ID:         61,
+			URI:        "dns://default#DNS",
+			Protocol:   "dns",
+			ServerPort: 0,
+			Status:     "active",
+			Tags:       []string{"DNS"},
+		},
+		{
+			ID:         62,
+			URI:        "vless://00000000-0000-0000-0000-000000000062@example.com:443#hk",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	}, nil, time.Date(2026, 4, 29, 16, 38, 0, 0, time.UTC))
+
+	dns := findOutbound(config.Outbounds, "up_61")
+	if dns == nil || dns["type"] != "dns" {
+		t.Fatalf("expected dns outbound up_61, got %+v", config.Outbounds)
+	}
+	selector := findOutbound(config.Outbounds, upstreamSelectorTag)
+	if selector == nil {
+		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
+	}
+	tags, ok := selector["outbounds"].([]string)
+	if !ok || len(tags) != 1 || tags[0] != "up_62" || selector["default"] != "up_62" {
+		t.Fatalf("dns outbound should not enter traffic selector: %+v", selector)
+	}
+	stats, ok := config.Experimental["v2ray_api"].(map[string]any)["stats"].(map[string]any)
+	if !ok {
+		t.Fatalf("missing v2ray stats config: %+v", config.Experimental)
+	}
+	statOutbounds, ok := stats["outbounds"].([]string)
+	if !ok || len(statOutbounds) != 1 || statOutbounds[0] != "up_62" {
+		t.Fatalf("dns outbound should not enter stats outbounds: %+v", stats)
+	}
+	if virtualSelector := findOutbound(config.Outbounds, "vn-dns-only-upstreams"); virtualSelector != nil {
+		t.Fatalf("dns outbound should not create a virtual upstream selector: %+v", virtualSelector)
+	}
+	rules, ok := config.Route["rules"].([]map[string]any)
+	if !ok || len(rules) != 1 || rules[0]["outbound"] != "block" {
+		t.Fatalf("dns-only virtual selector should route normal traffic to block: %+v", config.Route)
+	}
+}
+
 func TestBuildConfigAppliesVirtualNodePolicyToUsers(t *testing.T) {
 	now := time.Date(2026, 4, 29, 5, 10, 0, 0, time.UTC)
 	teamID := int64(10)

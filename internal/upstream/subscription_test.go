@@ -20,6 +20,7 @@ func TestNormalizeContentSupportsCurrentOutboundURIList(t *testing.T) {
 	raw := strings.Join([]string{
 		"tuic://00000000-0000-0000-0000-000000000048:qa-placeholder@example.io:443#TUIC",
 		"anytls://qa-placeholder@example.chat:443#AnyTLS",
+		"dns://default#DNS",
 		"shadowtls://qa-placeholder@example.help:443#ShadowTLS",
 		"naive://qa-user:qa-placeholder@example.news:443#Naive",
 		"hysteria://qa-placeholder@example.zone:443?auth_str=qa-auth#Hysteria",
@@ -793,6 +794,24 @@ func TestNormalizeContentSingBoxJSONVLESSGRPC(t *testing.T) {
 		!strings.Contains(got, "service_name=fluxgate") ||
 		!strings.HasSuffix(got, "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20gRPC") {
 		t.Fatalf("unexpected sing-box vless grpc URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONDNS(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "dns",
+      "tag": "内部 DNS"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	if got != "dns://default#%E5%86%85%E9%83%A8%20DNS" {
+		t.Fatalf("unexpected sing-box dns URI: %q", got)
 	}
 }
 

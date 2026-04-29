@@ -802,6 +802,17 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 			proxy["host"] = host
 		}
 	}
+	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "grpc") {
+		if idleTimeout := strings.TrimSpace(stringFromAnyValue(transport["idle_timeout"])); idleTimeout != "" {
+			proxy["idle_timeout"] = idleTimeout
+		}
+		if pingTimeout := strings.TrimSpace(stringFromAnyValue(transport["ping_timeout"])); pingTimeout != "" {
+			proxy["ping_timeout"] = pingTimeout
+		}
+		if boolFromAnyValue(transport["permit_without_stream"]) {
+			proxy["permit_without_stream"] = "1"
+		}
+	}
 	if serviceName := strings.TrimSpace(stringFromAnyValue(transport["service_name"])); serviceName != "" {
 		proxy["service_name"] = serviceName
 	}

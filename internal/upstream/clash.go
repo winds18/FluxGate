@@ -675,6 +675,9 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	httpMethod := firstMapValue(proxy, "http-opts.method", "http_opts.method", "method")
 	httpIdleTimeout := firstMapValue(proxy, "http-opts.idle-timeout", "http_opts.idle_timeout", "idle-timeout", "idle_timeout")
 	httpPingTimeout := firstMapValue(proxy, "http-opts.ping-timeout", "http_opts.ping_timeout", "ping-timeout", "ping_timeout")
+	grpcIdleTimeout := firstMapValue(proxy, "grpc-opts.idle-timeout", "grpc_opts.idle_timeout", "grpc-opts.idle_timeout", "grpc_opts.idle-timeout", "grpc-idle-timeout", "grpc_idle_timeout", "idle-timeout", "idle_timeout")
+	grpcPingTimeout := firstMapValue(proxy, "grpc-opts.ping-timeout", "grpc_opts.ping_timeout", "grpc-opts.ping_timeout", "grpc_opts.ping-timeout", "grpc-ping-timeout", "grpc_ping_timeout", "ping-timeout", "ping_timeout")
+	grpcPermitWithoutStream := firstMapValue(proxy, "grpc-opts.permit-without-stream", "grpc_opts.permit_without_stream", "grpc-opts.permit_without_stream", "grpc_opts.permit-without-stream", "permit-without-stream", "permit_without_stream")
 	path := firstNonEmptyString(wsPath, httpPath, httpUpgradePath, firstMapValue(proxy, "path"))
 	host := firstNonEmptyString(wsHost, httpHost, httpUpgradeHost, firstMapValue(proxy, "host"))
 	serviceName := firstMapValue(proxy, "grpc-service-name", "grpc_service_name", "grpc-opts.grpc-service-name", "grpc_opts.grpc_service_name", "service-name", "service_name")
@@ -693,7 +696,7 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	if transportType == "" && (httpUpgradePath != "" || httpUpgradeHost != "") {
 		transportType = "httpupgrade"
 	}
-	if transportType == "" && serviceName != "" {
+	if transportType == "" && (serviceName != "" || grpcIdleTimeout != "" || grpcPingTimeout != "" || grpcPermitWithoutStream != "") {
 		transportType = "grpc"
 	}
 	if transportType != "" {
@@ -725,6 +728,17 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 		}
 		if httpPingTimeout != "" {
 			values.Set("ping_timeout", httpPingTimeout)
+		}
+	}
+	if strings.EqualFold(transportType, "grpc") {
+		if grpcIdleTimeout != "" {
+			values.Set("idle_timeout", grpcIdleTimeout)
+		}
+		if grpcPingTimeout != "" {
+			values.Set("ping_timeout", grpcPingTimeout)
+		}
+		if grpcPermitWithoutStream != "" {
+			values.Set("permit_without_stream", grpcPermitWithoutStream)
 		}
 	}
 }

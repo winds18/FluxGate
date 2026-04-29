@@ -781,6 +781,27 @@ func TestBuildConfigPreservesVLESSGRPCTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesVLESSGRPCKeepaliveOptions(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         77,
+			URI:        "vless://00000000-0000-0000-0000-000000000077@example.grpc:443?security=tls&type=grpc&service_name=fluxgate&idle_timeout=30s&ping_timeout=10s&permit_without_stream=1#grpc-keepalive",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_77")
+	if outbound == nil {
+		t.Fatalf("expected vless outbound up_77, got %+v", config.Outbounds)
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "grpc" || transport["service_name"] != "fluxgate" || transport["idle_timeout"] != "30s" || transport["ping_timeout"] != "10s" || transport["permit_without_stream"] != true {
+		t.Fatalf("unexpected vless grpc keepalive config: %+v", outbound["transport"])
+	}
+}
+
 func TestBuildConfigPreservesVLESSWebSocketEarlyData(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

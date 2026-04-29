@@ -314,6 +314,36 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLVLESSGRPCKeepaliveOptions(t *testing.T) {
+	raw := `
+proxies:
+  - name: "东京 gRPC Keepalive"
+    type: vless
+    server: grpc.vless.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000077
+    tls: true
+    network: grpc
+    grpc-opts:
+      grpc-service-name: fluxgate
+      idle-timeout: 30s
+      ping-timeout: 10s
+      permit-without-stream: true
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000077@grpc.vless.example.test:443?")
+	if !strings.Contains(got, "type=grpc") ||
+		!strings.Contains(got, "service_name=fluxgate") ||
+		!strings.Contains(got, "idle_timeout=30s") ||
+		!strings.Contains(got, "ping_timeout=10s") ||
+		!strings.Contains(got, "permit_without_stream=true") {
+		t.Fatalf("unexpected clash vless grpc keepalive URI: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLVLESSHTTPTransport(t *testing.T) {
 	raw := `
 proxies:
@@ -964,6 +994,45 @@ func TestNormalizeContentSingBoxJSONVLESSGRPC(t *testing.T) {
 		!strings.Contains(got, "service_name=fluxgate") ||
 		!strings.HasSuffix(got, "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20gRPC") {
 		t.Fatalf("unexpected sing-box vless grpc URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONTrojanGRPCKeepaliveOptions(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "trojan",
+      "tag": "东京 gRPC Keepalive",
+      "server": "grpc.trojan.singbox.example.test",
+      "server_port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "grpc.trojan.singbox.example.test"
+      },
+      "transport": {
+        "type": "grpc",
+        "service_name": "fluxgate",
+        "idle_timeout": "30s",
+        "ping_timeout": "10s",
+        "permit_without_stream": true
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@grpc.trojan.singbox.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "sni=grpc.trojan.singbox.example.test") ||
+		!strings.Contains(got, "type=grpc") ||
+		!strings.Contains(got, "service_name=fluxgate") ||
+		!strings.Contains(got, "idle_timeout=30s") ||
+		!strings.Contains(got, "ping_timeout=10s") ||
+		!strings.Contains(got, "permit_without_stream=1") {
+		t.Fatalf("unexpected sing-box trojan grpc keepalive URI: %q", got)
 	}
 }
 

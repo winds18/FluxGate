@@ -455,6 +455,15 @@ func transportFromQuery(query url.Values) map[string]any {
 		if serviceName := firstNonEmpty(query.Get("service_name"), query.Get("serviceName"), query.Get("grpc_service_name"), query.Get("grpc-service-name")); serviceName != "" {
 			transport["service_name"] = serviceName
 		}
+		if idleTimeout := firstNonEmpty(query.Get("idle_timeout"), query.Get("idle-timeout"), query.Get("grpc_idle_timeout"), query.Get("grpc-idle-timeout")); idleTimeout != "" {
+			transport["idle_timeout"] = idleTimeout
+		}
+		if pingTimeout := firstNonEmpty(query.Get("ping_timeout"), query.Get("ping-timeout"), query.Get("grpc_ping_timeout"), query.Get("grpc-ping-timeout")); pingTimeout != "" {
+			transport["ping_timeout"] = pingTimeout
+		}
+		if boolQuery(firstNonEmpty(query.Get("permit_without_stream"), query.Get("permit-without-stream"))) {
+			transport["permit_without_stream"] = true
+		}
 		return transport
 	case "http", "h2":
 		transport := map[string]any{"type": "http"}

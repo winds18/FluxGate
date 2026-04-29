@@ -44,10 +44,11 @@ curl -fsS -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" \
 
 post_json "/api/teams" '{"name":"QA Team","description":"automated smoke"}' "$OUT_DIR/team.json"
 team_id="$(json_value "data.id" <"$OUT_DIR/team.json")"
-post_json "/api/policies" "{\"name\":\"QA 默认策略\",\"scope_type\":\"team\",\"scope_id\":$team_id,\"max_nodes\":1}" "$OUT_DIR/policy.json"
+post_json "/api/policies" "{\"name\":\"QA 默认策略\",\"scope_type\":\"team\",\"scope_id\":$team_id,\"allowed_virtual_nodes\":\"[\\\"FluxGate-HK\\\"]\",\"max_nodes\":5}" "$OUT_DIR/policy.json"
 policy_id="$(json_value "data.id" <"$OUT_DIR/policy.json")"
 policy_scope_id="$(json_value "data.scope_id" <"$OUT_DIR/policy.json")"
 policy_max_nodes="$(json_value "data.max_nodes" <"$OUT_DIR/policy.json")"
+policy_allowed_virtual_nodes="$(json_value "data.allowed_virtual_nodes" <"$OUT_DIR/policy.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/policies" -o "$OUT_DIR/policies.json"
 policy_list_count="$(json_value "data.length" <"$OUT_DIR/policies.json")"
 
@@ -141,8 +142,8 @@ if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   exit 1
 fi
 
-if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nodes" != "1" || "$policy_list_count" -lt 1 ]]; then
-  log "policy create/list should work: id=$policy_id scope_id=$policy_scope_id team_id=$team_id max_nodes=$policy_max_nodes list_count=$policy_list_count"
+if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nodes" != "5" || "$policy_allowed_virtual_nodes" != "[\"FluxGate-HK\"]" || "$policy_list_count" -lt 1 ]]; then
+  log "policy create/list should work: id=$policy_id scope_id=$policy_scope_id team_id=$team_id allowed_virtual_nodes=$policy_allowed_virtual_nodes max_nodes=$policy_max_nodes list_count=$policy_list_count"
   exit 1
 fi
 
@@ -197,7 +198,12 @@ if ! grep -q 'FluxGate-HK' "$OUT_DIR/subscription.yaml"; then
 fi
 
 if grep -q 'FluxGate-SG' "$OUT_DIR/subscription.yaml"; then
-  log "team policy max_nodes=1 should hide FluxGate-SG from subscription"
+  log "team policy allowed_virtual_nodes should hide FluxGate-SG from subscription"
+  exit 1
+fi
+
+if grep -q 'FluxGate-SG' "$OUT_DIR/sing-box.json"; then
+  log "team policy allowed_virtual_nodes should hide FluxGate-SG from sing-box config"
   exit 1
 fi
 

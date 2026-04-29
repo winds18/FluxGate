@@ -101,7 +101,8 @@ over_quota
 - 配置 exclude tags
 - 配置可见虚拟节点
 - 配置最大节点数
-- `max_nodes` 当前按 Token > 成员 > 团队优先级限制可见虚拟节点，并同步影响 sing-box 入站用户分配；没有可用用户的受限入站不会生成
+- `allowed_virtual_nodes` 当前可按虚拟节点名称或 ID 限制可见虚拟节点
+- `allowed_virtual_nodes` 和 `max_nodes` 当前按 Token > 成员 > 团队优先级限制可见虚拟节点，并同步影响 sing-box 入站用户分配；没有可用用户的受限入站不会生成
 
 ### 1.8 虚拟节点
 

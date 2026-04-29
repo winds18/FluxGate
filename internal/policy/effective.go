@@ -1,7 +1,10 @@
 package policy
 
 import (
+	"encoding/json"
 	"sort"
+	"strconv"
+	"strings"
 
 	"github.com/winds18/FluxGate/internal/store"
 )
@@ -17,31 +20,35 @@ func EffectiveMaxNodes(token store.TokenWithAccount, policies []store.Policy) in
 }
 
 func FilterVirtualNodes(virtualNodes []store.VirtualNode, token store.TokenWithAccount, policies []store.Policy) []store.VirtualNode {
-	maxNodes := EffectiveMaxNodes(token, policies)
-	if maxNodes <= 0 {
-		return virtualNodes
+	filtered := orderedEligibleVirtualNodes(virtualNodes)
+	allowedValues, matchedAllowed := EffectiveAllowedVirtualNodes(token, policies)
+	if matchedAllowed && len(allowedValues) > 0 {
+		filtered = filterAllowedVirtualNodes(filtered, allowedValues)
 	}
-	filtered := make([]store.VirtualNode, 0, len(virtualNodes))
-	for index, node := range orderedEligibleVirtualNodes(virtualNodes) {
-		if index >= maxNodes {
-			break
-		}
-		filtered = append(filtered, node)
+	maxNodes := EffectiveMaxNodes(token, policies)
+	if maxNodes > 0 && len(filtered) > maxNodes {
+		filtered = filtered[:maxNodes]
 	}
 	return filtered
 }
 
 func VirtualNodeAllowed(token store.TokenWithAccount, target store.VirtualNode, virtualNodes []store.VirtualNode, policies []store.Policy) bool {
-	maxNodes := EffectiveMaxNodes(token, policies)
-	if maxNodes <= 0 {
-		return true
-	}
-	for index, node := range orderedEligibleVirtualNodes(virtualNodes) {
+	for _, node := range FilterVirtualNodes(virtualNodes, token, policies) {
 		if sameVirtualNode(node, target) {
-			return index < maxNodes
+			return true
 		}
 	}
 	return false
+}
+
+func EffectiveAllowedVirtualNodes(token store.TokenWithAccount, policies []store.Policy) ([]string, bool) {
+	for _, scope := range []string{"token", "user", "team"} {
+		values, matched := scopedAllowedVirtualNodes(token, policies, scope)
+		if matched {
+			return values, true
+		}
+	}
+	return nil, false
 }
 
 func scopedMaxNodes(token store.TokenWithAccount, policies []store.Policy, scope string) (int, bool) {
@@ -61,6 +68,27 @@ func scopedMaxNodes(token store.TokenWithAccount, policies []store.Policy, scope
 		}
 	}
 	return maxNodes, matched
+}
+
+func scopedAllowedVirtualNodes(token store.TokenWithAccount, policies []store.Policy, scope string) ([]string, bool) {
+	matched := false
+	seen := map[string]bool{}
+	var values []string
+	for _, item := range policies {
+		if item.Status != "active" || item.ScopeType != scope || !scopeMatches(token, item) {
+			continue
+		}
+		matched = true
+		for _, value := range parseAllowedVirtualNodes(item.AllowedVirtualNodes) {
+			key := strings.ToLower(value)
+			if seen[key] {
+				continue
+			}
+			seen[key] = true
+			values = append(values, value)
+		}
+	}
+	return values, matched
 }
 
 func scopeMatches(token store.TokenWithAccount, item store.Policy) bool {
@@ -103,4 +131,66 @@ func orderedEligibleVirtualNodes(virtualNodes []store.VirtualNode) []store.Virtu
 		return eligible[i].Name < eligible[j].Name
 	})
 	return eligible
+}
+
+func filterAllowedVirtualNodes(virtualNodes []store.VirtualNode, allowedValues []string) []store.VirtualNode {
+	filtered := make([]store.VirtualNode, 0, len(virtualNodes))
+	for _, node := range virtualNodes {
+		if virtualNodeAllowedByValues(node, allowedValues) {
+			filtered = append(filtered, node)
+		}
+	}
+	return filtered
+}
+
+func virtualNodeAllowedByValues(node store.VirtualNode, allowedValues []string) bool {
+	for _, value := range allowedValues {
+		if strconv.FormatInt(node.ID, 10) == value || strings.EqualFold(node.Name, value) {
+			return true
+		}
+	}
+	return false
+}
+
+func parseAllowedVirtualNodes(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "[]" {
+		return nil
+	}
+	if strings.HasPrefix(raw, "[") {
+		var items []any
+		if err := json.Unmarshal([]byte(raw), &items); err == nil {
+			values := make([]string, 0, len(items))
+			for _, item := range items {
+				if value := virtualNodeValueString(item); value != "" {
+					values = append(values, value)
+				}
+			}
+			return values
+		}
+	}
+
+	var values []string
+	for _, item := range strings.Split(raw, ",") {
+		if value := strings.TrimSpace(item); value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
+}
+
+func virtualNodeValueString(value any) string {
+	switch typed := value.(type) {
+	case string:
+		return strings.TrimSpace(typed)
+	case float64:
+		if typed == float64(int64(typed)) {
+			return strconv.FormatInt(int64(typed), 10)
+		}
+	case int:
+		return strconv.Itoa(typed)
+	case int64:
+		return strconv.FormatInt(typed, 10)
+	}
+	return ""
 }

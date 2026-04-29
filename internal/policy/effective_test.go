@@ -46,6 +46,43 @@ func TestFilterVirtualNodesAppliesTeamMaxNodes(t *testing.T) {
 	}
 }
 
+func TestFilterVirtualNodesAppliesAllowedVirtualNodes(t *testing.T) {
+	teamID := int64(10)
+	token := store.TokenWithAccount{Token: store.Token{ID: 30, UserID: 20}, UserTeamID: &teamID}
+	nodes := []store.VirtualNode{
+		{ID: 3, Name: "FluxGate-JP", ListenProtocol: "vless", ListenPort: 8445, Status: "active"},
+		{ID: 2, Name: "FluxGate-SG", ListenProtocol: "vless", ListenPort: 8444, Status: "active"},
+		{ID: 1, Name: "FluxGate-HK", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
+	}
+
+	filtered := FilterVirtualNodes(nodes, token, []store.Policy{policyWithAllowed("team", teamID, `["fluxgate-hk",2]`, 0)})
+	if len(filtered) != 2 || filtered[0].Name != "FluxGate-HK" || filtered[1].Name != "FluxGate-SG" {
+		t.Fatalf("unexpected allowed virtual nodes: %+v", filtered)
+	}
+	if VirtualNodeAllowed(token, nodes[0], nodes, []store.Policy{policyWithAllowed("team", teamID, `["FluxGate-HK"]`, 0)}) {
+		t.Fatalf("node outside allowed virtual nodes should be blocked")
+	}
+}
+
+func TestTokenScopeEmptyAllowedVirtualNodesOverridesTeamWhitelist(t *testing.T) {
+	teamID := int64(10)
+	tokenID := int64(30)
+	token := store.TokenWithAccount{Token: store.Token{ID: tokenID, UserID: 20}, UserTeamID: &teamID}
+	nodes := []store.VirtualNode{
+		{ID: 1, Name: "FluxGate-HK", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
+		{ID: 2, Name: "FluxGate-SG", ListenProtocol: "vless", ListenPort: 8444, Status: "active"},
+	}
+	policies := []store.Policy{
+		policyWithAllowed("team", teamID, `["FluxGate-HK"]`, 0),
+		policyWithAllowed("token", tokenID, `[]`, 0),
+	}
+
+	filtered := FilterVirtualNodes(nodes, token, policies)
+	if len(filtered) != 2 {
+		t.Fatalf("token-scope empty allowed_virtual_nodes should leave nodes unrestricted, got %+v", filtered)
+	}
+}
+
 func TestInactivePolicyDoesNotLimitNodes(t *testing.T) {
 	teamID := int64(10)
 	token := store.TokenWithAccount{Token: store.Token{ID: 30, UserID: 20}, UserTeamID: &teamID}
@@ -58,10 +95,15 @@ func TestInactivePolicyDoesNotLimitNodes(t *testing.T) {
 }
 
 func policy(scope string, scopeID int64, maxNodes int64) store.Policy {
+	return policyWithAllowed(scope, scopeID, "", maxNodes)
+}
+
+func policyWithAllowed(scope string, scopeID int64, allowedVirtualNodes string, maxNodes int64) store.Policy {
 	return store.Policy{
-		ScopeType: scope,
-		ScopeID:   &scopeID,
-		MaxNodes:  maxNodes,
-		Status:    "active",
+		ScopeType:           scope,
+		ScopeID:             &scopeID,
+		AllowedVirtualNodes: allowedVirtualNodes,
+		MaxNodes:            maxNodes,
+		Status:              "active",
 	}
 }

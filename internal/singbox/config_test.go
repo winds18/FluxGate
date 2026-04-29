@@ -781,6 +781,31 @@ func TestBuildConfigPreservesVLESSGRPCTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesVLESSHTTPTransport(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         74,
+			URI:        "vless://00000000-0000-0000-0000-000000000074@example.http:443?security=tls&type=http&host=h2.example.test,h2-backup.example.test&path=/h2&method=GET&idle_timeout=20s&ping_timeout=10s#http",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_74")
+	if outbound == nil {
+		t.Fatalf("expected vless outbound up_74, got %+v", config.Outbounds)
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "http" || transport["path"] != "/h2" || transport["method"] != "GET" || transport["idle_timeout"] != "20s" || transport["ping_timeout"] != "10s" {
+		t.Fatalf("unexpected vless http transport config: %+v", outbound["transport"])
+	}
+	hosts, ok := transport["host"].([]string)
+	if !ok || len(hosts) != 2 || hosts[0] != "h2.example.test" || hosts[1] != "h2-backup.example.test" {
+		t.Fatalf("unexpected vless http transport hosts: %+v", transport["host"])
+	}
+}
+
 func TestBuildConfigPreservesVLESSRealityTLS(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

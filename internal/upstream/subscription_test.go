@@ -314,6 +314,39 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLVLESSHTTPTransport(t *testing.T) {
+	raw := `
+proxies:
+  - name: "香港 HTTP"
+    type: vless
+    server: http.vless.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000073
+    tls: true
+    http-opts:
+      host: [h2.example.test, h2-backup.example.test]
+      path: /h2
+      method: GET
+      idle-timeout: 20s
+      ping-timeout: 10s
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000073@http.vless.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "type=http") ||
+		!strings.Contains(got, "host=h2.example.test%2Ch2-backup.example.test") ||
+		!strings.Contains(got, "path=%2Fh2") ||
+		!strings.Contains(got, "method=GET") ||
+		!strings.Contains(got, "idle_timeout=20s") ||
+		!strings.Contains(got, "ping_timeout=10s") ||
+		!strings.HasSuffix(got, "#%E9%A6%99%E6%B8%AF%20HTTP") {
+		t.Fatalf("unexpected clash vless http transport URI: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLInlineLists(t *testing.T) {
 	raw := `
 proxies:
@@ -1022,6 +1055,47 @@ func TestNormalizeContentSingBoxJSONWireGuardEndpoint(t *testing.T) {
 		!strings.Contains(got, "workers=2") ||
 		!strings.HasSuffix(got, "#wg-ep") {
 		t.Fatalf("unexpected sing-box wireguard endpoint URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONVLESSHTTPTransport(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "新加坡 HTTP",
+      "server": "http.vless.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000078",
+      "tls": {
+        "enabled": true,
+        "server_name": "http.vless.singbox.example.test"
+      },
+      "transport": {
+        "type": "http",
+        "host": ["h2.singbox.example.test", "h2-backup.singbox.example.test"],
+        "path": "/h2",
+        "method": "GET",
+        "idle_timeout": "20s",
+        "ping_timeout": "10s"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000078@http.vless.singbox.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "sni=http.vless.singbox.example.test") ||
+		!strings.Contains(got, "type=http") ||
+		!strings.Contains(got, "host=h2.singbox.example.test%2Ch2-backup.singbox.example.test") ||
+		!strings.Contains(got, "path=%2Fh2") ||
+		!strings.Contains(got, "method=GET") ||
+		!strings.Contains(got, "idle_timeout=20s") ||
+		!strings.Contains(got, "ping_timeout=10s") {
+		t.Fatalf("unexpected sing-box vless http transport URI: %q", got)
 	}
 }
 

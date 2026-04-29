@@ -450,6 +450,24 @@ func transportFromQuery(query url.Values) map[string]any {
 			transport["service_name"] = serviceName
 		}
 		return transport
+	case "http", "h2":
+		transport := map[string]any{"type": "http"}
+		if hosts := splitCSV(firstNonEmpty(query.Get("host"), query.Get("http_host"), query.Get("http-host"))); len(hosts) > 0 {
+			transport["host"] = hosts
+		}
+		if path := firstNonEmpty(query.Get("path"), query.Get("http_path"), query.Get("http-path")); path != "" {
+			transport["path"] = path
+		}
+		if method := strings.TrimSpace(query.Get("method")); method != "" {
+			transport["method"] = method
+		}
+		if idleTimeout := firstNonEmpty(query.Get("idle_timeout"), query.Get("idle-timeout")); idleTimeout != "" {
+			transport["idle_timeout"] = idleTimeout
+		}
+		if pingTimeout := firstNonEmpty(query.Get("ping_timeout"), query.Get("ping-timeout")); pingTimeout != "" {
+			transport["ping_timeout"] = pingTimeout
+		}
+		return transport
 	default:
 		return nil
 	}

@@ -661,13 +661,26 @@ func clashRealityPublicKey(proxy map[string]string) string {
 
 func appendClashTransportQueryValues(proxy map[string]string, values url.Values) {
 	transportType := firstMapValue(proxy, "network", "net", "transport")
-	path := firstMapValue(proxy, "ws-path", "ws_path", "path")
-	host := firstMapValue(proxy, "ws-headers.host", "ws_headers.host", "ws-host", "ws_host", "host")
+	if strings.EqualFold(transportType, "h2") {
+		transportType = "http"
+	}
+	wsPath := firstMapValue(proxy, "ws-path", "ws_path")
+	wsHost := firstMapValue(proxy, "ws-headers.host", "ws_headers.host", "ws-host", "ws_host")
+	httpPath := firstMapValue(proxy, "http-opts.path", "http_opts.path")
+	httpHost := firstMapValue(proxy, "http-opts.host", "http_opts.host", "http-opts.headers.host", "http_opts.headers.host")
+	httpMethod := firstMapValue(proxy, "http-opts.method", "http_opts.method", "method")
+	httpIdleTimeout := firstMapValue(proxy, "http-opts.idle-timeout", "http_opts.idle_timeout", "idle-timeout", "idle_timeout")
+	httpPingTimeout := firstMapValue(proxy, "http-opts.ping-timeout", "http_opts.ping_timeout", "ping-timeout", "ping_timeout")
+	path := firstNonEmptyString(wsPath, httpPath, firstMapValue(proxy, "path"))
+	host := firstNonEmptyString(wsHost, httpHost, firstMapValue(proxy, "host"))
 	serviceName := firstMapValue(proxy, "grpc-service-name", "grpc_service_name", "grpc-opts.grpc-service-name", "grpc_opts.grpc_service_name", "service-name", "service_name")
 	if strings.EqualFold(transportType, "tls") {
 		transportType = ""
 	}
-	if transportType == "" && (path != "" || host != "") {
+	if transportType == "" && (httpPath != "" || httpHost != "" || httpMethod != "" || httpIdleTimeout != "" || httpPingTimeout != "") {
+		transportType = "http"
+	}
+	if transportType == "" && (wsPath != "" || wsHost != "") {
 		transportType = "ws"
 	}
 	if transportType == "" && serviceName != "" {
@@ -684,6 +697,17 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	}
 	if serviceName != "" {
 		values.Set("service_name", serviceName)
+	}
+	if strings.EqualFold(transportType, "http") {
+		if httpMethod != "" {
+			values.Set("method", httpMethod)
+		}
+		if httpIdleTimeout != "" {
+			values.Set("idle_timeout", httpIdleTimeout)
+		}
+		if httpPingTimeout != "" {
+			values.Set("ping_timeout", httpPingTimeout)
+		}
 	}
 }
 

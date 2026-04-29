@@ -775,6 +775,20 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 	if path := strings.TrimSpace(stringFromAnyValue(transport["path"])); path != "" {
 		proxy["path"] = path
 	}
+	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "http") {
+		if hosts := stringListFromAnyValue(transport["host"]); len(hosts) > 0 {
+			proxy["host"] = strings.Join(hosts, ",")
+		}
+		if method := strings.TrimSpace(stringFromAnyValue(transport["method"])); method != "" {
+			proxy["method"] = method
+		}
+		if idleTimeout := strings.TrimSpace(stringFromAnyValue(transport["idle_timeout"])); idleTimeout != "" {
+			proxy["idle_timeout"] = idleTimeout
+		}
+		if pingTimeout := strings.TrimSpace(stringFromAnyValue(transport["ping_timeout"])); pingTimeout != "" {
+			proxy["ping_timeout"] = pingTimeout
+		}
+	}
 	if serviceName := strings.TrimSpace(stringFromAnyValue(transport["service_name"])); serviceName != "" {
 		proxy["service_name"] = serviceName
 	}

@@ -168,6 +168,100 @@ func TestImportNodesMarksMissingSubscriptionNodesInactive(t *testing.T) {
 	}
 }
 
+func TestImportNodesNormalizesChinaRegions(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	source, err := db.CreateSource(ctx, CreateSourceInput{Name: "订阅源A", Type: "subscription"})
+	if err != nil {
+		t.Fatalf("create source: %v", err)
+	}
+	if _, err := db.ImportNodes(ctx, ImportNodesInput{
+		SourceID: source.ID,
+		Content: strings.Join([]string{
+			"anytls://password@example.hk:443#%F0%9F%87%AD%F0%9F%87%B03%E9%A6%99%E6%B8%AF%E9%9B%86%E7%BE%A4-%E5%85%A8%E7%BD%91%E4%BC%98%E5%8C%96(AnyTLS)",
+			"anytls://password@example.tw:443#5%E5%8F%B0%E6%B9%BE-%E8%81%94%E9%80%9A%2F%E7%A7%BB%E5%8A%A8(AnyTLS)",
+			"anytls://password@example.us:443#%E9%A6%99%E6%B8%AF-%E7%BE%8E%E5%9B%BD",
+			"anytls://password@example.sg:443#%E6%96%B0%E5%8A%A0%E5%9D%A1%2001",
+		}, "\n"),
+	}); err != nil {
+		t.Fatalf("import nodes: %v", err)
+	}
+
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		t.Fatalf("list nodes: %v", err)
+	}
+	regionByRawName := map[string]string{}
+	for _, node := range nodes {
+		regionByRawName[node.RawName] = node.Region
+	}
+	if regionByRawName["🇭🇰3香港集群-全网优化(AnyTLS)"] != "🇨🇳中国|香港" {
+		t.Fatalf("unexpected hong kong region: %+v", regionByRawName)
+	}
+	if regionByRawName["5台湾-联通/移动(AnyTLS)"] != "🇨🇳中国|台湾" {
+		t.Fatalf("unexpected taiwan region: %+v", regionByRawName)
+	}
+	if regionByRawName["香港-美国"] != "美国" {
+		t.Fatalf("route destination should win: %+v", regionByRawName)
+	}
+	if regionByRawName["新加坡 01"] != "新加坡" {
+		t.Fatalf("known regions should be normalized: %+v", regionByRawName)
+	}
+}
+
+func TestImportNodesPreservesExistingCustomRegion(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	source, err := db.CreateSource(ctx, CreateSourceInput{Name: "订阅源A", Type: "subscription"})
+	if err != nil {
+		t.Fatalf("create source: %v", err)
+	}
+	content := "ss://aes-128-gcm:password@example.test:8388#%E6%9C%AA%E7%9F%A5%2001"
+	if _, err := db.ImportNodes(ctx, ImportNodesInput{SourceID: source.ID, Content: content}); err != nil {
+		t.Fatalf("first import: %v", err)
+	}
+	if _, err := db.db.ExecContext(ctx, "UPDATE upstream_nodes SET region = ? WHERE source_id = ?", "东南亚", source.ID); err != nil {
+		t.Fatalf("set custom region: %v", err)
+	}
+	if _, err := db.ImportNodes(ctx, ImportNodesInput{SourceID: source.ID, Content: content}); err != nil {
+		t.Fatalf("second import: %v", err)
+	}
+
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		t.Fatalf("list nodes: %v", err)
+	}
+	if len(nodes) != 1 || nodes[0].Region != "东南亚" {
+		t.Fatalf("custom region should survive refresh: %+v", nodes)
+	}
+}
+
+func TestImportNodesDoesNotInferRegionFromDefaultTags(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	source, err := db.CreateSource(ctx, CreateSourceInput{Name: "订阅源A", Type: "subscription", DefaultTags: `["QA-HK"]`})
+	if err != nil {
+		t.Fatalf("create source: %v", err)
+	}
+	if _, err := db.ImportNodes(ctx, ImportNodesInput{
+		SourceID: source.ID,
+		Content:  "ss://aes-128-gcm:password@example.test:8388#%E6%9C%AA%E7%9F%A5%2001",
+	}); err != nil {
+		t.Fatalf("import nodes: %v", err)
+	}
+
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		t.Fatalf("list nodes: %v", err)
+	}
+	if len(nodes) != 1 || nodes[0].Region != "" {
+		t.Fatalf("default tags should not force node region: %+v", nodes)
+	}
+}
+
 func TestImportNodesAppliesSourceDefaultTags(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)

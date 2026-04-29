@@ -150,8 +150,9 @@ socks_uri="socks5://qa-user:qa-placeholder@example.socks:1080?network=udp&udp_ov
 ssh_uri="ssh://qa-user:qa-placeholder@example.ssh:22?private_key_path=keys%2Fqa_id_ed25519&host_key_algorithms=ssh-ed25519,rsa-sha2-512&client_version=SSH-2.0-FluxGateQA#香港%2004"
 wireguard_uri="wireguard://example.wg:51820?private_key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI=&peer_public_key=cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==&pre_shared_key=cHNrLXBsYWNlaG9sZGVy&local_address=10.66.0.2/32,fd00::2/128&allowed_ips=0.0.0.0/0,::/0&reserved=1,2,3&mtu=1420#台北%2001"
 tor_uri="tor://default?executable_path=/usr/bin/tor&extra_args=--quiet,--SocksPort,auto&data_directory=cache%2Ftor&torrc.ClientOnly=1#匿名%2001"
+route_uri="vless://00000000-0000-0000-0000-000000000051@example.route:443#香港-%E7%BE%8E%E5%9B%BD"
 
-post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\\ntrojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京%2001\\nss://aes-128-gcm:qa-placeholder@example.net:8388#首尔%2001\\n$vmess_uri\\n$hysteria2_uri\\n$tuic_uri\\n$anytls_uri\\n$shadowtls_uri\\n$naive_uri\\n$hysteria_uri\\n$http_uri\\n$socks_uri\\n$ssh_uri\\n$wireguard_uri\\n$tor_uri\"}" "$OUT_DIR/import.json"
+post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\\ntrojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京%2001\\nss://aes-128-gcm:qa-placeholder@example.net:8388#首尔%2001\\n$vmess_uri\\n$hysteria2_uri\\n$tuic_uri\\n$anytls_uri\\n$shadowtls_uri\\n$naive_uri\\n$hysteria_uri\\n$http_uri\\n$socks_uri\\n$ssh_uri\\n$wireguard_uri\\n$tor_uri\\n$route_uri\"}" "$OUT_DIR/import.json"
 post_json "/api/sources/$subscription_source_id/refresh" '{}' "$OUT_DIR/source-refresh.json"
 source_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-refresh.json")"
 post_json "/api/sources/$sip008_source_id/refresh" '{}' "$OUT_DIR/source-sip008-refresh.json"
@@ -160,6 +161,10 @@ post_json "/api/sources/$singbox_source_id/refresh" '{}' "$OUT_DIR/source-sing-b
 singbox_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-sing-box-refresh.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes" -o "$OUT_DIR/nodes.json"
 qa_hk_tagged_count="$(json_value "data.filter((node) => (node.tags || []).includes('QA-HK')).length" <"$OUT_DIR/nodes.json")"
+china_hk_region_count="$(json_value "data.filter((node) => node.region === '🇨🇳中国|香港').length" <"$OUT_DIR/nodes.json")"
+china_tw_region_count="$(json_value "data.filter((node) => node.region === '🇨🇳中国|台湾').length" <"$OUT_DIR/nodes.json")"
+us_route_region_count="$(json_value "data.filter((node) => node.raw_name === '香港-美国' && node.region === '美国').length" <"$OUT_DIR/nodes.json")"
+singapore_region_count="$(json_value "data.filter((node) => node.region === '新加坡').length" <"$OUT_DIR/nodes.json")"
 first_node_id="$(json_value "data[0]?.id ?? 0" <"$OUT_DIR/nodes.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes/$first_node_id" -o "$OUT_DIR/node-detail.json"
 node_detail_id="$(json_value "data.id" <"$OUT_DIR/node-detail.json")"
@@ -263,6 +268,16 @@ fi
 
 if [[ "$qa_hk_tagged_count" -lt 1 ]]; then
   log "source default_tags should be attached to imported nodes"
+  exit 1
+fi
+
+if [[ "$china_hk_region_count" -lt 1 || "$china_tw_region_count" -lt 1 ]]; then
+  log "node region normalization should group Hong Kong and Taiwan: hk=$china_hk_region_count tw=$china_tw_region_count"
+  exit 1
+fi
+
+if [[ "$us_route_region_count" -lt 1 || "$singapore_region_count" -lt 1 ]]; then
+  log "node region normalization should group known countries and route destinations: us_route=$us_route_region_count singapore=$singapore_region_count"
   exit 1
 fi
 

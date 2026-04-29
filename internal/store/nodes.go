@@ -10,6 +10,7 @@ import (
 	"strings"
 
 	"github.com/winds18/FluxGate/internal/naming"
+	"github.com/winds18/FluxGate/internal/region"
 )
 
 type ImportNodesInput struct {
@@ -34,6 +35,7 @@ func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (Import
 		}
 		rawName := naming.RawNameFromURI(uri)
 		displayName := naming.DisplayName(source.DisplayPrefix, rawName)
+		detectedRegion := region.Normalize("", rawName)
 		protocol := naming.ProtocolFromURI(uri)
 		server, port := naming.ServerFromURI(uri)
 		uriHash := hashURI(uri)
@@ -44,6 +46,7 @@ func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (Import
 			return result, err
 		}
 		if err == nil {
+			nodeRegion := region.Normalize(existing.Region, rawName)
 			_, err = s.db.ExecContext(ctx, `
 				UPDATE upstream_nodes
 				SET raw_name = ?,
@@ -52,11 +55,12 @@ func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (Import
 				    protocol = ?,
 				    server = ?,
 				    server_port = ?,
+				    region = ?,
 				    status = 'active',
 				    last_seen_at = CURRENT_TIMESTAMP,
 				    updated_at = CURRENT_TIMESTAMP
 				WHERE id = ?
-			`, rawName, displayName, uri, protocol, server, port, existing.ID)
+			`, rawName, displayName, uri, protocol, server, port, nodeRegion, existing.ID)
 			if err != nil {
 				return result, err
 			}
@@ -68,9 +72,9 @@ func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (Import
 		}
 
 		insertResult, err := s.db.ExecContext(ctx, `
-			INSERT INTO upstream_nodes(source_id, raw_name, display_name, name_mode, uri, uri_hash, protocol, server, server_port, status, last_seen_at)
-			VALUES (?, ?, ?, 'auto', ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
-		`, input.SourceID, rawName, displayName, uri, uriHash, protocol, server, port)
+			INSERT INTO upstream_nodes(source_id, raw_name, display_name, name_mode, uri, uri_hash, protocol, server, server_port, region, status, last_seen_at)
+			VALUES (?, ?, ?, 'auto', ?, ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
+		`, input.SourceID, rawName, displayName, uri, uriHash, protocol, server, port, detectedRegion)
 		if err != nil {
 			return result, err
 		}
@@ -248,6 +252,7 @@ func scanNode(scanner nodeScanner) (Node, error) {
 		&tagCSV,
 	)
 	node.Tags = splitTagCSV(tagCSV.String)
+	node.Region = region.Normalize(node.Region, node.RawName)
 	return node, err
 }
 

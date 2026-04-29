@@ -491,11 +491,11 @@ func TestRecordTrafficSamplesUpdatesTokenUsageAndRollups(t *testing.T) {
 		t.Fatalf("unexpected outbound rollup: upload=%d download=%d", outboundUpload, outboundDownload)
 	}
 
-	summaries, err := db.ListTokenTraffic(ctx)
+	summaries, err := db.ListTokenTrafficAt(ctx, sampledAt)
 	if err != nil {
 		t.Fatalf("list token traffic: %v", err)
 	}
-	if len(summaries) != 1 || summaries[0].UsedTotalBytes != 165 || summaries[0].AuthUser != result.Account.AuthUser {
+	if len(summaries) != 1 || summaries[0].UsedTotalBytes != 165 || summaries[0].TodayTotalBytes != 165 || summaries[0].MonthTotalBytes != 165 || summaries[0].AuthUser != result.Account.AuthUser {
 		t.Fatalf("unexpected traffic summary: %+v", summaries)
 	}
 }

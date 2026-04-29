@@ -30,18 +30,24 @@ type TrafficSample struct {
 }
 
 type TokenTrafficSummary struct {
-	TokenID           int64  `json:"token_id"`
-	UserID            int64  `json:"user_id"`
-	GatewayAccountID  int64  `json:"gateway_account_id"`
-	AuthUser          string `json:"auth_user"`
-	TokenPrefix       string `json:"token_prefix"`
-	TokenName         string `json:"token_name"`
-	TokenStatus       string `json:"token_status"`
-	QuotaBytes        int64  `json:"quota_bytes"`
-	UsedUploadBytes   int64  `json:"used_upload_bytes"`
-	UsedDownloadBytes int64  `json:"used_download_bytes"`
-	UsedTotalBytes    int64  `json:"used_total_bytes"`
-	UpdatedAt         string `json:"updated_at"`
+	TokenID            int64  `json:"token_id"`
+	UserID             int64  `json:"user_id"`
+	GatewayAccountID   int64  `json:"gateway_account_id"`
+	AuthUser           string `json:"auth_user"`
+	TokenPrefix        string `json:"token_prefix"`
+	TokenName          string `json:"token_name"`
+	TokenStatus        string `json:"token_status"`
+	QuotaBytes         int64  `json:"quota_bytes"`
+	TodayUploadBytes   int64  `json:"today_upload_bytes"`
+	TodayDownloadBytes int64  `json:"today_download_bytes"`
+	TodayTotalBytes    int64  `json:"today_total_bytes"`
+	MonthUploadBytes   int64  `json:"month_upload_bytes"`
+	MonthDownloadBytes int64  `json:"month_download_bytes"`
+	MonthTotalBytes    int64  `json:"month_total_bytes"`
+	UsedUploadBytes    int64  `json:"used_upload_bytes"`
+	UsedDownloadBytes  int64  `json:"used_download_bytes"`
+	UsedTotalBytes     int64  `json:"used_total_bytes"`
+	UpdatedAt          string `json:"updated_at"`
 }
 
 func (s *Store) RecordTrafficSample(ctx context.Context, input RecordTrafficSampleInput) (TrafficSample, error) {
@@ -92,14 +98,34 @@ func (s *Store) RecordTrafficSamples(ctx context.Context, inputs []RecordTraffic
 }
 
 func (s *Store) ListTokenTraffic(ctx context.Context) ([]TokenTrafficSummary, error) {
+	return s.ListTokenTrafficAt(ctx, time.Now().UTC())
+}
+
+func (s *Store) ListTokenTrafficAt(ctx context.Context, now time.Time) ([]TokenTrafficSummary, error) {
+	today := now.UTC().Format("2006-01-02")
+	monthStart := now.UTC().Format("2006-01") + "-01"
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT t.id, t.user_id, g.id, g.auth_user, t.token_prefix, t.name, t.status,
+		       COALESCE(today.upload_bytes, 0), COALESCE(today.download_bytes, 0), COALESCE(today.upload_bytes + today.download_bytes, 0),
+		       COALESCE(month.upload_bytes, 0), COALESCE(month.download_bytes, 0), COALESCE(month.upload_bytes + month.download_bytes, 0),
 		       t.quota_bytes, t.used_upload_bytes, t.used_download_bytes,
 		       t.used_upload_bytes + t.used_download_bytes, t.updated_at
 		FROM tokens t
 		JOIN gateway_accounts g ON g.token_id = t.id
+		LEFT JOIN (
+		  SELECT token_id, SUM(upload_bytes) AS upload_bytes, SUM(download_bytes) AS download_bytes
+		  FROM traffic_user_daily
+		  WHERE day = ?
+		  GROUP BY token_id
+		) today ON today.token_id = t.id
+		LEFT JOIN (
+		  SELECT token_id, SUM(upload_bytes) AS upload_bytes, SUM(download_bytes) AS download_bytes
+		  FROM traffic_user_daily
+		  WHERE day >= ? AND day <= ?
+		  GROUP BY token_id
+		) month ON month.token_id = t.id
 		ORDER BY t.id DESC
-	`)
+	`, today, monthStart, today)
 	if err != nil {
 		return nil, err
 	}
@@ -116,6 +142,12 @@ func (s *Store) ListTokenTraffic(ctx context.Context) ([]TokenTrafficSummary, er
 			&item.TokenPrefix,
 			&item.TokenName,
 			&item.TokenStatus,
+			&item.TodayUploadBytes,
+			&item.TodayDownloadBytes,
+			&item.TodayTotalBytes,
+			&item.MonthUploadBytes,
+			&item.MonthDownloadBytes,
+			&item.MonthTotalBytes,
 			&item.QuotaBytes,
 			&item.UsedUploadBytes,
 			&item.UsedDownloadBytes,

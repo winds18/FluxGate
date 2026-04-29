@@ -48,7 +48,7 @@
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
 - 流量统计入库骨架已落地：可解析 V2Ray stats 的 user/inbound/outbound 计数名称，写入 `traffic_samples`，计算 counter delta，并把 user 维度增量累加到 Token 用量和小时/天汇总表。
 - user 维度流量入库后会自动判断 Token 额度；超额时将 Token 和 gateway account 标记为 `over_quota`，追加足够额度后自动恢复为 `active`。
-- 管理 API 和后台页面可查看 Token 流量用量摘要。
+- 管理 API 和后台页面可查看 Token 今日、本月和累计流量用量摘要。
 - Token hash 存储，明文只在创建时返回。
 - 订阅请求日志 Token 路径脱敏。
 - 结构化 JSON 服务日志。

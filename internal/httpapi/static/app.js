@@ -543,6 +543,8 @@ function renderTrafficTokens(rows) {
     "user_id",
     "auth_user",
     "token_status",
+    "today_total_bytes",
+    "month_total_bytes",
     "used_upload_bytes",
     "used_download_bytes",
     "used_total_bytes",

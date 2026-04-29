@@ -84,11 +84,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   const nodeEditCount = await page.locator("#nodes button[data-node-action='edit']").count();
   let nodeEditFormVisible = false;
+  let nodeDetailVisible = false;
   if (nodeEditCount > 0) {
     await page.locator("#nodes button[data-node-action='edit']").first().click();
     await expect(page.locator("#nodes form[data-node-edit-form]").first()).toBeVisible({ timeout: 5000 });
     nodeEditFormVisible = true;
     await page.locator("#nodes button[data-node-action='cancel']").first().click();
+    await page.locator("#nodes button[data-node-action='detail']").first().click();
+    await expect(page.locator("#nodes .node-detail-row .detail-code").first()).toBeVisible({ timeout: 5000 });
+    nodeDetailVisible = true;
   }
 
   const state = await page.evaluate(() => ({
@@ -112,6 +116,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
+  state.nodeDetailVisible = nodeDetailVisible;
   const cookies = await context.cookies(baseURL);
   await page.screenshot({ path: screenshotPath, fullPage: true });
 

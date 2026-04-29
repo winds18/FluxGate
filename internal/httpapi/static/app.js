@@ -64,6 +64,8 @@ let appState = {
   virtualNodes: [],
   editingSourceID: null,
   editingNodeID: null,
+  expandedNodeID: null,
+  nodeDetail: null,
 };
 
 const columnLabels = {
@@ -75,12 +77,18 @@ const columnLabels = {
   user_id: "成员 ID",
   token_id: "Token ID",
   gateway_account_id: "网关账号 ID",
+  source_id: "来源 ID",
   source_name: "来源",
   url: "URL",
   raw_name: "原始名称",
   display_name: "展示名称",
   name_mode: "命名模式",
   protocol: "协议",
+  server: "服务器",
+  server_port: "端口",
+  region: "地区",
+  uri: "节点 URI",
+  uri_hash: "URI Hash",
   tags: "标签",
   listen_protocol: "监听协议",
   listen_port: "端口",
@@ -114,7 +122,10 @@ const columnLabels = {
   default_tags: "默认标签",
   refresh_interval_minutes: "刷新分钟",
   last_sync_at: "上次同步",
+  last_seen_at: "上次出现",
+  last_checked_at: "上次检测",
   last_error: "错误",
+  created_at: "创建时间",
   actions: "操作",
 };
 
@@ -148,7 +159,7 @@ async function login(event) {
 
 async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
-  appState = { teams: [], users: [], sources: [], nodes: [], virtualNodes: [], editingSourceID: null, editingNodeID: null };
+  appState = { teams: [], users: [], sources: [], nodes: [], virtualNodes: [], editingSourceID: null, editingNodeID: null, expandedNodeID: null, nodeDetail: null };
   tokenResultEl.hidden = true;
   tokenResultEl.textContent = "";
   showLogin();
@@ -392,6 +403,8 @@ async function handleNodeAction(event) {
   const action = button.dataset.nodeAction;
   if (action === "edit") {
     appState.editingNodeID = id;
+    appState.expandedNodeID = null;
+    appState.nodeDetail = null;
     renderNodes(appState.nodes);
     nodesEl.querySelector(`form[data-node-id="${id}"] input[name="display_name"]`)?.focus();
     return;
@@ -399,6 +412,30 @@ async function handleNodeAction(event) {
   if (action === "cancel") {
     appState.editingNodeID = null;
     renderNodes(appState.nodes);
+    return;
+  }
+  if (action === "detail") {
+    if (appState.expandedNodeID === id) {
+      appState.expandedNodeID = null;
+      appState.nodeDetail = null;
+      renderNodes(appState.nodes);
+      return;
+    }
+    button.disabled = true;
+    statusEl.textContent = "加载节点详情中";
+    try {
+      const detail = await getJSON(`/api/nodes/${id}`);
+      appState.expandedNodeID = id;
+      appState.nodeDetail = detail;
+      appState.editingNodeID = null;
+      renderNodes(appState.nodes);
+      statusEl.textContent = "已连接";
+    } catch (error) {
+      appState.expandedNodeID = null;
+      appState.nodeDetail = null;
+      statusEl.textContent = "详情加载失败";
+      button.disabled = false;
+    }
     return;
   }
   if (action !== "reset-name") return;
@@ -739,8 +776,10 @@ function renderNodes(rows) {
 
 function renderNodeRow(row) {
   const isEditing = appState.editingNodeID === row.id;
+  const isExpanded = appState.expandedNodeID === row.id;
+  const detail = isExpanded ? appState.nodeDetail || row : null;
   return `
-    <tr>
+    <tr data-node-id="${row.id}">
       <td>${formatCell(row.id, "id")}</td>
       <td>${formatCell(row.source_name, "source_name")}</td>
       <td>${formatCell(row.raw_name, "raw_name")}</td>
@@ -755,10 +794,66 @@ function renderNodeRow(row) {
             ? `<button class="table-button ghost-button" type="button" data-node-action="cancel" data-node-id="${row.id}">取消</button>`
             : `<button class="table-button" type="button" data-node-action="edit" data-node-id="${row.id}">编辑</button>`
         }
+        <button class="table-button ghost-button" type="button" data-node-action="detail" data-node-id="${row.id}">${isExpanded ? "收起" : "详情"}</button>
         <button class="table-button ghost-button" type="button" data-node-action="reset-name" data-node-id="${row.id}" ${row.name_mode === "auto" ? "disabled" : ""}>恢复自动</button>
       </td>
     </tr>
+    ${detail ? renderNodeDetailRow(detail) : ""}
   `;
+}
+
+function renderNodeDetailRow(node) {
+  return `
+    <tr class="node-detail-row">
+      <td colspan="9">
+        <div class="node-detail-panel">
+          <div class="detail-grid">
+            ${nodeDetailItem("id", node.id)}
+            ${nodeDetailItem("source_id", node.source_id)}
+            ${nodeDetailItem("source_name", node.source_name)}
+            ${nodeDetailItem("raw_name", node.raw_name)}
+            ${nodeDetailItem("display_name", node.display_name)}
+            ${nodeDetailItem("name_mode", node.name_mode)}
+            ${nodeDetailItem("protocol", node.protocol)}
+            ${nodeDetailItem("server", node.server)}
+            ${nodeDetailItem("server_port", node.server_port)}
+            ${nodeDetailItem("region", node.region)}
+            ${nodeDetailItem("tags", node.tags)}
+            ${nodeDetailItem("status", node.status)}
+            ${nodeDetailItem("last_seen_at", node.last_seen_at)}
+            ${nodeDetailItem("last_checked_at", node.last_checked_at)}
+            ${nodeDetailItem("last_error", node.last_error)}
+            ${nodeDetailItem("created_at", node.created_at)}
+            ${nodeDetailItem("updated_at", node.updated_at)}
+            ${nodeDetailItem("uri_hash", node.uri_hash)}
+          </div>
+          <div class="detail-item detail-item-wide">
+            <span>${labelForColumn("uri")}</span>
+            <code class="detail-code">${escapeHTML(String(node.uri || ""))}</code>
+          </div>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function nodeDetailItem(label, value) {
+  return `
+    <div class="detail-item">
+      <span>${labelForColumn(label)}</span>
+      <strong>${formatDetailValue(value)}</strong>
+    </div>
+  `;
+}
+
+function formatDetailValue(value) {
+  if (value === null || value === undefined || value === "") {
+    return `<span class="cell-muted">--</span>`;
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0 ? escapeHTML(value.join(", ")) : `<span class="cell-muted">--</span>`;
+  }
+  return escapeHTML(String(value));
 }
 
 function renderNodeEditForm(row) {

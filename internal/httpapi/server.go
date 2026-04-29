@@ -70,6 +70,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/sources/{id}/regenerate-node-names", s.handleRegenerateSourceNodeNames)
 
 	s.mux.HandleFunc("GET /api/nodes", s.handleListNodes)
+	s.mux.HandleFunc("GET /api/nodes/{id}", s.handleGetNode)
 	s.mux.HandleFunc("POST /api/nodes/import", s.handleImportNodes)
 	s.mux.HandleFunc("PATCH /api/nodes/{id}", s.handleUpdateNode)
 	s.mux.HandleFunc("POST /api/nodes/{id}/reset-display-name", s.handleResetNodeDisplayName)
@@ -386,6 +387,19 @@ func (s *Server) handleListNodes(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, nodes)
+}
+
+func (s *Server) handleGetNode(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	node, err := s.store.GetNode(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, node)
 }
 
 func (s *Server) handleImportNodes(w http.ResponseWriter, r *http.Request) {

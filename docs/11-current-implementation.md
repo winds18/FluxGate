@@ -34,6 +34,7 @@
 - 重复来源名前缀自动编号，例如 `[机场A]`、`[机场A-2]`。
 - 节点 URI 页面批量导入。
 - 节点 `raw_name`、`display_name`、`name_mode`。
+- 管理 API 和管理后台可查看单个节点详情，包括 URI、服务器、端口、Hash、状态、标签和时间信息。
 - 单节点手动改名保护。
 - 单节点恢复自动命名。
 - 管理后台节点池支持行内编辑节点展示名，并可恢复来源前缀驱动的自动命名。
@@ -106,6 +107,7 @@ POST  /api/sources/{id}/refresh
 POST  /api/sources/{id}/regenerate-node-names
 
 GET   /api/nodes
+GET   /api/nodes/{id}
 POST  /api/nodes/import
 PATCH /api/nodes/{id}
 POST  /api/nodes/{id}/reset-display-name
@@ -171,6 +173,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 来源前缀、节点展示名和 Token 前缀正常展示。
 - 有节点数据时，浏览器验收会确认节点池“编辑”入口可打开行内编辑表单。
 - 有来源数据时，浏览器验收会确认上游来源“编辑”入口可打开行内编辑字段。
+- 有节点数据时，浏览器验收会确认节点池“详情”入口可展开单节点详情。
 
 ## 4. 尚未完成
 

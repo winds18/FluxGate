@@ -241,7 +241,7 @@ main {
 }
 
 .node-actions {
-  min-width: 168px;
+  min-width: 230px;
 }
 
 button {
@@ -370,6 +370,59 @@ textarea {
 
 .table-edit-number {
   min-width: 108px;
+}
+
+.node-detail-row td {
+  background: #fbfdff;
+  padding: 0;
+}
+
+.node-detail-panel {
+  display: grid;
+  gap: 12px;
+  padding: 14px 16px 16px;
+}
+
+.detail-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.detail-item {
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 10px 12px;
+}
+
+.detail-item > span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.detail-item strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 680;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.detail-item-wide {
+  min-width: 0;
+}
+
+.detail-code {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  padding: 8px 10px;
+  white-space: nowrap;
 }
 
 input::placeholder,

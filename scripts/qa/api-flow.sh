@@ -161,6 +161,11 @@ singbox_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes" -o "$OUT_DIR/nodes.json"
 qa_hk_tagged_count="$(json_value "data.filter((node) => (node.tags || []).includes('QA-HK')).length" <"$OUT_DIR/nodes.json")"
 first_node_id="$(json_value "data[0]?.id ?? 0" <"$OUT_DIR/nodes.json")"
+run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes/$first_node_id" -o "$OUT_DIR/node-detail.json"
+node_detail_id="$(json_value "data.id" <"$OUT_DIR/node-detail.json")"
+node_detail_uri="$(json_value "data.uri || ''" <"$OUT_DIR/node-detail.json")"
+node_detail_hash="$(json_value "data.uri_hash || ''" <"$OUT_DIR/node-detail.json")"
+node_detail_source_name="$(json_value "data.source_name || ''" <"$OUT_DIR/node-detail.json")"
 patch_json "/api/nodes/$first_node_id" '{"display_name":"QA 手动节点"}' "$OUT_DIR/node-update.json"
 node_manual_name="$(json_value "data.display_name" <"$OUT_DIR/node-update.json")"
 node_manual_mode="$(json_value "data.name_mode" <"$OUT_DIR/node-update.json")"
@@ -263,6 +268,11 @@ fi
 
 if [[ "$first_node_id" -lt 1 || "$node_manual_name" != "QA 手动节点" || "$node_manual_mode" != "manual" || "$node_reset_mode" != "auto" || "$node_reset_name" == "QA 手动节点" ]]; then
   log "node edit/reset should work: id=$first_node_id manual_name=$node_manual_name manual_mode=$node_manual_mode reset_name=$node_reset_name reset_mode=$node_reset_mode"
+  exit 1
+fi
+
+if [[ "$node_detail_id" != "$first_node_id" || -z "$node_detail_uri" || -z "$node_detail_hash" || -z "$node_detail_source_name" ]]; then
+  log "node detail endpoint should return full node information: id=$node_detail_id expected=$first_node_id uri=$node_detail_uri hash=$node_detail_hash source=$node_detail_source_name"
   exit 1
 fi
 

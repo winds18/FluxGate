@@ -802,6 +802,27 @@ func TestBuildConfigPreservesVLESSGRPCKeepaliveOptions(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesVLESSQUICTransport(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         78,
+			URI:        "vless://00000000-0000-0000-0000-000000000078@example.quic:443?security=tls&type=quic#quic",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_78")
+	if outbound == nil {
+		t.Fatalf("expected vless outbound up_78, got %+v", config.Outbounds)
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "quic" {
+		t.Fatalf("unexpected vless quic transport config: %+v", outbound["transport"])
+	}
+}
+
 func TestBuildConfigPreservesVLESSWebSocketEarlyData(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

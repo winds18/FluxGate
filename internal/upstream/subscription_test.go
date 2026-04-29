@@ -344,6 +344,29 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLTrojanQUICTransport(t *testing.T) {
+	raw := `
+proxies:
+  - name: "东京 QUIC"
+    type: trojan
+    server: quic.trojan.example.test
+    port: 443
+    password: trojan-placeholder
+    tls: true
+    network: quic
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@quic.trojan.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "type=quic") ||
+		!strings.HasSuffix(got, "#%E4%B8%9C%E4%BA%AC%20QUIC") {
+		t.Fatalf("unexpected clash trojan quic URI: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLVLESSHTTPTransport(t *testing.T) {
 	raw := `
 proxies:
@@ -1033,6 +1056,38 @@ func TestNormalizeContentSingBoxJSONTrojanGRPCKeepaliveOptions(t *testing.T) {
 		!strings.Contains(got, "ping_timeout=10s") ||
 		!strings.Contains(got, "permit_without_stream=1") {
 		t.Fatalf("unexpected sing-box trojan grpc keepalive URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONVLESSQUICTransport(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "新加坡 QUIC",
+      "server": "quic.vless.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000079",
+      "tls": {
+        "enabled": true,
+        "server_name": "quic.vless.singbox.example.test"
+      },
+      "transport": {
+        "type": "quic"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000079@quic.vless.singbox.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "sni=quic.vless.singbox.example.test") ||
+		!strings.Contains(got, "type=quic") ||
+		!strings.HasSuffix(got, "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20QUIC") {
+		t.Fatalf("unexpected sing-box vless quic URI: %q", got)
 	}
 }
 

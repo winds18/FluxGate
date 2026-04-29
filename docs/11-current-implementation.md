@@ -65,6 +65,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan WebSocket 的 `max_early_data` 和 `early_data_header_name` 参数，并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS gRPC 的 `type=grpc` 和 `service_name` 参数，并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan gRPC 的 `idle_timeout`、`ping_timeout` 和 `permit_without_stream` 参数，并同步为 sing-box outbound transport。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan QUIC transport，并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTP transport 的 `host`、`path`、`method`、`idle_timeout` 和 `ping_timeout` 参数，并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTPUpgrade transport 的 `host` 和 `path` 参数，并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS REALITY 的 public key、short id 和 uTLS fingerprint 参数，并同步为 sing-box outbound TLS 配置。

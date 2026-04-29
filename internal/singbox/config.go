@@ -465,6 +465,8 @@ func transportFromQuery(query url.Values) map[string]any {
 			transport["permit_without_stream"] = true
 		}
 		return transport
+	case "quic":
+		return map[string]any{"type": "quic"}
 	case "http", "h2":
 		transport := map[string]any{"type": "http"}
 		if hosts := splitCSV(firstNonEmpty(query.Get("host"), query.Get("http_host"), query.Get("http-host"))); len(hosts) > 0 {

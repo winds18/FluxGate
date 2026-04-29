@@ -284,12 +284,40 @@ func structuredJSONDocumentURI(values map[string]any) string {
 func clashJSONProxyURI(values map[string]any, fallbackName string) string {
 	proxy := map[string]string{}
 	collectJSONProxyFields(proxy, nil, values)
+	applyClashJSONProxyAliases(proxy)
 	if firstMapValue(proxy, "name") == "" {
 		if name := firstNonEmptyString(firstMapValue(proxy, "tag", "remarks", "ps", "id"), fallbackName); name != "" {
 			proxy["name"] = name
 		}
 	}
 	return clashProxyURI(proxy)
+}
+
+func applyClashJSONProxyAliases(proxy map[string]string) {
+	for _, item := range []struct {
+		canonical string
+		aliases   []string
+	}{
+		{canonical: "type", aliases: []string{"protocol", "proto"}},
+		{canonical: "server", aliases: []string{"host", "address", "addr"}},
+		{canonical: "port", aliases: []string{"server_port", "serverport"}},
+		{canonical: "uuid", aliases: []string{"id", "user_id", "userid"}},
+		{canonical: "cipher", aliases: []string{"method", "encryption"}},
+		{canonical: "password", aliases: []string{"pass"}},
+	} {
+		if firstMapValue(proxy, item.canonical) != "" {
+			continue
+		}
+		for _, alias := range item.aliases {
+			if value := firstMapValue(proxy, alias); value != "" {
+				proxy[item.canonical] = value
+				if item.canonical == "type" || (item.canonical == "server" && strings.EqualFold(alias, "host")) {
+					delete(proxy, strings.ToLower(alias))
+				}
+				break
+			}
+		}
+	}
 }
 
 func collectJSONProxyFields(target map[string]string, scopes []string, values map[string]any) {

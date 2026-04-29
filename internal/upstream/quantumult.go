@@ -266,6 +266,9 @@ func quantumultXApplyTransportOptions(proxy map[string]string, options map[strin
 	if obfs == "ws" || obfs == "websocket" || obfs == "wss" {
 		proxy["network"] = "ws"
 	}
+	if obfs == "grpc" {
+		proxy["network"] = "grpc"
+	}
 	if obfs == "wss" && proxy["tls"] == "" {
 		proxy["tls"] = "true"
 	}
@@ -274,5 +277,15 @@ func quantumultXApplyTransportOptions(proxy map[string]string, options map[strin
 	}
 	if host := surgeOption(options, "obfs-host", "obfs_host", "ws-host", "ws_host", "host"); host != "" {
 		proxy["ws-headers.host"] = host
+	}
+	if serviceName := surgeOption(options,
+		"grpc-service-name", "grpc_service_name",
+		"grpc-opts.grpc-service-name", "grpc_opts.grpc_service_name",
+		"service-name", "service_name",
+	); serviceName != "" {
+		proxy["grpc-service-name"] = serviceName
+		if proxy["network"] == "" {
+			proxy["network"] = "grpc"
+		}
 	}
 }

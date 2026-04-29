@@ -382,6 +382,44 @@ wireguard=qx-wg.example.test:51820, private-key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXIt
 	}
 }
 
+func TestNormalizeContentQuantumultXGRPCTransport(t *testing.T) {
+	raw := `[server_local]
+vless=qx-grpc-vless.example.test:443, password=00000000-0000-0000-0000-000000000092, over-tls=true, tls-host=qx-grpc-vless.example.test, obfs=grpc, grpc-service-name=fluxgate-qx, tag=香港 QuantumultX gRPC VLESS
+trojan=qx-grpc-trojan.example.test:443, password=trojan-placeholder, over-tls=true, tls-host=qx-grpc-trojan.example.test, obfs=grpc, service-name=trojan-qx, tag=东京 QuantumultX gRPC Trojan`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Quantumult X gRPC URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000092@qx-grpc-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=qx-grpc-vless.example.test",
+		"type=grpc",
+		"service_name=fluxgate-qx",
+		"#%E9%A6%99%E6%B8%AF%20QuantumultX%20gRPC%20VLESS",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Quantumult X gRPC VLESS URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@qx-grpc-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=qx-grpc-trojan.example.test",
+		"type=grpc",
+		"service_name=trojan-qx",
+		"#%E4%B8%9C%E4%BA%AC%20QuantumultX%20gRPC%20Trojan",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Quantumult X gRPC Trojan URI to contain %q: %q", want, lines[1])
+		}
+	}
+}
+
 func TestNormalizeContentJSONWrappedBase64URIList(t *testing.T) {
 	payload := strings.Join([]string{
 		"vless://00000000-0000-0000-0000-000000000081@example.com:443#香港 02",
@@ -1495,6 +1533,46 @@ func TestNormalizeContentSurgeProxyListVLESSAndVMess(t *testing.T) {
 	} {
 		if !strings.Contains(decoded, want) {
 			t.Fatalf("expected Surge VMess document to contain %s: %q", want, decoded)
+		}
+	}
+}
+
+func TestNormalizeContentSurgeProxyListGRPCTransport(t *testing.T) {
+	raw := `
+[Proxy]
+香港 Surge gRPC VLESS = vless, grpc-vless.surge.example.test, 443, uuid=00000000-0000-0000-0000-000000000093, tls=true, sni=grpc-vless.surge.example.test, obfs=grpc, grpc-service-name=fluxgate-surge
+东京 Surge gRPC Trojan = trojan, grpc-trojan.surge.example.test, 443, password=trojan-placeholder, sni=grpc-trojan.surge.example.test, obfs=grpc, service-name=trojan-surge
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Surge gRPC URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000093@grpc-vless.surge.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=grpc-vless.surge.example.test",
+		"type=grpc",
+		"service_name=fluxgate-surge",
+		"#%E9%A6%99%E6%B8%AF%20Surge%20gRPC%20VLESS",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Surge gRPC VLESS URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@grpc-trojan.surge.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=grpc-trojan.surge.example.test",
+		"type=grpc",
+		"service_name=trojan-surge",
+		"#%E4%B8%9C%E4%BA%AC%20Surge%20gRPC%20Trojan",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Surge gRPC Trojan URI to contain %q: %q", want, lines[1])
 		}
 	}
 }

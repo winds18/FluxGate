@@ -352,6 +352,8 @@ func surgeApplyTransportOptions(proxy map[string]string, options map[string]stri
 	}
 	if obfs := strings.ToLower(surgeOption(options, "obfs")); obfs == "ws" || obfs == "websocket" {
 		proxy["network"] = "ws"
+	} else if obfs == "grpc" {
+		proxy["network"] = "grpc"
 	}
 	if path := surgeOption(options, "ws-path", "ws_path", "obfs-uri", "obfs_uri", "path"); path != "" {
 		proxy["ws-path"] = path
@@ -361,6 +363,16 @@ func surgeApplyTransportOptions(proxy map[string]string, options map[string]stri
 	}
 	if headerHost := surgeWSHeaderHost(surgeOption(options, "ws-headers", "ws_headers")); headerHost != "" {
 		proxy["ws-headers.host"] = headerHost
+	}
+	if serviceName := surgeOption(options,
+		"grpc-service-name", "grpc_service_name",
+		"grpc-opts.grpc-service-name", "grpc_opts.grpc_service_name",
+		"service-name", "service_name",
+	); serviceName != "" {
+		proxy["grpc-service-name"] = serviceName
+		if proxy["network"] == "" {
+			proxy["network"] = "grpc"
+		}
 	}
 }
 

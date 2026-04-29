@@ -84,6 +84,7 @@
 - JSON 包装订阅可解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象。
 - JSON 结构化节点可识别 `protocol`、`host`、`address`、`server_port`、`method`、`pass` 和 `remarks` 等常见别名字段。
 - subscription 来源可解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点。
+- Quantumult X 和 Surge 结构化 VLESS/Trojan 节点可保留 gRPC transport 和 service name。
 - subscription 来源可解析以节点名称为 key 的 JSON URI 对象映射。
 - subscription 来源可解析裸 VMess JSON 单对象、数组、包装字符串和按名称映射对象，并转换为标准 `vmess://` URI。
 - subscription 来源可解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI。

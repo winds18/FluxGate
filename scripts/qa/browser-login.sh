@@ -84,6 +84,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`east8 time display failed: ${JSON.stringify(east8TimeSamples)}`);
   }
+  const trafficTokenRowCount = await page.locator("#traffic-tokens tbody tr").count();
+  const quotaMeterCount = await page.locator("#traffic-tokens .quota-meter").count();
+  let quotaUsageVisible = false;
+  if (trafficTokenRowCount > 0) {
+    await expect(page.locator("#traffic-tokens .quota-meter").first()).toBeVisible({ timeout: 5000 });
+    if (quotaMeterCount !== trafficTokenRowCount) {
+      throw new Error(`quota meter count mismatch: rows=${trafficTokenRowCount} meters=${quotaMeterCount}`);
+    }
+    quotaUsageVisible = true;
+  }
 
   const sourceEditCount = await page.locator("#sources button[data-source-action='edit']").count();
   let sourceEditFieldsVisible = false;
@@ -131,6 +141,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeEditFormVisible = nodeEditFormVisible;
   state.nodeDetailVisible = nodeDetailVisible;
   state.east8TimeSamples = east8TimeSamples;
+  state.trafficTokenRowCount = trafficTokenRowCount;
+  state.quotaMeterCount = quotaMeterCount;
+  state.quotaUsageVisible = quotaUsageVisible;
   const cookies = await context.cookies(baseURL);
   await page.screenshot({ path: screenshotPath, fullPage: true });
 

@@ -126,6 +126,7 @@ const columnLabels = {
   used_upload_bytes: "累计上传",
   used_download_bytes: "累计下载",
   used_total_bytes: "累计总量",
+  quota_usage: "额度使用率",
   outbound_tag: "出口标签",
   upstream_node_id: "节点 ID",
   node_name: "节点",
@@ -937,19 +938,48 @@ function renderTrafficTokens(rows) {
     trafficTokensEl.innerHTML = `<div class="empty">暂无数据</div>`;
     return;
   }
-  renderTable(trafficTokensEl, rows, [
-    "token_id",
-    "user_id",
-    "auth_user",
-    "token_status",
-    "today_total_bytes",
-    "month_total_bytes",
-    "used_upload_bytes",
-    "used_download_bytes",
-    "used_total_bytes",
-    "quota_bytes",
-    "updated_at",
-  ]);
+  trafficTokensEl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>${labelForColumn("token_id")}</th>
+          <th>${labelForColumn("user_id")}</th>
+          <th>${labelForColumn("auth_user")}</th>
+          <th>${labelForColumn("token_status")}</th>
+          <th>${labelForColumn("today_total_bytes")}</th>
+          <th>${labelForColumn("month_total_bytes")}</th>
+          <th>${labelForColumn("used_upload_bytes")}</th>
+          <th>${labelForColumn("used_download_bytes")}</th>
+          <th>${labelForColumn("used_total_bytes")}</th>
+          <th>${labelForColumn("quota_bytes")}</th>
+          <th>${labelForColumn("quota_usage")}</th>
+          <th>${labelForColumn("updated_at")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows
+          .map(
+            (row) => `
+              <tr>
+                <td>${formatCell(row.token_id, "token_id")}</td>
+                <td>${formatCell(row.user_id, "user_id")}</td>
+                <td>${formatCell(row.auth_user, "auth_user")}</td>
+                <td>${formatCell(row.token_status, "token_status")}</td>
+                <td>${formatCell(row.today_total_bytes, "today_total_bytes")}</td>
+                <td>${formatCell(row.month_total_bytes, "month_total_bytes")}</td>
+                <td>${formatCell(row.used_upload_bytes, "used_upload_bytes")}</td>
+                <td>${formatCell(row.used_download_bytes, "used_download_bytes")}</td>
+                <td>${formatCell(row.used_total_bytes, "used_total_bytes")}</td>
+                <td>${formatCell(row.quota_bytes, "quota_bytes")}</td>
+                <td>${formatQuotaUsage(row.used_total_bytes, row.quota_bytes, row.token_status)}</td>
+                <td>${formatCell(row.updated_at, "updated_at")}</td>
+              </tr>
+            `,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
 }
 
 function renderTrafficOutbounds(rows) {
@@ -1156,6 +1186,34 @@ function formatBytes(value) {
   if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
   if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
   return `${bytes} B`;
+}
+
+function formatQuotaUsage(usedBytes, quotaBytes, status = "") {
+  const used = Math.max(0, Number(usedBytes || 0));
+  const quota = Number(quotaBytes || 0);
+  if (quota <= 0) {
+    return `
+      <div class="quota-meter quota-meter-unlimited" data-quota-usage="unlimited">
+        <span class="quota-meter-track"><span class="quota-meter-fill" style="width: 0%"></span></span>
+        <strong>不限</strong>
+      </div>
+    `;
+  }
+  const ratio = used / quota;
+  const percent = Math.round(ratio * 1000) / 10;
+  const width = Math.max(2, Math.min(100, percent));
+  let className = "quota-meter";
+  if (String(status || "").toLowerCase() === "over_quota" || ratio >= 1) {
+    className += " quota-meter-danger";
+  } else if (ratio >= 0.8) {
+    className += " quota-meter-warning";
+  }
+  return `
+    <div class="${className}" data-quota-usage="${escapeHTML(String(percent))}">
+      <span class="quota-meter-track"><span class="quota-meter-fill" style="width: ${width}%"></span></span>
+      <strong>${escapeHTML(percent.toFixed(1))}%</strong>
+    </div>
+  `;
 }
 
 function escapeHTML(value) {

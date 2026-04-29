@@ -54,6 +54,7 @@
 - 流量统计入库骨架已落地：可解析 V2Ray stats 的 user/inbound/outbound 计数名称，写入 `traffic_samples`，计算 counter delta，并把 user 维度增量累加到 Token 用量和小时/天汇总表。
 - user 维度流量入库后会自动判断 Token 额度；超额时将 Token 和 gateway account 标记为 `over_quota`，追加足够额度后自动恢复为 `active`。
 - 管理 API 和后台页面可查看 Token 今日、本月和累计流量用量摘要，展示最近 24 小时/最近 14 天流量图，并查看近 14 天上游出口流量摘要。
+- 管理后台 Token 流量摘要可展示额度使用率进度条，并按接近超额和已超额状态变色。
 - 订阅响应头返回标准 `subscription-userinfo`，并提供 FluxGate 专属的已用、总额和剩余额度头。
 - stats 可插拔轮询调度器已落地，能将采集器返回的 V2Ray counters 转换为流量样本并写入现有用量汇总链路。
 - Token hash 存储，明文只在创建时返回。
@@ -176,6 +177,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 有来源数据时，浏览器验收会确认上游来源“编辑”入口可打开行内编辑字段。
 - 有节点数据时，浏览器验收会确认节点池“详情”入口可展开单节点详情。
 - 浏览器验收会确认 RFC3339 和 SQLite 时间字符串都按东八区展示。
+- 有 Token 流量行时，浏览器验收会确认额度使用率进度条可见。
 
 ## 4. 尚未完成
 

@@ -67,16 +67,38 @@ func singBoxObjectMap(items map[string]any) []map[string]any {
 
 	result := make([]map[string]any, 0, len(keys))
 	for _, key := range keys {
-		item, ok := items[key].(map[string]any)
-		if !ok || len(item) == 0 {
-			continue
-		}
-		if strings.TrimSpace(stringFromAnyValue(item["tag"])) == "" && strings.TrimSpace(stringFromAnyValue(item["name"])) == "" {
-			item["tag"] = key
-		}
-		result = append(result, item)
+		appendSingBoxMappedObjects(&result, key, items[key])
 	}
 	return result
+}
+
+func appendSingBoxMappedObjects(result *[]map[string]any, key string, value any) {
+	switch typed := value.(type) {
+	case map[string]any:
+		appendSingBoxMappedObject(result, typed, key)
+	case []any:
+		for index, item := range typed {
+			mapped, ok := item.(map[string]any)
+			if !ok {
+				continue
+			}
+			fallbackName := key
+			if len(typed) > 1 {
+				fallbackName = key + "-" + strconv.Itoa(index+1)
+			}
+			appendSingBoxMappedObject(result, mapped, fallbackName)
+		}
+	}
+}
+
+func appendSingBoxMappedObject(result *[]map[string]any, item map[string]any, fallbackName string) {
+	if len(item) == 0 {
+		return
+	}
+	if strings.TrimSpace(stringFromAnyValue(item["tag"])) == "" && strings.TrimSpace(stringFromAnyValue(item["name"])) == "" {
+		item["tag"] = fallbackName
+	}
+	*result = append(*result, item)
 }
 
 func singBoxOutboundURI(outbound map[string]any) string {

@@ -1410,6 +1410,62 @@ func TestNormalizeContentSingBoxJSONObjectMaps(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONObjectMapGroups(t *testing.T) {
+	raw := `{
+  "outbounds": {
+    "asia-group": [
+      {
+        "type": "direct"
+      },
+      {
+        "type": "shadowsocks",
+        "server": "ss.group.example.test",
+        "server_port": 8388,
+        "method": "aes-128-gcm",
+        "password": "qa-placeholder"
+      }
+    ]
+  },
+  "endpoints": {
+    "wg-group": [
+      {
+        "type": "wireguard",
+        "address": "10.66.0.4/32",
+        "private_key": "group-private",
+        "peers": [
+          {
+            "address": "wg.group.example.test",
+            "port": 51820,
+            "public_key": "group-peer"
+          }
+        ]
+      }
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "direct://default#asia-group-1" {
+		t.Fatalf("unexpected grouped direct URI: %q", lines[0])
+	}
+	if lines[1] != "ss://aes-128-gcm:qa-placeholder@ss.group.example.test:8388#asia-group-2" {
+		t.Fatalf("unexpected grouped shadowsocks URI: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "wireguard://wg.group.example.test:51820?")
+	if !strings.Contains(lines[2], "private_key=group-private") ||
+		!strings.Contains(lines[2], "peer_public_key=group-peer") ||
+		!strings.Contains(lines[2], "local_address=10.66.0.4%2F32") ||
+		!strings.HasSuffix(lines[2], "#wg-group") {
+		t.Fatalf("unexpected grouped wireguard endpoint URI: %q", lines[2])
+	}
+}
+
 func TestNormalizeContentSingBoxJSONBlock(t *testing.T) {
 	raw := `{
   "outbounds": [

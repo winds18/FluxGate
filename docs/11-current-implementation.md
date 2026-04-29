@@ -24,7 +24,7 @@
 - 上游来源 `default_tags` 会在节点导入或刷新时同步到节点标签。
 - subscription 来源刷新时，本次订阅中消失的旧节点会标记为 `inactive`。
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
-- subscription 来源支持解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC 节点。
+- subscription 来源支持解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria 节点。
 - subscription 来源支持解析 SIP008 Shadowsocks 订阅。
 - subscription 来源支持解析 sing-box JSON `outbounds` 中的常见 Shadowsocks/Trojan/VLESS/VMess/Hysteria2/TUIC/AnyTLS/ShadowTLS/Hysteria/HTTP/SOCKS/SSH/WireGuard/Tor 节点。
 - subscription 来源支持按 `refresh_interval_minutes` 定时同步；后台调度默认每 60 秒检查一批到期来源。

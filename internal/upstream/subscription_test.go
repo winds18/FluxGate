@@ -78,6 +78,17 @@ proxies:
     sni: hy2.clash.example.test
     skip-cert-verify: true
   - { name: "大阪 03", type: tuic, server: tuic.clash.example.test, port: 443, uuid: "00000000-0000-0000-0000-000000000055", password: "tuic-placeholder", congestion-controller: bbr, udp-relay-mode: native, sni: tuic.clash.example.test }
+  - name: "香港 04"
+    type: hysteria
+    server: hysteria.clash.example.test
+    port: 443
+    auth-str: "hysteria-auth"
+    up-mbps: 20
+    down-mbps: 80
+    obfs: "obfs-placeholder"
+    protocol: udp
+    sni: hysteria.clash.example.test
+    skip-cert-verify: true
 proxy-groups:
   - name: Auto
     type: select
@@ -89,8 +100,8 @@ proxy-groups:
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 5 {
-		t.Fatalf("expected 5 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 6 {
+		t.Fatalf("expected 6 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.example.test:443?")
@@ -108,6 +119,10 @@ proxy-groups:
 	assertHasPrefix(t, lines[4], "tuic://00000000-0000-0000-0000-000000000055:tuic-placeholder@tuic.clash.example.test:443?")
 	if !strings.Contains(lines[4], "congestion_control=bbr") || !strings.Contains(lines[4], "udp_relay_mode=native") {
 		t.Fatalf("unexpected tuic URI: %q", lines[4])
+	}
+	assertHasPrefix(t, lines[5], "hysteria://hysteria-auth@hysteria.clash.example.test:443?")
+	if !strings.Contains(lines[5], "up_mbps=20") || !strings.Contains(lines[5], "down_mbps=80") || !strings.Contains(lines[5], "network=udp") || !strings.Contains(lines[5], "insecure=1") {
+		t.Fatalf("unexpected hysteria URI: %q", lines[5])
 	}
 }
 

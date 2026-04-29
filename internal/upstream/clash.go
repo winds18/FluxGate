@@ -81,6 +81,8 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashHysteria2URI(proxy)
 	case "tuic":
 		return clashTUICURI(proxy)
+	case "hysteria":
+		return clashHysteriaURI(proxy)
 	default:
 		return ""
 	}
@@ -229,6 +231,59 @@ func clashTUICURI(proxy map[string]string) string {
 		User:     url.UserPassword(uuid, password),
 		Host:     net.JoinHostPort(server, port),
 		Fragment: firstMapValue(proxy, "name"),
+	}
+	if len(values) > 0 {
+		result.RawQuery = values.Encode()
+	}
+	return result.String()
+}
+
+func clashHysteriaURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	authStr := firstMapValue(proxy, "auth-str", "auth_str", "password")
+	auth := firstMapValue(proxy, "auth", "auth-base64", "auth_base64")
+	if server == "" || port == "" || (authStr == "" && auth == "") {
+		return ""
+	}
+	values := url.Values{}
+	if auth != "" {
+		values.Set("auth", auth)
+	}
+	if up := firstMapValue(proxy, "up", "up-speed", "up_speed"); up != "" {
+		values.Set("up", up)
+	}
+	if down := firstMapValue(proxy, "down", "down-speed", "down_speed"); down != "" {
+		values.Set("down", down)
+	}
+	if upMbps := firstMapValue(proxy, "up-mbps", "up_mbps", "upmbps"); upMbps != "" {
+		values.Set("up_mbps", upMbps)
+	}
+	if downMbps := firstMapValue(proxy, "down-mbps", "down_mbps", "downmbps"); downMbps != "" {
+		values.Set("down_mbps", downMbps)
+	}
+	if obfs := firstMapValue(proxy, "obfs"); obfs != "" {
+		values.Set("obfs", obfs)
+	}
+	if network := firstMapValue(proxy, "protocol", "network"); network != "" {
+		values.Set("network", network)
+	}
+	if sni := firstMapValue(proxy, "sni", "servername", "server_name"); sni != "" {
+		values.Set("sni", sni)
+	}
+	if alpn := firstMapValue(proxy, "alpn"); alpn != "" {
+		values.Set("alpn", alpn)
+	}
+	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
+		values.Set("insecure", "1")
+	}
+	result := &url.URL{
+		Scheme:   "hysteria",
+		Host:     net.JoinHostPort(server, port),
+		Fragment: firstMapValue(proxy, "name"),
+	}
+	if authStr != "" {
+		result.User = url.User(authStr)
 	}
 	if len(values) > 0 {
 		result.RawQuery = values.Encode()

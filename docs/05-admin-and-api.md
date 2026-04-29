@@ -283,6 +283,7 @@ POST /api/sing-box/restart
 ```text
 GET /api/traffic/tokens
 GET /api/traffic/daily?days=14
+GET /api/traffic/hourly?hours=24
 
 GET /api/stats/overview
 GET /api/stats/users

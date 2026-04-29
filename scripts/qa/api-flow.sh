@@ -137,6 +137,9 @@ traffic_token_month="$(json_value "data.find((row) => row.token_id === $token_id
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/traffic/daily?days=14" -o "$OUT_DIR/traffic-daily.json"
 traffic_daily_count="$(json_value "data.length" <"$OUT_DIR/traffic-daily.json")"
 traffic_daily_total="$(json_value "data.reduce((sum, row) => sum + (row.total_bytes || 0), 0)" <"$OUT_DIR/traffic-daily.json")"
+run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/traffic/hourly?hours=24" -o "$OUT_DIR/traffic-hourly.json"
+traffic_hourly_count="$(json_value "data.length" <"$OUT_DIR/traffic-hourly.json")"
+traffic_hourly_total="$(json_value "data.reduce((sum, row) => sum + (row.total_bytes || 0), 0)" <"$OUT_DIR/traffic-hourly.json")"
 post_json "/api/tokens/$token_id/extend" '{"extend_days":30}' "$OUT_DIR/token-extend.json"
 token_extended_status="$(json_value "data.status" <"$OUT_DIR/token-extend.json")"
 post_json "/api/tokens/$token_id/quota" '{"quota_bytes":1073741824}' "$OUT_DIR/token-quota.json"
@@ -220,6 +223,11 @@ fi
 
 if [[ "$traffic_daily_count" != "14" || "$traffic_daily_total" != "0" ]]; then
   log "traffic daily chart data should return 14 empty days: count=$traffic_daily_count total=$traffic_daily_total"
+  exit 1
+fi
+
+if [[ "$traffic_hourly_count" != "24" || "$traffic_hourly_total" != "0" ]]; then
+  log "traffic hourly chart data should return 24 empty hours: count=$traffic_hourly_count total=$traffic_hourly_total"
   exit 1
 fi
 

@@ -273,6 +273,11 @@ textarea {
   min-width: 820px;
 }
 
+.traffic-chart-bars-hourly {
+  grid-template-columns: repeat(24, minmax(42px, 1fr));
+  min-width: 1080px;
+}
+
 .traffic-day {
   align-items: center;
   display: grid;

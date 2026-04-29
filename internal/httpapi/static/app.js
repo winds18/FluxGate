@@ -14,6 +14,7 @@ const nodesEl = document.querySelector("#nodes");
 const virtualNodesEl = document.querySelector("#virtual-nodes");
 const policiesEl = document.querySelector("#policies");
 const tokensEl = document.querySelector("#tokens");
+const trafficHourlyEl = document.querySelector("#traffic-hourly");
 const trafficDailyEl = document.querySelector("#traffic-daily");
 const trafficTokensEl = document.querySelector("#traffic-tokens");
 const refreshEl = document.querySelector("#refresh");
@@ -113,7 +114,7 @@ function showApp() {
 async function load() {
   statusEl.textContent = "刷新中";
   try {
-    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficDaily, trafficTokens] = await Promise.all([
+    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficHourly, trafficDaily, trafficTokens] = await Promise.all([
       getJSON("/api/overview"),
       getJSON("/api/teams"),
       getJSON("/api/users"),
@@ -122,6 +123,7 @@ async function load() {
       getJSON("/api/virtual-nodes"),
       getJSON("/api/policies"),
       getJSON("/api/tokens"),
+      getJSON("/api/traffic/hourly?hours=24"),
       getJSON("/api/traffic/daily?days=14"),
       getJSON("/api/traffic/tokens"),
     ]);
@@ -135,6 +137,7 @@ async function load() {
     renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "tag_selector", "status"]);
     renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "include_tags", "exclude_tags", "allowed_virtual_nodes", "max_nodes", "status"]);
     renderTokens(tokens);
+    renderTrafficHourly(trafficHourly);
     renderTrafficDaily(trafficDaily);
     renderTrafficTokens(trafficTokens);
     statusEl.textContent = "已连接";
@@ -557,23 +560,45 @@ function renderTrafficTokens(rows) {
 }
 
 function renderTrafficDaily(rows) {
+  renderTrafficBars(trafficDailyEl, rows, {
+    valueKey: "total_bytes",
+    label: (row) => String(row.day || "").slice(5),
+    title: (row, total) => `${row.day} ${formatBytes(total)}`,
+    className: "traffic-chart-bars",
+  });
+}
+
+function renderTrafficHourly(rows) {
+  renderTrafficBars(trafficHourlyEl, rows, {
+    valueKey: "total_bytes",
+    label: (row) => {
+      const date = new Date(row.hour);
+      if (Number.isNaN(date.getTime())) return "--";
+      return `${String(date.getHours()).padStart(2, "0")}:00`;
+    },
+    title: (row, total) => `${row.hour} ${formatBytes(total)}`,
+    className: "traffic-chart-bars traffic-chart-bars-hourly",
+  });
+}
+
+function renderTrafficBars(target, rows, options) {
   if (!rows || rows.length === 0) {
-    trafficDailyEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    target.innerHTML = `<div class="empty">暂无数据</div>`;
     return;
   }
-  const maxTotal = Math.max(...rows.map((row) => row.total_bytes || 0), 1);
-  trafficDailyEl.innerHTML = `
-    <div class="traffic-chart-bars">
+  const maxTotal = Math.max(...rows.map((row) => row[options.valueKey] || 0), 1);
+  target.innerHTML = `
+    <div class="${options.className}">
       ${rows
         .map((row) => {
-          const total = row.total_bytes || 0;
+          const total = row[options.valueKey] || 0;
           const height = total > 0 ? Math.max(8, Math.round((total / maxTotal) * 118)) : 2;
           return `
-            <div class="traffic-day" title="${escapeHTML(row.day)} ${escapeHTML(formatBytes(total))}">
+            <div class="traffic-day" title="${escapeHTML(options.title(row, total))}">
               <div class="traffic-bar-track">
                 <span class="traffic-bar" style="height: ${height}px"></span>
               </div>
-              <span class="traffic-day-label">${escapeHTML(String(row.day || "").slice(5))}</span>
+              <span class="traffic-day-label">${escapeHTML(options.label(row))}</span>
               <strong>${escapeHTML(formatBytes(total))}</strong>
             </div>
           `;

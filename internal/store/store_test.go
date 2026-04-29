@@ -570,6 +570,76 @@ func TestListTrafficDailyAtFillsRecentDays(t *testing.T) {
 	}
 }
 
+func TestListTrafficHourlyAtFillsRecentHours(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	team, err := db.CreateTeam(ctx, CreateTeamInput{Name: "Hourly Team"})
+	if err != nil {
+		t.Fatalf("create team: %v", err)
+	}
+	user, err := db.CreateUser(ctx, CreateUserInput{TeamID: &team.ID, Name: "Hourly User"})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	result, err := db.CreateToken(ctx, "secret", "https://flux.example", CreateTokenInput{
+		UserID:     user.ID,
+		Name:       "hourly token",
+		ExpireDays: 30,
+		QuotaBytes: 1000,
+	})
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	now := time.Date(2026, 4, 29, 8, 30, 0, 0, time.UTC)
+	previousHour := now.Truncate(time.Hour).Add(-time.Hour)
+	for _, input := range []RecordTrafficSampleInput{
+		{
+			SampledAt:        previousHour,
+			MetricType:       "user",
+			MetricName:       result.Account.AuthUser,
+			RawValueUpload:   0,
+			RawValueDownload: 0,
+		},
+		{
+			SampledAt:        previousHour.Add(15 * time.Minute),
+			MetricType:       "user",
+			MetricName:       result.Account.AuthUser,
+			RawValueUpload:   10,
+			RawValueDownload: 15,
+		},
+		{
+			SampledAt:        now,
+			MetricType:       "user",
+			MetricName:       result.Account.AuthUser,
+			RawValueUpload:   40,
+			RawValueDownload: 70,
+		},
+	} {
+		if _, err := db.RecordTrafficSample(ctx, input); err != nil {
+			t.Fatalf("record traffic sample: %v", err)
+		}
+	}
+
+	hours, err := db.ListTrafficHourlyAt(ctx, now, 3)
+	if err != nil {
+		t.Fatalf("list traffic hourly: %v", err)
+	}
+	if len(hours) != 3 {
+		t.Fatalf("expected 3 hours, got %+v", hours)
+	}
+	if hours[0].Hour != "2026-04-29T06:00:00Z" || hours[0].TotalBytes != 0 {
+		t.Fatalf("expected empty first hour, got %+v", hours[0])
+	}
+	if hours[1].Hour != "2026-04-29T07:00:00Z" || hours[1].UploadBytes != 10 || hours[1].DownloadBytes != 15 || hours[1].TotalBytes != 25 {
+		t.Fatalf("unexpected previous hour summary: %+v", hours[1])
+	}
+	if hours[2].Hour != "2026-04-29T08:00:00Z" || hours[2].UploadBytes != 30 || hours[2].DownloadBytes != 55 || hours[2].TotalBytes != 85 {
+		t.Fatalf("unexpected current hour summary: %+v", hours[2])
+	}
+}
+
 func TestTrafficUsageMarksAndRestoresOverQuotaToken(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)

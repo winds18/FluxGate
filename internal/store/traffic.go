@@ -57,6 +57,13 @@ type TrafficDailySummary struct {
 	TotalBytes    int64  `json:"total_bytes"`
 }
 
+type TrafficHourlySummary struct {
+	Hour          string `json:"hour"`
+	UploadBytes   int64  `json:"upload_bytes"`
+	DownloadBytes int64  `json:"download_bytes"`
+	TotalBytes    int64  `json:"total_bytes"`
+}
+
 func (s *Store) RecordTrafficSample(ctx context.Context, input RecordTrafficSampleInput) (TrafficSample, error) {
 	normalized, err := normalizeTrafficSampleInput(input)
 	if err != nil {
@@ -210,6 +217,53 @@ func (s *Store) ListTrafficDailyAt(ctx context.Context, now time.Time, days int)
 		day := start.AddDate(0, 0, i).Format("2006-01-02")
 		item := byDay[day]
 		item.Day = day
+		summaries = append(summaries, item)
+	}
+	return summaries, nil
+}
+
+func (s *Store) ListTrafficHourly(ctx context.Context, hours int) ([]TrafficHourlySummary, error) {
+	return s.ListTrafficHourlyAt(ctx, time.Now().UTC(), hours)
+}
+
+func (s *Store) ListTrafficHourlyAt(ctx context.Context, now time.Time, hours int) ([]TrafficHourlySummary, error) {
+	if hours <= 0 {
+		hours = 24
+	}
+	if hours > 168 {
+		hours = 168
+	}
+	end := now.UTC().Truncate(time.Hour)
+	start := end.Add(-time.Duration(hours-1) * time.Hour)
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT hour, SUM(upload_bytes), SUM(download_bytes)
+		FROM traffic_user_hourly
+		WHERE hour >= ? AND hour <= ?
+		GROUP BY hour
+	`, start.Format(time.RFC3339), end.Format(time.RFC3339))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	byHour := map[string]TrafficHourlySummary{}
+	for rows.Next() {
+		var item TrafficHourlySummary
+		if err := rows.Scan(&item.Hour, &item.UploadBytes, &item.DownloadBytes); err != nil {
+			return nil, err
+		}
+		item.TotalBytes = item.UploadBytes + item.DownloadBytes
+		byHour[item.Hour] = item
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	summaries := make([]TrafficHourlySummary, 0, hours)
+	for i := 0; i < hours; i++ {
+		hour := start.Add(time.Duration(i) * time.Hour).Format(time.RFC3339)
+		item := byHour[hour]
+		item.Hour = hour
 		summaries = append(summaries, item)
 	}
 	return summaries, nil

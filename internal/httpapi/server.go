@@ -91,6 +91,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/policies", s.handleCreatePolicy)
 	s.mux.HandleFunc("GET /api/traffic/tokens", s.handleListTokenTraffic)
 	s.mux.HandleFunc("GET /api/traffic/daily", s.handleListTrafficDaily)
+	s.mux.HandleFunc("GET /api/traffic/hourly", s.handleListTrafficHourly)
 
 	s.mux.HandleFunc("POST /api/sing-box/config/generate", s.handleGenerateSingBoxConfig)
 	s.mux.HandleFunc("POST /api/sing-box/config/check", s.handleCheckSingBoxConfig)
@@ -630,6 +631,24 @@ func (s *Server) handleListTrafficDaily(w http.ResponseWriter, r *http.Request) 
 		days = value
 	}
 	summaries, err := s.store.ListTrafficDaily(r.Context(), days)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, summaries)
+}
+
+func (s *Server) handleListTrafficHourly(w http.ResponseWriter, r *http.Request) {
+	hours := 24
+	if raw := strings.TrimSpace(r.URL.Query().Get("hours")); raw != "" {
+		value, err := strconv.Atoi(raw)
+		if err != nil || value <= 0 {
+			writeError(w, http.StatusBadRequest, "hours must be a positive integer")
+			return
+		}
+		hours = value
+	}
+	summaries, err := s.store.ListTrafficHourly(r.Context(), hours)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return

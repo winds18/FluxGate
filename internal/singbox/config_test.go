@@ -1036,6 +1036,34 @@ func TestBuildConfigSupportsVMessUserinfoURI(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsHysteria2QueryPassword(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         80,
+			URI:        "hy2://query-password.hy2.example:443?password=hy2-query-placeholder&obfs=salamander&obfs-password=obfs-placeholder&sni=hy2-query.example&insecure=1#hy2-query",
+			Protocol:   "hy2",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_80")
+	if outbound == nil {
+		t.Fatalf("expected hysteria2 outbound up_80, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "hysteria2" || outbound["server"] != "query-password.hy2.example" || outbound["server_port"] != 443 || outbound["password"] != "hy2-query-placeholder" {
+		t.Fatalf("unexpected hysteria2 query password fields: %+v", outbound)
+	}
+	obfs, ok := outbound["obfs"].(map[string]any)
+	if !ok || obfs["type"] != "salamander" || obfs["password"] != "obfs-placeholder" {
+		t.Fatalf("unexpected hysteria2 query password obfs: %+v", outbound["obfs"])
+	}
+	tls, ok := outbound["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "hy2-query.example" || tls["insecure"] != true {
+		t.Fatalf("unexpected hysteria2 query password tls: %+v", outbound["tls"])
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

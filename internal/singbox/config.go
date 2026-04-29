@@ -634,12 +634,19 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 	if err != nil || (parsed.Scheme != "hysteria2" && parsed.Scheme != "hy2") || parsed.Hostname() == "" {
 		return nil, false
 	}
-	password := hysteria2Password(parsed.User)
+	query := parsed.Query()
+	password := firstNonEmpty(
+		hysteria2Password(parsed.User),
+		query.Get("password"),
+		query.Get("auth"),
+		query.Get("auth_str"),
+		query.Get("auth-str"),
+		query.Get("token"),
+	)
 	if password == "" {
 		return nil, false
 	}
 
-	query := parsed.Query()
 	outbound := map[string]any{
 		"type":        "hysteria2",
 		"tag":         upstreamTag(node),

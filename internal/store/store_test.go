@@ -85,6 +85,36 @@ func TestSourcePrefixAndNodeDisplayNames(t *testing.T) {
 	if node.DisplayName != "[新前缀] 香港 01" {
 		t.Fatalf("unexpected reset display name: %q", node.DisplayName)
 	}
+
+	renamedSource, err := db.UpdateSource(ctx, sourceA.ID, UpdateSourceInput{
+		Name:                   stringPtr("机场B"),
+		Type:                   stringPtr("subscription"),
+		URL:                    stringPtr("https://example.test/sub"),
+		DisplayPrefix:          stringPtr(""),
+		DefaultTags:            stringPtr("HK, Premium"),
+		RefreshIntervalMinutes: int64Ptr(30),
+	})
+	if err != nil {
+		t.Fatalf("update source: %v", err)
+	}
+	if renamedSource.Name != "机场B" || renamedSource.Type != "subscription" || renamedSource.URL != "https://example.test/sub" || renamedSource.DisplayPrefix != "[机场B] " || renamedSource.PrefixMode != "auto" || renamedSource.DefaultTags != "HK, Premium" || renamedSource.RefreshIntervalMinutes != 30 {
+		t.Fatalf("unexpected updated source: %+v", renamedSource)
+	}
+	node, err = db.GetNode(ctx, nodes[0].ID)
+	if err != nil {
+		t.Fatalf("get node after source update: %v", err)
+	}
+	if node.DisplayName != "[机场B] 香港 01" {
+		t.Fatalf("auto node name should follow updated source prefix: %q", node.DisplayName)
+	}
+}
+
+func stringPtr(value string) *string {
+	return &value
+}
+
+func int64Ptr(value int64) *int64 {
+	return &value
 }
 
 func TestImportNodesMarksMissingSubscriptionNodesInactive(t *testing.T) {

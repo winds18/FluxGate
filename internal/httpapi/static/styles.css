@@ -236,6 +236,10 @@ main {
   min-width: 300px;
 }
 
+.source-actions {
+  min-width: 250px;
+}
+
 .node-actions {
   min-width: 168px;
 }
@@ -350,6 +354,22 @@ textarea {
 
 .inline-edit-form input {
   min-width: 180px;
+}
+
+.source-edit-row td {
+  vertical-align: top;
+}
+
+.table-edit-input {
+  min-width: 150px;
+}
+
+.table-edit-input-wide {
+  min-width: 230px;
+}
+
+.table-edit-number {
+  min-width: 108px;
 }
 
 input::placeholder,

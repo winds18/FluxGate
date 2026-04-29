@@ -72,6 +72,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await expect(page.locator("#app-view")).toBeVisible({ timeout: 10000 });
   await page.waitForTimeout(500);
 
+  const sourceEditCount = await page.locator("#sources button[data-source-action='edit']").count();
+  let sourceEditFieldsVisible = false;
+  if (sourceEditCount > 0) {
+    await page.locator("#sources button[data-source-action='edit']").first().click();
+    await expect(page.locator('#sources [data-source-field="name"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#sources [data-source-field="display_prefix"]').first()).toBeVisible({ timeout: 5000 });
+    sourceEditFieldsVisible = true;
+    await page.locator("#sources button[data-source-action='cancel']").first().click();
+  }
+
   const nodeEditCount = await page.locator("#nodes button[data-node-action='edit']").count();
   let nodeEditFormVisible = false;
   if (nodeEditCount > 0) {
@@ -98,6 +108,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     error: document.querySelector("#login-error")?.textContent,
     url: window.location.href,
   }));
+  state.sourceEditCount = sourceEditCount;
+  state.sourceEditFieldsVisible = sourceEditFieldsVisible;
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
   const cookies = await context.cookies(baseURL);

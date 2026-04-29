@@ -23,6 +23,16 @@ type CreateSourceInput struct {
 	RefreshIntervalMinutes int64  `json:"refresh_interval_minutes"`
 }
 
+type UpdateSourceInput struct {
+	Name                   *string `json:"name"`
+	Type                   *string `json:"type"`
+	URL                    *string `json:"url"`
+	RawContent             *string `json:"raw_content"`
+	DisplayPrefix          *string `json:"display_prefix"`
+	DefaultTags            *string `json:"default_tags"`
+	RefreshIntervalMinutes *int64  `json:"refresh_interval_minutes"`
+}
+
 func (s *Store) CreateSource(ctx context.Context, input CreateSourceInput) (Source, error) {
 	name := strings.TrimSpace(input.Name)
 	if name == "" {
@@ -176,34 +186,91 @@ func (s *Store) ListDueSubscriptionSources(ctx context.Context, now time.Time, l
 }
 
 func (s *Store) UpdateSourcePrefix(ctx context.Context, id int64, prefix string) (Source, error) {
-	prefix = naming.NormalizeManualPrefix(prefix)
-	if prefix == "" {
-		source, err := s.GetSource(ctx, id)
+	return s.UpdateSource(ctx, id, UpdateSourceInput{DisplayPrefix: &prefix})
+}
+
+func (s *Store) UpdateSource(ctx context.Context, id int64, input UpdateSourceInput) (Source, error) {
+	source, err := s.GetSource(ctx, id)
+	if err != nil {
+		return Source{}, err
+	}
+
+	name := source.Name
+	if input.Name != nil {
+		name = strings.TrimSpace(*input.Name)
+		if name == "" {
+			name = "Unnamed Source"
+		}
+	}
+	sourceType := source.Type
+	if input.Type != nil {
+		sourceType = strings.TrimSpace(*input.Type)
+		if sourceType == "" {
+			sourceType = "manual"
+		}
+	}
+	sourceURL := source.URL
+	if input.URL != nil {
+		sourceURL = strings.TrimSpace(*input.URL)
+	}
+	rawContent := source.RawContent
+	if input.RawContent != nil {
+		rawContent = *input.RawContent
+	}
+	defaultTags := source.DefaultTags
+	if input.DefaultTags != nil {
+		defaultTags = strings.TrimSpace(*input.DefaultTags)
+		if defaultTags == "" {
+			defaultTags = "[]"
+		}
+	}
+	refreshInterval := source.RefreshIntervalMinutes
+	if input.RefreshIntervalMinutes != nil {
+		refreshInterval = *input.RefreshIntervalMinutes
+		if refreshInterval < 0 {
+			refreshInterval = 0
+		}
+	}
+
+	prefixMode := source.PrefixMode
+	displayPrefix := source.DisplayPrefix
+	if input.DisplayPrefix != nil {
+		displayPrefix = naming.NormalizeManualPrefix(*input.DisplayPrefix)
+		if displayPrefix == "" {
+			prefixMode = "auto"
+			displayPrefix, err = s.uniqueAutoPrefix(ctx, name, sourceURL, id)
+			if err != nil {
+				return Source{}, err
+			}
+		} else {
+			prefixMode = "manual"
+		}
+	} else if source.PrefixMode == "auto" && (name != source.Name || sourceURL != source.URL) {
+		displayPrefix, err = s.uniqueAutoPrefix(ctx, name, sourceURL, id)
 		if err != nil {
-			return Source{}, err
-		}
-		prefix, err = s.uniqueAutoPrefix(ctx, source.Name, source.URL, id)
-		if err != nil {
-			return Source{}, err
-		}
-		if _, err := s.db.ExecContext(ctx, `
-			UPDATE upstream_sources
-			SET prefix_mode = 'auto', display_prefix = ?, updated_at = CURRENT_TIMESTAMP
-			WHERE id = ?
-		`, prefix, id); err != nil {
-			return Source{}, err
-		}
-	} else {
-		if _, err := s.db.ExecContext(ctx, `
-			UPDATE upstream_sources
-			SET prefix_mode = 'manual', display_prefix = ?, updated_at = CURRENT_TIMESTAMP
-			WHERE id = ?
-		`, prefix, id); err != nil {
 			return Source{}, err
 		}
 	}
-	if err := s.RegenerateSourceNodeNames(ctx, id); err != nil {
+
+	if _, err := s.db.ExecContext(ctx, `
+		UPDATE upstream_sources
+		SET name = ?,
+		    type = ?,
+		    url = ?,
+		    raw_content = ?,
+		    prefix_mode = ?,
+		    display_prefix = ?,
+		    default_tags = ?,
+		    refresh_interval_minutes = ?,
+		    updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, name, sourceType, sourceURL, rawContent, prefixMode, displayPrefix, defaultTags, refreshInterval, id); err != nil {
 		return Source{}, err
+	}
+	if displayPrefix != source.DisplayPrefix {
+		if err := s.RegenerateSourceNodeNames(ctx, id); err != nil {
+			return Source{}, err
+		}
 	}
 	return s.GetSource(ctx, id)
 }

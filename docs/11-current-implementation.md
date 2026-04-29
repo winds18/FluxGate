@@ -21,6 +21,7 @@
 - 策略 `include_tags` 和 `exclude_tags` 已按 Token > 成员 > 团队优先级生效，会为匹配 Token 生成带 `auth_user` 的 sing-box route rule，限制该 Token 在虚拟节点下可走的上游出口。
 - Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
 - 上游来源页面创建和列表。
+- 管理后台上游来源支持行内编辑名称、类型、URL、前缀、默认标签和刷新间隔；前缀变更会同步刷新自动命名节点。
 - subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。
 - 上游来源 `default_tags` 会在节点导入或刷新时同步到节点标签。
 - subscription 来源刷新时，本次订阅中消失的旧节点会标记为 `inactive`。
@@ -169,6 +170,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 表格、卡片、按钮和输入控件未出现明显溢出或尺寸错位。
 - 来源前缀、节点展示名和 Token 前缀正常展示。
 - 有节点数据时，浏览器验收会确认节点池“编辑”入口可打开行内编辑表单。
+- 有来源数据时，浏览器验收会确认上游来源“编辑”入口可打开行内编辑字段。
 
 ## 4. 尚未完成
 

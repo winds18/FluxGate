@@ -62,6 +62,7 @@ let appState = {
   sources: [],
   nodes: [],
   virtualNodes: [],
+  editingSourceID: null,
   editingNodeID: null,
 };
 
@@ -75,6 +76,7 @@ const columnLabels = {
   token_id: "Token ID",
   gateway_account_id: "网关账号 ID",
   source_name: "来源",
+  url: "URL",
   raw_name: "原始名称",
   display_name: "展示名称",
   name_mode: "命名模式",
@@ -146,7 +148,7 @@ async function login(event) {
 
 async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
-  appState = { teams: [], users: [], sources: [], nodes: [], virtualNodes: [], editingNodeID: null };
+  appState = { teams: [], users: [], sources: [], nodes: [], virtualNodes: [], editingSourceID: null, editingNodeID: null };
   tokenResultEl.hidden = true;
   tokenResultEl.textContent = "";
   showLogin();
@@ -301,17 +303,85 @@ async function submitToken(event) {
 }
 
 async function handleSourceAction(event) {
-  const button = event.target.closest("button[data-action='refresh-source']");
+  const button = event.target.closest("button[data-source-action], button[data-action='refresh-source']");
   if (!button) return;
+  const id = button.dataset.sourceId;
+  const action = button.dataset.sourceAction || "refresh";
+  if (action === "edit") {
+    appState.editingSourceID = Number.parseInt(id || "0", 10);
+    renderSources(appState.sources);
+    sourcesEl.querySelector(`tr[data-source-id="${id}"] input[data-source-field="name"]`)?.focus();
+    return;
+  }
+  if (action === "cancel") {
+    appState.editingSourceID = null;
+    renderSources(appState.sources);
+    return;
+  }
+  if (action === "save") {
+    await saveSource(button);
+    return;
+  }
+  if (action === "regenerate") {
+    await regenerateSourceNames(button);
+    return;
+  }
+  if (action !== "refresh") return;
   button.disabled = true;
   statusEl.textContent = "刷新来源中";
   try {
-    await postJSON(`/api/sources/${button.dataset.sourceId}/refresh`, {});
+    await postJSON(`/api/sources/${id}/refresh`, {});
     await load();
   } catch (error) {
     statusEl.textContent = "刷新失败";
     button.disabled = false;
   }
+}
+
+async function saveSource(button) {
+  const row = button.closest("tr[data-source-id]");
+  if (!row) return;
+  const id = row.dataset.sourceId;
+  const refreshInterval = Number.parseInt(row.querySelector('[data-source-field="refresh_interval_minutes"]')?.value || "0", 10);
+  const payload = {
+    name: sourceFieldValue(row, "name"),
+    type: sourceFieldValue(row, "type"),
+    url: sourceFieldValue(row, "url"),
+    display_prefix: sourceFieldValue(row, "display_prefix"),
+    default_tags: sourceFieldValue(row, "default_tags"),
+    refresh_interval_minutes: Number.isFinite(refreshInterval) ? refreshInterval : 0,
+  };
+  row.querySelectorAll("button").forEach((item) => {
+    item.disabled = true;
+  });
+  statusEl.textContent = "保存来源中";
+  try {
+    await patchJSON(`/api/sources/${id}`, payload);
+    appState.editingSourceID = null;
+    await load();
+  } catch (error) {
+    statusEl.textContent = "保存失败";
+    row.querySelectorAll("button").forEach((item) => {
+      item.disabled = false;
+    });
+  }
+}
+
+async function regenerateSourceNames(button) {
+  const id = button.dataset.sourceId;
+  button.disabled = true;
+  statusEl.textContent = "同步节点命名中";
+  try {
+    await postJSON(`/api/sources/${id}/regenerate-node-names`, {});
+    await load();
+  } catch (error) {
+    statusEl.textContent = "同步失败";
+    button.disabled = false;
+  }
+}
+
+function sourceFieldValue(row, name) {
+  return String(row.querySelector(`[data-source-field="${name}"]`)?.value || "").trim();
 }
 
 async function handleNodeAction(event) {
@@ -566,6 +636,7 @@ function renderMetrics(data) {
 }
 
 function renderSources(rows) {
+  appState.sources = rows || [];
   if (!rows || rows.length === 0) {
     sourcesEl.innerHTML = `<div class="empty">暂无数据</div>`;
     return;
@@ -577,6 +648,7 @@ function renderSources(rows) {
           <th>${labelForColumn("id")}</th>
           <th>${labelForColumn("name")}</th>
           <th>${labelForColumn("type")}</th>
+          <th>${labelForColumn("url")}</th>
           <th>${labelForColumn("display_prefix")}</th>
           <th>${labelForColumn("default_tags")}</th>
           <th>${labelForColumn("refresh_interval_minutes")}</th>
@@ -586,27 +658,54 @@ function renderSources(rows) {
         </tr>
       </thead>
       <tbody>
-        ${rows
-          .map(
-            (row) => `
-              <tr>
-                <td>${formatCell(row.id, "id")}</td>
-                <td>${formatCell(row.name, "name")}</td>
-                <td>${formatCell(row.type, "type")}</td>
-                <td>${formatCell(row.display_prefix, "display_prefix")}</td>
-                <td>${formatCell(row.default_tags, "default_tags")}</td>
-                <td>${formatCell(row.refresh_interval_minutes, "refresh_interval_minutes")}</td>
-                <td>${formatCell(row.last_sync_at, "last_sync_at")}</td>
-                <td>${formatCell(row.last_error, "last_error")}</td>
-                <td>
-                  <button class="table-button" data-action="refresh-source" data-source-id="${row.id}">刷新</button>
-                </td>
-              </tr>
-            `,
-          )
-          .join("")}
+        ${rows.map((row) => renderSourceRow(row)).join("")}
       </tbody>
     </table>
+  `;
+}
+
+function renderSourceRow(row) {
+  const isEditing = appState.editingSourceID === row.id;
+  return `
+    <tr data-source-id="${row.id}" class="${isEditing ? "source-edit-row" : ""}">
+      <td>${formatCell(row.id, "id")}</td>
+      <td>${isEditing ? sourceTextInput(row, "name") : formatCell(row.name, "name")}</td>
+      <td>${isEditing ? sourceTypeSelect(row.type) : formatCell(row.type, "type")}</td>
+      <td>${isEditing ? sourceTextInput(row, "url", "table-edit-input-wide") : formatCell(row.url, "url")}</td>
+      <td>${isEditing ? sourceTextInput(row, "display_prefix", "table-edit-input", "留空自动") : formatCell(row.display_prefix, "display_prefix")}</td>
+      <td>${isEditing ? sourceTextInput(row, "default_tags", "table-edit-input", "HK, Premium") : formatCell(row.default_tags, "default_tags")}</td>
+      <td>${isEditing ? sourceNumberInput(row, "refresh_interval_minutes") : formatCell(row.refresh_interval_minutes, "refresh_interval_minutes")}</td>
+      <td>${formatCell(row.last_sync_at, "last_sync_at")}</td>
+      <td>${formatCell(row.last_error, "last_error")}</td>
+      <td class="table-actions source-actions">
+        ${
+          isEditing
+            ? `<button class="table-button" type="button" data-source-action="save" data-source-id="${row.id}">保存</button>
+               <button class="table-button ghost-button" type="button" data-source-action="cancel" data-source-id="${row.id}">取消</button>`
+            : `<button class="table-button" type="button" data-source-action="edit" data-source-id="${row.id}">编辑</button>`
+        }
+        <button class="table-button" type="button" data-source-action="refresh" data-source-id="${row.id}">刷新</button>
+        <button class="table-button ghost-button" type="button" data-source-action="regenerate" data-source-id="${row.id}">同步命名</button>
+      </td>
+    </tr>
+  `;
+}
+
+function sourceTextInput(row, field, className = "table-edit-input", placeholder = "") {
+  return `<input class="${className}" data-source-field="${field}" value="${escapeHTML(String(row[field] || ""))}" placeholder="${escapeHTML(placeholder)}" />`;
+}
+
+function sourceNumberInput(row, field) {
+  return `<input class="table-edit-input table-edit-number" data-source-field="${field}" type="number" min="0" step="1" value="${escapeHTML(String(row[field] || 0))}" />`;
+}
+
+function sourceTypeSelect(value) {
+  const current = String(value || "manual");
+  return `
+    <select class="table-edit-input" data-source-field="type">
+      <option value="manual" ${current === "manual" ? "selected" : ""}>manual</option>
+      <option value="subscription" ${current === "subscription" ? "selected" : ""}>subscription</option>
+    </select>
   `;
 }
 

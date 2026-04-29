@@ -312,13 +312,11 @@ func (s *Server) handleUpdateSource(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var input struct {
-		DisplayPrefix string `json:"display_prefix"`
-	}
+	var input store.UpdateSourceInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
-	source, err := s.store.UpdateSourcePrefix(r.Context(), id, input.DisplayPrefix)
+	source, err := s.store.UpdateSource(r.Context(), id, input)
 	if err != nil {
 		writeStoreError(w, err)
 		return

@@ -72,7 +72,15 @@ user_id="$(json_value "data.id" <"$OUT_DIR/user.json")"
 post_json "/api/sources" '{"name":"机场A","type":"manual","default_tags":"[\"QA-HK\"]"}' "$OUT_DIR/source-a.json"
 source_a_id="$(json_value "data.id" <"$OUT_DIR/source-a.json")"
 post_json "/api/sources" '{"name":"机场A","type":"manual"}' "$OUT_DIR/source-b.json"
+source_b_id="$(json_value "data.id" <"$OUT_DIR/source-b.json")"
 source_b_prefix="$(json_value "JSON.stringify(data.display_prefix)" <"$OUT_DIR/source-b.json")"
+patch_json "/api/sources/$source_b_id" '{"name":"机场B","type":"subscription","url":"https://example.test/sub","display_prefix":"[手动B]","default_tags":"SG, Backup","refresh_interval_minutes":15}' "$OUT_DIR/source-b-update.json"
+source_b_updated_name="$(json_value "data.name" <"$OUT_DIR/source-b-update.json")"
+source_b_updated_type="$(json_value "data.type" <"$OUT_DIR/source-b-update.json")"
+source_b_updated_url="$(json_value "data.url" <"$OUT_DIR/source-b-update.json")"
+source_b_updated_prefix="$(json_value "data.display_prefix" <"$OUT_DIR/source-b-update.json")"
+source_b_updated_tags="$(json_value "data.default_tags" <"$OUT_DIR/source-b-update.json")"
+source_b_updated_interval="$(json_value "data.refresh_interval_minutes" <"$OUT_DIR/source-b-update.json")"
 clash_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(`proxies:
   - name: "新加坡 01"
     type: ss
@@ -215,6 +223,11 @@ config_restart_skipped="$(json_value "data.skipped" <"$OUT_DIR/sing-box-restart.
 
 if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   log "unexpected auto prefix for duplicate source: $source_b_prefix"
+  exit 1
+fi
+
+if [[ "$source_b_updated_name" != "机场B" || "$source_b_updated_type" != "subscription" || "$source_b_updated_url" != "https://example.test/sub" || "$source_b_updated_prefix" != "[手动B] " || "$source_b_updated_tags" != "SG, Backup" || "$source_b_updated_interval" != "15" ]]; then
+  log "source update should persist editable fields: name=$source_b_updated_name type=$source_b_updated_type url=$source_b_updated_url prefix=$source_b_updated_prefix tags=$source_b_updated_tags interval=$source_b_updated_interval"
   exit 1
 fi
 

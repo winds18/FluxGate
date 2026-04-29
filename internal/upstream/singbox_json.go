@@ -10,7 +10,8 @@ import (
 )
 
 type singBoxSubscription struct {
-	Outbounds []map[string]any `json:"outbounds"`
+	Outbounds json.RawMessage `json:"outbounds"`
+	Endpoints json.RawMessage `json:"endpoints"`
 }
 
 func SingBoxJSONURIList(content string) string {
@@ -18,17 +19,39 @@ func SingBoxJSONURIList(content string) string {
 	if err := json.Unmarshal([]byte(strings.TrimSpace(content)), &doc); err != nil {
 		return ""
 	}
-	if len(doc.Outbounds) == 0 {
+	outbounds := singBoxObjectList(doc.Outbounds)
+	endpoints := singBoxObjectList(doc.Endpoints)
+	if len(outbounds)+len(endpoints) == 0 {
 		return ""
 	}
 
 	var uris []string
-	for _, outbound := range doc.Outbounds {
+	for _, outbound := range outbounds {
 		if uri := singBoxOutboundURI(outbound); uri != "" {
 			uris = append(uris, uri)
 		}
 	}
+	for _, endpoint := range endpoints {
+		if uri := singBoxEndpointURI(endpoint); uri != "" {
+			uris = append(uris, uri)
+		}
+	}
 	return strings.Join(uris, "\n")
+}
+
+func singBoxObjectList(raw json.RawMessage) []map[string]any {
+	if len(strings.TrimSpace(string(raw))) == 0 {
+		return nil
+	}
+	var items []map[string]any
+	if err := json.Unmarshal(raw, &items); err == nil {
+		return items
+	}
+	var item map[string]any
+	if err := json.Unmarshal(raw, &item); err == nil && len(item) > 0 {
+		return []map[string]any{item}
+	}
+	return nil
 }
 
 func singBoxOutboundURI(outbound map[string]any) string {
@@ -68,6 +91,16 @@ func singBoxOutboundURI(outbound map[string]any) string {
 		return singBoxInternalURI("direct", outbound, "Direct")
 	case "block":
 		return singBoxInternalURI("block", outbound, "Block")
+	default:
+		return ""
+	}
+}
+
+func singBoxEndpointURI(endpoint map[string]any) string {
+	endpointType := strings.ToLower(singBoxString(endpoint, "type"))
+	switch endpointType {
+	case "wireguard", "wg":
+		return singBoxWireGuardEndpointURI(endpoint)
 	default:
 		return ""
 	}
@@ -519,6 +552,60 @@ func singBoxWireGuardURI(outbound map[string]any) string {
 		values.Set("reserved", strings.Join(reserved, ","))
 	}
 	return singBoxProxyURL("wireguard", server, port, "", nil, values, singBoxName(outbound))
+}
+
+func singBoxWireGuardEndpointURI(endpoint map[string]any) string {
+	peer := singBoxFirstPeer(endpoint)
+	server := firstNonEmptyString(singBoxMapString(peer, "address"), singBoxMapString(peer, "server"))
+	port := firstNonEmptyString(singBoxMapPort(peer, "port", "server_port"), "51820")
+	localAddress := stringListFromAnyValue(endpoint["address"])
+	if len(localAddress) == 0 {
+		localAddress = stringListFromAnyValue(endpoint["local_address"])
+	}
+	privateKey := singBoxString(endpoint, "private_key")
+	peerPublicKey := firstNonEmptyString(
+		singBoxString(endpoint, "peer_public_key"),
+		singBoxMapString(peer, "public_key"),
+		singBoxMapString(peer, "peer_public_key"),
+	)
+	if server == "" || privateKey == "" || peerPublicKey == "" || len(localAddress) == 0 {
+		return ""
+	}
+
+	values := url.Values{}
+	values.Set("private_key", privateKey)
+	values.Set("peer_public_key", peerPublicKey)
+	values.Set("local_address", strings.Join(localAddress, ","))
+	if boolFromAnyValue(endpoint["system"]) || boolFromAnyValue(endpoint["system_interface"]) {
+		values.Set("system_interface", "1")
+	}
+	if interfaceName := firstNonEmptyString(singBoxString(endpoint, "name"), singBoxString(endpoint, "interface_name")); interfaceName != "" {
+		values.Set("interface_name", interfaceName)
+	}
+	if network := singBoxString(endpoint, "network"); network != "" {
+		values.Set("network", network)
+	}
+	for _, item := range []struct {
+		query string
+		key   string
+	}{
+		{query: "workers", key: "workers"},
+		{query: "mtu", key: "mtu"},
+	} {
+		if value := intFromAnyValue(endpoint[item.key]); value > 0 {
+			values.Set(item.query, strconv.Itoa(value))
+		}
+	}
+	if preSharedKey := singBoxMapString(peer, "pre_shared_key"); preSharedKey != "" {
+		values.Set("pre_shared_key", preSharedKey)
+	}
+	if allowedIPs := stringListFromAnyValue(peerValue(peer, "allowed_ips")); len(allowedIPs) > 0 {
+		values.Set("allowed_ips", strings.Join(allowedIPs, ","))
+	}
+	if reserved := stringListFromAnyValue(peerValue(peer, "reserved")); len(reserved) > 0 {
+		values.Set("reserved", strings.Join(reserved, ","))
+	}
+	return singBoxProxyURL("wireguard", server, port, "", nil, values, singBoxName(endpoint))
 }
 
 func singBoxTorURI(outbound map[string]any) string {

@@ -876,6 +876,49 @@ func TestNormalizeContentSingBoxJSONBlock(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONWireGuardEndpoint(t *testing.T) {
+	raw := `{
+  "endpoints": {
+    "type": "wireguard",
+    "tag": "wg-ep",
+    "system": true,
+    "name": "wg-endpoint",
+    "mtu": 1420,
+    "workers": 2,
+    "address": ["10.66.0.2/32", "fd00::2/128"],
+    "private_key": "endpoint-private",
+    "peers": [
+      {
+        "address": "wg.endpoint.example.test",
+        "port": 51820,
+        "public_key": "endpoint-peer",
+        "pre_shared_key": "endpoint-psk",
+        "allowed_ips": ["0.0.0.0/0", "::/0"],
+        "reserved": [7, 8, 9]
+      }
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "wireguard://wg.endpoint.example.test:51820?")
+	if !strings.Contains(got, "private_key=endpoint-private") ||
+		!strings.Contains(got, "peer_public_key=endpoint-peer") ||
+		!strings.Contains(got, "pre_shared_key=endpoint-psk") ||
+		!strings.Contains(got, "local_address=10.66.0.2%2F32%2Cfd00%3A%3A2%2F128") ||
+		!strings.Contains(got, "allowed_ips=0.0.0.0%2F0%2C%3A%3A%2F0") ||
+		!strings.Contains(got, "reserved=7%2C8%2C9") ||
+		!strings.Contains(got, "system_interface=1") ||
+		!strings.Contains(got, "interface_name=wg-endpoint") ||
+		!strings.Contains(got, "mtu=1420") ||
+		!strings.Contains(got, "workers=2") ||
+		!strings.HasSuffix(got, "#wg-ep") {
+		t.Fatalf("unexpected sing-box wireguard endpoint URI: %q", got)
+	}
+}
+
 func TestNormalizeContentSingBoxJSONVLESSReality(t *testing.T) {
 	raw := `{
   "outbounds": [

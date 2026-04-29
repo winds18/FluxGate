@@ -31,6 +31,7 @@
 - Clash YAML 解析支持行内和块状数组标量，例如 `alpn: [h2, http/1.1]`、`alpn: ... - h2` 和 WireGuard `allowed-ips`/`reserved` 列表。
 - subscription 来源支持解析 SIP008 Shadowsocks 订阅。
 - subscription 来源支持解析 sing-box JSON `outbounds` 中的常见 Shadowsocks/Trojan/VLESS/VMess/Hysteria2/TUIC/AnyTLS/ShadowTLS/Hysteria/HTTP/SOCKS/SSH/WireGuard/Tor 节点。
+- subscription 来源支持解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
 - subscription 来源支持按 `refresh_interval_minutes` 定时同步；后台调度默认每 60 秒检查一批到期来源。
 - 上游来源自动前缀。
 - 重复来源名前缀自动编号，例如 `[机场A]`、`[机场A-2]`。
@@ -215,6 +216,6 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 需要局域网访问管理后台时，通过部署侧配置 `FLUXGATE_HOST_BIND=0.0.0.0` 和 `FLUXGATE_HTTP_PORT`，公开仓库不保存真实访问地址。
 - `SING_BOX_AUTO_RESTART` 默认关闭；如果要让控制面重启 sing-box，需要在部署侧显式挂载 Docker socket 或改用 `command` driver，并提供对应容器/宿主机权限。
 - `SING_BOX_V2RAY_API_ADDR` 为空时 stats 轮询器不会启动；生产部署应绑定 Docker 内网地址，不应暴露到公网。
-- sing-box 官方文档已标注 WireGuard outbound 废弃；当前仅按 Phase 1 既有 outbound 骨架兼容解析，后续应评估迁移到 endpoint 模型。
+- sing-box 官方文档已标注 WireGuard outbound 废弃；当前已能导入 WireGuard endpoint 模型，但配置生成侧仍按 Phase 1 既有 outbound 骨架兼容输出，后续应评估完整迁移到 endpoint 配置。
 - 本地 QA 产生的 `data/`、`logs/`、`tmp/` 均被 `.gitignore` 排除，并默认在测试退出时清理。
 - Playwright Chromium 已在本机安装一次，后续截图脚本会复用缓存。

@@ -73,6 +73,7 @@
 - Clash YAML 解析支持常见块状和内联 `ws-opts`、`grpc-opts` 嵌套写法，能保留 WebSocket path/host 和 gRPC service name。
 - Clash YAML 解析支持行内和块状数组标量，可保留 ALPN、WireGuard 地址、允许 IP 和 reserved 字节列表。
 - subscription 来源可解析 SIP008 Shadowsocks 订阅。
+- subscription 来源可解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
 - 节点来源前缀和展示名规则。
 - 标签管理。
 - 虚拟节点管理。

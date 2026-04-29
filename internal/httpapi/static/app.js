@@ -35,6 +35,7 @@ nodeImportForm.addEventListener("submit", submitNodeImport);
 virtualNodeForm.addEventListener("submit", submitVirtualNode);
 tokenForm.addEventListener("submit", submitToken);
 sourcesEl.addEventListener("click", handleSourceAction);
+tokensEl.addEventListener("click", handleTokenAction);
 bootstrap();
 
 let appState = {
@@ -115,7 +116,7 @@ async function load() {
     renderSources(sources);
     renderTable(nodesEl, nodes, ["id", "source_name", "raw_name", "display_name", "protocol", "status"]);
     renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "status"]);
-    renderTable(tokensEl, tokens, ["id", "user_id", "token_prefix", "name", "status", "quota_bytes"]);
+    renderTokens(tokens);
     statusEl.textContent = "已连接";
   } catch (error) {
     if (error.status === 401) {
@@ -209,6 +210,30 @@ async function handleSourceAction(event) {
     await load();
   } catch (error) {
     statusEl.textContent = "刷新失败";
+    button.disabled = false;
+  }
+}
+
+async function handleTokenAction(event) {
+  const button = event.target.closest("button[data-token-action]");
+  if (!button) return;
+  button.disabled = true;
+  const id = button.dataset.tokenId;
+  const action = button.dataset.tokenAction;
+  statusEl.textContent = "更新 Token 中";
+  try {
+    if (action === "extend") {
+      await postJSON(`/api/tokens/${id}/extend`, { extend_days: 30 });
+    } else if (action === "quota") {
+      await postJSON(`/api/tokens/${id}/quota`, { quota_bytes: 1024 * 1024 * 1024 });
+    } else if (action === "revoke") {
+      await postJSON(`/api/tokens/${id}/revoke`, {});
+    } else if (action === "restore") {
+      await postJSON(`/api/tokens/${id}/restore`, {});
+    }
+    await load();
+  } catch (error) {
+    statusEl.textContent = "更新失败";
     button.disabled = false;
   }
 }
@@ -317,6 +342,52 @@ function renderSources(rows) {
                 <td>${formatCell(row.last_error)}</td>
                 <td>
                   <button class="table-button" data-action="refresh-source" data-source-id="${row.id}">刷新</button>
+                </td>
+              </tr>
+            `,
+          )
+          .join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderTokens(rows) {
+  if (!rows || rows.length === 0) {
+    tokensEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  tokensEl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>id</th>
+          <th>user_id</th>
+          <th>token_prefix</th>
+          <th>name</th>
+          <th>status</th>
+          <th>expire_at</th>
+          <th>quota_bytes</th>
+          <th>actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows
+          .map(
+            (row) => `
+              <tr>
+                <td>${formatCell(row.id)}</td>
+                <td>${formatCell(row.user_id)}</td>
+                <td>${formatCell(row.token_prefix)}</td>
+                <td>${formatCell(row.name)}</td>
+                <td>${formatCell(row.status)}</td>
+                <td>${formatCell(row.expire_at)}</td>
+                <td>${formatCell(row.quota_bytes)}</td>
+                <td class="table-actions">
+                  <button class="table-button" data-token-action="extend" data-token-id="${row.id}">续期30天</button>
+                  <button class="table-button" data-token-action="quota" data-token-id="${row.id}">+1024MiB</button>
+                  <button class="table-button" data-token-action="restore" data-token-id="${row.id}">恢复</button>
+                  <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">撤销</button>
                 </td>
               </tr>
             `,

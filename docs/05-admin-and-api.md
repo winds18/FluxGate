@@ -203,6 +203,7 @@ POST  /api/tokens
 GET   /api/tokens/{id}
 PATCH /api/tokens/{id}
 POST  /api/tokens/{id}/revoke
+POST  /api/tokens/{id}/restore
 POST  /api/tokens/{id}/extend
 POST  /api/tokens/{id}/quota
 POST  /api/tokens/{id}/rotate-gateway-credential

@@ -158,6 +158,18 @@ button {
   min-height: 30px;
 }
 
+.table-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 280px;
+}
+
+.danger-button {
+  background: #b42318;
+}
+
 .ghost-button {
   background: #ffffff;
   border: 1px solid #cbd6e2;

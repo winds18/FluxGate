@@ -15,6 +15,7 @@
 - 管理 API 登录保护。
 - 会话 Cookie 按实际请求协议设置 Secure，支持 HTTPS 反代和 HTTP 局域网调试。
 - 团队、用户、Token 基础页面创建和列表。
+- Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
 - 上游来源页面创建和列表。
 - subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。
 - subscription 来源刷新时，本次订阅中消失的旧节点会标记为 `inactive`。
@@ -67,6 +68,9 @@ POST /api/users
 GET  /api/tokens
 POST /api/tokens
 POST /api/tokens/{id}/revoke
+POST /api/tokens/{id}/restore
+POST /api/tokens/{id}/extend
+POST /api/tokens/{id}/quota
 
 GET   /api/sources
 POST  /api/sources
@@ -135,7 +139,6 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 上游订阅更多协议格式解析。
 - 完整协议 URI 到 sing-box outbound 的转换。
 - 策略管理。
-- Token 续期、追加额度、恢复。
 - 流量统计采集。
 - 超额自动阻断。
 - sing-box config 发布、check、回滚的 API 集成。

@@ -238,18 +238,91 @@ func (s *Store) ListTokens(ctx context.Context) ([]TokenWithAccount, error) {
 }
 
 func (s *Store) RevokeToken(ctx context.Context, id int64) (Token, error) {
-	if _, err := s.db.ExecContext(ctx, `
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Token{}, err
+	}
+	defer rollback(tx)
+
+	if _, err := tx.ExecContext(ctx, `
 		UPDATE tokens
 		SET status = 'revoked', revoked_at = CURRENT_TIMESTAMP, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`, id); err != nil {
 		return Token{}, err
 	}
-	if _, err := s.db.ExecContext(ctx, `
+	if _, err := tx.ExecContext(ctx, `
 		UPDATE gateway_accounts
 		SET status = 'revoked', updated_at = CURRENT_TIMESTAMP
 		WHERE token_id = ?
 	`, id); err != nil {
+		return Token{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return Token{}, err
+	}
+	return s.GetToken(ctx, id)
+}
+
+func (s *Store) RestoreToken(ctx context.Context, id int64) (Token, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Token{}, err
+	}
+	defer rollback(tx)
+
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE tokens
+		SET status = 'active', revoked_at = NULL, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, id); err != nil {
+		return Token{}, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE gateway_accounts
+		SET status = 'active', updated_at = CURRENT_TIMESTAMP
+		WHERE token_id = ?
+	`, id); err != nil {
+		return Token{}, err
+	}
+	if err := tx.Commit(); err != nil {
+		return Token{}, err
+	}
+	return s.GetToken(ctx, id)
+}
+
+func (s *Store) ExtendToken(ctx context.Context, id int64, days int) (Token, error) {
+	if days <= 0 {
+		return Token{}, fmt.Errorf("extend_days must be greater than 0")
+	}
+	token, err := s.GetToken(ctx, id)
+	if err != nil {
+		return Token{}, err
+	}
+	base := time.Now().UTC()
+	if token.ExpireAt != nil && token.ExpireAt.After(base) {
+		base = token.ExpireAt.UTC()
+	}
+	expireAt := base.AddDate(0, 0, days).Format(time.RFC3339)
+	if _, err := s.db.ExecContext(ctx, `
+		UPDATE tokens
+		SET expire_at = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, expireAt, id); err != nil {
+		return Token{}, err
+	}
+	return s.GetToken(ctx, id)
+}
+
+func (s *Store) AddTokenQuota(ctx context.Context, id int64, quotaBytes int64) (Token, error) {
+	if quotaBytes <= 0 {
+		return Token{}, fmt.Errorf("quota_bytes must be greater than 0")
+	}
+	if _, err := s.db.ExecContext(ctx, `
+		UPDATE tokens
+		SET quota_bytes = quota_bytes + ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, quotaBytes, id); err != nil {
 		return Token{}, err
 	}
 	return s.GetToken(ctx, id)

@@ -165,6 +165,84 @@ func TestTokenCreation(t *testing.T) {
 	}
 }
 
+func TestTokenLifecycleOperations(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	team, err := db.CreateTeam(ctx, CreateTeamInput{Name: "Core"})
+	if err != nil {
+		t.Fatalf("create team: %v", err)
+	}
+	user, err := db.CreateUser(ctx, CreateUserInput{TeamID: &team.ID, Name: "Alice"})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	result, err := db.CreateToken(ctx, "secret", "https://flux.example", CreateTokenInput{
+		UserID:     user.ID,
+		Name:       "Alice lifecycle",
+		ExpireDays: 1,
+		QuotaBytes: 1024,
+	})
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+	if result.Token.ExpireAt == nil {
+		t.Fatal("created token should have expire_at")
+	}
+
+	extended, err := db.ExtendToken(ctx, result.Token.ID, 30)
+	if err != nil {
+		t.Fatalf("extend token: %v", err)
+	}
+	if extended.ExpireAt == nil || !extended.ExpireAt.After(result.Token.ExpireAt.AddDate(0, 0, 29)) {
+		t.Fatalf("token was not extended from existing expiry: before=%v after=%v", result.Token.ExpireAt, extended.ExpireAt)
+	}
+	if _, err := db.ExtendToken(ctx, result.Token.ID, 0); err == nil {
+		t.Fatal("zero-day extension should fail")
+	}
+
+	quota, err := db.AddTokenQuota(ctx, result.Token.ID, 2048)
+	if err != nil {
+		t.Fatalf("add token quota: %v", err)
+	}
+	if quota.QuotaBytes != 3072 {
+		t.Fatalf("unexpected quota after add: %d", quota.QuotaBytes)
+	}
+	if _, err := db.AddTokenQuota(ctx, result.Token.ID, 0); err == nil {
+		t.Fatal("zero quota add should fail")
+	}
+
+	revoked, err := db.RevokeToken(ctx, result.Token.ID)
+	if err != nil {
+		t.Fatalf("revoke token: %v", err)
+	}
+	if revoked.Status != "revoked" || revoked.RevokedAt == nil {
+		t.Fatalf("token should be revoked: %+v", revoked)
+	}
+	account, err := db.GetGatewayAccountByToken(ctx, result.Token.ID)
+	if err != nil {
+		t.Fatalf("get revoked gateway account: %v", err)
+	}
+	if account.Status != "revoked" {
+		t.Fatalf("gateway account should be revoked: %+v", account)
+	}
+
+	restored, err := db.RestoreToken(ctx, result.Token.ID)
+	if err != nil {
+		t.Fatalf("restore token: %v", err)
+	}
+	if restored.Status != "active" || restored.RevokedAt != nil {
+		t.Fatalf("token should be active after restore: %+v", restored)
+	}
+	account, err = db.GetGatewayAccountByToken(ctx, result.Token.ID)
+	if err != nil {
+		t.Fatalf("get restored gateway account: %v", err)
+	}
+	if account.Status != "active" {
+		t.Fatalf("gateway account should be active after restore: %+v", account)
+	}
+}
+
 func TestBootstrapAndAuthenticateAdmin(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)

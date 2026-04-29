@@ -80,6 +80,9 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/tokens", s.handleListTokens)
 	s.mux.HandleFunc("POST /api/tokens", s.handleCreateToken)
 	s.mux.HandleFunc("POST /api/tokens/{id}/revoke", s.handleRevokeToken)
+	s.mux.HandleFunc("POST /api/tokens/{id}/restore", s.handleRestoreToken)
+	s.mux.HandleFunc("POST /api/tokens/{id}/extend", s.handleExtendToken)
+	s.mux.HandleFunc("POST /api/tokens/{id}/quota", s.handleAddTokenQuota)
 
 	s.mux.HandleFunc("GET /api/virtual-nodes", s.handleListVirtualNodes)
 	s.mux.HandleFunc("POST /api/virtual-nodes", s.handleCreateVirtualNode)
@@ -519,6 +522,57 @@ func (s *Server) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	token, err := s.store.RevokeToken(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, token)
+}
+
+func (s *Server) handleRestoreToken(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	token, err := s.store.RestoreToken(r.Context(), id)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, token)
+}
+
+func (s *Server) handleExtendToken(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	var input struct {
+		ExtendDays int `json:"extend_days"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	token, err := s.store.ExtendToken(r.Context(), id, input.ExtendDays)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, token)
+}
+
+func (s *Server) handleAddTokenQuota(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	var input struct {
+		QuotaBytes int64 `json:"quota_bytes"`
+	}
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	token, err := s.store.AddTokenQuota(r.Context(), id, input.QuotaBytes)
 	if err != nil {
 		writeStoreError(w, err)
 		return

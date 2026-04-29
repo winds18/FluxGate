@@ -60,7 +60,18 @@ post_json "/api/sources/$subscription_source_id/refresh" '{}' "$OUT_DIR/source-r
 source_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-refresh.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443}' "$OUT_DIR/virtual-node.json"
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
+token_id="$(json_value "data.token.id" <"$OUT_DIR/token.json")"
 plain_token="$(json_value "data.plain_token" <"$OUT_DIR/token.json")"
+post_json "/api/tokens/$token_id/extend" '{"extend_days":30}' "$OUT_DIR/token-extend.json"
+token_extended_status="$(json_value "data.status" <"$OUT_DIR/token-extend.json")"
+post_json "/api/tokens/$token_id/quota" '{"quota_bytes":1073741824}' "$OUT_DIR/token-quota.json"
+token_quota_after="$(json_value "data.quota_bytes" <"$OUT_DIR/token-quota.json")"
+post_json "/api/tokens/$token_id/revoke" '{}' "$OUT_DIR/token-revoke.json"
+token_revoked_status="$(json_value "data.status" <"$OUT_DIR/token-revoke.json")"
+log "+ curl -sS -o $OUT_DIR/subscription-revoked.json -w <http_code> $BASE_URL/sub/<redacted>?target=clash"
+revoked_http_status="$(curl -sS -o "$OUT_DIR/subscription-revoked.json" -w "%{http_code}" "$BASE_URL/sub/$plain_token?target=clash")"
+post_json "/api/tokens/$token_id/restore" '{}' "$OUT_DIR/token-restore.json"
+token_restored_status="$(json_value "data.status" <"$OUT_DIR/token-restore.json")"
 
 log "+ curl -fsS $BASE_URL/sub/<redacted>?target=clash -o $OUT_DIR/subscription.yaml"
 curl -fsS "$BASE_URL/sub/$plain_token?target=clash" -o "$OUT_DIR/subscription.yaml"
@@ -73,6 +84,26 @@ fi
 
 if [[ "$source_refresh_imported" != "1" ]]; then
   log "unexpected subscription refresh import count: $source_refresh_imported"
+  exit 1
+fi
+
+if [[ "$token_extended_status" != "active" ]]; then
+  log "unexpected token status after extend: $token_extended_status"
+  exit 1
+fi
+
+if [[ "$token_quota_after" != "1074790400" ]]; then
+  log "unexpected token quota after add: $token_quota_after"
+  exit 1
+fi
+
+if [[ "$token_revoked_status" != "revoked" || "$revoked_http_status" != "403" ]]; then
+  log "revoked token should reject subscription: token_status=$token_revoked_status http_status=$revoked_http_status"
+  exit 1
+fi
+
+if [[ "$token_restored_status" != "active" ]]; then
+  log "unexpected token status after restore: $token_restored_status"
   exit 1
 fi
 

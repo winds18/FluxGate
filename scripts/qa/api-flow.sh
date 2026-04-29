@@ -55,7 +55,7 @@ source_b_prefix="$(json_value "JSON.stringify(data.display_prefix)" <"$OUT_DIR/s
 post_json "/api/sources" '{"name":"订阅源A","type":"subscription","raw_content":"vless://uuid@example.net:443#新加坡%2001"}' "$OUT_DIR/source-subscription.json"
 subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
 
-post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\"}" "$OUT_DIR/import.json"
+post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\\ntrojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京%2001\"}" "$OUT_DIR/import.json"
 post_json "/api/sources/$subscription_source_id/refresh" '{}' "$OUT_DIR/source-refresh.json"
 source_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-refresh.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443}' "$OUT_DIR/virtual-node.json"
@@ -126,6 +126,11 @@ fi
 
 if ! grep -q '"tag": "up_' "$OUT_DIR/sing-box.json"; then
   log "active upstream node should appear as sing-box outbound"
+  exit 1
+fi
+
+if ! grep -q '"type": "trojan"' "$OUT_DIR/sing-box.json"; then
+  log "active trojan upstream node should appear as sing-box outbound"
   exit 1
 fi
 

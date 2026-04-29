@@ -127,7 +127,7 @@ func buildUpstreamOutbounds(nodes []store.Node) ([]map[string]any, []string) {
 	outbounds := make([]map[string]any, 0, len(nodes))
 	tags := make([]string, 0, len(nodes))
 	for _, node := range nodes {
-		outbound, ok := buildVLESSOutbound(node)
+		outbound, ok := buildNodeOutbound(node)
 		if !ok {
 			continue
 		}
@@ -135,6 +135,17 @@ func buildUpstreamOutbounds(nodes []store.Node) ([]map[string]any, []string) {
 		outbounds = append(outbounds, outbound)
 	}
 	return outbounds, tags
+}
+
+func buildNodeOutbound(node store.Node) (map[string]any, bool) {
+	switch node.Protocol {
+	case "vless":
+		return buildVLESSOutbound(node)
+	case "trojan":
+		return buildTrojanOutbound(node)
+	default:
+		return nil, false
+	}
 }
 
 func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
@@ -168,6 +179,41 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 	if strings.EqualFold(query.Get("security"), "tls") {
 		tls := map[string]any{"enabled": true}
 		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+			tls["server_name"] = serverName
+		}
+		outbound["tls"] = tls
+	}
+	return outbound, true
+}
+
+func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "trojan" {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || parsed.Scheme != "trojan" || parsed.Hostname() == "" {
+		return nil, false
+	}
+	password := parsed.User.Username()
+	if password == "" {
+		return nil, false
+	}
+	port := node.ServerPort
+	if port <= 0 {
+		port = 443
+	}
+
+	query := parsed.Query()
+	outbound := map[string]any{
+		"type":        "trojan",
+		"tag":         upstreamTag(node),
+		"server":      parsed.Hostname(),
+		"server_port": port,
+		"password":    password,
+	}
+	if strings.EqualFold(query.Get("security"), "tls") || firstNonEmpty(query.Get("sni"), query.Get("peer")) != "" {
+		tls := map[string]any{"enabled": true}
+		if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
 		}
 		outbound["tls"] = tls

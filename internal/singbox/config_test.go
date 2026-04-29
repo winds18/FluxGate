@@ -48,7 +48,7 @@ func TestBuildConfigFiltersUnusableGatewayTokens(t *testing.T) {
 	}
 }
 
-func TestBuildConfigAddsVLESSUpstreamOutbounds(t *testing.T) {
+func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	config := buildConfig(nil, []store.VirtualNode{
 		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
 	}, []store.Node{
@@ -68,8 +68,15 @@ func TestBuildConfigAddsVLESSUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         44,
-			URI:        "trojan://secret@example.org:443#unsupported",
+			URI:        "trojan://qa-placeholder@example.org:443?security=tls&sni=trojan.example.org#trojan",
 			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         45,
+			URI:        "ss://placeholder@example.org:443#unsupported",
+			Protocol:   "ss",
 			ServerPort: 443,
 			Status:     "active",
 		},
@@ -92,7 +99,18 @@ func TestBuildConfigAddsVLESSUpstreamOutbounds(t *testing.T) {
 	if !ok || tls["enabled"] != true || tls["server_name"] != "edge.example.com" {
 		t.Fatalf("unexpected tls config: %+v", vless["tls"])
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_44") != nil {
+	trojan := findOutbound(config.Outbounds, "up_44")
+	if trojan == nil {
+		t.Fatalf("expected trojan outbound up_44, got %+v", config.Outbounds)
+	}
+	if trojan["type"] != "trojan" || trojan["server"] != "example.org" || trojan["password"] != "qa-placeholder" {
+		t.Fatalf("unexpected trojan outbound fields: %+v", trojan)
+	}
+	trojanTLS, ok := trojan["tls"].(map[string]any)
+	if !ok || trojanTLS["enabled"] != true || trojanTLS["server_name"] != "trojan.example.org" {
+		t.Fatalf("unexpected trojan tls config: %+v", trojan["tls"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_45") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -101,7 +119,7 @@ func TestBuildConfigAddsVLESSUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 1 || tags[0] != "up_42" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 2 || tags[0] != "up_42" || tags[1] != "up_44" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

@@ -15,12 +15,28 @@ import (
 const maxSubscriptionBytes = 5 << 20
 
 var supportedURIPrefixes = []string{
+	"anytls://",
+	"http://",
+	"https://",
+	"hy2://",
+	"hysteria://",
+	"hysteria2://",
+	"naive://",
+	"naive+https://",
+	"naive+quic://",
+	"shadowtls://",
+	"socks://",
+	"socks4://",
+	"socks4a://",
+	"socks5://",
+	"ss://",
+	"ssh://",
+	"trojan://",
+	"tuic://",
 	"vless://",
 	"vmess://",
-	"trojan://",
-	"ss://",
-	"hysteria2://",
-	"hy2://",
+	"wg://",
+	"wireguard://",
 }
 
 type Fetcher struct {

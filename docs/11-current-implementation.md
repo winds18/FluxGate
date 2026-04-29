@@ -55,6 +55,7 @@
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
 - 流量统计入库骨架已落地：可解析 V2Ray stats 的 user/inbound/outbound 计数名称，写入 `traffic_samples`，计算 counter delta，并把 user 维度增量累加到 Token 用量和小时/天汇总表。
 - user 维度流量入库后会自动判断 Token 额度；超额时将 Token 和 gateway account 标记为 `over_quota`，追加足够额度后自动恢复为 `active`。
+- stats 轮询发现 Token 因真实流量进入 `over_quota` 时，会自动发布新的 sing-box 配置；如果部署侧开启 `SING_BOX_AUTO_RESTART`，会继续走受配置保护的重启执行器。
 - 管理 API 和后台页面可查看 Token 今日、本月和累计流量用量摘要，展示最近 24 小时/最近 14 天流量图，并查看近 14 天上游出口流量摘要。
 - 管理后台 Token 流量摘要可展示额度使用率进度条，并按接近超额和已超额状态变色。
 - 订阅响应头返回标准 `subscription-userinfo`，并提供 FluxGate 专属的已用、总额和剩余额度头。
@@ -193,7 +194,6 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅更多结构化格式解析。
 - DNS 等更多协议 URI 到 sing-box outbound 的转换。
-- 流量超额后的配置发布触发。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
 
 ## 5. 当前注意事项

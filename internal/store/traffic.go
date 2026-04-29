@@ -17,6 +17,11 @@ type RecordTrafficSampleInput struct {
 	RawValueDownload int64
 }
 
+type TrafficRecordResult struct {
+	Samples               []TrafficSample `json:"samples"`
+	ConfigPublishRequired bool            `json:"config_publish_required"`
+}
+
 type TrafficSample struct {
 	ID                 int64  `json:"id"`
 	SampledAt          string `json:"sampled_at"`
@@ -87,7 +92,7 @@ func (s *Store) RecordTrafficSample(ctx context.Context, input RecordTrafficSamp
 	}
 	defer rollback(tx)
 
-	sample, err := recordTrafficSampleTx(ctx, tx, normalized)
+	sample, _, err := recordTrafficSampleTx(ctx, tx, normalized)
 	if err != nil {
 		return TrafficSample{}, err
 	}
@@ -98,28 +103,38 @@ func (s *Store) RecordTrafficSample(ctx context.Context, input RecordTrafficSamp
 }
 
 func (s *Store) RecordTrafficSamples(ctx context.Context, inputs []RecordTrafficSampleInput) ([]TrafficSample, error) {
-	tx, err := s.db.BeginTx(ctx, nil)
+	result, err := s.RecordTrafficSamplesWithEffects(ctx, inputs)
 	if err != nil {
 		return nil, err
+	}
+	return result.Samples, nil
+}
+
+func (s *Store) RecordTrafficSamplesWithEffects(ctx context.Context, inputs []RecordTrafficSampleInput) (TrafficRecordResult, error) {
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return TrafficRecordResult{}, err
 	}
 	defer rollback(tx)
 
 	samples := make([]TrafficSample, 0, len(inputs))
+	result := TrafficRecordResult{Samples: samples}
 	for _, input := range inputs {
 		normalized, err := normalizeTrafficSampleInput(input)
 		if err != nil {
-			return nil, err
+			return TrafficRecordResult{}, err
 		}
-		sample, err := recordTrafficSampleTx(ctx, tx, normalized)
+		sample, configPublishRequired, err := recordTrafficSampleTx(ctx, tx, normalized)
 		if err != nil {
-			return nil, err
+			return TrafficRecordResult{}, err
 		}
-		samples = append(samples, sample)
+		result.Samples = append(result.Samples, sample)
+		result.ConfigPublishRequired = result.ConfigPublishRequired || configPublishRequired
 	}
 	if err := tx.Commit(); err != nil {
-		return nil, err
+		return TrafficRecordResult{}, err
 	}
-	return samples, nil
+	return result, nil
 }
 
 func (s *Store) ListTokenTraffic(ctx context.Context) ([]TokenTrafficSummary, error) {
@@ -360,10 +375,10 @@ func normalizeTrafficSampleInput(input RecordTrafficSampleInput) (RecordTrafficS
 	return input, nil
 }
 
-func recordTrafficSampleTx(ctx context.Context, tx *sql.Tx, input RecordTrafficSampleInput) (TrafficSample, error) {
+func recordTrafficSampleTx(ctx context.Context, tx *sql.Tx, input RecordTrafficSampleInput) (TrafficSample, bool, error) {
 	uploadDelta, downloadDelta, err := trafficDelta(ctx, tx, input)
 	if err != nil {
-		return TrafficSample{}, err
+		return TrafficSample{}, false, err
 	}
 	sampledAt := input.SampledAt.Format(time.RFC3339)
 	result, err := tx.ExecContext(ctx, `
@@ -371,23 +386,27 @@ func recordTrafficSampleTx(ctx context.Context, tx *sql.Tx, input RecordTrafficS
 		VALUES (?, ?, ?, ?, ?, ?, ?)
 	`, sampledAt, input.MetricType, input.MetricName, uploadDelta, downloadDelta, input.RawValueUpload, input.RawValueDownload)
 	if err != nil {
-		return TrafficSample{}, err
+		return TrafficSample{}, false, err
 	}
 	id, err := result.LastInsertId()
 	if err != nil {
-		return TrafficSample{}, err
+		return TrafficSample{}, false, err
 	}
+	configPublishRequired := false
 	if input.MetricType == "user" && (uploadDelta > 0 || downloadDelta > 0) {
-		if err := applyUserTrafficDelta(ctx, tx, input.MetricName, input.SampledAt, uploadDelta, downloadDelta); err != nil {
-			return TrafficSample{}, err
+		quotaStateChanged, err := applyUserTrafficDelta(ctx, tx, input.MetricName, input.SampledAt, uploadDelta, downloadDelta)
+		if err != nil {
+			return TrafficSample{}, false, err
 		}
+		configPublishRequired = quotaStateChanged
 	}
 	if input.MetricType == "outbound" && (uploadDelta > 0 || downloadDelta > 0) {
 		if err := applyOutboundTrafficDelta(ctx, tx, input.MetricName, input.SampledAt, uploadDelta, downloadDelta); err != nil {
-			return TrafficSample{}, err
+			return TrafficSample{}, false, err
 		}
 	}
-	return getTrafficSampleTx(ctx, tx, id)
+	sample, err := getTrafficSampleTx(ctx, tx, id)
+	return sample, configPublishRequired, err
 }
 
 func trafficDelta(ctx context.Context, tx *sql.Tx, input RecordTrafficSampleInput) (int64, int64, error) {
@@ -415,7 +434,7 @@ func counterDelta(current, previous int64) int64 {
 	return current
 }
 
-func applyUserTrafficDelta(ctx context.Context, tx *sql.Tx, authUser string, sampledAt time.Time, uploadDelta, downloadDelta int64) error {
+func applyUserTrafficDelta(ctx context.Context, tx *sql.Tx, authUser string, sampledAt time.Time, uploadDelta, downloadDelta int64) (bool, error) {
 	var tokenID, userID, gatewayAccountID int64
 	err := tx.QueryRowContext(ctx, `
 		SELECT t.id, t.user_id, g.id
@@ -425,9 +444,9 @@ func applyUserTrafficDelta(ctx context.Context, tx *sql.Tx, authUser string, sam
 	`, authUser).Scan(&tokenID, &userID, &gatewayAccountID)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil
+			return false, nil
 		}
-		return err
+		return false, err
 	}
 
 	sampledAtText := sampledAt.Format(time.RFC3339)
@@ -439,19 +458,20 @@ func applyUserTrafficDelta(ctx context.Context, tx *sql.Tx, authUser string, sam
 		    updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`, uploadDelta, downloadDelta, sampledAtText, tokenID); err != nil {
-		return err
+		return false, err
 	}
-	if _, err := tx.ExecContext(ctx, `
+	tokenStatusResult, err := tx.ExecContext(ctx, `
 		UPDATE tokens
 		SET status = 'over_quota', updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 		  AND status = 'active'
 		  AND quota_bytes > 0
 		  AND used_upload_bytes + used_download_bytes >= quota_bytes
-	`, tokenID); err != nil {
-		return err
+	`, tokenID)
+	if err != nil {
+		return false, err
 	}
-	if _, err := tx.ExecContext(ctx, `
+	accountStatusResult, err := tx.ExecContext(ctx, `
 		UPDATE gateway_accounts
 		SET status = 'over_quota', updated_at = CURRENT_TIMESTAMP
 		WHERE token_id = ?
@@ -461,8 +481,19 @@ func applyUserTrafficDelta(ctx context.Context, tx *sql.Tx, authUser string, sam
 		    WHERE tokens.id = gateway_accounts.token_id
 		      AND tokens.status = 'over_quota'
 		  )
-	`, tokenID); err != nil {
-		return err
+	`, tokenID)
+	if err != nil {
+		return false, err
+	}
+	tokenRows, _ := tokenStatusResult.RowsAffected()
+	accountRows, _ := accountStatusResult.RowsAffected()
+	configPublishRequired := tokenRows > 0 || accountRows > 0
+	if !configPublishRequired {
+		var tokenStatus string
+		if err := tx.QueryRowContext(ctx, "SELECT status FROM tokens WHERE id = ?", tokenID).Scan(&tokenStatus); err != nil {
+			return false, err
+		}
+		configPublishRequired = tokenStatus == "over_quota"
 	}
 
 	hour := sampledAt.Truncate(time.Hour).Format(time.RFC3339)
@@ -474,7 +505,7 @@ func applyUserTrafficDelta(ctx context.Context, tx *sql.Tx, authUser string, sam
 		  download_bytes = download_bytes + excluded.download_bytes,
 		  updated_at = CURRENT_TIMESTAMP
 	`, hour, userID, tokenID, gatewayAccountID, uploadDelta, downloadDelta); err != nil {
-		return err
+		return false, err
 	}
 
 	day := sampledAt.Format("2006-01-02")
@@ -486,9 +517,9 @@ func applyUserTrafficDelta(ctx context.Context, tx *sql.Tx, authUser string, sam
 		  download_bytes = download_bytes + excluded.download_bytes,
 		  updated_at = CURRENT_TIMESTAMP
 	`, day, userID, tokenID, gatewayAccountID, uploadDelta, downloadDelta); err != nil {
-		return err
+		return false, err
 	}
-	return nil
+	return configPublishRequired, nil
 }
 
 func applyOutboundTrafficDelta(ctx context.Context, tx *sql.Tx, outboundTag string, sampledAt time.Time, uploadDelta, downloadDelta int64) error {

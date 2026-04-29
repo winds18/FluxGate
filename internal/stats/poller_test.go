@@ -19,8 +19,9 @@ func (f fakeCollector) CollectCounters(context.Context) ([]Counter, error) {
 }
 
 type fakeRecorder struct {
-	inputs []store.RecordTrafficSampleInput
-	err    error
+	inputs                []store.RecordTrafficSampleInput
+	err                   error
+	configPublishRequired bool
 }
 
 func (f *fakeRecorder) RecordTrafficSamples(_ context.Context, inputs []store.RecordTrafficSampleInput) ([]store.TrafficSample, error) {
@@ -30,6 +31,29 @@ func (f *fakeRecorder) RecordTrafficSamples(_ context.Context, inputs []store.Re
 	}
 	samples := make([]store.TrafficSample, len(inputs))
 	return samples, nil
+}
+
+func (f *fakeRecorder) RecordTrafficSamplesWithEffects(ctx context.Context, inputs []store.RecordTrafficSampleInput) (store.TrafficRecordResult, error) {
+	samples, err := f.RecordTrafficSamples(ctx, inputs)
+	if err != nil {
+		return store.TrafficRecordResult{}, err
+	}
+	return store.TrafficRecordResult{
+		Samples:               samples,
+		ConfigPublishRequired: f.configPublishRequired,
+	}, nil
+}
+
+type fakeConfigPublishTrigger struct {
+	calls  int
+	reason string
+	err    error
+}
+
+func (f *fakeConfigPublishTrigger) TriggerConfigPublish(_ context.Context, reason string) error {
+	f.calls++
+	f.reason = reason
+	return f.err
 }
 
 func TestPollOnceRecordsCollectedCounters(t *testing.T) {
@@ -117,5 +141,49 @@ func TestPollOnceReturnsRecorderError(t *testing.T) {
 	_, err := poller.PollOnce(context.Background())
 	if !errors.Is(err, wantErr) {
 		t.Fatalf("expected recorder error, got %v", err)
+	}
+}
+
+func TestPollOnceTriggersConfigPublishWhenQuotaStateChanges(t *testing.T) {
+	recorder := &fakeRecorder{configPublishRequired: true}
+	publisher := &fakeConfigPublishTrigger{}
+	poller := Poller{
+		Collector: fakeCollector{counters: []Counter{
+			{Name: "user>>>fg_u_1_t_1>>>traffic>>>uplink", Value: 120},
+		}},
+		Recorder:             recorder,
+		ConfigPublishTrigger: publisher,
+		Now:                  func() time.Time { return time.Date(2026, 4, 29, 14, 51, 0, 0, time.UTC) },
+	}
+
+	result, err := poller.PollOnce(context.Background())
+	if err != nil {
+		t.Fatalf("poll once: %v", err)
+	}
+	if !result.ConfigPublishRequired || !result.ConfigPublishTriggered {
+		t.Fatalf("expected config publish trigger in result: %+v", result)
+	}
+	if publisher.calls != 1 || publisher.reason != "traffic_quota_config_required" {
+		t.Fatalf("unexpected publisher calls: calls=%d reason=%q", publisher.calls, publisher.reason)
+	}
+}
+
+func TestPollOnceReturnsConfigPublishError(t *testing.T) {
+	wantErr := errors.New("publish failed")
+	poller := Poller{
+		Collector: fakeCollector{counters: []Counter{
+			{Name: "user>>>fg_u_1_t_1>>>traffic>>>uplink", Value: 120},
+		}},
+		Recorder:             &fakeRecorder{configPublishRequired: true},
+		ConfigPublishTrigger: &fakeConfigPublishTrigger{err: wantErr},
+		Now:                  func() time.Time { return time.Date(2026, 4, 29, 14, 52, 0, 0, time.UTC) },
+	}
+
+	result, err := poller.PollOnce(context.Background())
+	if !errors.Is(err, wantErr) {
+		t.Fatalf("expected config publish error, got %v", err)
+	}
+	if !result.ConfigPublishRequired || result.ConfigPublishTriggered {
+		t.Fatalf("unexpected publish error result: %+v", result)
 	}
 }

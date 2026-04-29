@@ -13,6 +13,7 @@ import (
 	"github.com/winds18/FluxGate/internal/config"
 	"github.com/winds18/FluxGate/internal/httpapi"
 	"github.com/winds18/FluxGate/internal/observability"
+	"github.com/winds18/FluxGate/internal/singbox"
 	"github.com/winds18/FluxGate/internal/stats"
 	"github.com/winds18/FluxGate/internal/store"
 	"github.com/winds18/FluxGate/internal/upstreamsync"
@@ -66,7 +67,22 @@ func main() {
 			RequestTimeout: cfg.SingBoxV2RayAPITimeout,
 			DialTimeout:    cfg.SingBoxV2RayAPITimeout,
 		}
-		poller := stats.Poller{Collector: collector, Recorder: db, Logger: logger}
+		publisher := singbox.Publisher{
+			Store:              db,
+			ConfigPath:         cfg.SingBoxConfigPath,
+			PreviousConfigPath: cfg.SingBoxPreviousConfigPath,
+			AutoRestart:        cfg.SingBoxAutoRestart,
+			RestartOptions: singbox.RestartOptions{
+				Driver:        cfg.SingBoxRestartDriver,
+				DockerSocket:  cfg.SingBoxDockerSocket,
+				ContainerName: cfg.SingBoxContainerName,
+				Command:       cfg.SingBoxRestartCommand,
+				Args:          cfg.SingBoxRestartArgs,
+				Timeout:       cfg.SingBoxRestartTimeout,
+			},
+			Logger: logger,
+		}
+		poller := stats.Poller{Collector: collector, Recorder: db, ConfigPublishTrigger: publisher, Logger: logger}
 		go poller.RunScheduler(ctx, cfg.StatsPollInterval)
 		logger.Info("stats poller enabled", "interval", cfg.StatsPollInterval.String())
 	} else {

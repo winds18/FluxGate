@@ -800,23 +800,7 @@ func (s *Server) restartSingBox(ctx context.Context) singbox.RestartResult {
 }
 
 func (s *Server) buildSingBoxConfig(ctx context.Context) (singbox.Config, error) {
-	tokens, err := s.store.ListTokens(ctx)
-	if err != nil {
-		return singbox.Config{}, err
-	}
-	virtualNodes, err := s.store.ListVirtualNodes(ctx)
-	if err != nil {
-		return singbox.Config{}, err
-	}
-	upstreamNodes, err := s.store.ListNodes(ctx)
-	if err != nil {
-		return singbox.Config{}, err
-	}
-	policies, err := s.store.ListPolicies(ctx)
-	if err != nil {
-		return singbox.Config{}, err
-	}
-	return singbox.BuildConfigWithPolicies(tokens, virtualNodes, upstreamNodes, policies), nil
+	return singbox.BuildConfigFromStore(ctx, s.store)
 }
 
 func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {

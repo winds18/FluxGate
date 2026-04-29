@@ -863,23 +863,31 @@ func TestTrafficUsageMarksAndRestoresOverQuotaToken(t *testing.T) {
 	}
 
 	sampledAt := time.Date(2026, 4, 29, 6, 22, 0, 0, time.UTC)
-	if _, err := db.RecordTrafficSample(ctx, RecordTrafficSampleInput{
+	baseline, err := db.RecordTrafficSamplesWithEffects(ctx, []RecordTrafficSampleInput{{
 		SampledAt:        sampledAt,
 		MetricType:       "user",
 		MetricName:       result.Account.AuthUser,
 		RawValueUpload:   10,
 		RawValueDownload: 20,
-	}); err != nil {
+	}})
+	if err != nil {
 		t.Fatalf("record baseline sample: %v", err)
 	}
-	if _, err := db.RecordTrafficSample(ctx, RecordTrafficSampleInput{
+	if baseline.ConfigPublishRequired {
+		t.Fatalf("baseline traffic sample should not require config publish: %+v", baseline)
+	}
+	overQuota, err := db.RecordTrafficSamplesWithEffects(ctx, []RecordTrafficSampleInput{{
 		SampledAt:        sampledAt.Add(time.Minute),
 		MetricType:       "user",
 		MetricName:       result.Account.AuthUser,
 		RawValueUpload:   70,
 		RawValueDownload: 70,
-	}); err != nil {
+	}})
+	if err != nil {
 		t.Fatalf("record over quota sample: %v", err)
+	}
+	if !overQuota.ConfigPublishRequired {
+		t.Fatalf("over quota transition should require config publish: %+v", overQuota)
 	}
 
 	token, err := db.GetToken(ctx, result.Token.ID)
@@ -895,6 +903,32 @@ func TestTrafficUsageMarksAndRestoresOverQuotaToken(t *testing.T) {
 	}
 	if account.Status != "over_quota" {
 		t.Fatalf("gateway account should be over quota: %+v", account)
+	}
+	repeated, err := db.RecordTrafficSamplesWithEffects(ctx, []RecordTrafficSampleInput{{
+		SampledAt:        sampledAt.Add(2 * time.Minute),
+		MetricType:       "user",
+		MetricName:       result.Account.AuthUser,
+		RawValueUpload:   70,
+		RawValueDownload: 70,
+	}})
+	if err != nil {
+		t.Fatalf("record repeated over quota sample: %v", err)
+	}
+	if repeated.ConfigPublishRequired {
+		t.Fatalf("unchanged over quota state should not require config publish: %+v", repeated)
+	}
+	continued, err := db.RecordTrafficSamplesWithEffects(ctx, []RecordTrafficSampleInput{{
+		SampledAt:        sampledAt.Add(3 * time.Minute),
+		MetricType:       "user",
+		MetricName:       result.Account.AuthUser,
+		RawValueUpload:   80,
+		RawValueDownload: 80,
+	}})
+	if err != nil {
+		t.Fatalf("record continued over quota sample: %v", err)
+	}
+	if !continued.ConfigPublishRequired {
+		t.Fatalf("continued over quota traffic should keep requiring config publish: %+v", continued)
 	}
 
 	token, err = db.AddTokenQuota(ctx, result.Token.ID, 5)

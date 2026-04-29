@@ -17,18 +17,29 @@ type TrafficRecorder interface {
 	RecordTrafficSamples(ctx context.Context, inputs []store.RecordTrafficSampleInput) ([]store.TrafficSample, error)
 }
 
+type TrafficRecorderWithEffects interface {
+	RecordTrafficSamplesWithEffects(ctx context.Context, inputs []store.RecordTrafficSampleInput) (store.TrafficRecordResult, error)
+}
+
+type ConfigPublishTrigger interface {
+	TriggerConfigPublish(ctx context.Context, reason string) error
+}
+
 type Poller struct {
-	Collector Collector
-	Recorder  TrafficRecorder
-	Logger    *slog.Logger
-	Now       func() time.Time
+	Collector            Collector
+	Recorder             TrafficRecorder
+	ConfigPublishTrigger ConfigPublishTrigger
+	Logger               *slog.Logger
+	Now                  func() time.Time
 }
 
 type PollResult struct {
-	SampledAt     time.Time
-	CounterCount  int
-	SampleCount   int
-	RecordedCount int
+	SampledAt              time.Time
+	CounterCount           int
+	SampleCount            int
+	RecordedCount          int
+	ConfigPublishRequired  bool
+	ConfigPublishTriggered bool
 }
 
 func (p Poller) PollOnce(ctx context.Context) (PollResult, error) {
@@ -53,11 +64,26 @@ func (p Poller) PollOnce(ctx context.Context) (PollResult, error) {
 	if len(samples) == 0 {
 		return result, nil
 	}
-	recorded, err := p.Recorder.RecordTrafficSamples(ctx, samples)
-	if err != nil {
-		return result, err
+	if recorder, ok := p.Recorder.(TrafficRecorderWithEffects); ok {
+		recordResult, err := recorder.RecordTrafficSamplesWithEffects(ctx, samples)
+		if err != nil {
+			return result, err
+		}
+		result.RecordedCount = len(recordResult.Samples)
+		result.ConfigPublishRequired = recordResult.ConfigPublishRequired
+	} else {
+		recorded, err := p.Recorder.RecordTrafficSamples(ctx, samples)
+		if err != nil {
+			return result, err
+		}
+		result.RecordedCount = len(recorded)
 	}
-	result.RecordedCount = len(recorded)
+	if result.ConfigPublishRequired && p.ConfigPublishTrigger != nil {
+		if err := p.ConfigPublishTrigger.TriggerConfigPublish(ctx, "traffic_quota_config_required"); err != nil {
+			return result, err
+		}
+		result.ConfigPublishTriggered = true
+	}
 	return result, nil
 }
 
@@ -92,6 +118,8 @@ func (p Poller) pollAndLog(ctx context.Context) {
 			"counters", result.CounterCount,
 			"samples", result.SampleCount,
 			"recorded", result.RecordedCount,
+			"config_publish_required", result.ConfigPublishRequired,
+			"config_publish_triggered", result.ConfigPublishTriggered,
 			"sampled_at", result.SampledAt.Format(time.RFC3339),
 		)
 	}

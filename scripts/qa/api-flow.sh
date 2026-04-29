@@ -134,6 +134,9 @@ traffic_token_count="$(json_value "data.length" <"$OUT_DIR/traffic-tokens.json")
 traffic_token_used="$(json_value "data.find((row) => row.token_id === $token_id)?.used_total_bytes ?? -1" <"$OUT_DIR/traffic-tokens.json")"
 traffic_token_today="$(json_value "data.find((row) => row.token_id === $token_id)?.today_total_bytes ?? -1" <"$OUT_DIR/traffic-tokens.json")"
 traffic_token_month="$(json_value "data.find((row) => row.token_id === $token_id)?.month_total_bytes ?? -1" <"$OUT_DIR/traffic-tokens.json")"
+run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/traffic/daily?days=14" -o "$OUT_DIR/traffic-daily.json"
+traffic_daily_count="$(json_value "data.length" <"$OUT_DIR/traffic-daily.json")"
+traffic_daily_total="$(json_value "data.reduce((sum, row) => sum + (row.total_bytes || 0), 0)" <"$OUT_DIR/traffic-daily.json")"
 post_json "/api/tokens/$token_id/extend" '{"extend_days":30}' "$OUT_DIR/token-extend.json"
 token_extended_status="$(json_value "data.status" <"$OUT_DIR/token-extend.json")"
 post_json "/api/tokens/$token_id/quota" '{"quota_bytes":1073741824}' "$OUT_DIR/token-quota.json"
@@ -212,6 +215,11 @@ fi
 
 if [[ "$traffic_token_count" -lt 1 || "$traffic_token_used" != "0" || "$traffic_token_today" != "0" || "$traffic_token_month" != "0" ]]; then
   log "traffic token summary should include new token with zero usage: count=$traffic_token_count used=$traffic_token_used today=$traffic_token_today month=$traffic_token_month"
+  exit 1
+fi
+
+if [[ "$traffic_daily_count" != "14" || "$traffic_daily_total" != "0" ]]; then
+  log "traffic daily chart data should return 14 empty days: count=$traffic_daily_count total=$traffic_daily_total"
   exit 1
 fi
 

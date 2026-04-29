@@ -281,6 +281,9 @@ POST /api/sing-box/restart
 ### 2.12 统计
 
 ```text
+GET /api/traffic/tokens
+GET /api/traffic/daily?days=14
+
 GET /api/stats/overview
 GET /api/stats/users
 GET /api/stats/users/{id}

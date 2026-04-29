@@ -500,6 +500,76 @@ func TestRecordTrafficSamplesUpdatesTokenUsageAndRollups(t *testing.T) {
 	}
 }
 
+func TestListTrafficDailyAtFillsRecentDays(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	team, err := db.CreateTeam(ctx, CreateTeamInput{Name: "Daily Team"})
+	if err != nil {
+		t.Fatalf("create team: %v", err)
+	}
+	user, err := db.CreateUser(ctx, CreateUserInput{TeamID: &team.ID, Name: "Daily User"})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	result, err := db.CreateToken(ctx, "secret", "https://flux.example", CreateTokenInput{
+		UserID:     user.ID,
+		Name:       "daily token",
+		ExpireDays: 30,
+		QuotaBytes: 1000,
+	})
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	now := time.Date(2026, 4, 29, 8, 0, 0, 0, time.UTC)
+	previousDay := now.AddDate(0, 0, -1)
+	for _, input := range []RecordTrafficSampleInput{
+		{
+			SampledAt:        previousDay,
+			MetricType:       "user",
+			MetricName:       result.Account.AuthUser,
+			RawValueUpload:   0,
+			RawValueDownload: 0,
+		},
+		{
+			SampledAt:        previousDay.Add(time.Hour),
+			MetricType:       "user",
+			MetricName:       result.Account.AuthUser,
+			RawValueUpload:   10,
+			RawValueDownload: 15,
+		},
+		{
+			SampledAt:        now,
+			MetricType:       "user",
+			MetricName:       result.Account.AuthUser,
+			RawValueUpload:   40,
+			RawValueDownload: 70,
+		},
+	} {
+		if _, err := db.RecordTrafficSample(ctx, input); err != nil {
+			t.Fatalf("record traffic sample: %v", err)
+		}
+	}
+
+	days, err := db.ListTrafficDailyAt(ctx, now, 3)
+	if err != nil {
+		t.Fatalf("list traffic daily: %v", err)
+	}
+	if len(days) != 3 {
+		t.Fatalf("expected 3 days, got %+v", days)
+	}
+	if days[0].Day != "2026-04-27" || days[0].TotalBytes != 0 {
+		t.Fatalf("expected empty first day, got %+v", days[0])
+	}
+	if days[1].Day != "2026-04-28" || days[1].UploadBytes != 10 || days[1].DownloadBytes != 15 || days[1].TotalBytes != 25 {
+		t.Fatalf("unexpected previous day summary: %+v", days[1])
+	}
+	if days[2].Day != "2026-04-29" || days[2].UploadBytes != 30 || days[2].DownloadBytes != 55 || days[2].TotalBytes != 85 {
+		t.Fatalf("unexpected current day summary: %+v", days[2])
+	}
+}
+
 func TestTrafficUsageMarksAndRestoresOverQuotaToken(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)

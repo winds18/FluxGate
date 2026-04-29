@@ -258,6 +258,63 @@ textarea {
   overflow-x: auto;
 }
 
+.traffic-chart {
+  border-bottom: 1px solid #edf1f5;
+  overflow-x: auto;
+  padding: 14px 16px 16px;
+}
+
+.traffic-chart-bars {
+  align-items: end;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(14, minmax(54px, 1fr));
+  min-height: 172px;
+  min-width: 820px;
+}
+
+.traffic-day {
+  align-items: center;
+  display: grid;
+  gap: 6px;
+  justify-items: center;
+  min-width: 0;
+}
+
+.traffic-bar-track {
+  align-items: end;
+  background: #eef3f6;
+  border-radius: 6px;
+  display: flex;
+  height: 126px;
+  justify-content: center;
+  padding: 4px;
+  width: 100%;
+}
+
+.traffic-bar {
+  background: #2f80ed;
+  border-radius: 5px;
+  display: block;
+  max-height: 118px;
+  min-height: 2px;
+  width: 100%;
+}
+
+.traffic-day-label,
+.traffic-day strong {
+  color: #52616f;
+  font-size: 11px;
+  line-height: 1.2;
+  min-height: 14px;
+  text-align: center;
+}
+
+.traffic-day strong {
+  color: #1f2933;
+  font-weight: 680;
+}
+
 table {
   border-collapse: collapse;
   min-width: 720px;

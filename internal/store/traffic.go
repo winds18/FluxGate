@@ -50,6 +50,13 @@ type TokenTrafficSummary struct {
 	UpdatedAt          string `json:"updated_at"`
 }
 
+type TrafficDailySummary struct {
+	Day           string `json:"day"`
+	UploadBytes   int64  `json:"upload_bytes"`
+	DownloadBytes int64  `json:"download_bytes"`
+	TotalBytes    int64  `json:"total_bytes"`
+}
+
 func (s *Store) RecordTrafficSample(ctx context.Context, input RecordTrafficSampleInput) (TrafficSample, error) {
 	normalized, err := normalizeTrafficSampleInput(input)
 	if err != nil {
@@ -159,6 +166,53 @@ func (s *Store) ListTokenTrafficAt(ctx context.Context, now time.Time) ([]TokenT
 		summaries = append(summaries, item)
 	}
 	return summaries, rows.Err()
+}
+
+func (s *Store) ListTrafficDaily(ctx context.Context, days int) ([]TrafficDailySummary, error) {
+	return s.ListTrafficDailyAt(ctx, time.Now().UTC(), days)
+}
+
+func (s *Store) ListTrafficDailyAt(ctx context.Context, now time.Time, days int) ([]TrafficDailySummary, error) {
+	if days <= 0 {
+		days = 14
+	}
+	if days > 90 {
+		days = 90
+	}
+	end := now.UTC()
+	start := end.AddDate(0, 0, -days+1)
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT day, SUM(upload_bytes), SUM(download_bytes)
+		FROM traffic_user_daily
+		WHERE day >= ? AND day <= ?
+		GROUP BY day
+	`, start.Format("2006-01-02"), end.Format("2006-01-02"))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	byDay := map[string]TrafficDailySummary{}
+	for rows.Next() {
+		var item TrafficDailySummary
+		if err := rows.Scan(&item.Day, &item.UploadBytes, &item.DownloadBytes); err != nil {
+			return nil, err
+		}
+		item.TotalBytes = item.UploadBytes + item.DownloadBytes
+		byDay[item.Day] = item
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	summaries := make([]TrafficDailySummary, 0, days)
+	for i := 0; i < days; i++ {
+		day := start.AddDate(0, 0, i).Format("2006-01-02")
+		item := byDay[day]
+		item.Day = day
+		summaries = append(summaries, item)
+	}
+	return summaries, nil
 }
 
 func normalizeTrafficSampleInput(input RecordTrafficSampleInput) (RecordTrafficSampleInput, error) {

@@ -14,6 +14,7 @@ const nodesEl = document.querySelector("#nodes");
 const virtualNodesEl = document.querySelector("#virtual-nodes");
 const policiesEl = document.querySelector("#policies");
 const tokensEl = document.querySelector("#tokens");
+const trafficDailyEl = document.querySelector("#traffic-daily");
 const trafficTokensEl = document.querySelector("#traffic-tokens");
 const refreshEl = document.querySelector("#refresh");
 const configCheckEl = document.querySelector("#config-check");
@@ -112,7 +113,7 @@ function showApp() {
 async function load() {
   statusEl.textContent = "刷新中";
   try {
-    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficTokens] = await Promise.all([
+    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficDaily, trafficTokens] = await Promise.all([
       getJSON("/api/overview"),
       getJSON("/api/teams"),
       getJSON("/api/users"),
@@ -121,6 +122,7 @@ async function load() {
       getJSON("/api/virtual-nodes"),
       getJSON("/api/policies"),
       getJSON("/api/tokens"),
+      getJSON("/api/traffic/daily?days=14"),
       getJSON("/api/traffic/tokens"),
     ]);
     appState = { teams, users, sources, virtualNodes };
@@ -133,6 +135,7 @@ async function load() {
     renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "tag_selector", "status"]);
     renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "include_tags", "exclude_tags", "allowed_virtual_nodes", "max_nodes", "status"]);
     renderTokens(tokens);
+    renderTrafficDaily(trafficDaily);
     renderTrafficTokens(trafficTokens);
     statusEl.textContent = "已连接";
   } catch (error) {
@@ -553,6 +556,33 @@ function renderTrafficTokens(rows) {
   ]);
 }
 
+function renderTrafficDaily(rows) {
+  if (!rows || rows.length === 0) {
+    trafficDailyEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  const maxTotal = Math.max(...rows.map((row) => row.total_bytes || 0), 1);
+  trafficDailyEl.innerHTML = `
+    <div class="traffic-chart-bars">
+      ${rows
+        .map((row) => {
+          const total = row.total_bytes || 0;
+          const height = total > 0 ? Math.max(8, Math.round((total / maxTotal) * 118)) : 2;
+          return `
+            <div class="traffic-day" title="${escapeHTML(row.day)} ${escapeHTML(formatBytes(total))}">
+              <div class="traffic-bar-track">
+                <span class="traffic-bar" style="height: ${height}px"></span>
+              </div>
+              <span class="traffic-day-label">${escapeHTML(String(row.day || "").slice(5))}</span>
+              <strong>${escapeHTML(formatBytes(total))}</strong>
+            </div>
+          `;
+        })
+        .join("")}
+    </div>
+  `;
+}
+
 function renderTable(target, rows, columns) {
   if (!rows || rows.length === 0) {
     target.innerHTML = `<div class="empty">暂无数据</div>`;
@@ -583,6 +613,14 @@ function formatCell(value) {
     return `<code>${escapeHTML(value.slice(0, 38))}...</code>`;
   }
   return escapeHTML(String(value));
+}
+
+function formatBytes(value) {
+  const bytes = Number(value || 0);
+  if (bytes >= 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GiB`;
+  if (bytes >= 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MiB`;
+  if (bytes >= 1024) return `${(bytes / 1024).toFixed(1)} KiB`;
+  return `${bytes} B`;
 }
 
 function escapeHTML(value) {

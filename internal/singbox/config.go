@@ -300,10 +300,23 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 	if flow := strings.TrimSpace(query.Get("flow")); flow != "" {
 		outbound["flow"] = flow
 	}
-	if strings.EqualFold(query.Get("security"), "tls") {
+	if strings.EqualFold(query.Get("security"), "tls") ||
+		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name")) != "" ||
+		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) ||
+		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) ||
+		strings.TrimSpace(query.Get("alpn")) != "" {
 		tls := map[string]any{"enabled": true}
 		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
+		}
+		if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+			tls["insecure"] = true
+		}
+		if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+			tls["disable_sni"] = true
+		}
+		if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
+			tls["alpn"] = alpn
 		}
 		outbound["tls"] = tls
 	}
@@ -335,10 +348,23 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 		"server_port": port,
 		"password":    password,
 	}
-	if strings.EqualFold(query.Get("security"), "tls") || firstNonEmpty(query.Get("sni"), query.Get("peer")) != "" {
+	if strings.EqualFold(query.Get("security"), "tls") ||
+		firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name")) != "" ||
+		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) ||
+		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) ||
+		strings.TrimSpace(query.Get("alpn")) != "" {
 		tls := map[string]any{"enabled": true}
 		if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
+		}
+		if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+			tls["insecure"] = true
+		}
+		if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+			tls["disable_sni"] = true
+		}
+		if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
+			tls["alpn"] = alpn
 		}
 		outbound["tls"] = tls
 	}

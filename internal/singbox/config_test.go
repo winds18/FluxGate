@@ -70,7 +70,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	}, []store.Node{
 		{
 			ID:         42,
-			URI:        "vless://00000000-0000-0000-0000-000000000042@example.com:443?security=tls&sni=edge.example.com&flow=xtls-rprx-vision#hk",
+			URI:        "vless://00000000-0000-0000-0000-000000000042@example.com:443?security=tls&sni=edge.example.com&flow=xtls-rprx-vision&insecure=1&disable_sni=1&alpn=h2,http/1.1#hk",
 			Protocol:   "vless",
 			ServerPort: 443,
 			Status:     "active",
@@ -84,7 +84,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         44,
-			URI:        "trojan://qa-placeholder@example.org:443?security=tls&sni=trojan.example.org#trojan",
+			URI:        "trojan://qa-placeholder@example.org:443?security=tls&sni=trojan.example.org&skip-cert-verify=1&disable-sni=1&alpn=h2#trojan",
 			Protocol:   "trojan",
 			ServerPort: 443,
 			Status:     "active",
@@ -213,9 +213,13 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if vless["uuid"] != "00000000-0000-0000-0000-000000000042" || vless["flow"] != "xtls-rprx-vision" {
 		t.Fatalf("unexpected vless auth fields: %+v", vless)
 	}
-	tls, ok := vless["tls"].(map[string]any)
-	if !ok || tls["enabled"] != true || tls["server_name"] != "edge.example.com" {
+	vlessTLS, ok := vless["tls"].(map[string]any)
+	if !ok || vlessTLS["enabled"] != true || vlessTLS["server_name"] != "edge.example.com" || vlessTLS["insecure"] != true || vlessTLS["disable_sni"] != true {
 		t.Fatalf("unexpected tls config: %+v", vless["tls"])
+	}
+	vlessALPN, ok := vlessTLS["alpn"].([]string)
+	if !ok || len(vlessALPN) != 2 || vlessALPN[0] != "h2" || vlessALPN[1] != "http/1.1" {
+		t.Fatalf("unexpected vless alpn config: %+v", vlessTLS["alpn"])
 	}
 	trojan := findOutbound(config.Outbounds, "up_44")
 	if trojan == nil {
@@ -225,8 +229,12 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("unexpected trojan outbound fields: %+v", trojan)
 	}
 	trojanTLS, ok := trojan["tls"].(map[string]any)
-	if !ok || trojanTLS["enabled"] != true || trojanTLS["server_name"] != "trojan.example.org" {
+	if !ok || trojanTLS["enabled"] != true || trojanTLS["server_name"] != "trojan.example.org" || trojanTLS["insecure"] != true || trojanTLS["disable_sni"] != true {
 		t.Fatalf("unexpected trojan tls config: %+v", trojan["tls"])
+	}
+	trojanALPN, ok := trojanTLS["alpn"].([]string)
+	if !ok || len(trojanALPN) != 1 || trojanALPN[0] != "h2" {
+		t.Fatalf("unexpected trojan alpn config: %+v", trojanTLS["alpn"])
 	}
 	shadowsocks := findOutbound(config.Outbounds, "up_45")
 	if shadowsocks == nil {

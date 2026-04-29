@@ -1305,6 +1305,35 @@ func TestNormalizeContentSurgeProxyListWireGuard(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyListInternalOutbounds(t *testing.T) {
+	raw := `
+[Proxy]
+本地 Surge 直连 = DIRECT
+广告 Surge 拦截 = REJECT
+静默 Surge 拦截 = reject-drop
+内部 Surge DNS = dns
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	want := []string{
+		"direct://default#%E6%9C%AC%E5%9C%B0%20Surge%20%E7%9B%B4%E8%BF%9E",
+		"block://default#%E5%B9%BF%E5%91%8A%20Surge%20%E6%8B%A6%E6%88%AA",
+		"block://default#%E9%9D%99%E9%BB%98%20Surge%20%E6%8B%A6%E6%88%AA",
+		"dns://default#%E5%86%85%E9%83%A8%20Surge%20DNS",
+	}
+	if len(lines) != len(want) {
+		t.Fatalf("expected %d Surge internal URIs, got %d: %q", len(want), len(lines), got)
+	}
+	for index, expected := range want {
+		if lines[index] != expected {
+			t.Fatalf("unexpected Surge internal URI at %d: want %q, got %q", index, expected, lines[index])
+		}
+	}
+}
+
 func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

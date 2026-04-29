@@ -183,6 +183,12 @@ func surgeProxyURI(line string) string {
 			proxy["system-interface"] = "true"
 		}
 		return clashWireGuardURI(proxy)
+	case "direct":
+		return clashInternalURI("direct", proxy, "Direct")
+	case "reject", "reject-drop", "reject-no-drop", "reject-tinygif", "block":
+		return clashInternalURI("block", proxy, "Block")
+	case "dns":
+		return clashInternalURI("dns", proxy, "DNS")
 	case "trojan":
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "psk")
 		if proxy["tls"] == "" {

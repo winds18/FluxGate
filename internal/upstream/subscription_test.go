@@ -98,6 +98,40 @@ func TestNormalizeContentJSONURICollectionObject(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONWrappedBase64URIList(t *testing.T) {
+	payload := strings.Join([]string{
+		"vless://00000000-0000-0000-0000-000000000081@example.com:443#香港 02",
+		"trojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京 02",
+	}, "\n")
+	raw := `{"subscription":"` + base64.StdEncoding.EncodeToString([]byte(payload)) + `"}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	if got != payload {
+		t.Fatalf("unexpected JSON wrapped base64 URI list: %q", got)
+	}
+}
+
+func TestNormalizeContentJSONWrappedRawContentURIList(t *testing.T) {
+	raw := `{
+  "data": {
+    "raw_content": "ss://aes-128-gcm:qa-placeholder@example.net:8388#首尔 03\nhysteria2://qa-placeholder@example.dev:443?sni=hy2.example.dev#首尔 04"
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@example.net:8388#首尔 03",
+		"hysteria2://qa-placeholder@example.dev:443?sni=hy2.example.dev#首尔 04",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON wrapped raw content URI list: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAML(t *testing.T) {
 	raw := `
 mixed-port: 7890

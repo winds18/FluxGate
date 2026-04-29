@@ -175,23 +175,55 @@ func JSONURIList(content string) string {
 func collectJSONURIs(value any, uris *[]string) {
 	switch typed := value.(type) {
 	case string:
-		if URIList(typed) != "" {
-			*uris = append(*uris, typed)
+		if normalized := normalizedStringURIList(typed); normalized != "" {
+			*uris = append(*uris, normalized)
 		}
 	case []any:
 		for _, item := range typed {
 			collectJSONURIs(item, uris)
 		}
 	case map[string]any:
-		for _, key := range []string{"uri", "url", "link", "share"} {
+		for _, key := range []string{"uri", "url", "link", "share", "content", "raw", "raw_content", "data", "subscription"} {
 			if item, ok := typed[key]; ok {
 				collectJSONURIs(item, uris)
 			}
 		}
-		for _, key := range []string{"uris", "nodes", "proxies", "items", "urls", "links"} {
+		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links"} {
 			if item, ok := typed[key]; ok {
 				collectJSONURIs(item, uris)
 			}
 		}
 	}
+}
+
+func normalizedStringURIList(value string) string {
+	if normalized := URIList(value); normalized != "" {
+		return normalized
+	}
+	compact := strings.Map(func(r rune) rune {
+		switch r {
+		case '\r', '\n', '\t', ' ':
+			return -1
+		default:
+			return r
+		}
+	}, value)
+	if compact == "" {
+		return ""
+	}
+	for _, encoding := range []*base64.Encoding{
+		base64.StdEncoding,
+		base64.RawStdEncoding,
+		base64.URLEncoding,
+		base64.RawURLEncoding,
+	} {
+		decoded, err := encoding.DecodeString(compact)
+		if err != nil {
+			continue
+		}
+		if normalized := URIList(string(decoded)); normalized != "" {
+			return normalized
+		}
+	}
+	return ""
 }

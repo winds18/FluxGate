@@ -576,6 +576,39 @@ func TestBuildConfigAddsDNSOutboundWithoutSelectingIt(t *testing.T) {
 	}
 }
 
+func TestBuildConfigAddsDirectOutboundAndSelectsIt(t *testing.T) {
+	config := buildConfig(nil, nil, []store.Node{
+		{
+			ID:         63,
+			URI:        "direct://default#Direct",
+			Protocol:   "direct",
+			ServerPort: 0,
+			Status:     "active",
+		},
+	}, nil, time.Date(2026, 4, 29, 16, 50, 0, 0, time.UTC))
+
+	direct := findOutbound(config.Outbounds, "up_63")
+	if direct == nil || direct["type"] != "direct" {
+		t.Fatalf("expected direct outbound up_63, got %+v", config.Outbounds)
+	}
+	selector := findOutbound(config.Outbounds, upstreamSelectorTag)
+	if selector == nil {
+		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
+	}
+	tags, ok := selector["outbounds"].([]string)
+	if !ok || len(tags) != 1 || tags[0] != "up_63" || selector["default"] != "up_63" {
+		t.Fatalf("direct outbound should enter traffic selector: %+v", selector)
+	}
+	stats, ok := config.Experimental["v2ray_api"].(map[string]any)["stats"].(map[string]any)
+	if !ok {
+		t.Fatalf("missing v2ray stats config: %+v", config.Experimental)
+	}
+	statOutbounds, ok := stats["outbounds"].([]string)
+	if !ok || len(statOutbounds) != 1 || statOutbounds[0] != "up_63" {
+		t.Fatalf("direct outbound should enter stats outbounds: %+v", stats)
+	}
+}
+
 func TestBuildConfigAppliesVirtualNodePolicyToUsers(t *testing.T) {
 	now := time.Date(2026, 4, 29, 5, 10, 0, 0, time.UTC)
 	teamID := int64(10)

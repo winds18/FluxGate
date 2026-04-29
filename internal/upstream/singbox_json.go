@@ -64,6 +64,8 @@ func singBoxOutboundURI(outbound map[string]any) string {
 		return singBoxTorURI(outbound)
 	case "dns":
 		return singBoxDNSURI(outbound)
+	case "direct":
+		return singBoxInternalURI("direct", outbound, "Direct")
 	default:
 		return ""
 	}
@@ -557,9 +559,13 @@ func singBoxTorURI(outbound map[string]any) string {
 }
 
 func singBoxDNSURI(outbound map[string]any) string {
-	name := firstNonEmptyString(singBoxName(outbound), "DNS")
+	return singBoxInternalURI("dns", outbound, "DNS")
+}
+
+func singBoxInternalURI(scheme string, outbound map[string]any, fallbackName string) string {
+	name := firstNonEmptyString(singBoxName(outbound), fallbackName)
 	return (&url.URL{
-		Scheme:   "dns",
+		Scheme:   scheme,
 		Host:     "default",
 		Fragment: name,
 	}).String()

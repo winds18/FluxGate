@@ -275,6 +275,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildTorOutbound(node)
 	case "dns":
 		return buildDNSOutbound(node)
+	case "direct":
+		return buildDirectOutbound(node)
 	default:
 		return nil, false
 	}
@@ -1117,6 +1119,20 @@ func buildDNSOutbound(node store.Node) (map[string]any, bool) {
 	}
 	return map[string]any{
 		"type": "dns",
+		"tag":  upstreamTag(node),
+	}, true
+}
+
+func buildDirectOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "direct" {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || parsed.Scheme != "direct" {
+		return nil, false
+	}
+	return map[string]any{
+		"type": "direct",
 		"tag":  upstreamTag(node),
 	}, true
 }

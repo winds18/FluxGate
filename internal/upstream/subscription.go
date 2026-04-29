@@ -17,6 +17,7 @@ const maxSubscriptionBytes = 5 << 20
 var supportedURIPrefixes = []string{
 	"anytls://",
 	"dns://",
+	"direct://",
 	"http://",
 	"https://",
 	"hy2://",

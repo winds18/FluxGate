@@ -21,6 +21,7 @@ func TestNormalizeContentSupportsCurrentOutboundURIList(t *testing.T) {
 		"tuic://00000000-0000-0000-0000-000000000048:qa-placeholder@example.io:443#TUIC",
 		"anytls://qa-placeholder@example.chat:443#AnyTLS",
 		"dns://default#DNS",
+		"direct://default#Direct",
 		"shadowtls://qa-placeholder@example.help:443#ShadowTLS",
 		"naive://qa-user:qa-placeholder@example.news:443#Naive",
 		"hysteria://qa-placeholder@example.zone:443?auth_str=qa-auth#Hysteria",
@@ -812,6 +813,24 @@ func TestNormalizeContentSingBoxJSONDNS(t *testing.T) {
 	}
 	if got != "dns://default#%E5%86%85%E9%83%A8%20DNS" {
 		t.Fatalf("unexpected sing-box dns URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONDirect(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "direct",
+      "tag": "本地直连"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	if got != "direct://default#%E6%9C%AC%E5%9C%B0%E7%9B%B4%E8%BF%9E" {
+		t.Fatalf("unexpected sing-box direct URI: %q", got)
 	}
 }
 

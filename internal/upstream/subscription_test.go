@@ -50,8 +50,58 @@ func TestNormalizeContentBase64URIList(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentClashYAML(t *testing.T) {
+	raw := `
+mixed-port: 7890
+proxies:
+  - name: "香港 01"
+    type: ss
+    server: ss.example.test
+    port: 8388
+    cipher: aes-128-gcm
+    password: "qa-placeholder"
+  - { name: "东京 01", type: trojan, server: trojan.example.test, port: 443, password: "trojan-placeholder", sni: edge.example.test, skip-cert-verify: true }
+  - name: "首尔 01"
+    type: vless
+    server: vless.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000051
+    tls: true
+    flow: xtls-rprx-vision
+proxy-groups:
+  - name: Auto
+    type: select
+    proxies:
+      - 香港 01
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 normalized nodes, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388#")
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.example.test:443?")
+	if !strings.Contains(lines[1], "sni=edge.example.test") || !strings.HasSuffix(lines[1], "#%E4%B8%9C%E4%BA%AC%2001") {
+		t.Fatalf("unexpected trojan URI: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "vless://00000000-0000-0000-0000-000000000051@vless.example.test:443?")
+	if !strings.Contains(lines[2], "flow=xtls-rprx-vision") || !strings.Contains(lines[2], "security=tls") {
+		t.Fatalf("unexpected vless URI: %q", lines[2])
+	}
+}
+
 func TestNormalizeContentRejectsUnsupportedContent(t *testing.T) {
 	if _, err := NormalizeContent("not a subscription"); err == nil {
 		t.Fatal("expected unsupported content error")
+	}
+}
+
+func assertHasPrefix(t *testing.T, value, prefix string) {
+	t.Helper()
+	if !strings.HasPrefix(value, prefix) {
+		t.Fatalf("expected %q to have prefix %q", value, prefix)
 	}
 }

@@ -52,7 +52,15 @@ post_json "/api/sources" '{"name":"机场A","type":"manual"}' "$OUT_DIR/source-a
 source_a_id="$(json_value "data.id" <"$OUT_DIR/source-a.json")"
 post_json "/api/sources" '{"name":"机场A","type":"manual"}' "$OUT_DIR/source-b.json"
 source_b_prefix="$(json_value "JSON.stringify(data.display_prefix)" <"$OUT_DIR/source-b.json")"
-post_json "/api/sources" '{"name":"订阅源A","type":"subscription","raw_content":"tuic://00000000-0000-0000-0000-000000000049:qa-placeholder@example.sub:443?congestion_control=bbr#新加坡%2001","refresh_interval_minutes":5}' "$OUT_DIR/source-subscription.json"
+clash_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(`proxies:
+  - name: "新加坡 01"
+    type: ss
+    server: example.sub
+    port: 8388
+    cipher: aes-128-gcm
+    password: "qa-placeholder"
+`));')"
+post_json "/api/sources" "{\"name\":\"订阅源A\",\"type\":\"subscription\",\"raw_content\":$clash_subscription_raw,\"refresh_interval_minutes\":5}" "$OUT_DIR/source-subscription.json"
 subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
 subscription_refresh_interval="$(json_value "data.refresh_interval_minutes" <"$OUT_DIR/source-subscription.json")"
 vmess_uri="$(node -e 'const doc={add:"vmess.example.net",port:"443",id:"00000000-0000-0000-0000-000000000046",aid:"0",scy:"auto",net:"ws",host:"ws.example.test",path:"/ws",tls:"tls",sni:"vmess.example.net",ps:"VMess QA"}; process.stdout.write("vmess://"+Buffer.from(JSON.stringify(doc)).toString("base64url"));')"

@@ -2862,6 +2862,67 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONTCPHTTPHeader(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray TCP HTTP",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "tcp-http.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000090"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "tcp-http.v2ray.example.test"
+        },
+        "tcpSettings": {
+          "header": {
+            "type": "http",
+            "request": {
+              "method": "GET",
+              "path": ["/front", "/backup"],
+              "headers": {
+                "Host": ["front.v2ray.example.test", "front-backup.v2ray.example.test"]
+              }
+            }
+          }
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000090@tcp-http.v2ray.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=tcp-http.v2ray.example.test",
+		"type=http",
+		"host=front.v2ray.example.test%2Cfront-backup.v2ray.example.test",
+		"path=%2Ffront%2C%2Fbackup",
+		"method=GET",
+		"#%E9%A6%99%E6%B8%AF%20V2Ray%20TCP%20HTTP",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected v2ray TCP HTTP URI to contain %q: %q", want, got)
+		}
+	}
+}
+
 func TestNormalizeContentJSONWrappedV2RayJSON(t *testing.T) {
 	raw := `{
   "data": {

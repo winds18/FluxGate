@@ -233,6 +233,9 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 			proxy["early-data-header-name"] = earlyHeader
 		}
 	}
+	if tcp := firstNonNilMap(v2rayMap(stream["tcpSettings"]), v2rayMap(stream["tcp_settings"])); tcp != nil {
+		appendV2RayTCPHeaderValues(tcp, proxy)
+	}
 	if grpc := firstNonNilMap(v2rayMap(stream["grpcSettings"]), v2rayMap(stream["grpc_settings"])); grpc != nil {
 		if serviceName := firstNonEmptyString(v2rayString(grpc, "serviceName"), v2rayString(grpc, "service_name")); serviceName != "" {
 			proxy["grpc-service-name"] = serviceName
@@ -255,6 +258,29 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		}
 		if path := v2rayString(upgrade, "path"); path != "" {
 			proxy["httpupgrade-opts.path"] = path
+		}
+	}
+}
+
+func appendV2RayTCPHeaderValues(tcp map[string]any, proxy map[string]string) {
+	header := firstNonNilMap(v2rayMap(tcp["header"]), v2rayMap(tcp["headers"]))
+	if header == nil || !strings.EqualFold(v2rayString(header, "type"), "http") {
+		return
+	}
+	proxy["network"] = "http"
+	request := v2rayMap(header["request"])
+	if request == nil {
+		return
+	}
+	if method := v2rayString(request, "method"); method != "" {
+		proxy["http-opts.method"] = method
+	}
+	if paths := stringListFromAnyValue(request["path"]); len(paths) > 0 {
+		proxy["http-opts.path"] = strings.Join(paths, ",")
+	}
+	if headers := v2rayMap(request["headers"]); headers != nil {
+		if hosts := firstNonEmptyStringList(stringListFromAnyValue(headers["Host"]), stringListFromAnyValue(headers["host"])); len(hosts) > 0 {
+			proxy["http-opts.host"] = strings.Join(hosts, ",")
 		}
 	}
 }

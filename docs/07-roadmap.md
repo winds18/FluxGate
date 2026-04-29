@@ -66,7 +66,7 @@
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
 - subscription 来源支持按刷新间隔自动同步到期订阅。
 - subscription 来源可解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点。
-- Clash YAML 解析支持常见 `ws-opts`、`grpc-opts` 嵌套写法，能保留 WebSocket path/host 和 gRPC service name。
+- Clash YAML 解析支持常见块状和内联 `ws-opts`、`grpc-opts` 嵌套写法，能保留 WebSocket path/host 和 gRPC service name。
 - subscription 来源可解析 SIP008 Shadowsocks 订阅。
 - 节点来源前缀和展示名规则。
 - 标签管理。

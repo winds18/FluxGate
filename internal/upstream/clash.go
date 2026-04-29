@@ -635,16 +635,39 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 }
 
 func parseInlineMap(value string) map[string]string {
+	result := map[string]string{}
+	parseInlineMapFields(result, nil, value)
+	return result
+}
+
+func parseInlineMapFields(result map[string]string, scopes []string, value string) {
 	value = strings.TrimSpace(value)
 	value = strings.TrimPrefix(strings.TrimSuffix(value, "}"), "{")
-	result := map[string]string{}
 	for _, part := range splitOutsideQuotes(value, ',') {
 		key, fieldValue, ok := parseYAMLField(strings.TrimSpace(part))
-		if ok {
-			result[strings.ToLower(key)] = fieldValue
+		if !ok {
+			continue
+		}
+		key = strings.ToLower(strings.TrimSpace(key))
+		if key == "" {
+			continue
+		}
+		if len(scopes) > 0 {
+			parts := make([]string, 0, len(scopes)+1)
+			parts = append(parts, scopes...)
+			parts = append(parts, key)
+			result[strings.Join(parts, ".")] = fieldValue
+		}
+		result[key] = fieldValue
+		if isInlineMapLiteral(fieldValue) {
+			parseInlineMapFields(result, append(scopes, key), fieldValue)
 		}
 	}
-	return result
+}
+
+func isInlineMapLiteral(value string) bool {
+	value = strings.TrimSpace(value)
+	return strings.HasPrefix(value, "{") && strings.HasSuffix(value, "}")
 }
 
 func trimYAMLFieldScopes(scopes []yamlFieldScope, indent int) []yamlFieldScope {
@@ -734,6 +757,7 @@ func splitOutsideQuotes(value string, separator rune) []string {
 	start := 0
 	quote := rune(0)
 	escaped := false
+	depth := 0
 	for index, ch := range value {
 		if quote != 0 {
 			if escaped {
@@ -753,7 +777,17 @@ func splitOutsideQuotes(value string, separator rune) []string {
 			quote = ch
 			continue
 		}
-		if ch == separator {
+		switch ch {
+		case '{', '[':
+			depth++
+			continue
+		case '}', ']':
+			if depth > 0 {
+				depth--
+			}
+			continue
+		}
+		if ch == separator && depth == 0 {
 			parts = append(parts, value[start:index])
 			start = index + 1
 		}

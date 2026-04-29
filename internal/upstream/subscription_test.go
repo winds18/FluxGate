@@ -60,7 +60,7 @@ proxies:
     port: 8388
     cipher: aes-128-gcm
     password: "qa-placeholder"
-  - { name: "东京 01", type: trojan, server: trojan.example.test, port: 443, password: "trojan-placeholder", sni: edge.example.test, skip-cert-verify: true, disable-sni: true, alpn: "h2,http/1.1", network: ws, ws-path: /trojan, ws-headers.host: ws.trojan.example.test }
+  - { name: "东京 01", type: trojan, server: trojan.example.test, port: 443, password: "trojan-placeholder", sni: edge.example.test, skip-cert-verify: true, disable-sni: true, alpn: "h2,http/1.1", network: ws, ws-opts: { path: /trojan, headers: { Host: ws.trojan.example.test } } }
   - name: "首尔 01"
     type: vless
     server: vless.example.test

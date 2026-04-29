@@ -78,6 +78,7 @@
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
 - subscription 来源可解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段中的内嵌 Clash YAML、SIP008、sing-box JSON 和 base64 订阅内容也会归一化。
 - JSON 包装订阅可解析 `payload`、`result`、`response`、`body`、`text`、`sub` 等常见接口外层字段。
+- JSON 包装订阅可解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象。
 - subscription 来源可解析以节点名称为 key 的 JSON URI 对象映射。
 - subscription 来源可解析裸 VMess JSON 单对象、数组、包装字符串和按名称映射对象，并转换为标准 `vmess://` URI。
 - subscription 来源可解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI。

@@ -212,8 +212,16 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 		if nodeName == "" {
 			nodeName = name
 		}
+		if normalized := structuredJSONDocumentURI(typed); normalized != "" {
+			*uris = append(*uris, normalized)
+			return
+		}
 		vmessName := firstNonEmptyString(firstJSONString(typed, "ps", "name", "remarks", "tag"), name)
 		if uri := vmessJSONURI(typed, vmessName); uri != "" {
+			*uris = append(*uris, uri)
+			return
+		}
+		if uri := clashJSONProxyURI(typed, nodeName); uri != "" {
 			*uris = append(*uris, uri)
 			return
 		}
@@ -249,6 +257,76 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			collectJSONURIs(key, item, uris)
 		}
 	}
+}
+
+func structuredJSONDocumentURI(values map[string]any) string {
+	if _, ok := values["outbounds"]; !ok {
+		if _, ok := values["endpoints"]; !ok {
+			return ""
+		}
+	}
+	raw, err := json.Marshal(values)
+	if err != nil {
+		return ""
+	}
+	content := string(raw)
+	for _, normalize := range []func(string) string{
+		SingBoxJSONURIList,
+		V2RayJSONURIList,
+	} {
+		if normalized := normalize(content); normalized != "" {
+			return normalized
+		}
+	}
+	return ""
+}
+
+func clashJSONProxyURI(values map[string]any, fallbackName string) string {
+	proxy := map[string]string{}
+	collectJSONProxyFields(proxy, nil, values)
+	if firstMapValue(proxy, "name") == "" {
+		if name := firstNonEmptyString(firstMapValue(proxy, "tag", "remarks", "ps", "id"), fallbackName); name != "" {
+			proxy["name"] = name
+		}
+	}
+	return clashProxyURI(proxy)
+}
+
+func collectJSONProxyFields(target map[string]string, scopes []string, values map[string]any) {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		normalizedKey := strings.ToLower(strings.TrimSpace(key))
+		if normalizedKey == "" {
+			continue
+		}
+		value := values[key]
+		switch typed := value.(type) {
+		case map[string]any:
+			collectJSONProxyFields(target, append(scopes, normalizedKey), typed)
+		default:
+			if scalar := strings.Join(stringListFromAnyValue(value), ","); scalar != "" {
+				storeJSONProxyField(target, scopes, normalizedKey, scalar)
+				continue
+			}
+			if scalar := strings.TrimSpace(stringFromAnyValue(value)); scalar != "" {
+				storeJSONProxyField(target, scopes, normalizedKey, scalar)
+			}
+		}
+	}
+}
+
+func storeJSONProxyField(target map[string]string, scopes []string, key, value string) {
+	if len(scopes) > 0 {
+		parts := make([]string, 0, len(scopes)+1)
+		parts = append(parts, scopes...)
+		parts = append(parts, key)
+		target[strings.Join(parts, ".")] = value
+	}
+	target[key] = value
 }
 
 func firstJSONString(values map[string]any, keys ...string) string {

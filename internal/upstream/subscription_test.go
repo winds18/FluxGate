@@ -98,6 +98,63 @@ func TestNormalizeContentJSONURICollectionObject(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredProxyObjects(t *testing.T) {
+	raw := `{
+  "proxies": [
+    {
+      "name": "JSON 香港 SS",
+      "type": "ss",
+      "server": "json-ss.example.test",
+      "port": 8388,
+      "cipher": "aes-128-gcm",
+      "password": "qa-placeholder"
+    },
+    {
+      "tag": "JSON 东京 Trojan",
+      "type": "trojan",
+      "server": "json-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "tls": true,
+      "sni": "json-trojan.example.test",
+      "network": "ws",
+      "ws-opts": {
+        "path": "/trojan",
+        "headers": {
+          "Host": "ws.json-trojan.example.test"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON proxy URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "ss://aes-128-gcm:qa-placeholder@json-ss.example.test:8388#JSON%20%E9%A6%99%E6%B8%AF%20SS" {
+		t.Fatalf("unexpected structured JSON SS URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@json-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-trojan.example.test",
+		"type=ws",
+		"path=%2Ftrojan",
+		"host=ws.json-trojan.example.test",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON Trojan URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#JSON%20%E4%B8%9C%E4%BA%AC%20Trojan") {
+		t.Fatalf("unexpected structured JSON Trojan fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONWrappedBase64URIList(t *testing.T) {
 	payload := strings.Join([]string{
 		"vless://00000000-0000-0000-0000-000000000081@example.com:443#香港 02",

@@ -17,7 +17,7 @@ services:
       - fluxgate
 
   sing-box:
-    image: ghcr.io/sagernet/sing-box:latest
+    image: ${SING_BOX_IMAGE:-fluxgate-sing-box:${FLUXGATE_IMAGE_TAG:-latest}}
     container_name: fluxgate-sing-box
     restart: unless-stopped
     volumes:

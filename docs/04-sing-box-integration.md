@@ -189,8 +189,8 @@ FluxGate 通过 sing-box 的统计能力采集：
 
 - sing-box 构建需要包含 V2Ray API 统计能力。
 - V2Ray API 是 gRPC 接口，不是普通 HTTP REST 接口。
-- Docker 镜像需要验证是否包含 `with_v2ray_api`。
-- 如果官方镜像不满足，项目需要提供自定义 sing-box 镜像。
+- Docker 镜像必须包含 `with_v2ray_api`。
+- 项目默认通过 `Dockerfile.sing-box` 远程构建自定义 sing-box 镜像；如果改回官方镜像，需要自行确认其包含 V2Ray API。
 
 采集流程：
 

@@ -100,6 +100,7 @@
 - stats 可插拔轮询调度器，可把采集器返回的 V2Ray counters 转换为流量样本并写入现有汇总链路。
 - 真实 sing-box V2Ray gRPC stats 采集器已接入主进程，可从 Docker 内网的 V2Ray API 轮询 counters。
 - sing-box 配置生成会把 active 上游 outbound tag 纳入 stats 配置，支撑上游出口维度流量汇总。
+- 部署侧默认远程构建带 `with_v2ray_api` 的自定义 sing-box 镜像，保证统计 API 可用。
 
 范围：
 

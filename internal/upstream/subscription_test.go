@@ -93,6 +93,40 @@ proxy-groups:
 	}
 }
 
+func TestNormalizeContentSIP008(t *testing.T) {
+	raw := `{
+  "version": 1,
+  "servers": [
+    {
+      "id": "node-1",
+      "remarks": "香港 02",
+      "server": "sip008.example.test",
+      "server_port": 8388,
+      "method": "aes-256-gcm",
+      "password": "qa-placeholder"
+    },
+    {
+      "remarks": "skip me",
+      "server": "missing-password.example.test",
+      "server_port": 8388,
+      "method": "aes-256-gcm"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 normalized node, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "ss://aes-256-gcm:qa-placeholder@sip008.example.test:8388#")
+	if !strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%2002") {
+		t.Fatalf("unexpected SIP008 URI fragment: %q", lines[0])
+	}
+}
+
 func TestNormalizeContentRejectsUnsupportedContent(t *testing.T) {
 	if _, err := NormalizeContent("not a subscription"); err == nil {
 		t.Fatal("expected unsupported content error")

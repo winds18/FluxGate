@@ -91,6 +91,9 @@ func NormalizeContent(content string) (string, error) {
 	if normalized := ClashYAMLURIList(content); normalized != "" {
 		return normalized, nil
 	}
+	if normalized := SIP008URIList(content); normalized != "" {
+		return normalized, nil
+	}
 
 	compact := strings.Map(func(r rune) rune {
 		switch r {
@@ -114,6 +117,9 @@ func NormalizeContent(content string) (string, error) {
 			return normalized, nil
 		}
 		if normalized := ClashYAMLURIList(string(decoded)); normalized != "" {
+			return normalized, nil
+		}
+		if normalized := SIP008URIList(string(decoded)); normalized != "" {
 			return normalized, nil
 		}
 	}

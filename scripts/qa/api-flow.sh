@@ -63,6 +63,9 @@ clash_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(`proxies:
 post_json "/api/sources" "{\"name\":\"订阅源A\",\"type\":\"subscription\",\"raw_content\":$clash_subscription_raw,\"refresh_interval_minutes\":5}" "$OUT_DIR/source-subscription.json"
 subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
 subscription_refresh_interval="$(json_value "data.refresh_interval_minutes" <"$OUT_DIR/source-subscription.json")"
+sip008_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(JSON.stringify({version:1,servers:[{remarks:"首尔 04",server:"sip008.example.sub",server_port:8388,method:"aes-128-gcm",password:"qa-placeholder"}]})));')"
+post_json "/api/sources" "{\"name\":\"SIP008订阅\",\"type\":\"subscription\",\"raw_content\":$sip008_subscription_raw,\"refresh_interval_minutes\":0}" "$OUT_DIR/source-sip008.json"
+sip008_source_id="$(json_value "data.id" <"$OUT_DIR/source-sip008.json")"
 vmess_uri="$(node -e 'const doc={add:"vmess.example.net",port:"443",id:"00000000-0000-0000-0000-000000000046",aid:"0",scy:"auto",net:"ws",host:"ws.example.test",path:"/ws",tls:"tls",sni:"vmess.example.net",ps:"VMess QA"}; process.stdout.write("vmess://"+Buffer.from(JSON.stringify(doc)).toString("base64url"));')"
 hysteria2_uri="hysteria2://qa-placeholder@example.dev:443?obfs=salamander&obfs-password=obfs-placeholder&sni=hy2.example.dev&insecure=1#首尔%2002"
 tuic_uri="tuic://00000000-0000-0000-0000-000000000048:qa-placeholder@example.io:443?congestion_control=bbr&udp_relay_mode=native&sni=tuic.example.io&alpn=h3&insecure=1#大阪%2001"
@@ -79,6 +82,8 @@ tor_uri="tor://default?executable_path=/usr/bin/tor&extra_args=--quiet,--SocksPo
 post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\\ntrojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京%2001\\nss://aes-128-gcm:qa-placeholder@example.net:8388#首尔%2001\\n$vmess_uri\\n$hysteria2_uri\\n$tuic_uri\\n$anytls_uri\\n$shadowtls_uri\\n$naive_uri\\n$hysteria_uri\\n$http_uri\\n$socks_uri\\n$ssh_uri\\n$wireguard_uri\\n$tor_uri\"}" "$OUT_DIR/import.json"
 post_json "/api/sources/$subscription_source_id/refresh" '{}' "$OUT_DIR/source-refresh.json"
 source_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-refresh.json")"
+post_json "/api/sources/$sip008_source_id/refresh" '{}' "$OUT_DIR/source-sip008-refresh.json"
+sip008_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-sip008-refresh.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443}' "$OUT_DIR/virtual-node.json"
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
 token_id="$(json_value "data.token.id" <"$OUT_DIR/token.json")"
@@ -112,6 +117,11 @@ fi
 
 if [[ "$subscription_refresh_interval" != "5" ]]; then
   log "unexpected subscription refresh interval: $subscription_refresh_interval"
+  exit 1
+fi
+
+if [[ "$sip008_refresh_imported" != "1" ]]; then
+  log "unexpected SIP008 refresh import count: $sip008_refresh_imported"
   exit 1
 fi
 

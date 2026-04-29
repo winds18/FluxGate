@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"sort"
 	"strings"
 	"time"
 )
@@ -168,32 +169,92 @@ func JSONURIList(content string) string {
 		return ""
 	}
 	var uris []string
-	collectJSONURIs(doc, &uris)
+	collectJSONURIs("", doc, &uris)
 	return URIList(strings.Join(uris, "\n"))
 }
 
-func collectJSONURIs(value any, uris *[]string) {
+func collectJSONURIs(name string, value any, uris *[]string) {
 	switch typed := value.(type) {
 	case string:
 		if normalized := normalizedStringURIList(typed); normalized != "" {
-			*uris = append(*uris, normalized)
+			*uris = append(*uris, applyJSONURIName(normalized, name))
 		}
 	case []any:
 		for _, item := range typed {
-			collectJSONURIs(item, uris)
+			collectJSONURIs(name, item, uris)
 		}
 	case map[string]any:
-		for _, key := range []string{"uri", "url", "link", "share", "content", "raw", "raw_content", "data", "subscription"} {
+		nodeName := firstJSONString(typed, "name", "remarks", "tag", "ps", "id")
+		if nodeName == "" {
+			nodeName = name
+		}
+		handled := map[string]bool{}
+		for _, key := range []string{"uri", "url", "link", "share"} {
+			handled[key] = true
 			if item, ok := typed[key]; ok {
-				collectJSONURIs(item, uris)
+				collectJSONURIs(nodeName, item, uris)
 			}
 		}
-		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links"} {
+		for _, key := range []string{"content", "raw", "raw_content", "subscription"} {
+			handled[key] = true
 			if item, ok := typed[key]; ok {
-				collectJSONURIs(item, uris)
+				collectJSONURIs("", item, uris)
 			}
+		}
+		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data"} {
+			handled[key] = true
+			if item, ok := typed[key]; ok {
+				collectJSONURIs("", item, uris)
+			}
+		}
+		keys := make([]string, 0, len(typed))
+		for key := range typed {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			if handled[key] || isJSONURIMetadataKey(key) {
+				continue
+			}
+			item := typed[key]
+			collectJSONURIs(key, item, uris)
 		}
 	}
+}
+
+func firstJSONString(values map[string]any, keys ...string) string {
+	for _, key := range keys {
+		if value, ok := values[key].(string); ok && strings.TrimSpace(value) != "" {
+			return strings.TrimSpace(value)
+		}
+	}
+	return ""
+}
+
+func isJSONURIMetadataKey(key string) bool {
+	switch strings.ToLower(strings.TrimSpace(key)) {
+	case "name", "remarks", "tag", "ps", "id", "type", "protocol":
+		return true
+	default:
+		return false
+	}
+}
+
+func applyJSONURIName(normalized, name string) string {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return normalized
+	}
+	lines := strings.Split(normalized, "\n")
+	for index, line := range lines {
+		parsed, err := url.Parse(strings.TrimSpace(line))
+		if err != nil || parsed.Scheme == "" || parsed.Fragment != "" {
+			continue
+		}
+		parsed.Fragment = name
+		lines[index] = parsed.String()
+	}
+	return strings.Join(lines, "\n")
 }
 
 func normalizedStringURIList(value string) string {

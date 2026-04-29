@@ -132,6 +132,31 @@ func TestNormalizeContentJSONWrappedRawContentURIList(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONNamedObjectMap(t *testing.T) {
+	raw := `{
+  "香港 03": "vless://00000000-0000-0000-0000-000000000082@example.com:443",
+  "新加坡 多线": [
+    "ss://YWVzLTEyOC1nY206cGFzc0AxOTIuMC4yLjEwOjgzODg"
+  ],
+  "东京条目": {
+    "name": "东京 03",
+    "uri": "trojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test"
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"trojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#%E4%B8%9C%E4%BA%AC%2003",
+		"ss://YWVzLTEyOC1nY206cGFzc0AxOTIuMC4yLjEwOjgzODg#%E6%96%B0%E5%8A%A0%E5%9D%A1%20%E5%A4%9A%E7%BA%BF",
+		"vless://00000000-0000-0000-0000-000000000082@example.com:443#%E9%A6%99%E6%B8%AF%2003",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON named object map: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAML(t *testing.T) {
 	raw := `
 mixed-port: 7890

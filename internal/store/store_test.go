@@ -373,6 +373,133 @@ func TestTokenLifecycleOperations(t *testing.T) {
 	}
 }
 
+func TestRecordTrafficSamplesUpdatesTokenUsageAndRollups(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	team, err := db.CreateTeam(ctx, CreateTeamInput{Name: "Traffic Team"})
+	if err != nil {
+		t.Fatalf("create team: %v", err)
+	}
+	user, err := db.CreateUser(ctx, CreateUserInput{TeamID: &team.ID, Name: "Traffic User"})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	result, err := db.CreateToken(ctx, "secret", "https://flux.example", CreateTokenInput{
+		UserID:     user.ID,
+		Name:       "traffic token",
+		ExpireDays: 30,
+		QuotaBytes: 1024,
+	})
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	sampledAt := time.Date(2026, 4, 29, 6, 7, 0, 0, time.UTC)
+	first, err := db.RecordTrafficSample(ctx, RecordTrafficSampleInput{
+		SampledAt:        sampledAt,
+		MetricType:       "user",
+		MetricName:       result.Account.AuthUser,
+		RawValueUpload:   100,
+		RawValueDownload: 200,
+	})
+	if err != nil {
+		t.Fatalf("record first sample: %v", err)
+	}
+	if first.UploadBytesDelta != 0 || first.DownloadBytesDelta != 0 {
+		t.Fatalf("first sample should establish baseline: %+v", first)
+	}
+
+	second, err := db.RecordTrafficSample(ctx, RecordTrafficSampleInput{
+		SampledAt:        sampledAt.Add(5 * time.Minute),
+		MetricType:       "user",
+		MetricName:       result.Account.AuthUser,
+		RawValueUpload:   175,
+		RawValueDownload: 260,
+	})
+	if err != nil {
+		t.Fatalf("record second sample: %v", err)
+	}
+	if second.UploadBytesDelta != 75 || second.DownloadBytesDelta != 60 {
+		t.Fatalf("unexpected second delta: %+v", second)
+	}
+
+	reset, err := db.RecordTrafficSample(ctx, RecordTrafficSampleInput{
+		SampledAt:        sampledAt.Add(10 * time.Minute),
+		MetricType:       "user",
+		MetricName:       result.Account.AuthUser,
+		RawValueUpload:   10,
+		RawValueDownload: 20,
+	})
+	if err != nil {
+		t.Fatalf("record reset sample: %v", err)
+	}
+	if reset.UploadBytesDelta != 10 || reset.DownloadBytesDelta != 20 {
+		t.Fatalf("counter reset should count current raw values: %+v", reset)
+	}
+
+	token, err := db.GetToken(ctx, result.Token.ID)
+	if err != nil {
+		t.Fatalf("get token: %v", err)
+	}
+	if token.UsedUploadBytes != 85 || token.UsedDownloadBytes != 80 {
+		t.Fatalf("unexpected token usage: %+v", token)
+	}
+	if token.LastUsedAt == nil || *token.LastUsedAt != sampledAt.Add(10*time.Minute).Format(time.RFC3339) {
+		t.Fatalf("unexpected last_used_at: %+v", token.LastUsedAt)
+	}
+
+	var hourlyUpload, hourlyDownload int64
+	if err := db.db.QueryRowContext(ctx, `
+		SELECT upload_bytes, download_bytes
+		FROM traffic_user_hourly
+		WHERE token_id = ?
+	`, result.Token.ID).Scan(&hourlyUpload, &hourlyDownload); err != nil {
+		t.Fatalf("query hourly rollup: %v", err)
+	}
+	if hourlyUpload != 85 || hourlyDownload != 80 {
+		t.Fatalf("unexpected hourly rollup: upload=%d download=%d", hourlyUpload, hourlyDownload)
+	}
+
+	if _, err := db.RecordTrafficSamples(ctx, []RecordTrafficSampleInput{
+		{
+			SampledAt:        sampledAt,
+			MetricType:       "outbound",
+			MetricName:       "up_42",
+			RawValueUpload:   50,
+			RawValueDownload: 70,
+		},
+		{
+			SampledAt:        sampledAt.Add(5 * time.Minute),
+			MetricType:       "outbound",
+			MetricName:       "up_42",
+			RawValueUpload:   80,
+			RawValueDownload: 120,
+		},
+	}); err != nil {
+		t.Fatalf("record outbound samples: %v", err)
+	}
+	var outboundUpload, outboundDownload int64
+	if err := db.db.QueryRowContext(ctx, `
+		SELECT upload_bytes, download_bytes
+		FROM traffic_outbound_daily
+		WHERE outbound_tag = 'up_42'
+	`).Scan(&outboundUpload, &outboundDownload); err != nil {
+		t.Fatalf("query outbound rollup: %v", err)
+	}
+	if outboundUpload != 30 || outboundDownload != 50 {
+		t.Fatalf("unexpected outbound rollup: upload=%d download=%d", outboundUpload, outboundDownload)
+	}
+
+	summaries, err := db.ListTokenTraffic(ctx)
+	if err != nil {
+		t.Fatalf("list token traffic: %v", err)
+	}
+	if len(summaries) != 1 || summaries[0].UsedTotalBytes != 165 || summaries[0].AuthUser != result.Account.AuthUser {
+		t.Fatalf("unexpected traffic summary: %+v", summaries)
+	}
+}
+
 func TestBootstrapAndAuthenticateAdmin(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)

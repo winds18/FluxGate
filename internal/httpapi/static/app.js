@@ -14,6 +14,7 @@ const nodesEl = document.querySelector("#nodes");
 const virtualNodesEl = document.querySelector("#virtual-nodes");
 const policiesEl = document.querySelector("#policies");
 const tokensEl = document.querySelector("#tokens");
+const trafficTokensEl = document.querySelector("#traffic-tokens");
 const refreshEl = document.querySelector("#refresh");
 const configCheckEl = document.querySelector("#config-check");
 const configPublishEl = document.querySelector("#config-publish");
@@ -111,7 +112,7 @@ function showApp() {
 async function load() {
   statusEl.textContent = "刷新中";
   try {
-    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens] = await Promise.all([
+    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficTokens] = await Promise.all([
       getJSON("/api/overview"),
       getJSON("/api/teams"),
       getJSON("/api/users"),
@@ -120,6 +121,7 @@ async function load() {
       getJSON("/api/virtual-nodes"),
       getJSON("/api/policies"),
       getJSON("/api/tokens"),
+      getJSON("/api/traffic/tokens"),
     ]);
     appState = { teams, users, sources, virtualNodes };
     renderMetrics(overview);
@@ -131,6 +133,7 @@ async function load() {
     renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "tag_selector", "status"]);
     renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "include_tags", "exclude_tags", "allowed_virtual_nodes", "max_nodes", "status"]);
     renderTokens(tokens);
+    renderTrafficTokens(trafficTokens);
     statusEl.textContent = "已连接";
   } catch (error) {
     if (error.status === 401) {
@@ -498,6 +501,7 @@ function renderTokens(rows) {
           <th>status</th>
           <th>expire_at</th>
           <th>quota_bytes</th>
+          <th>used_total</th>
           <th>actions</th>
         </tr>
       </thead>
@@ -513,6 +517,7 @@ function renderTokens(rows) {
                 <td>${formatCell(row.status)}</td>
                 <td>${formatCell(row.expire_at)}</td>
                 <td>${formatCell(row.quota_bytes)}</td>
+                <td>${formatCell((row.used_upload_bytes || 0) + (row.used_download_bytes || 0))}</td>
                 <td class="table-actions">
                   <button class="table-button" data-token-action="extend" data-token-id="${row.id}">续期30天</button>
                   <button class="table-button" data-token-action="quota" data-token-id="${row.id}">+1024MiB</button>
@@ -526,6 +531,24 @@ function renderTokens(rows) {
       </tbody>
     </table>
   `;
+}
+
+function renderTrafficTokens(rows) {
+  if (!rows || rows.length === 0) {
+    trafficTokensEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  renderTable(trafficTokensEl, rows, [
+    "token_id",
+    "user_id",
+    "auth_user",
+    "token_status",
+    "used_upload_bytes",
+    "used_download_bytes",
+    "used_total_bytes",
+    "quota_bytes",
+    "updated_at",
+  ]);
 }
 
 function renderTable(target, rows, columns) {

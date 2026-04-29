@@ -89,6 +89,12 @@
 
 - 建立可靠的统计采集和额度控制。
 
+当前已开始落地：
+
+- V2Ray stats user/inbound/outbound 计数名称解析。
+- `traffic_samples` 增量样本落库、counter reset 处理、Token 用量累加。
+- 用户小时/天级流量汇总表和 Token 流量摘要 API。
+
 范围：
 
 - sing-box stats 采集器。

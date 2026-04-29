@@ -89,6 +89,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/virtual-nodes", s.handleCreateVirtualNode)
 	s.mux.HandleFunc("GET /api/policies", s.handleListPolicies)
 	s.mux.HandleFunc("POST /api/policies", s.handleCreatePolicy)
+	s.mux.HandleFunc("GET /api/traffic/tokens", s.handleListTokenTraffic)
 
 	s.mux.HandleFunc("POST /api/sing-box/config/generate", s.handleGenerateSingBoxConfig)
 	s.mux.HandleFunc("POST /api/sing-box/config/check", s.handleCheckSingBoxConfig)
@@ -606,6 +607,15 @@ func (s *Server) handleCreatePolicy(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, policy)
+}
+
+func (s *Server) handleListTokenTraffic(w http.ResponseWriter, r *http.Request) {
+	summaries, err := s.store.ListTokenTraffic(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, summaries)
 }
 
 func (s *Server) handleGenerateSingBoxConfig(w http.ResponseWriter, r *http.Request) {

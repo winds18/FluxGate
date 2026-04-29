@@ -46,6 +46,8 @@
 - sing-box restart API 和管理后台重启入口已落地；发布/回滚可在 `SING_BOX_AUTO_RESTART=true` 时自动调用受配置保护的重启命令。
 - active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
+- 流量统计入库骨架已落地：可解析 V2Ray stats 的 user/inbound/outbound 计数名称，写入 `traffic_samples`，计算 counter delta，并把 user 维度增量累加到 Token 用量和小时/天汇总表。
+- 管理 API 和后台页面可查看 Token 流量用量摘要。
 - Token hash 存储，明文只在创建时返回。
 - 订阅请求日志 Token 路径脱敏。
 - 结构化 JSON 服务日志。
@@ -107,6 +109,7 @@ POST /api/virtual-nodes
 
 GET  /api/policies
 POST /api/policies
+GET  /api/traffic/tokens
 
 POST /api/sing-box/config/generate
 POST /api/sing-box/config/check
@@ -163,7 +166,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅更多结构化格式解析。
 - DNS 等更多协议 URI 到 sing-box outbound 的转换。
-- 流量统计采集。
+- 真实 sing-box gRPC 统计轮询、采集调度和 Dashboard 流量图。
 - 流量采集后的超额自动标记、阻断和配置发布触发。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
 

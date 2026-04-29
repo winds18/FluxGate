@@ -123,6 +123,9 @@ post_json "/api/virtual-nodes" '{"name":"FluxGate-SG","listen_protocol":"vless",
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
 token_id="$(json_value "data.token.id" <"$OUT_DIR/token.json")"
 plain_token="$(json_value "data.plain_token" <"$OUT_DIR/token.json")"
+run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/traffic/tokens" -o "$OUT_DIR/traffic-tokens.json"
+traffic_token_count="$(json_value "data.length" <"$OUT_DIR/traffic-tokens.json")"
+traffic_token_used="$(json_value "data.find((row) => row.token_id === $token_id)?.used_total_bytes ?? -1" <"$OUT_DIR/traffic-tokens.json")"
 post_json "/api/tokens/$token_id/extend" '{"extend_days":30}' "$OUT_DIR/token-extend.json"
 token_extended_status="$(json_value "data.status" <"$OUT_DIR/token-extend.json")"
 post_json "/api/tokens/$token_id/quota" '{"quota_bytes":1073741824}' "$OUT_DIR/token-quota.json"
@@ -196,6 +199,11 @@ fi
 
 if [[ "$token_extended_status" != "active" ]]; then
   log "unexpected token status after extend: $token_extended_status"
+  exit 1
+fi
+
+if [[ "$traffic_token_count" -lt 1 || "$traffic_token_used" != "0" ]]; then
+  log "traffic token summary should include new token with zero usage: count=$traffic_token_count used=$traffic_token_used"
   exit 1
 fi
 

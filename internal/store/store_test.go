@@ -202,10 +202,10 @@ func TestImportNodesNormalizesChinaRegions(t *testing.T) {
 	if regionByRawName["5台湾-联通/移动(AnyTLS)"] != "🇨🇳中国|台湾" {
 		t.Fatalf("unexpected taiwan region: %+v", regionByRawName)
 	}
-	if regionByRawName["香港-美国"] != "美国" {
+	if regionByRawName["香港-美国"] != "🇺🇸美国" {
 		t.Fatalf("route destination should win: %+v", regionByRawName)
 	}
-	if regionByRawName["新加坡 01"] != "新加坡" {
+	if regionByRawName["新加坡 01"] != "🇸🇬新加坡" {
 		t.Fatalf("known regions should be normalized: %+v", regionByRawName)
 	}
 }

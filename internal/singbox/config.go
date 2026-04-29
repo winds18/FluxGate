@@ -621,9 +621,28 @@ func vmessTransportFromDoc(doc map[string]any) map[string]any {
 			transport["service_name"] = serviceName
 		}
 		return transport
+	case "http", "h2":
+		return vmessHTTPTransportFromDoc(doc)
+	case "tcp":
+		headerType := strings.ToLower(strings.TrimSpace(stringFromAny(doc["type"])))
+		if headerType == "http" {
+			return vmessHTTPTransportFromDoc(doc)
+		}
+		return nil
 	default:
 		return nil
 	}
+}
+
+func vmessHTTPTransportFromDoc(doc map[string]any) map[string]any {
+	transport := map[string]any{"type": "http"}
+	if hosts := splitCSV(stringFromAny(doc["host"])); len(hosts) > 0 {
+		transport["host"] = hosts
+	}
+	if path := strings.TrimSpace(stringFromAny(doc["path"])); path != "" {
+		transport["path"] = path
+	}
+	return transport
 }
 
 func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {

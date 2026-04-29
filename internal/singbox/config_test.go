@@ -997,6 +997,44 @@ func TestBuildConfigPreservesVMessGRPCTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesVMessHTTPTransport(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID: 82,
+			URI: vmessURI(t, map[string]any{
+				"add":  "vmess.http.example",
+				"port": "443",
+				"id":   "00000000-0000-0000-0000-000000000082",
+				"aid":  "0",
+				"scy":  "auto",
+				"net":  "tcp",
+				"type": "http",
+				"host": "h2.vmess.example,h2-backup.vmess.example",
+				"path": "/h2",
+				"tls":  "tls",
+				"sni":  "vmess.http.example",
+				"ps":   "vmess-http",
+			}),
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_82")
+	if outbound == nil {
+		t.Fatalf("expected vmess outbound up_82, got %+v", config.Outbounds)
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "http" || transport["path"] != "/h2" {
+		t.Fatalf("unexpected vmess http transport config: %+v", outbound["transport"])
+	}
+	hosts, ok := transport["host"].([]string)
+	if !ok || len(hosts) != 2 || hosts[0] != "h2.vmess.example" || hosts[1] != "h2-backup.vmess.example" {
+		t.Fatalf("unexpected vmess http transport hosts: %+v", transport["host"])
+	}
+}
+
 func TestBuildConfigSupportsVMessUserinfoURI(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

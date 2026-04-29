@@ -1,0 +1,12 @@
+FROM scratch
+
+WORKDIR /app
+COPY ca-certificates.crt /etc/ssl/certs/
+COPY fluxgate /app/fluxgate
+
+ENV HTTP_ADDR=0.0.0.0:8080
+ENV DB_PATH=/app/data/fluxgate.db
+ENV LOG_DIR=/app/logs
+
+EXPOSE 8080
+ENTRYPOINT ["/app/fluxgate"]

@@ -20,6 +20,7 @@ REMOTE_ADMIN_BOOTSTRAP_PASSWORD="${REMOTE_ADMIN_BOOTSTRAP_PASSWORD:-}"
 VERIFY_BASE_URL="${VERIFY_BASE_URL:-http://127.0.0.1:${REMOTE_FLUXGATE_HTTP_PORT:-18080}}"
 BRANCH_NAME="${BRANCH_NAME:-$(git -C "$ROOT_DIR" rev-parse --abbrev-ref HEAD)}"
 DEPLOY_ID="${DEPLOY_ID:-deploy-$(date -u +%Y%m%d-%H%M%S)-$(git -C "$ROOT_DIR" rev-parse --short HEAD)}"
+DEPLOY_LOCAL_IMAGE_FALLBACK="${DEPLOY_LOCAL_IMAGE_FALLBACK:-true}"
 
 if [[ -z "$REMOTE_CLONE_URL" ]]; then
   case "$REMOTE_URL" in
@@ -39,8 +40,11 @@ log "push and deploy started: branch=$BRANCH_NAME deploy_id=$DEPLOY_ID"
 "$ROOT_DIR/scripts/qa/public-scan.sh"
 run_logged git push -u origin "$BRANCH_NAME"
 
-ssh "$REMOTE_HOST" \
-  "REMOTE_DIR='$REMOTE_DIR' REMOTE_CLONE_URL='$REMOTE_CLONE_URL' BRANCH_NAME='$BRANCH_NAME' DEPLOY_ID='$DEPLOY_ID' REMOTE_FLUXGATE_HOST_BIND='$REMOTE_FLUXGATE_HOST_BIND' REMOTE_FLUXGATE_HTTP_PORT='$REMOTE_FLUXGATE_HTTP_PORT' REMOTE_PUBLIC_BASE_URL='$REMOTE_PUBLIC_BASE_URL' REMOTE_ADMIN_BOOTSTRAP_USERNAME='$REMOTE_ADMIN_BOOTSTRAP_USERNAME' REMOTE_ADMIN_BOOTSTRAP_PASSWORD='$REMOTE_ADMIN_BOOTSTRAP_PASSWORD' VERIFY_BASE_URL='$VERIFY_BASE_URL' bash -s" <<'REMOTE'
+run_remote_deploy() {
+  local remote_build_enabled="$1"
+  local compose_pull_enabled="$2"
+  ssh "$REMOTE_HOST" \
+    "REMOTE_DIR='$REMOTE_DIR' REMOTE_CLONE_URL='$REMOTE_CLONE_URL' BRANCH_NAME='$BRANCH_NAME' DEPLOY_ID='$DEPLOY_ID' REMOTE_BUILD_ENABLED='$remote_build_enabled' COMPOSE_PULL_ENABLED='$compose_pull_enabled' REMOTE_FLUXGATE_HOST_BIND='$REMOTE_FLUXGATE_HOST_BIND' REMOTE_FLUXGATE_HTTP_PORT='$REMOTE_FLUXGATE_HTTP_PORT' REMOTE_PUBLIC_BASE_URL='$REMOTE_PUBLIC_BASE_URL' REMOTE_ADMIN_BOOTSTRAP_USERNAME='$REMOTE_ADMIN_BOOTSTRAP_USERNAME' REMOTE_ADMIN_BOOTSTRAP_PASSWORD='$REMOTE_ADMIN_BOOTSTRAP_PASSWORD' VERIFY_BASE_URL='$VERIFY_BASE_URL' bash -s" <<'REMOTE'
 set -euo pipefail
 
 if [[ ! -d "$REMOTE_DIR/.git" ]]; then
@@ -69,8 +73,19 @@ if [[ -n "${REMOTE_FLUXGATE_HOST_BIND:-}" || -n "${REMOTE_FLUXGATE_HTTP_PORT:-}"
     ADMIN_BOOTSTRAP_PASSWORD="${REMOTE_ADMIN_BOOTSTRAP_PASSWORD:-}" \
     scripts/deploy/configure-access.sh
 fi
-DEPLOY_ID="$DEPLOY_ID" REMOTE_BUILD_ENABLED=true scripts/deploy/deploy-remote.sh
+DEPLOY_ID="$DEPLOY_ID" REMOTE_BUILD_ENABLED="$REMOTE_BUILD_ENABLED" COMPOSE_PULL_ENABLED="$COMPOSE_PULL_ENABLED" scripts/deploy/deploy-remote.sh
 PUBLIC_BASE_URL="$VERIFY_BASE_URL" DEPLOY_ID="$DEPLOY_ID" VERIFY_ADMIN_USERNAME="${REMOTE_ADMIN_BOOTSTRAP_USERNAME:-}" VERIFY_ADMIN_PASSWORD="${REMOTE_ADMIN_BOOTSTRAP_PASSWORD:-}" scripts/deploy/verify-remote.sh
 REMOTE
+}
+
+if ! run_remote_deploy true true; then
+  if [[ "$DEPLOY_LOCAL_IMAGE_FALLBACK" != "true" ]]; then
+    log "remote deploy failed and local image fallback is disabled"
+    exit 1
+  fi
+  log "remote deploy failed; building and loading a prebuilt FluxGate image as fallback"
+  REMOTE_HOST="$REMOTE_HOST" DEPLOY_ID="$DEPLOY_ID" "$ROOT_DIR/scripts/deploy/build-and-load-image.sh"
+  run_remote_deploy false false
+fi
 
 log "push and deploy finished: deploy_id=$DEPLOY_ID"

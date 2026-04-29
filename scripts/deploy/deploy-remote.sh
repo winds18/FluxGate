@@ -32,7 +32,11 @@ if [[ "$REMOTE_BUILD_ENABLED" == "true" ]]; then
     fi
   fi
 else
-  run_logged docker compose pull
+  if [[ "${COMPOSE_PULL_ENABLED:-true}" == "true" ]]; then
+    run_logged docker compose pull
+  else
+    log "compose pull skipped; using preloaded or cached images"
+  fi
 fi
 
 run_logged docker compose up -d

@@ -99,6 +99,9 @@ func NormalizeContent(content string) (string, error) {
 	if normalized := SurgeProxyURIList(content); normalized != "" {
 		return normalized, nil
 	}
+	if normalized := QuantumultXURIList(content); normalized != "" {
+		return normalized, nil
+	}
 	if normalized := JSONURIList(content); normalized != "" {
 		return normalized, nil
 	}
@@ -143,6 +146,9 @@ func NormalizeContent(content string) (string, error) {
 			return normalized, nil
 		}
 		if normalized := SurgeProxyURIList(string(decoded)); normalized != "" {
+			return normalized, nil
+		}
+		if normalized := QuantumultXURIList(string(decoded)); normalized != "" {
 			return normalized, nil
 		}
 		if normalized := JSONURIList(string(decoded)); normalized != "" {
@@ -397,6 +403,7 @@ func normalizedStringURIList(value string) string {
 		URIList,
 		SSDURIList,
 		SurgeProxyURIList,
+		QuantumultXURIList,
 		VMessJSONURIList,
 		ClashYAMLURIList,
 		SIP008URIList,
@@ -433,6 +440,7 @@ func normalizedStringURIList(value string) string {
 			URIList,
 			SSDURIList,
 			SurgeProxyURIList,
+			QuantumultXURIList,
 			VMessJSONURIList,
 			ClashYAMLURIList,
 			SIP008URIList,

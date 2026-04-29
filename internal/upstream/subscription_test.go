@@ -202,6 +202,60 @@ func TestNormalizeContentJSONStructuredProxyAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentQuantumultXServerLocal(t *testing.T) {
+	raw := `[server_local]
+shadowsocks=qx-ss.example.test:8388, method=aes-128-gcm, password=qa-placeholder, obfs=wss, obfs-uri=/ss, obfs-host=ws.qx-ss.example.test, tag=香港 QuantumultX SS
+trojan=qx-trojan.example.test:443, password=trojan-placeholder, over-tls=true, tls-host=qx-trojan.example.test, tag=东京 QuantumultX Trojan
+vless=qx-vless.example.test:443, password=00000000-0000-0000-0000-000000000085, over-tls=true, tls-host=qx-vless.example.test, obfs=ws, obfs-uri=/vless, obfs-host=ws.qx-vless.example.test, tag=首尔 QuantumultX VLESS
+vmess=qx-vmess.example.test:443, password=00000000-0000-0000-0000-000000000086, method=auto, over-tls=true, tls-host=qx-vmess.example.test, obfs=wss, obfs-uri=/vmess, obfs-host=ws.qx-vmess.example.test, tag=大阪 QuantumultX VMess
+[rewrite_local]
+^https://example.test reject`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 Quantumult X proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@qx-ss.example.test:8388?")
+	for _, want := range []string{
+		"network=ws",
+		"#%E9%A6%99%E6%B8%AF%20QuantumultX%20SS",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Quantumult X SS URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@qx-trojan.example.test:443?")
+	if !strings.Contains(lines[1], "security=tls") || !strings.Contains(lines[1], "sni=qx-trojan.example.test") {
+		t.Fatalf("unexpected Quantumult X Trojan URI: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "vless://00000000-0000-0000-0000-000000000085@qx-vless.example.test:443?")
+	for _, want := range []string{"security=tls", "type=ws", "path=%2Fvless", "host=ws.qx-vless.example.test"} {
+		if !strings.Contains(lines[2], want) {
+			t.Fatalf("expected Quantumult X VLESS URI to contain %q: %q", want, lines[2])
+		}
+	}
+	assertHasPrefix(t, lines[3], "vmess://")
+	decodedVMessText := decodeVMessURIForTest(t, lines[3])
+	for _, want := range []string{
+		`"ps":"大阪 QuantumultX VMess"`,
+		`"add":"qx-vmess.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000086"`,
+		`"net":"ws"`,
+		`"host":"ws.qx-vmess.example.test"`,
+		`"path":"/vmess"`,
+		`"tls":"tls"`,
+		`"sni":"qx-vmess.example.test"`,
+	} {
+		if !strings.Contains(decodedVMessText, want) {
+			t.Fatalf("expected Quantumult X VMess document to contain %q: %q", want, decodedVMessText)
+		}
+	}
+}
+
 func TestNormalizeContentJSONWrappedBase64URIList(t *testing.T) {
 	payload := strings.Join([]string{
 		"vless://00000000-0000-0000-0000-000000000081@example.com:443#香港 02",

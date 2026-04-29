@@ -239,10 +239,18 @@ func singBoxVMessURI(outbound map[string]any) string {
 				doc["path"] = serviceName
 			}
 		}
+		if strings.EqualFold(doc["net"], "http") || strings.EqualFold(doc["net"], "h2") {
+			if hosts := stringListFromAnyValue(transport["host"]); len(hosts) > 0 {
+				doc["host"] = strings.Join(hosts, ",")
+			}
+		}
 		if headers, ok := transport["headers"].(map[string]any); ok {
-			doc["host"] = strings.TrimSpace(stringFromAnyValue(headers["Host"]))
-			if doc["host"] == "" {
-				doc["host"] = strings.TrimSpace(stringFromAnyValue(headers["host"]))
+			host := strings.TrimSpace(stringFromAnyValue(headers["Host"]))
+			if host == "" {
+				host = strings.TrimSpace(stringFromAnyValue(headers["host"]))
+			}
+			if host != "" {
+				doc["host"] = host
 			}
 		}
 	}

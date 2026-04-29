@@ -2674,6 +2674,47 @@ func TestNormalizeContentSingBoxJSONVMessGRPC(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONVMessHTTPTransport(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "vmess",
+      "tag": "香港 VMess HTTP",
+      "server": "http.vmess.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000089",
+      "tls": {
+        "enabled": true,
+        "server_name": "http.vmess.singbox.example.test"
+      },
+      "transport": {
+        "type": "http",
+        "host": ["h2.vmess.singbox.example.test", "h2-backup.vmess.singbox.example.test"],
+        "path": "/h2"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vmess://")
+	decoded := decodeVMessURIForTest(t, got)
+	for _, want := range []string{
+		`"ps":"香港 VMess HTTP"`,
+		`"net":"http"`,
+		`"host":"h2.vmess.singbox.example.test,h2-backup.vmess.singbox.example.test"`,
+		`"path":"/h2"`,
+		`"tls":"tls"`,
+		`"sni":"http.vmess.singbox.example.test"`,
+	} {
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected sing-box vmess http document to contain %q: %q", want, decoded)
+		}
+	}
+}
+
 func TestNormalizeContentV2RayJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

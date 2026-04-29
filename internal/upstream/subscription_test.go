@@ -301,7 +301,9 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
       "tls": {
         "enabled": true,
         "server_name": "edge.singbox.example.test",
-        "insecure": true
+        "insecure": true,
+        "disable_sni": true,
+        "alpn": ["h2", "http/1.1"]
       }
     },
     {
@@ -313,7 +315,10 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
       "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
-        "server_name": "vless.singbox.example.test"
+        "server_name": "vless.singbox.example.test",
+        "insecure": true,
+        "disable_sni": true,
+        "alpn": ["h3"]
       }
     },
     {
@@ -486,11 +491,19 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.singbox.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.singbox.example.test:443?")
-	if !strings.Contains(lines[1], "sni=edge.singbox.example.test") || !strings.Contains(lines[1], "insecure=1") {
+	if !strings.Contains(lines[1], "sni=edge.singbox.example.test") ||
+		!strings.Contains(lines[1], "insecure=1") ||
+		!strings.Contains(lines[1], "disable_sni=1") ||
+		!strings.Contains(lines[1], "alpn=h2%2Chttp%2F1.1") {
 		t.Fatalf("unexpected sing-box trojan URI: %q", lines[1])
 	}
 	assertHasPrefix(t, lines[2], "vless://00000000-0000-0000-0000-000000000052@vless.singbox.example.test:443?")
-	if !strings.Contains(lines[2], "flow=xtls-rprx-vision") || !strings.Contains(lines[2], "security=tls") {
+	if !strings.Contains(lines[2], "flow=xtls-rprx-vision") ||
+		!strings.Contains(lines[2], "security=tls") ||
+		!strings.Contains(lines[2], "sni=vless.singbox.example.test") ||
+		!strings.Contains(lines[2], "insecure=1") ||
+		!strings.Contains(lines[2], "disable_sni=1") ||
+		!strings.Contains(lines[2], "alpn=h3") {
 		t.Fatalf("unexpected sing-box vless URI: %q", lines[2])
 	}
 	assertHasPrefix(t, lines[3], "vmess://")

@@ -88,12 +88,7 @@ func singBoxTrojanURI(outbound map[string]any) string {
 	if tlsMap(outbound) != nil {
 		proxy["tls"] = "true"
 	}
-	if sni := singBoxTLSString(outbound, "server_name"); sni != "" {
-		proxy["sni"] = sni
-	}
-	if singBoxTLSBool(outbound, "insecure") {
-		proxy["insecure"] = "true"
-	}
+	appendSingBoxTLSProxyValues(outbound, proxy)
 	return clashTrojanURI(proxy)
 }
 
@@ -108,9 +103,7 @@ func singBoxVLESSURI(outbound map[string]any) string {
 	if tlsMap(outbound) != nil {
 		proxy["tls"] = "true"
 	}
-	if sni := singBoxTLSString(outbound, "server_name"); sni != "" {
-		proxy["sni"] = sni
-	}
+	appendSingBoxTLSProxyValues(outbound, proxy)
 	return clashVLESSURI(proxy)
 }
 
@@ -595,12 +588,23 @@ func singBoxTLSString(outbound map[string]any, key string) string {
 	return strings.TrimSpace(stringFromAnyValue(tls[key]))
 }
 
-func singBoxTLSBool(outbound map[string]any, key string) bool {
+func appendSingBoxTLSProxyValues(outbound map[string]any, proxy map[string]string) {
 	tls := tlsMap(outbound)
 	if tls == nil {
-		return false
+		return
 	}
-	return boolFromAnyValue(tls[key])
+	if serverName := strings.TrimSpace(stringFromAnyValue(tls["server_name"])); serverName != "" {
+		proxy["sni"] = serverName
+	}
+	if boolFromAnyValue(tls["insecure"]) {
+		proxy["insecure"] = "true"
+	}
+	if boolFromAnyValue(tls["disable_sni"]) {
+		proxy["disable-sni"] = "true"
+	}
+	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
+		proxy["alpn"] = strings.Join(alpn, ",")
+	}
 }
 
 func appendTLSQueryValues(outbound map[string]any, values url.Values) {

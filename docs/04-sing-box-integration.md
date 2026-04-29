@@ -218,7 +218,7 @@ MVP 发布流程：
 生成候选 config.json
 -> sing-box check
 -> 写入 data/sing-box/config.json
--> docker compose restart sing-box
+-> 根据 SING_BOX_AUTO_RESTART 决定是否调用受配置保护的重启执行器
 -> 记录 config_versions
 ```
 
@@ -234,7 +234,7 @@ MVP 发布流程：
 ```text
 新配置发布后 sing-box 启动失败
 -> 回滚到上一版配置
--> restart sing-box
+-> 重新调用重启执行器
 -> 标记发布失败
 ```
 

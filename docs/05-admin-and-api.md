@@ -271,7 +271,7 @@ POST /api/sing-box/config/rollback
 POST /api/sing-box/restart
 ```
 
-当前已落地 `config/publish` 和 `config/rollback`，响应会返回 `restart_required`，用于提示配置文件已变更且需要重启 sing-box 后才会生效；自动重启执行器仍在后续实现。
+当前已落地 `config/publish`、`config/rollback` 和 `restart`。发布/回滚响应会返回 `restart_required`；当部署侧显式设置 `SING_BOX_AUTO_RESTART=true` 时，发布/回滚会自动调用重启执行器。默认 driver 为 Docker Unix socket；如需命令模式，可设置 `SING_BOX_RESTART_DRIVER=command` 并配置 `SING_BOX_RESTART_COMMAND` / `SING_BOX_RESTART_ARGS`。
 
 ### 2.12 统计
 

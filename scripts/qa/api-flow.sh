@@ -130,6 +130,10 @@ run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/rol
 config_rollback_done="$(json_value "data.rolled_back" <"$OUT_DIR/sing-box-rollback.json")"
 config_rollback_hash="$(json_value "data.config_hash" <"$OUT_DIR/sing-box-rollback.json")"
 config_rollback_restart_required="$(json_value "data.restart_required" <"$OUT_DIR/sing-box-rollback.json")"
+run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/restart" -o "$OUT_DIR/sing-box-restart.json"
+config_restart_enabled="$(json_value "data.enabled" <"$OUT_DIR/sing-box-restart.json")"
+config_restart_executed="$(json_value "data.executed" <"$OUT_DIR/sing-box-restart.json")"
+config_restart_skipped="$(json_value "data.skipped" <"$OUT_DIR/sing-box-restart.json")"
 
 if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   log "unexpected auto prefix for duplicate source: $source_b_prefix"
@@ -218,6 +222,11 @@ fi
 
 if [[ "$config_rollback_restart_required" != "true" ]]; then
   log "sing-box config rollback should mark restart required: rollback=$config_rollback_restart_required"
+  exit 1
+fi
+
+if [[ "$config_restart_enabled" != "false" || "$config_restart_executed" != "false" || "$config_restart_skipped" != "true" ]]; then
+  log "sing-box restart should be disabled by default: enabled=$config_restart_enabled executed=$config_restart_executed skipped=$config_restart_skipped"
   exit 1
 fi
 

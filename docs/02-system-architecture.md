@@ -159,11 +159,11 @@ web
 -> 执行 sing-box check
 -> 备份旧配置
 -> 写入新配置
--> 重启 sing-box 容器
+-> 调用受配置保护的 sing-box 重启执行器
 -> 记录发布版本
 ```
 
-MVP 采用重启方式，保证实现简单可靠。
+MVP 采用重启方式，保证实现简单可靠；控制面默认不持有 Docker 权限，部署侧需要显式打开 `SING_BOX_AUTO_RESTART`，并挂载 Docker socket 或配置命令模式执行器。
 
 后续可优化：
 

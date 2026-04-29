@@ -18,6 +18,7 @@ const refreshEl = document.querySelector("#refresh");
 const configCheckEl = document.querySelector("#config-check");
 const configPublishEl = document.querySelector("#config-publish");
 const configRollbackEl = document.querySelector("#config-rollback");
+const configRestartEl = document.querySelector("#config-restart");
 const configCheckResultEl = document.querySelector("#config-check-result");
 const teamForm = document.querySelector("#team-form");
 const userForm = document.querySelector("#user-form");
@@ -35,6 +36,7 @@ refreshEl.addEventListener("click", load);
 configCheckEl.addEventListener("click", checkConfig);
 configPublishEl.addEventListener("click", publishConfig);
 configRollbackEl.addEventListener("click", rollbackConfig);
+configRestartEl.addEventListener("click", restartSingBox);
 logoutEl.addEventListener("click", logout);
 loginForm.addEventListener("submit", login);
 teamForm.addEventListener("submit", submitTeam);
@@ -290,11 +292,12 @@ async function publishConfig() {
   try {
     const result = await postJSON("/api/sing-box/config/publish", {});
     configCheckResultEl.hidden = false;
+    const restartText = result.restart ? ` restart=${formatRestartResult(result.restart)}` : ` restart=${result.restart_required ? "需要" : "无需"}`;
     configCheckResultEl.innerHTML = `
       <strong>${result.published ? "发布完成" : "发布失败"}</strong>
-      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} previous=${result.previous_saved ? "已保存" : "无"} restart=${result.restart_required ? "需要" : "无需"} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
+      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} previous=${result.previous_saved ? "已保存" : "无"}${restartText} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
     `;
-    statusEl.textContent = result.published ? "配置已发布，需重启 sing-box" : "发布失败";
+    statusEl.textContent = result.published && !result.restart_required ? "配置已发布并生效" : result.published ? "配置已发布，需重启 sing-box" : "发布失败";
   } catch (error) {
     configCheckResultEl.hidden = false;
     configCheckResultEl.innerHTML = `<strong>发布失败</strong><code>${escapeHTML(error.message)}</code>`;
@@ -310,11 +313,12 @@ async function rollbackConfig() {
   try {
     const result = await postJSON("/api/sing-box/config/rollback", {});
     configCheckResultEl.hidden = false;
+    const restartText = result.restart ? ` restart=${formatRestartResult(result.restart)}` : ` restart=${result.restart_required ? "需要" : "无需"}`;
     configCheckResultEl.innerHTML = `
       <strong>${result.rolled_back ? "回滚完成" : "回滚失败"}</strong>
-      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} restart=${result.restart_required ? "需要" : "无需"} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
+      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))}${restartText} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
     `;
-    statusEl.textContent = result.rolled_back ? "配置已回滚，需重启 sing-box" : "回滚失败";
+    statusEl.textContent = result.rolled_back && !result.restart_required ? "配置已回滚并生效" : result.rolled_back ? "配置已回滚，需重启 sing-box" : "回滚失败";
   } catch (error) {
     configCheckResultEl.hidden = false;
     configCheckResultEl.innerHTML = `<strong>回滚失败</strong><code>${escapeHTML(error.message)}</code>`;
@@ -322,6 +326,36 @@ async function rollbackConfig() {
   } finally {
     configRollbackEl.disabled = false;
   }
+}
+
+async function restartSingBox() {
+  configRestartEl.disabled = true;
+  statusEl.textContent = "重启服务中";
+  try {
+    const result = await postJSON("/api/sing-box/restart", {});
+    configCheckResultEl.hidden = false;
+    configCheckResultEl.innerHTML = `
+      <strong>${result.success ? "重启已执行" : result.skipped ? "重启未启用" : "重启失败"}</strong>
+      <code>enabled=${result.enabled ? "true" : "false"} executed=${result.executed ? "true" : "false"} duration_ms=${formatCell(result.duration_ms)} message=${escapeHTML(result.message || "")}</code>
+    `;
+    statusEl.textContent = result.success ? "服务已重启" : result.skipped ? "重启未启用" : "重启失败";
+  } catch (error) {
+    configCheckResultEl.hidden = false;
+    configCheckResultEl.innerHTML = `<strong>重启失败</strong><code>${escapeHTML(error.message)}</code>`;
+    statusEl.textContent = "重启失败";
+  } finally {
+    configRestartEl.disabled = false;
+  }
+}
+
+function formatRestartResult(result) {
+  if (result.success) {
+    return "完成";
+  }
+  if (result.skipped) {
+    return "未启用";
+  }
+  return "失败";
 }
 
 async function postAndReload(path, payload) {

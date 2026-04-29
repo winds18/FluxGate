@@ -39,6 +39,7 @@
 - sing-box config publish API 和管理后台发布入口，可写入当前配置并保存上一版文件。
 - sing-box config rollback API 和管理后台回滚入口，可恢复上一版配置文件。
 - sing-box config publish/rollback API 会返回 `restart_required`，管理后台会提示发布或回滚后需要重启 sing-box。
+- sing-box restart API 和管理后台重启入口已落地；发布/回滚可在 `SING_BOX_AUTO_RESTART=true` 时自动调用受配置保护的重启命令。
 - active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
 - Token hash 存储，明文只在创建时返回。
@@ -107,6 +108,7 @@ POST /api/sing-box/config/generate
 POST /api/sing-box/config/check
 POST /api/sing-box/config/publish
 POST /api/sing-box/config/rollback
+POST /api/sing-box/restart
 GET  /sub/{token}
 ```
 
@@ -160,7 +162,6 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 策略与团队、成员、Token、标签和虚拟节点的绑定生效逻辑。
 - 流量统计采集。
 - 流量采集后的超额自动标记、阻断和配置发布触发。
-- sing-box config 发布/回滚后的自动重启执行器。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
 
 ## 5. 当前注意事项
@@ -169,6 +170,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 生产部署仍应由 `scripts/deploy/bootstrap-remote.sh` 生成 `.env` 后再修改密钥；管理员引导账号只在没有管理员记录时创建。
 - 管理 API 需要管理员会话；订阅接口 `/sub/{token}` 继续使用订阅 Token 鉴权，不依赖管理员登录。
 - 需要局域网访问管理后台时，通过部署侧配置 `FLUXGATE_HOST_BIND=0.0.0.0` 和 `FLUXGATE_HTTP_PORT`，公开仓库不保存真实访问地址。
+- `SING_BOX_AUTO_RESTART` 默认关闭；如果要让控制面重启 sing-box，需要在部署侧显式挂载 Docker socket 或改用 `command` driver，并提供对应容器/宿主机权限。
 - sing-box 官方文档已标注 WireGuard outbound 废弃；当前仅按 Phase 1 既有 outbound 骨架兼容解析，后续应评估迁移到 endpoint 模型。
 - 本地 QA 产生的 `data/`、`logs/`、`tmp/` 均被 `.gitignore` 排除，并默认在测试退出时清理。
 - Playwright Chromium 已在本机安装一次，后续截图脚本会复用缓存。

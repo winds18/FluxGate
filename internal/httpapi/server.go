@@ -93,6 +93,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/sing-box/config/check", s.handleCheckSingBoxConfig)
 	s.mux.HandleFunc("POST /api/sing-box/config/publish", s.handlePublishSingBoxConfig)
 	s.mux.HandleFunc("POST /api/sing-box/config/rollback", s.handleRollbackSingBoxConfig)
+	s.mux.HandleFunc("POST /api/sing-box/restart", s.handleRestartSingBox)
 	s.mux.HandleFunc("GET /sub/{token}", s.handleSubscription)
 }
 
@@ -654,6 +655,15 @@ func (s *Server) handlePublishSingBoxConfig(w http.ResponseWriter, r *http.Reque
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if s.cfg.SingBoxAutoRestart {
+		restart := s.restartSingBox(r.Context())
+		result.Restart = &restart
+		result.RestartRequired = !restart.Success
+		if !restart.Success {
+			writeJSON(w, http.StatusInternalServerError, result)
+			return
+		}
+	}
 	writeJSON(w, http.StatusOK, result)
 }
 
@@ -667,7 +677,46 @@ func (s *Server) handleRollbackSingBoxConfig(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	if s.cfg.SingBoxAutoRestart {
+		restart := s.restartSingBox(r.Context())
+		result.Restart = &restart
+		result.RestartRequired = !restart.Success
+		if !restart.Success {
+			writeJSON(w, http.StatusInternalServerError, result)
+			return
+		}
+	}
 	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) handleRestartSingBox(w http.ResponseWriter, r *http.Request) {
+	result := s.restartSingBox(r.Context())
+	status := http.StatusOK
+	if result.Enabled && !result.Success {
+		status = http.StatusInternalServerError
+	}
+	writeJSON(w, status, result)
+}
+
+func (s *Server) restartSingBox(ctx context.Context) singbox.RestartResult {
+	result := singbox.Restart(ctx, singbox.RestartOptions{
+		Enabled:       s.cfg.SingBoxAutoRestart,
+		Driver:        s.cfg.SingBoxRestartDriver,
+		DockerSocket:  s.cfg.SingBoxDockerSocket,
+		ContainerName: s.cfg.SingBoxContainerName,
+		Command:       s.cfg.SingBoxRestartCommand,
+		Args:          s.cfg.SingBoxRestartArgs,
+		Timeout:       s.cfg.SingBoxRestartTimeout,
+	})
+	s.logger.Info("sing-box restart evaluated",
+		"enabled", result.Enabled,
+		"executed", result.Executed,
+		"success", result.Success,
+		"skipped", result.Skipped,
+		"duration_ms", result.DurationMS,
+		"message", result.Message,
+	)
+	return result
 }
 
 func (s *Server) buildSingBoxConfig(ctx context.Context) (singbox.Config, error) {

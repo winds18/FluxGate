@@ -21,6 +21,13 @@ type Config struct {
 	DefaultVLESSPort          int
 	SingBoxConfigPath         string
 	SingBoxPreviousConfigPath string
+	SingBoxContainerName      string
+	SingBoxAutoRestart        bool
+	SingBoxRestartDriver      string
+	SingBoxDockerSocket       string
+	SingBoxRestartCommand     string
+	SingBoxRestartArgs        []string
+	SingBoxRestartTimeout     time.Duration
 	SourceSyncPollInterval    time.Duration
 	SourceSyncBatchLimit      int
 	StatsPollInterval         time.Duration
@@ -42,6 +49,13 @@ func Load() Config {
 		DefaultVLESSPort:          envInt("DEFAULT_VLESS_PORT", 8443),
 		SingBoxConfigPath:         env("SING_BOX_CONFIG_PATH", "data/sing-box/config.json"),
 		SingBoxPreviousConfigPath: env("SING_BOX_PREVIOUS_CONFIG_PATH", "data/sing-box/config.previous.json"),
+		SingBoxContainerName:      env("SING_BOX_CONTAINER_NAME", "fluxgate-sing-box"),
+		SingBoxAutoRestart:        envBool("SING_BOX_AUTO_RESTART", false),
+		SingBoxRestartDriver:      strings.ToLower(env("SING_BOX_RESTART_DRIVER", "docker")),
+		SingBoxDockerSocket:       env("SING_BOX_DOCKER_SOCKET", "/var/run/docker.sock"),
+		SingBoxRestartCommand:     env("SING_BOX_RESTART_COMMAND", ""),
+		SingBoxRestartArgs:        envFields("SING_BOX_RESTART_ARGS"),
+		SingBoxRestartTimeout:     time.Duration(envInt("SING_BOX_RESTART_TIMEOUT_SECONDS", 15)) * time.Second,
 		SourceSyncPollInterval:    time.Duration(envInt("SOURCE_SYNC_POLL_SECONDS", 60)) * time.Second,
 		SourceSyncBatchLimit:      envInt("SOURCE_SYNC_BATCH_LIMIT", 20),
 		StatsPollInterval:         time.Duration(envInt("STATS_POLL_INTERVAL_SECONDS", 30)) * time.Second,
@@ -57,6 +71,21 @@ func env(key, fallback string) string {
 	return value
 }
 
+func envBool(key string, fallback bool) bool {
+	raw := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+	if raw == "" {
+		return fallback
+	}
+	switch raw {
+	case "1", "true", "yes", "on":
+		return true
+	case "0", "false", "no", "off":
+		return false
+	default:
+		return fallback
+	}
+}
+
 func envInt(key string, fallback int) int {
 	raw := strings.TrimSpace(os.Getenv(key))
 	if raw == "" {
@@ -67,4 +96,21 @@ func envInt(key string, fallback int) int {
 		return fallback
 	}
 	return value
+}
+
+func envFields(key string) []string {
+	raw := strings.TrimSpace(os.Getenv(key))
+	if raw == "" {
+		return nil
+	}
+	if strings.Contains(raw, ",") {
+		var result []string
+		for _, item := range strings.Split(raw, ",") {
+			if value := strings.TrimSpace(item); value != "" {
+				result = append(result, value)
+			}
+		}
+		return result
+	}
+	return strings.Fields(raw)
 }

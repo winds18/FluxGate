@@ -44,10 +44,11 @@ curl -fsS -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" \
 
 post_json "/api/teams" '{"name":"QA Team","description":"automated smoke"}' "$OUT_DIR/team.json"
 team_id="$(json_value "data.id" <"$OUT_DIR/team.json")"
-post_json "/api/policies" "{\"name\":\"QA 默认策略\",\"scope_type\":\"team\",\"scope_id\":$team_id,\"allowed_virtual_nodes\":\"[\\\"FluxGate-HK\\\"]\",\"max_nodes\":5}" "$OUT_DIR/policy.json"
+post_json "/api/policies" "{\"name\":\"QA 默认策略\",\"scope_type\":\"team\",\"scope_id\":$team_id,\"include_tags\":\"[\\\"QA-HK\\\"]\",\"allowed_virtual_nodes\":\"[\\\"FluxGate-HK\\\"]\",\"max_nodes\":5}" "$OUT_DIR/policy.json"
 policy_id="$(json_value "data.id" <"$OUT_DIR/policy.json")"
 policy_scope_id="$(json_value "data.scope_id" <"$OUT_DIR/policy.json")"
 policy_max_nodes="$(json_value "data.max_nodes" <"$OUT_DIR/policy.json")"
+policy_include_tags="$(json_value "data.include_tags" <"$OUT_DIR/policy.json")"
 policy_allowed_virtual_nodes="$(json_value "data.allowed_virtual_nodes" <"$OUT_DIR/policy.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/policies" -o "$OUT_DIR/policies.json"
 policy_list_count="$(json_value "data.length" <"$OUT_DIR/policies.json")"
@@ -144,8 +145,8 @@ if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   exit 1
 fi
 
-if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nodes" != "5" || "$policy_allowed_virtual_nodes" != "[\"FluxGate-HK\"]" || "$policy_list_count" -lt 1 ]]; then
-  log "policy create/list should work: id=$policy_id scope_id=$policy_scope_id team_id=$team_id allowed_virtual_nodes=$policy_allowed_virtual_nodes max_nodes=$policy_max_nodes list_count=$policy_list_count"
+if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nodes" != "5" || "$policy_include_tags" != "[\"QA-HK\"]" || "$policy_allowed_virtual_nodes" != "[\"FluxGate-HK\"]" || "$policy_list_count" -lt 1 ]]; then
+  log "policy create/list should work: id=$policy_id scope_id=$policy_scope_id team_id=$team_id include_tags=$policy_include_tags allowed_virtual_nodes=$policy_allowed_virtual_nodes max_nodes=$policy_max_nodes list_count=$policy_list_count"
   exit 1
 fi
 
@@ -256,6 +257,12 @@ fi
 
 if ! grep -q '"tag": "vn-FluxGate-HK-upstreams"' "$OUT_DIR/sing-box.json"; then
   log "virtual node tag_selector should create dedicated upstream selector"
+  exit 1
+fi
+
+policy_route_count="$(json_value "(data.route.rules || []).filter((rule) => rule.outbound === 'vn-FluxGate-HK-token-$token_id-upstreams' && (rule.auth_user || []).includes('$gateway_user')).length" <"$OUT_DIR/sing-box.json")"
+if [[ "$policy_route_count" != "1" ]]; then
+  log "policy include_tags should create auth_user route rule to token selector"
   exit 1
 fi
 

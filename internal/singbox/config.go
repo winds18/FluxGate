@@ -80,7 +80,7 @@ func buildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNo
 			"default":   upstreamTags[0],
 		})
 	}
-	routeRules, virtualNodeOutbounds := buildVirtualNodeUpstreamRouting(inbounds, virtualNodes, upstreamNodes, upstreamTagByNodeID)
+	routeRules, virtualNodeOutbounds := buildVirtualNodeUpstreamRouting(tokens, inbounds, virtualNodes, upstreamNodes, upstreamTagByNodeID, policies, now)
 	outbounds = append(outbounds, virtualNodeOutbounds...)
 	route := map[string]any{
 		"final": finalOutbound,
@@ -163,12 +163,12 @@ func buildUpstreamOutbounds(nodes []store.Node) ([]map[string]any, []string, map
 	return outbounds, tags, tagByNodeID
 }
 
-type virtualNodeTagSelector struct {
+type routeTagSelector struct {
 	Include []string `json:"include"`
 	Exclude []string `json:"exclude"`
 }
 
-func buildVirtualNodeUpstreamRouting(inbounds []Inbound, virtualNodes []store.VirtualNode, upstreamNodes []store.Node, upstreamTagByNodeID map[int64]string) ([]map[string]any, []map[string]any) {
+func buildVirtualNodeUpstreamRouting(tokens []store.TokenWithAccount, inbounds []Inbound, virtualNodes []store.VirtualNode, upstreamNodes []store.Node, upstreamTagByNodeID map[int64]string, policies []store.Policy, now time.Time) ([]map[string]any, []map[string]any) {
 	inboundExists := map[string]bool{}
 	for _, inbound := range inbounds {
 		inboundExists[inbound.Tag] = true
@@ -182,10 +182,39 @@ func buildVirtualNodeUpstreamRouting(inbounds []Inbound, virtualNodes []store.Vi
 			continue
 		}
 		selector, configured := parseVirtualNodeTagSelector(node.TagSelector)
+		for _, token := range tokens {
+			if !gatewayTokenUsable(token, now) || !policy.VirtualNodeAllowed(token, node, virtualNodes, policies) {
+				continue
+			}
+			policySelector, matched := policy.EffectiveTagSelector(token, policies)
+			if !matched || len(policySelector.Include)+len(policySelector.Exclude) == 0 {
+				continue
+			}
+			selectedTags := selectUpstreamTags(upstreamNodes, upstreamTagByNodeID, selector, configured, routeTagSelector{
+				Include: policySelector.Include,
+				Exclude: policySelector.Exclude,
+			})
+			targetOutbound := "block"
+			if len(selectedTags) > 0 {
+				targetOutbound = tokenUpstreamSelectorTag(node, token)
+				outbounds = append(outbounds, map[string]any{
+					"type":      "selector",
+					"tag":       targetOutbound,
+					"outbounds": selectedTags,
+					"default":   selectedTags[0],
+				})
+			}
+			rules = append(rules, map[string]any{
+				"inbound":   []string{inboundTag},
+				"auth_user": []string{token.GatewayAccount.AuthUser},
+				"action":    "route",
+				"outbound":  targetOutbound,
+			})
+		}
 		if !configured {
 			continue
 		}
-		selectedTags := selectUpstreamTags(upstreamNodes, upstreamTagByNodeID, selector)
+		selectedTags := selectUpstreamTags(upstreamNodes, upstreamTagByNodeID, selector, true)
 		targetOutbound := "block"
 		if len(selectedTags) > 0 {
 			targetOutbound = virtualNodeUpstreamSelectorTag(node)
@@ -1258,10 +1287,17 @@ func virtualNodeUpstreamSelectorTag(node store.VirtualNode) string {
 	return "vn-" + node.Name + "-upstreams"
 }
 
-func parseVirtualNodeTagSelector(raw string) (virtualNodeTagSelector, bool) {
+func tokenUpstreamSelectorTag(node store.VirtualNode, token store.TokenWithAccount) string {
+	if token.ID > 0 {
+		return fmt.Sprintf("vn-%s-token-%d-upstreams", node.Name, token.ID)
+	}
+	return "vn-" + node.Name + "-user-" + token.GatewayAccount.AuthUser + "-upstreams"
+}
+
+func parseVirtualNodeTagSelector(raw string) (routeTagSelector, bool) {
 	raw = strings.TrimSpace(raw)
 	if raw == "" || raw == "{}" {
-		return virtualNodeTagSelector{}, false
+		return routeTagSelector{}, false
 	}
 	var document struct {
 		Include     []string `json:"include"`
@@ -1270,20 +1306,20 @@ func parseVirtualNodeTagSelector(raw string) (virtualNodeTagSelector, bool) {
 		ExcludeTags []string `json:"exclude_tags"`
 	}
 	if err := json.Unmarshal([]byte(raw), &document); err != nil {
-		return virtualNodeTagSelector{}, false
+		return routeTagSelector{}, false
 	}
-	selector := virtualNodeTagSelector{
+	selector := routeTagSelector{
 		Include: cleanTagSelectorValues(append(document.Include, document.IncludeTags...)),
 		Exclude: cleanTagSelectorValues(append(document.Exclude, document.ExcludeTags...)),
 	}
 	return selector, len(selector.Include) > 0 || len(selector.Exclude) > 0
 }
 
-func selectUpstreamTags(nodes []store.Node, upstreamTagByNodeID map[int64]string, selector virtualNodeTagSelector) []string {
+func selectUpstreamTags(nodes []store.Node, upstreamTagByNodeID map[int64]string, selector routeTagSelector, selectorConfigured bool, extraSelectors ...routeTagSelector) []string {
 	var selected []string
 	for _, node := range nodes {
 		upstreamTag, ok := upstreamTagByNodeID[node.ID]
-		if !ok || !nodeMatchesTagSelector(node, selector) {
+		if !ok || !nodeMatchesTagSelectors(node, selector, selectorConfigured, extraSelectors...) {
 			continue
 		}
 		selected = append(selected, upstreamTag)
@@ -1291,12 +1327,21 @@ func selectUpstreamTags(nodes []store.Node, upstreamTagByNodeID map[int64]string
 	return selected
 }
 
-func nodeMatchesTagSelector(node store.Node, selector virtualNodeTagSelector) bool {
-	nodeTags := tagSet(node.Tags)
-	if len(selector.Include) > 0 && !containsAnyTag(nodeTags, selector.Include) {
+func nodeMatchesTagSelectors(node store.Node, selector routeTagSelector, selectorConfigured bool, extraSelectors ...routeTagSelector) bool {
+	if selectorConfigured && !nodeMatchesTagSelector(node, selector) {
 		return false
 	}
-	return !containsAnyTag(nodeTags, selector.Exclude)
+	for _, extra := range extraSelectors {
+		if !nodeMatchesTagSelector(node, extra) {
+			return false
+		}
+	}
+	return true
+}
+
+func nodeMatchesTagSelector(node store.Node, selector routeTagSelector) bool {
+	nodeTags := tagSet(node.Tags)
+	return (len(selector.Include) == 0 || containsAnyTag(nodeTags, selector.Include)) && !containsAnyTag(nodeTags, selector.Exclude)
 }
 
 func cleanTagSelectorValues(values []string) []string {

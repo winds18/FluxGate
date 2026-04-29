@@ -9,6 +9,11 @@ import (
 	"github.com/winds18/FluxGate/internal/store"
 )
 
+type TagSelector struct {
+	Include []string
+	Exclude []string
+}
+
 func EffectiveMaxNodes(token store.TokenWithAccount, policies []store.Policy) int {
 	for _, scope := range []string{"token", "user", "team"} {
 		maxNodes, matched := scopedMaxNodes(token, policies, scope)
@@ -51,6 +56,16 @@ func EffectiveAllowedVirtualNodes(token store.TokenWithAccount, policies []store
 	return nil, false
 }
 
+func EffectiveTagSelector(token store.TokenWithAccount, policies []store.Policy) (TagSelector, bool) {
+	for _, scope := range []string{"token", "user", "team"} {
+		selector, matched := scopedTagSelector(token, policies, scope)
+		if matched {
+			return selector, true
+		}
+	}
+	return TagSelector{}, false
+}
+
 func scopedMaxNodes(token store.TokenWithAccount, policies []store.Policy, scope string) (int, bool) {
 	matched := false
 	maxNodes := 0
@@ -89,6 +104,20 @@ func scopedAllowedVirtualNodes(token store.TokenWithAccount, policies []store.Po
 		}
 	}
 	return values, matched
+}
+
+func scopedTagSelector(token store.TokenWithAccount, policies []store.Policy, scope string) (TagSelector, bool) {
+	matched := false
+	var selector TagSelector
+	for _, item := range policies {
+		if item.Status != "active" || item.ScopeType != scope || !scopeMatches(token, item) {
+			continue
+		}
+		matched = true
+		selector.Include = mergeValues(selector.Include, parseStringValues(item.IncludeTags))
+		selector.Exclude = mergeValues(selector.Exclude, parseStringValues(item.ExcludeTags))
+	}
+	return selector, matched
 }
 
 func scopeMatches(token store.TokenWithAccount, item store.Policy) bool {
@@ -153,6 +182,10 @@ func virtualNodeAllowedByValues(node store.VirtualNode, allowedValues []string) 
 }
 
 func parseAllowedVirtualNodes(raw string) []string {
+	return parseStringValues(raw)
+}
+
+func parseStringValues(raw string) []string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" || raw == "[]" {
 		return nil
@@ -177,6 +210,20 @@ func parseAllowedVirtualNodes(raw string) []string {
 		}
 	}
 	return values
+}
+
+func mergeValues(left []string, right []string) []string {
+	seen := map[string]bool{}
+	merged := make([]string, 0, len(left)+len(right))
+	for _, value := range append(left, right...) {
+		key := strings.ToLower(strings.TrimSpace(value))
+		if key == "" || seen[key] {
+			continue
+		}
+		seen[key] = true
+		merged = append(merged, strings.TrimSpace(value))
+	}
+	return merged
 }
 
 func virtualNodeValueString(value any) string {

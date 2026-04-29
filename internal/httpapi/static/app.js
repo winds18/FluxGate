@@ -129,7 +129,7 @@ async function load() {
     renderSources(sources);
     renderTable(nodesEl, nodes, ["id", "source_name", "raw_name", "display_name", "protocol", "tags", "status"]);
     renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "tag_selector", "status"]);
-    renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "allowed_virtual_nodes", "max_nodes", "status"]);
+    renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "include_tags", "exclude_tags", "allowed_virtual_nodes", "max_nodes", "status"]);
     renderTokens(tokens);
     statusEl.textContent = "已连接";
   } catch (error) {
@@ -208,6 +208,8 @@ async function submitPolicy(event) {
     scope_type: textField(form, "scope_type") || "team",
     scope_id: scopeID > 0 ? scopeID : null,
     allowed_virtual_nodes: textField(form, "allowed_virtual_nodes"),
+    include_tags: textField(form, "include_tags"),
+    exclude_tags: textField(form, "exclude_tags"),
     max_nodes: numberField(form, "max_nodes"),
   });
   policyForm.reset();

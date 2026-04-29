@@ -538,6 +538,46 @@ func TestBuildConfigRoutesVirtualNodeByTagSelector(t *testing.T) {
 	}
 }
 
+func TestBuildConfigRoutesPolicyTagsByAuthUser(t *testing.T) {
+	now := time.Date(2026, 4, 29, 5, 46, 0, 0, time.UTC)
+	teamID := int64(10)
+	scopeID := teamID
+	token := gatewayToken("active", "active", "vless", nil, 0, 0, 0, "team-user")
+	token.ID = 30
+	token.UserID = 20
+	token.UserTeamID = &teamID
+
+	config := buildConfig([]store.TokenWithAccount{token}, []store.VirtualNode{
+		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, TagSelector: `{"include":["HK"]}`, Status: "active"},
+	}, []store.Node{
+		{ID: 1, URI: "vless://00000000-0000-0000-0000-000000000001@hk.example:443#hk", Protocol: "vless", ServerPort: 443, Status: "active", Tags: []string{"HK"}},
+		{ID: 2, URI: "vless://00000000-0000-0000-0000-000000000002@premium.example:443#premium", Protocol: "vless", ServerPort: 443, Status: "active", Tags: []string{"HK", "Premium"}},
+		{ID: 3, URI: "vless://00000000-0000-0000-0000-000000000003@sg.example:443#sg", Protocol: "vless", ServerPort: 443, Status: "active", Tags: []string{"SG", "Premium"}},
+	}, []store.Policy{
+		{ScopeType: "team", ScopeID: &scopeID, IncludeTags: `["Premium"]`, Status: "active"},
+	}, now)
+
+	selector := findOutbound(config.Outbounds, "vn-hk-token-30-upstreams")
+	if selector == nil {
+		t.Fatalf("expected token policy selector, got %+v", config.Outbounds)
+	}
+	selected, ok := selector["outbounds"].([]string)
+	if !ok || len(selected) != 1 || selected[0] != "up_2" {
+		t.Fatalf("policy selector should intersect virtual node tags, got %+v", selector)
+	}
+	rules, ok := config.Route["rules"].([]map[string]any)
+	if !ok || len(rules) < 2 {
+		t.Fatalf("expected policy and virtual node route rules, got %+v", config.Route)
+	}
+	authUsers, ok := rules[0]["auth_user"].([]string)
+	if !ok || len(authUsers) != 1 || authUsers[0] != "team-user" || rules[0]["outbound"] != "vn-hk-token-30-upstreams" {
+		t.Fatalf("first route rule should target auth_user policy selector: %+v", rules[0])
+	}
+	if rules[1]["outbound"] != "vn-hk-upstreams" {
+		t.Fatalf("virtual node fallback rule should follow policy rule: %+v", rules)
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

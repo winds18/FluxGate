@@ -17,6 +17,7 @@
 - 团队、用户、Token 基础页面创建和列表。
 - 策略基础页面创建和列表。
 - 策略 `allowed_virtual_nodes` 和 `max_nodes` 已按 Token > 成员 > 团队优先级生效，用于限制订阅输出中的可见虚拟节点，并同步约束 sing-box 入站里的用户分配；被策略挡住且没有可用用户的虚拟节点不会生成入站。
+- 策略 `include_tags` 和 `exclude_tags` 已按 Token > 成员 > 团队优先级生效，会为匹配 Token 生成带 `auth_user` 的 sing-box route rule，限制该 Token 在虚拟节点下可走的上游出口。
 - Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
 - 上游来源页面创建和列表。
 - subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。
@@ -162,7 +163,6 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅更多结构化格式解析。
 - DNS 等更多协议 URI 到 sing-box outbound 的转换。
-- 策略 include/exclude tags 生效逻辑。
 - 流量统计采集。
 - 流量采集后的超额自动标记、阻断和配置发布触发。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。

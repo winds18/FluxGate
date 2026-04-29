@@ -83,6 +83,45 @@ func TestTokenScopeEmptyAllowedVirtualNodesOverridesTeamWhitelist(t *testing.T) 
 	}
 }
 
+func TestEffectiveTagSelectorUsesHighestScope(t *testing.T) {
+	teamID := int64(10)
+	tokenID := int64(30)
+	token := store.TokenWithAccount{Token: store.Token{ID: tokenID, UserID: 20}, UserTeamID: &teamID}
+	policies := []store.Policy{
+		policyWithTags("team", teamID, "HK", "Backup"),
+		policyWithTags("token", tokenID, "SG, Premium", "Slow"),
+	}
+
+	selector, matched := EffectiveTagSelector(token, policies)
+	if !matched {
+		t.Fatal("expected tag selector policy to match")
+	}
+	if len(selector.Include) != 2 || selector.Include[0] != "SG" || selector.Include[1] != "Premium" {
+		t.Fatalf("token scope include_tags should win, got %+v", selector.Include)
+	}
+	if len(selector.Exclude) != 1 || selector.Exclude[0] != "Slow" {
+		t.Fatalf("token scope exclude_tags should win, got %+v", selector.Exclude)
+	}
+}
+
+func TestEffectiveTagSelectorEmptyHigherScopeOverridesLowerScope(t *testing.T) {
+	teamID := int64(10)
+	tokenID := int64(30)
+	token := store.TokenWithAccount{Token: store.Token{ID: tokenID, UserID: 20}, UserTeamID: &teamID}
+	policies := []store.Policy{
+		policyWithTags("team", teamID, "HK", ""),
+		policyWithTags("token", tokenID, "[]", "[]"),
+	}
+
+	selector, matched := EffectiveTagSelector(token, policies)
+	if !matched {
+		t.Fatal("expected token scope policy to match")
+	}
+	if len(selector.Include) != 0 || len(selector.Exclude) != 0 {
+		t.Fatalf("empty token scope tag policy should be unrestricted, got %+v", selector)
+	}
+}
+
 func TestInactivePolicyDoesNotLimitNodes(t *testing.T) {
 	teamID := int64(10)
 	token := store.TokenWithAccount{Token: store.Token{ID: 30, UserID: 20}, UserTeamID: &teamID}
@@ -105,5 +144,15 @@ func policyWithAllowed(scope string, scopeID int64, allowedVirtualNodes string, 
 		AllowedVirtualNodes: allowedVirtualNodes,
 		MaxNodes:            maxNodes,
 		Status:              "active",
+	}
+}
+
+func policyWithTags(scope string, scopeID int64, includeTags string, excludeTags string) store.Policy {
+	return store.Policy{
+		ScopeType:   scope,
+		ScopeID:     &scopeID,
+		IncludeTags: includeTags,
+		ExcludeTags: excludeTags,
+		Status:      "active",
 	}
 }

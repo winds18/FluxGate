@@ -70,6 +70,8 @@ post_json "/api/tokens/$token_id/revoke" '{}' "$OUT_DIR/token-revoke.json"
 token_revoked_status="$(json_value "data.status" <"$OUT_DIR/token-revoke.json")"
 log "+ curl -sS -o $OUT_DIR/subscription-revoked.json -w <http_code> $BASE_URL/sub/<redacted>?target=clash"
 revoked_http_status="$(curl -sS -o "$OUT_DIR/subscription-revoked.json" -w "%{http_code}" "$BASE_URL/sub/$plain_token?target=clash")"
+gateway_user="fg_u_${user_id}_t_${token_id}"
+run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/generate" -o "$OUT_DIR/sing-box-revoked.json"
 post_json "/api/tokens/$token_id/restore" '{}' "$OUT_DIR/token-restore.json"
 token_restored_status="$(json_value "data.status" <"$OUT_DIR/token-restore.json")"
 
@@ -102,6 +104,11 @@ if [[ "$token_revoked_status" != "revoked" || "$revoked_http_status" != "403" ]]
   exit 1
 fi
 
+if grep -q "$gateway_user" "$OUT_DIR/sing-box-revoked.json"; then
+  log "revoked token should not appear in sing-box config"
+  exit 1
+fi
+
 if [[ "$token_restored_status" != "active" ]]; then
   log "unexpected token status after restore: $token_restored_status"
   exit 1
@@ -109,6 +116,11 @@ fi
 
 if ! grep -q 'FluxGate-HK' "$OUT_DIR/subscription.yaml"; then
   log "subscription missing FluxGate-HK"
+  exit 1
+fi
+
+if ! grep -q "$gateway_user" "$OUT_DIR/sing-box.json"; then
+  log "restored token should appear in sing-box config"
   exit 1
 fi
 

@@ -39,6 +39,7 @@
 - 节点手动改名保护和恢复自动命名。
 - Clash/Mihomo 与 sing-box 基础订阅生成。
 - sing-box config.json 生成骨架。
+- sing-box 服务端配置生成会过滤不可用 Token，避免已撤销、已过期或已超额用户继续进入网关配置。
 - 本地 smoke、API flow、页面截图验收脚本。
 - 远程部署探测、磁盘清理、诊断采集脚本骨架。
 

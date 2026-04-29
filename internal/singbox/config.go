@@ -2,6 +2,7 @@ package singbox
 
 import (
 	"encoding/json"
+	"time"
 
 	"github.com/winds18/FluxGate/internal/store"
 )
@@ -29,12 +30,13 @@ type VLESSUser struct {
 }
 
 func BuildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNode) Config {
+	return buildConfig(tokens, virtualNodes, time.Now().UTC())
+}
+
+func buildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNode, now time.Time) Config {
 	users := make([]VLESSUser, 0, len(tokens))
 	for _, token := range tokens {
-		if token.Status != "active" || token.GatewayAccount.Status != "active" {
-			continue
-		}
-		if token.GatewayAccount.Protocol != "vless" {
+		if !gatewayTokenUsable(token, now) {
 			continue
 		}
 		users = append(users, VLESSUser{
@@ -81,6 +83,25 @@ func BuildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNo
 			},
 		},
 	}
+}
+
+func gatewayTokenUsable(token store.TokenWithAccount, now time.Time) bool {
+	if token.Status != "active" {
+		return false
+	}
+	if token.GatewayAccount.Status != "active" {
+		return false
+	}
+	if token.GatewayAccount.Protocol != "vless" {
+		return false
+	}
+	if token.ExpireAt != nil && !token.ExpireAt.After(now) {
+		return false
+	}
+	if token.QuotaBytes > 0 && token.UsedUploadBytes+token.UsedDownloadBytes >= token.QuotaBytes {
+		return false
+	}
+	return true
 }
 
 func Marshal(config Config) ([]byte, error) {

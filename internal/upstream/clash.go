@@ -34,6 +34,10 @@ func ClashYAMLURIList(content string) string {
 			proxyItemIndent = -1
 		}
 		if !inProxies {
+			if inlineProxies := clashYAMLInlineProxies(trimmed); len(inlineProxies) > 0 {
+				proxies = append(proxies, inlineProxies...)
+				continue
+			}
 			if isClashYAMLProxiesField(trimmed) {
 				inProxies = true
 				proxiesIndent = indent
@@ -99,6 +103,18 @@ type yamlFieldScope struct {
 func isClashYAMLProxiesField(line string) bool {
 	key, value, ok := parseYAMLField(line)
 	return ok && strings.EqualFold(strings.TrimSpace(key), "proxies") && strings.TrimSpace(value) == ""
+}
+
+func clashYAMLInlineProxies(line string) []map[string]string {
+	key, value, ok := parseYAMLRawField(line)
+	if !ok || !strings.EqualFold(strings.TrimSpace(key), "proxies") {
+		return nil
+	}
+	value = strings.TrimSpace(value)
+	if !strings.HasPrefix(value, "[") || !strings.HasSuffix(value, "]") {
+		return nil
+	}
+	return parseYAMLInlineProxyList(value)
 }
 
 func clashProxyURI(proxy map[string]string) string {
@@ -867,6 +883,14 @@ func appendMapCSV(target map[string]string, key, value string) {
 }
 
 func parseYAMLField(line string) (string, string, bool) {
+	key, value, ok := parseYAMLRawField(line)
+	if !ok {
+		return "", "", false
+	}
+	return key, parseYAMLScalar(value), true
+}
+
+func parseYAMLRawField(line string) (string, string, bool) {
 	index := indexOutsideQuotes(line, ':')
 	if index < 0 {
 		return "", "", false
@@ -876,7 +900,7 @@ func parseYAMLField(line string) (string, string, bool) {
 	if key == "" {
 		return "", "", false
 	}
-	return key, parseYAMLScalar(value), true
+	return key, value, true
 }
 
 func parseYAMLScalar(value string) string {
@@ -912,6 +936,25 @@ func parseYAMLInlineList(value string) string {
 		}
 	}
 	return strings.Join(items, ",")
+}
+
+func parseYAMLInlineProxyList(value string) []map[string]string {
+	value = strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(value, "]"), "["))
+	if value == "" {
+		return nil
+	}
+	var proxies []map[string]string
+	for _, part := range splitOutsideQuotes(value, ',') {
+		item := strings.TrimSpace(part)
+		if !isInlineMapLiteral(item) {
+			continue
+		}
+		proxy := parseInlineMap(item)
+		if len(proxy) > 0 {
+			proxies = append(proxies, proxy)
+		}
+	}
+	return proxies
 }
 
 func stripInlineComment(value string) string {

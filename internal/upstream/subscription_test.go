@@ -450,6 +450,29 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLInlineProxyLists(t *testing.T) {
+	raw := `
+proxy-providers:
+  inline-a:
+    type: inline
+    proxies: [{ name: "Inline 香港 01", type: ss, server: inline-ss.example.test, port: 8388, cipher: aes-128-gcm, password: "qa-placeholder" }]
+proxy-groups:
+  - { name: auto, type: select, proxies: ["Inline 香港 01", "Inline 东京 01"] }
+proxies: [{ name: "Inline 东京 01", type: trojan, server: inline-trojan.example.test, port: 443, password: "trojan-placeholder", tls: true, sni: inline-trojan.example.test }]
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@inline-ss.example.test:8388#Inline%20%E9%A6%99%E6%B8%AF%2001",
+		"trojan://trojan-placeholder@inline-trojan.example.test:443?security=tls&sni=inline-trojan.example.test#Inline%20%E4%B8%9C%E4%BA%AC%2001",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected inline proxy list URIs: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLInternalOutbounds(t *testing.T) {
 	raw := `
 proxies:

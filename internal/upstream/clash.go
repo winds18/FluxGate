@@ -14,6 +14,7 @@ func ClashYAMLURIList(content string) string {
 	var current map[string]string
 	var scopes []yamlFieldScope
 	inProxies := false
+	proxyItemIndent := -1
 
 	for _, rawLine := range strings.Split(content, "\n") {
 		trimmed := strings.TrimSpace(rawLine)
@@ -31,11 +32,17 @@ func ClashYAMLURIList(content string) string {
 			break
 		}
 		if strings.HasPrefix(trimmed, "- ") {
+			if current != nil && proxyItemIndent >= 0 && indent > proxyItemIndent {
+				scopes = trimYAMLFieldScopes(scopes, indent)
+				storeYAMLProxyListItem(current, scopes, strings.TrimSpace(strings.TrimPrefix(trimmed, "- ")))
+				continue
+			}
 			if len(current) > 0 {
 				proxies = append(proxies, current)
 			}
 			current = map[string]string{}
 			scopes = nil
+			proxyItemIndent = indent
 			rest := strings.TrimSpace(strings.TrimPrefix(trimmed, "- "))
 			if strings.HasPrefix(rest, "{") && strings.HasSuffix(rest, "}") {
 				mergeProxyFields(current, parseInlineMap(rest))
@@ -707,6 +714,33 @@ func storeYAMLProxyField(target map[string]string, scopes []yamlFieldScope, key,
 		}
 		parts = append(parts, key)
 		target[strings.Join(parts, ".")] = value
+	}
+	target[key] = value
+}
+
+func storeYAMLProxyListItem(target map[string]string, scopes []yamlFieldScope, value string) {
+	value = parseYAMLScalar(value)
+	if len(scopes) == 0 || value == "" {
+		return
+	}
+	parts := make([]string, 0, len(scopes))
+	for _, scope := range scopes {
+		parts = append(parts, scope.Key)
+	}
+	scopedKey := strings.Join(parts, ".")
+	appendMapCSV(target, scopedKey, value)
+	if lastKey := scopes[len(scopes)-1].Key; lastKey != scopedKey {
+		appendMapCSV(target, lastKey, value)
+	}
+}
+
+func appendMapCSV(target map[string]string, key, value string) {
+	if key == "" || value == "" {
+		return
+	}
+	if existing := strings.TrimSpace(target[key]); existing != "" {
+		target[key] = existing + "," + value
+		return
 	}
 	target[key] = value
 }

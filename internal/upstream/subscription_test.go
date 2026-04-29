@@ -497,6 +497,28 @@ proxy-groups:
 	}
 }
 
+func TestNormalizeContentClashYAMLAnchoredInlineProxyItems(t *testing.T) {
+	raw := `
+proxy-providers:
+  inline-anchor:
+    type: inline
+    proxies: [&inline_hk { name: "Inline Anchor 香港 01", type: ss, server: inline-anchor-ss.example.test, port: 8388, cipher: aes-128-gcm, password: "qa-placeholder" }]
+proxies:
+  - &top_tokyo { name: "Top Anchor 东京 01", type: trojan, server: top-anchor-trojan.example.test, port: 443, password: "trojan-placeholder", tls: true, sni: top-anchor-trojan.example.test }
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@inline-anchor-ss.example.test:8388#Inline%20Anchor%20%E9%A6%99%E6%B8%AF%2001",
+		"trojan://trojan-placeholder@top-anchor-trojan.example.test:443?security=tls&sni=top-anchor-trojan.example.test#Top%20Anchor%20%E4%B8%9C%E4%BA%AC%2001",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected anchored inline proxy item URIs: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLInternalOutbounds(t *testing.T) {
 	raw := `
 proxies:

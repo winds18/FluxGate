@@ -86,6 +86,7 @@
 - Clash YAML 解析支持嵌套 `proxies` 列表，可兼容带内嵌 provider 节点清单的订阅结构。
 - Clash YAML 解析支持 `proxies: [{ ... }]` 内联节点数组，可兼容 provider 或顶层节点的紧凑写法。
 - Clash YAML 解析支持 `proxies: &anchor` 这类带 YAML anchor 的块状节点列表。
+- Clash YAML 解析支持 `- &anchor { ... }` 和 `proxies: [&anchor { ... }]` 这类节点条目级 anchor 的内联写法。
 - Clash YAML 解析支持常见块状和内联 `ws-opts`、`grpc-opts` 嵌套写法，能保留 WebSocket path/host 和 gRPC service name。
 - Clash YAML 解析支持行内和块状数组标量，可保留 ALPN、WireGuard 地址、允许 IP 和 reserved 字节列表。
 - subscription 来源可解析 SIP008 Shadowsocks 订阅，`servers` 支持数组和按名称分组的对象映射。

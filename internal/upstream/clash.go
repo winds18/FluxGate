@@ -57,6 +57,7 @@ func ClashYAMLURIList(content string) string {
 			scopes = nil
 			proxyItemIndent = indent
 			rest := strings.TrimSpace(strings.TrimPrefix(trimmed, "- "))
+			rest = stripYAMLNodeAnchor(rest)
 			if strings.HasPrefix(rest, "{") && strings.HasSuffix(rest, "}") {
 				mergeProxyFields(current, parseInlineMap(rest))
 				continue
@@ -953,7 +954,7 @@ func parseYAMLInlineProxyList(value string) []map[string]string {
 	}
 	var proxies []map[string]string
 	for _, part := range splitOutsideQuotes(value, ',') {
-		item := strings.TrimSpace(part)
+		item := stripYAMLNodeAnchor(part)
 		if !isInlineMapLiteral(item) {
 			continue
 		}
@@ -963,6 +964,18 @@ func parseYAMLInlineProxyList(value string) []map[string]string {
 		}
 	}
 	return proxies
+}
+
+func stripYAMLNodeAnchor(value string) string {
+	value = strings.TrimSpace(value)
+	for strings.HasPrefix(value, "&") {
+		fields := strings.Fields(value)
+		if len(fields) == 0 || len(fields[0]) <= 1 {
+			return value
+		}
+		value = strings.TrimSpace(strings.TrimPrefix(value, fields[0]))
+	}
+	return value
 }
 
 func stripInlineComment(value string) string {

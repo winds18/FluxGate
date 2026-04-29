@@ -47,6 +47,9 @@ func v2rayOutboundURIs(outbound map[string]any) []string {
 	case "blackhole", "block":
 		uri := clashInternalURI("block", map[string]string{"name": v2rayName(outbound, nil, nil, "Block", 1, 1)}, "Block")
 		return []string{uri}
+	case "dns":
+		uri := clashInternalURI("dns", map[string]string{"name": v2rayName(outbound, nil, nil, "DNS", 1, 1)}, "DNS")
+		return []string{uri}
 	default:
 		return nil
 	}

@@ -1924,6 +1924,37 @@ func TestNormalizeContentJSONWrappedV2RayJSON(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONInternalOutbounds(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray 直连",
+      "protocol": "freedom"
+    },
+    {
+      "tag": "V2Ray 拦截",
+      "protocol": "blackhole"
+    },
+    {
+      "tag": "V2Ray DNS",
+      "protocol": "dns"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"direct://default#V2Ray%20%E7%9B%B4%E8%BF%9E",
+		"block://default#V2Ray%20%E6%8B%A6%E6%88%AA",
+		"dns://default#V2Ray%20DNS",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected v2ray internal outbounds: %q", got)
+	}
+}
+
 func TestNormalizeContentV2RayJSONHTTPAndSOCKS(t *testing.T) {
 	raw := `{
   "outbounds": [

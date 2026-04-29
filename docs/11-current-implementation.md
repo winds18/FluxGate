@@ -9,6 +9,7 @@
 - Go HTTP API 服务。
 - SQLite migration 自动执行。
 - 嵌入式 Web 管理后台登录页、仪表盘和基础写操作表单。
+- 管理后台已做基础视觉统一：统一顶部栏、卡片、表单、按钮、表格、状态徽标和响应式栅格，输入控件高度保持一致。
 - 管理员引导账号。
 - PBKDF2-SHA256 密码哈希。
 - 管理员签名 Cookie 会话。
@@ -67,7 +68,7 @@
 - 远程 Docker build 支持 `GOPROXY`，默认优先使用 `goproxy.cn` 以避开 `proxy.golang.org` 超时。
 - 部署时宿主机 HTTP 端口默认使用 `127.0.0.1:18080`，避免和服务器已有 8080 服务冲突。
 - 部署侧可通过未跟踪配置打开局域网访问，不把真实环境信息提交到公开仓库。
-- 页面截图验收脚本。
+- 页面截图验收脚本，支持指定目标 URL、保留截图和自定义输出目录。
 - 浏览器登录验收脚本。
 - 本地 QA 套件退出自动清理临时产物。
 
@@ -153,6 +154,7 @@ docker compose config
 
 ```text
 KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退出会自动清理截图。
+scripts/qa/screenshot.sh --keep http://<lan-host>:<port> 可对局域网部署页面保留人工复核截图。
 scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录验收。
 ```
 
@@ -163,7 +165,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 登录后管理员登录表单必须不可见，后台视图必须可见，并可加载仪表盘数据。
 - 无白屏。
 - 无明显遮挡。
-- 表格和卡片未出现明显溢出。
+- 表格、卡片、按钮和输入控件未出现明显溢出或尺寸错位。
 - 来源前缀、节点展示名和 Token 前缀正常展示。
 
 ## 4. 尚未完成

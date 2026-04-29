@@ -5,6 +5,28 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 URL="${URL:-http://127.0.0.1:8080}"
 OUT_DIR="${OUT_DIR:-$ROOT_DIR/logs/qa/screenshots/$(timestamp)}"
 KEEP_ARTIFACTS="${KEEP_ARTIFACTS:-false}"
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --keep)
+      KEEP_ARTIFACTS="true"
+      shift
+      ;;
+    --out-dir)
+      OUT_DIR="${2:-}"
+      if [[ -z "$OUT_DIR" ]]; then
+        log "--out-dir requires a value"
+        exit 64
+      fi
+      shift 2
+      ;;
+    *)
+      URL="$1"
+      shift
+      ;;
+  esac
+done
+
 ensure_dir "$OUT_DIR"
 
 cleanup() {

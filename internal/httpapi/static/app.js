@@ -61,6 +61,56 @@ let appState = {
   virtualNodes: [],
 };
 
+const columnLabels = {
+  id: "ID",
+  name: "名称",
+  description: "备注",
+  status: "状态",
+  team_id: "团队 ID",
+  user_id: "成员 ID",
+  token_id: "Token ID",
+  gateway_account_id: "网关账号 ID",
+  source_name: "来源",
+  raw_name: "原始名称",
+  display_name: "展示名称",
+  protocol: "协议",
+  tags: "标签",
+  listen_protocol: "监听协议",
+  listen_port: "端口",
+  tag_selector: "标签选择器",
+  scope_type: "范围",
+  scope_id: "范围 ID",
+  include_tags: "包含标签",
+  exclude_tags: "排除标签",
+  allowed_virtual_nodes: "允许虚拟节点",
+  max_nodes: "最大节点数",
+  token_prefix: "Token 前缀",
+  expire_at: "到期时间",
+  quota_bytes: "额度",
+  used_total: "已用",
+  auth_user: "网关用户",
+  token_status: "Token 状态",
+  today_total_bytes: "今日",
+  month_total_bytes: "本月",
+  used_upload_bytes: "累计上传",
+  used_download_bytes: "累计下载",
+  used_total_bytes: "累计总量",
+  outbound_tag: "出口标签",
+  upstream_node_id: "节点 ID",
+  node_name: "节点",
+  upload_bytes: "上传",
+  download_bytes: "下载",
+  total_bytes: "总量",
+  updated_at: "更新时间",
+  type: "类型",
+  display_prefix: "前缀",
+  default_tags: "默认标签",
+  refresh_interval_minutes: "刷新分钟",
+  last_sync_at: "上次同步",
+  last_error: "错误",
+  actions: "操作",
+};
+
 async function bootstrap() {
   statusEl.textContent = "连接中";
   try {
@@ -458,15 +508,15 @@ function renderSources(rows) {
     <table>
       <thead>
         <tr>
-          <th>id</th>
-          <th>name</th>
-          <th>type</th>
-          <th>display_prefix</th>
-          <th>default_tags</th>
-          <th>refresh_min</th>
-          <th>last_sync_at</th>
-          <th>last_error</th>
-          <th>actions</th>
+          <th>${labelForColumn("id")}</th>
+          <th>${labelForColumn("name")}</th>
+          <th>${labelForColumn("type")}</th>
+          <th>${labelForColumn("display_prefix")}</th>
+          <th>${labelForColumn("default_tags")}</th>
+          <th>${labelForColumn("refresh_interval_minutes")}</th>
+          <th>${labelForColumn("last_sync_at")}</th>
+          <th>${labelForColumn("last_error")}</th>
+          <th>${labelForColumn("actions")}</th>
         </tr>
       </thead>
       <tbody>
@@ -474,14 +524,14 @@ function renderSources(rows) {
           .map(
             (row) => `
               <tr>
-                <td>${formatCell(row.id)}</td>
-                <td>${formatCell(row.name)}</td>
-                <td>${formatCell(row.type)}</td>
-                <td>${formatCell(row.display_prefix)}</td>
-                <td>${formatCell(row.default_tags)}</td>
-                <td>${formatCell(row.refresh_interval_minutes)}</td>
-                <td>${formatCell(row.last_sync_at)}</td>
-                <td>${formatCell(row.last_error)}</td>
+                <td>${formatCell(row.id, "id")}</td>
+                <td>${formatCell(row.name, "name")}</td>
+                <td>${formatCell(row.type, "type")}</td>
+                <td>${formatCell(row.display_prefix, "display_prefix")}</td>
+                <td>${formatCell(row.default_tags, "default_tags")}</td>
+                <td>${formatCell(row.refresh_interval_minutes, "refresh_interval_minutes")}</td>
+                <td>${formatCell(row.last_sync_at, "last_sync_at")}</td>
+                <td>${formatCell(row.last_error, "last_error")}</td>
                 <td>
                   <button class="table-button" data-action="refresh-source" data-source-id="${row.id}">刷新</button>
                 </td>
@@ -503,15 +553,15 @@ function renderTokens(rows) {
     <table>
       <thead>
         <tr>
-          <th>id</th>
-          <th>user_id</th>
-          <th>token_prefix</th>
-          <th>name</th>
-          <th>status</th>
-          <th>expire_at</th>
-          <th>quota_bytes</th>
-          <th>used_total</th>
-          <th>actions</th>
+          <th>${labelForColumn("id")}</th>
+          <th>${labelForColumn("user_id")}</th>
+          <th>${labelForColumn("token_prefix")}</th>
+          <th>${labelForColumn("name")}</th>
+          <th>${labelForColumn("status")}</th>
+          <th>${labelForColumn("expire_at")}</th>
+          <th>${labelForColumn("quota_bytes")}</th>
+          <th>${labelForColumn("used_total")}</th>
+          <th>${labelForColumn("actions")}</th>
         </tr>
       </thead>
       <tbody>
@@ -519,14 +569,14 @@ function renderTokens(rows) {
           .map(
             (row) => `
               <tr>
-                <td>${formatCell(row.id)}</td>
-                <td>${formatCell(row.user_id)}</td>
-                <td>${formatCell(row.token_prefix)}</td>
-                <td>${formatCell(row.name)}</td>
-                <td>${formatCell(row.status)}</td>
-                <td>${formatCell(row.expire_at)}</td>
-                <td>${formatCell(row.quota_bytes)}</td>
-                <td>${formatCell((row.used_upload_bytes || 0) + (row.used_download_bytes || 0))}</td>
+                <td>${formatCell(row.id, "id")}</td>
+                <td>${formatCell(row.user_id, "user_id")}</td>
+                <td>${formatCell(row.token_prefix, "token_prefix")}</td>
+                <td>${formatCell(row.name, "name")}</td>
+                <td>${formatCell(row.status, "status")}</td>
+                <td>${formatCell(row.expire_at, "expire_at")}</td>
+                <td>${formatCell(row.quota_bytes, "quota_bytes")}</td>
+                <td>${formatCell((row.used_upload_bytes || 0) + (row.used_download_bytes || 0), "used_total")}</td>
                 <td class="table-actions">
                   <button class="table-button" data-token-action="extend" data-token-id="${row.id}">续期30天</button>
                   <button class="table-button" data-token-action="quota" data-token-id="${row.id}">+1024MiB</button>
@@ -636,14 +686,14 @@ function renderTable(target, rows, columns) {
   target.innerHTML = `
     <table>
       <thead>
-        <tr>${columns.map((column) => `<th>${escapeHTML(column)}</th>`).join("")}</tr>
+        <tr>${columns.map((column) => `<th>${labelForColumn(column)}</th>`).join("")}</tr>
       </thead>
       <tbody>
         ${rows
           .map(
             (row) =>
               `<tr>${columns
-                .map((column) => `<td>${formatCell(row[column])}</td>`)
+                .map((column) => `<td data-column="${escapeHTML(column)}">${formatCell(row[column], column)}</td>`)
                 .join("")}</tr>`,
           )
           .join("")}
@@ -652,12 +702,60 @@ function renderTable(target, rows, columns) {
   `;
 }
 
-function formatCell(value) {
-  if (value === null || value === undefined || value === "") return "";
+function labelForColumn(column) {
+  return escapeHTML(columnLabels[column] || column);
+}
+
+function formatCell(value, column = "") {
+  if (value === null || value === undefined || value === "") {
+    return `<span class="cell-muted">--</span>`;
+  }
+  if (isStatusColumn(column)) {
+    return formatStatus(value);
+  }
+  if (isBytesColumn(column)) {
+    if (column === "quota_bytes" && Number(value || 0) === 0) {
+      return `<span class="cell-muted">不限</span>`;
+    }
+    return escapeHTML(formatBytes(value));
+  }
+  if (Array.isArray(value)) {
+    return value.length > 0 ? escapeHTML(value.join(", ")) : `<span class="cell-muted">--</span>`;
+  }
+  if (typeof value === "object") {
+    return formatLongValue(JSON.stringify(value));
+  }
   if (typeof value === "string" && value.length > 38) {
-    return `<code>${escapeHTML(value.slice(0, 38))}...</code>`;
+    return formatLongValue(value);
   }
   return escapeHTML(String(value));
+}
+
+function isStatusColumn(column) {
+  return column === "status" || column.endsWith("_status");
+}
+
+function isBytesColumn(column) {
+  return column === "used_total" || column.endsWith("_bytes");
+}
+
+function formatLongValue(value) {
+  const trimmed = value.slice(0, 38);
+  return `<code title="${escapeHTML(value)}">${escapeHTML(trimmed)}...</code>`;
+}
+
+function formatStatus(value) {
+  const status = String(value || "").trim();
+  const normalized = status.toLowerCase();
+  let className = "status-badge";
+  if (normalized === "active" || normalized === "enabled" || normalized === "ready") {
+    className += " status-active";
+  } else if (normalized === "over_quota" || normalized === "inactive" || normalized === "expired") {
+    className += " status-warning";
+  } else if (normalized === "revoked" || normalized === "disabled" || normalized === "error") {
+    className += " status-danger";
+  }
+  return `<span class="${className}">${escapeHTML(status)}</span>`;
 }
 
 function formatBytes(value) {

@@ -29,7 +29,7 @@
 - Clash/Mihomo 订阅生成。
 - sing-box 客户端订阅生成。
 - sing-box 服务端配置生成骨架。
-- active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
+- active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
 - Token hash 存储，明文只在创建时返回。
 - 订阅请求日志 Token 路径脱敏。
@@ -139,7 +139,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅定时同步。
 - 上游订阅更多协议格式解析。
-- WireGuard/Tor/SSH 等更多协议 URI 到 sing-box outbound 的转换。
+- WireGuard/Tor 等更多协议 URI 到 sing-box outbound 的转换。
 - 策略管理。
 - 流量统计采集。
 - 流量采集后的超额自动标记、阻断和配置发布触发。

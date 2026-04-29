@@ -165,6 +165,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildHTTPOutbound(node)
 	case "socks", "socks4", "socks4a", "socks5":
 		return buildSOCKSOutbound(node)
+	case "ssh":
+		return buildSSHOutbound(node)
 	default:
 		return nil, false
 	}
@@ -723,6 +725,60 @@ func buildSOCKSOutbound(node store.Node) (map[string]any, bool) {
 	}
 	if boolQuery(firstNonEmpty(query.Get("udp_over_tcp"), query.Get("udp-over-tcp"), query.Get("uot"))) {
 		outbound["udp_over_tcp"] = true
+	}
+
+	return outbound, true
+}
+
+func buildSSHOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "ssh" {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || parsed.Scheme != "ssh" || parsed.Hostname() == "" {
+		return nil, false
+	}
+
+	query := parsed.Query()
+	outbound := map[string]any{
+		"type":        "ssh",
+		"tag":         upstreamTag(node),
+		"server":      parsed.Hostname(),
+		"server_port": portWithFallback(parsed.Port(), node.ServerPort, 22),
+	}
+	if user := firstNonEmpty(parsed.User.Username(), query.Get("user"), query.Get("username")); user != "" {
+		outbound["user"] = user
+	}
+	_, userPasswordValue := userPassword(parsed.User)
+	if password := firstNonEmpty(userPasswordValue, query.Get("password")); password != "" {
+		outbound["password"] = password
+	}
+	if privateKey := firstNonEmpty(query.Get("private_key"), query.Get("private-key")); privateKey != "" {
+		outbound["private_key"] = privateKey
+	}
+	if privateKeyPath := firstNonEmpty(query.Get("private_key_path"), query.Get("private-key-path")); privateKeyPath != "" {
+		outbound["private_key_path"] = privateKeyPath
+	}
+	if privateKeyPassphrase := firstNonEmpty(query.Get("private_key_passphrase"), query.Get("private-key-passphrase")); privateKeyPassphrase != "" {
+		outbound["private_key_passphrase"] = privateKeyPassphrase
+	}
+	if hostKey := splitCSV(firstNonEmpty(query.Get("host_key"), query.Get("host-key"))); len(hostKey) > 0 {
+		outbound["host_key"] = hostKey
+	}
+	if hostKeyAlgorithms := splitCSV(firstNonEmpty(query.Get("host_key_algorithms"), query.Get("host-key-algorithms"))); len(hostKeyAlgorithms) > 0 {
+		outbound["host_key_algorithms"] = hostKeyAlgorithms
+	}
+	if clientVersion := firstNonEmpty(query.Get("client_version"), query.Get("client-version")); clientVersion != "" {
+		outbound["client_version"] = clientVersion
+	}
+	if cipher := splitCSV(query.Get("cipher")); len(cipher) > 0 {
+		outbound["cipher"] = cipher
+	}
+	if mac := splitCSV(query.Get("mac")); len(mac) > 0 {
+		outbound["mac"] = mac
+	}
+	if kexAlgorithm := splitCSV(firstNonEmpty(query.Get("kex_algorithm"), query.Get("kex-algorithm"))); len(kexAlgorithm) > 0 {
+		outbound["kex_algorithm"] = kexAlgorithm
 	}
 
 	return outbound, true

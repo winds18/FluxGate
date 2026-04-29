@@ -161,6 +161,13 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         55,
+			URI:        "ssh://qa-user:qa-placeholder@example.ssh:22?private_key_path=keys%2Fqa_id_ed25519&host_key_algorithms=ssh-ed25519,rsa-sha2-512&client_version=SSH-2.0-FluxGateQA&cipher=aes128-gcm@openssh.com,chacha20-poly1305@openssh.com&mac=hmac-sha2-256&kex_algorithm=curve25519-sha256#ssh",
+			Protocol:   "ssh",
+			ServerPort: 22,
+			Status:     "active",
+		},
+		{
+			ID:         56,
 			URI:        "wireguard://placeholder@example.org:443#unsupported",
 			Protocol:   "wireguard",
 			ServerPort: 443,
@@ -367,7 +374,36 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if socks["network"] != "udp" || socks["udp_over_tcp"] != true {
 		t.Fatalf("unexpected socks network fields: %+v", socks)
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_55") != nil {
+	ssh := findOutbound(config.Outbounds, "up_55")
+	if ssh == nil {
+		t.Fatalf("expected ssh outbound up_55, got %+v", config.Outbounds)
+	}
+	if ssh["type"] != "ssh" || ssh["server"] != "example.ssh" || ssh["server_port"] != 22 {
+		t.Fatalf("unexpected ssh server fields: %+v", ssh)
+	}
+	if ssh["user"] != "qa-user" || ssh["password"] != "qa-placeholder" || ssh["private_key_path"] != "keys/qa_id_ed25519" {
+		t.Fatalf("unexpected ssh auth fields: %+v", ssh)
+	}
+	if ssh["client_version"] != "SSH-2.0-FluxGateQA" {
+		t.Fatalf("unexpected ssh client version: %+v", ssh)
+	}
+	hostKeyAlgorithms, ok := ssh["host_key_algorithms"].([]string)
+	if !ok || len(hostKeyAlgorithms) != 2 || hostKeyAlgorithms[0] != "ssh-ed25519" || hostKeyAlgorithms[1] != "rsa-sha2-512" {
+		t.Fatalf("unexpected ssh host key algorithms: %+v", ssh["host_key_algorithms"])
+	}
+	cipher, ok := ssh["cipher"].([]string)
+	if !ok || len(cipher) != 2 || cipher[0] != "aes128-gcm@openssh.com" || cipher[1] != "chacha20-poly1305@openssh.com" {
+		t.Fatalf("unexpected ssh cipher list: %+v", ssh["cipher"])
+	}
+	mac, ok := ssh["mac"].([]string)
+	if !ok || len(mac) != 1 || mac[0] != "hmac-sha2-256" {
+		t.Fatalf("unexpected ssh mac list: %+v", ssh["mac"])
+	}
+	kexAlgorithm, ok := ssh["kex_algorithm"].([]string)
+	if !ok || len(kexAlgorithm) != 1 || kexAlgorithm[0] != "curve25519-sha256" {
+		t.Fatalf("unexpected ssh kex algorithms: %+v", ssh["kex_algorithm"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_56") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -376,7 +412,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 12 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || tags[11] != "up_54" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 13 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || tags[11] != "up_54" || tags[12] != "up_55" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

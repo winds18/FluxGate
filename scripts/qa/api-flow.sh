@@ -63,8 +63,9 @@ naive_uri="naive://qa-user:qa-placeholder@example.news:443?sni=naive.example.new
 hysteria_uri="hysteria://qa-placeholder@example.zone:443?auth_str=qa-auth&up_mbps=20&down_mbps=80&obfs=obfs-placeholder&protocol=udp&sni=hysteria.example.zone&alpn=h3&insecure=1#香港%2003"
 http_uri="https://qa-user:qa-placeholder@example.proxy:8443/connect?sni=http-proxy.example.proxy&insecure=1#东京%2003"
 socks_uri="socks5://qa-user:qa-placeholder@example.socks:1080?network=udp&udp_over_tcp=1#首尔%2003"
+ssh_uri="ssh://qa-user:qa-placeholder@example.ssh:22?private_key_path=keys%2Fqa_id_ed25519&host_key_algorithms=ssh-ed25519,rsa-sha2-512&client_version=SSH-2.0-FluxGateQA#香港%2004"
 
-post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\\ntrojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京%2001\\nss://aes-128-gcm:qa-placeholder@example.net:8388#首尔%2001\\n$vmess_uri\\n$hysteria2_uri\\n$tuic_uri\\n$anytls_uri\\n$shadowtls_uri\\n$naive_uri\\n$hysteria_uri\\n$http_uri\\n$socks_uri\"}" "$OUT_DIR/import.json"
+post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\\ntrojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京%2001\\nss://aes-128-gcm:qa-placeholder@example.net:8388#首尔%2001\\n$vmess_uri\\n$hysteria2_uri\\n$tuic_uri\\n$anytls_uri\\n$shadowtls_uri\\n$naive_uri\\n$hysteria_uri\\n$http_uri\\n$socks_uri\\n$ssh_uri\"}" "$OUT_DIR/import.json"
 post_json "/api/sources/$subscription_source_id/refresh" '{}' "$OUT_DIR/source-refresh.json"
 source_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-refresh.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443}' "$OUT_DIR/virtual-node.json"
@@ -190,6 +191,11 @@ fi
 
 if ! grep -q '"type": "socks"' "$OUT_DIR/sing-box.json"; then
   log "active socks upstream node should appear as sing-box outbound"
+  exit 1
+fi
+
+if ! grep -q '"type": "ssh"' "$OUT_DIR/sing-box.json"; then
+  log "active ssh upstream node should appear as sing-box outbound"
   exit 1
 fi
 

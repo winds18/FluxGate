@@ -1924,6 +1924,73 @@ func TestNormalizeContentJSONWrappedV2RayJSON(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONHTTPAndSOCKS(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "东京 V2Ray HTTP",
+      "protocol": "http",
+      "settings": {
+        "servers": [
+          {
+            "address": "http.v2ray.example.test",
+            "port": 8080,
+            "users": [
+              {
+                "user": "qa-user",
+                "pass": "http-placeholder"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "http.v2ray.example.test",
+          "allowInsecure": true
+        }
+      }
+    },
+    {
+      "tag": "首尔 V2Ray SOCKS",
+      "protocol": "socks",
+      "settings": {
+        "servers": [
+          {
+            "address": "socks.v2ray.example.test",
+            "port": 1080,
+            "users": [
+              {
+                "user": "qa-user",
+                "pass": "socks-placeholder"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "https://qa-user:http-placeholder@http.v2ray.example.test:8080?")
+	if !strings.Contains(lines[0], "sni=http.v2ray.example.test") ||
+		!strings.Contains(lines[0], "insecure=1") ||
+		!strings.HasSuffix(lines[0], "#%E4%B8%9C%E4%BA%AC%20V2Ray%20HTTP") {
+		t.Fatalf("unexpected v2ray http URI: %q", lines[0])
+	}
+	if lines[1] != "socks5://qa-user:socks-placeholder@socks.v2ray.example.test:1080#%E9%A6%96%E5%B0%94%20V2Ray%20SOCKS" {
+		t.Fatalf("unexpected v2ray socks URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentRejectsUnsupportedContent(t *testing.T) {
 	if _, err := NormalizeContent("not a subscription"); err == nil {
 		t.Fatal("expected unsupported content error")

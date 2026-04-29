@@ -37,6 +37,10 @@ func v2rayOutboundURIs(outbound map[string]any) []string {
 		return v2rayServerURIs(outbound, "trojan", clashTrojanURI)
 	case "shadowsocks", "ss":
 		return v2rayServerURIs(outbound, "shadowsocks", clashShadowsocksURI)
+	case "http":
+		return v2rayHTTPServerURIs(outbound)
+	case "socks":
+		return v2raySOCKSServerURIs(outbound)
 	case "freedom", "direct":
 		uri := clashInternalURI("direct", map[string]string{"name": v2rayName(outbound, nil, nil, "Direct", 1, 1)}, "Direct")
 		return []string{uri}
@@ -104,6 +108,44 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 		}
 		if uri := build(proxy); uri != "" {
 			uris = append(uris, uri)
+		}
+	}
+	return uris
+}
+
+func v2rayHTTPServerURIs(outbound map[string]any) []string {
+	return v2rayProxyServerURIs(outbound, "http", clashHTTPURI)
+}
+
+func v2raySOCKSServerURIs(outbound map[string]any) []string {
+	return v2rayProxyServerURIs(outbound, "socks5", clashSOCKSURI)
+}
+
+func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(map[string]string) string) []string {
+	settings := v2rayMap(outbound["settings"])
+	servers := v2rayObjectList(settings["servers"])
+	total := v2rayProxyServerUserCount(servers)
+	sequence := 0
+	var uris []string
+	for _, server := range servers {
+		users := v2rayObjectList(server["users"])
+		if len(users) == 0 {
+			users = []map[string]any{{}}
+		}
+		for _, user := range users {
+			sequence++
+			proxy := map[string]string{
+				"name":     v2rayName(outbound, server, user, firstNonEmptyString(v2rayString(server, "address"), v2rayString(server, "server")), sequence, total),
+				"type":     proxyType,
+				"server":   firstNonEmptyString(v2rayString(server, "address"), v2rayString(server, "server")),
+				"port":     v2rayPort(server, "port", "server_port"),
+				"username": firstNonEmptyString(v2rayString(user, "user"), v2rayString(user, "username")),
+				"password": firstNonEmptyString(v2rayString(user, "pass"), v2rayString(user, "password")),
+			}
+			appendV2RayStreamProxyValues(outbound, proxy)
+			if uri := build(proxy); uri != "" {
+				uris = append(uris, uri)
+			}
 		}
 	}
 	return uris
@@ -284,6 +326,19 @@ func v2rayVNextUserCount(vnexts []map[string]any) int {
 	total := 0
 	for _, vnext := range vnexts {
 		users := v2rayObjectList(vnext["users"])
+		if len(users) == 0 {
+			total++
+			continue
+		}
+		total += len(users)
+	}
+	return total
+}
+
+func v2rayProxyServerUserCount(servers []map[string]any) int {
+	total := 0
+	for _, server := range servers {
+		users := v2rayObjectList(server["users"])
 		if len(users) == 0 {
 			total++
 			continue

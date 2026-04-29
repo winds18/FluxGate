@@ -304,6 +304,7 @@ GET /sub/{token}?target=sing-box
 - 检查 Token 状态。
 - 检查过期时间。
 - 检查用户和团队状态。
+- 成功响应返回 `subscription-userinfo`、`x-fluxgate-used-bytes`、`x-fluxgate-quota-bytes` 和 `x-fluxgate-remaining-bytes` 等流量额度头。
 - 根据 target 或 User-Agent 选择格式。
 - 记录访问日志。
 - 返回流量信息响应头。

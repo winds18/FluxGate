@@ -40,13 +40,24 @@ func Build(req Request, token store.TokenWithAccount, virtualNodes []store.Virtu
 func SetUserInfoHeader(header http.Header, token store.TokenWithAccount) {
 	total := token.QuotaBytes
 	used := token.UsedUploadBytes + token.UsedDownloadBytes
+	remaining := int64(0)
+	if total > 0 {
+		remaining = total - used
+		if remaining < 0 {
+			remaining = 0
+		}
+	}
 	expire := int64(0)
 	if token.ExpireAt != nil {
 		expire = token.ExpireAt.Unix()
 	}
 	header.Set("subscription-userinfo", fmt.Sprintf("upload=%d; download=%d; total=%d; expire=%d", token.UsedUploadBytes, token.UsedDownloadBytes, total, expire))
 	header.Set("profile-update-interval", "24")
+	header.Set("x-fluxgate-upload-bytes", fmt.Sprintf("%d", token.UsedUploadBytes))
+	header.Set("x-fluxgate-download-bytes", fmt.Sprintf("%d", token.UsedDownloadBytes))
 	header.Set("x-fluxgate-used-bytes", fmt.Sprintf("%d", used))
+	header.Set("x-fluxgate-quota-bytes", fmt.Sprintf("%d", total))
+	header.Set("x-fluxgate-remaining-bytes", fmt.Sprintf("%d", remaining))
 }
 
 func TokenUsable(token store.TokenWithAccount, now time.Time) (bool, string) {

@@ -23,6 +23,12 @@ json_value() {
   node -e "const fs=require('fs'); const data=JSON.parse(fs.readFileSync(0,'utf8')); console.log($1);"
 }
 
+header_contains() {
+  local file="$1"
+  local pattern="$2"
+  tr -d '\r' <"$file" | grep -Eiq "$pattern"
+}
+
 post_json() {
   local path="$1"
   local payload="$2"
@@ -142,7 +148,7 @@ post_json "/api/tokens/$token_id/restore" '{}' "$OUT_DIR/token-restore.json"
 token_restored_status="$(json_value "data.status" <"$OUT_DIR/token-restore.json")"
 
 log "+ curl -fsS $BASE_URL/sub/<redacted>?target=clash -o $OUT_DIR/subscription.yaml"
-curl -fsS "$BASE_URL/sub/$plain_token?target=clash" -o "$OUT_DIR/subscription.yaml"
+curl -fsS -D "$OUT_DIR/subscription.headers" "$BASE_URL/sub/$plain_token?target=clash" -o "$OUT_DIR/subscription.yaml"
 run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/generate" -o "$OUT_DIR/sing-box.json"
 run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/check" -o "$OUT_DIR/sing-box-check.json"
 config_check_valid="$(json_value "data.valid" <"$OUT_DIR/sing-box-check.json")"
@@ -236,6 +242,26 @@ fi
 
 if grep -q 'FluxGate-SG' "$OUT_DIR/subscription.yaml"; then
   log "team policy allowed_virtual_nodes should hide FluxGate-SG from subscription"
+  exit 1
+fi
+
+if ! header_contains "$OUT_DIR/subscription.headers" '^subscription-userinfo: upload=0; download=0; total=1074790400; expire=[0-9]+$'; then
+  log "subscription response should expose standard traffic userinfo header"
+  exit 1
+fi
+
+if ! header_contains "$OUT_DIR/subscription.headers" '^x-fluxgate-used-bytes: 0$'; then
+  log "subscription response should expose FluxGate used bytes header"
+  exit 1
+fi
+
+if ! header_contains "$OUT_DIR/subscription.headers" '^x-fluxgate-quota-bytes: 1074790400$'; then
+  log "subscription response should expose FluxGate quota bytes header"
+  exit 1
+fi
+
+if ! header_contains "$OUT_DIR/subscription.headers" '^x-fluxgate-remaining-bytes: 1074790400$'; then
+  log "subscription response should expose FluxGate remaining bytes header"
   exit 1
 fi
 

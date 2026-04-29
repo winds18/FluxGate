@@ -93,6 +93,8 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashShadowTLSURI(proxy)
 	case "naive", "naive+quic":
 		return clashNaiveURI(proxy)
+	case "ssh":
+		return clashSSHURI(proxy)
 	default:
 		return ""
 	}
@@ -432,6 +434,42 @@ func clashNaiveURI(proxy map[string]string) string {
 	}
 	appendClashTLSQueryValues(proxy, values)
 	return proxyURLWithUser(scheme, url.UserPassword(username, password), server, port, "", values, firstMapValue(proxy, "name"))
+}
+
+func clashSSHURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstNonEmptyString(firstMapValue(proxy, "port"), "22")
+	username := firstMapValue(proxy, "username", "user")
+	if server == "" || username == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	for _, item := range []struct {
+		query string
+		keys  []string
+	}{
+		{query: "private_key", keys: []string{"private-key", "private_key"}},
+		{query: "private_key_path", keys: []string{"private-key-path", "private_key_path"}},
+		{query: "private_key_passphrase", keys: []string{"private-key-passphrase", "private_key_passphrase"}},
+		{query: "client_version", keys: []string{"client-version", "client_version"}},
+		{query: "host_key", keys: []string{"host-key", "host_key"}},
+		{query: "host_key_algorithms", keys: []string{"host-key-algorithms", "host_key_algorithms"}},
+		{query: "cipher", keys: []string{"cipher"}},
+		{query: "mac", keys: []string{"mac"}},
+		{query: "kex_algorithm", keys: []string{"kex-algorithm", "kex_algorithm"}},
+	} {
+		if value := firstMapValue(proxy, item.keys...); value != "" {
+			values.Set(item.query, value)
+		}
+	}
+
+	password := firstMapValue(proxy, "password")
+	user := url.User(username)
+	if password != "" {
+		user = url.UserPassword(username, password)
+	}
+	return proxyURLWithUser("ssh", user, server, port, "", values, firstMapValue(proxy, "name"))
 }
 
 func proxyURL(scheme, user, server, port string, values url.Values, fragment string) string {

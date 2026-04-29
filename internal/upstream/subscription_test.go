@@ -111,6 +111,15 @@ proxies:
     sni: anytls.clash.example.test
   - { name: "东京 ShadowTLS", type: shadowtls, server: shadowtls.clash.example.test, port: 443, version: 3, password: "shadow-placeholder", sni: shadowtls.clash.example.test, skip-cert-verify: true }
   - { name: "新加坡 Naive", type: naive+quic, server: naive.clash.example.test, port: 443, username: qa-user, password: "naive-placeholder", sni: naive.clash.example.test, quic: true, quic-congestion-control: bbr, udp-over-tcp: true, insecure-concurrency: 2 }
+  - name: "香港 SSH"
+    type: ssh
+    server: ssh.clash.example.test
+    port: 22
+    username: qa-user
+    password: "ssh-placeholder"
+    private-key-path: keys/qa_id_ed25519
+    host-key-algorithms: ssh-ed25519,rsa-sha2-512
+    client-version: SSH-2.0-FluxGateQA
 proxy-groups:
   - name: Auto
     type: select
@@ -122,8 +131,8 @@ proxy-groups:
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 11 {
-		t.Fatalf("expected 11 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 12 {
+		t.Fatalf("expected 12 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.example.test:443?")
@@ -165,6 +174,10 @@ proxy-groups:
 	assertHasPrefix(t, lines[10], "naive+quic://qa-user:naive-placeholder@naive.clash.example.test:443?")
 	if !strings.Contains(lines[10], "quic=1") || !strings.Contains(lines[10], "quic_congestion_control=bbr") || !strings.Contains(lines[10], "udp_over_tcp=1") || !strings.Contains(lines[10], "insecure_concurrency=2") || !strings.Contains(lines[10], "sni=naive.clash.example.test") {
 		t.Fatalf("unexpected clash naive URI: %q", lines[10])
+	}
+	assertHasPrefix(t, lines[11], "ssh://qa-user:ssh-placeholder@ssh.clash.example.test:22?")
+	if !strings.Contains(lines[11], "private_key_path=keys%2Fqa_id_ed25519") || !strings.Contains(lines[11], "host_key_algorithms=ssh-ed25519%2Crsa-sha2-512") || !strings.Contains(lines[11], "client_version=SSH-2.0-FluxGateQA") {
+		t.Fatalf("unexpected clash ssh URI: %q", lines[11])
 	}
 }
 

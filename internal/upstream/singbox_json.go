@@ -56,6 +56,12 @@ func singBoxOutboundURI(outbound map[string]any) string {
 		return singBoxHTTPURI(outbound)
 	case "socks", "socks4", "socks4a", "socks5":
 		return singBoxSOCKSURI(outbound)
+	case "ssh":
+		return singBoxSSHURI(outbound)
+	case "wireguard", "wg":
+		return singBoxWireGuardURI(outbound)
+	case "tor":
+		return singBoxTorURI(outbound)
 	default:
 		return ""
 	}
@@ -387,6 +393,167 @@ func singBoxSOCKSURI(outbound map[string]any) string {
 	return singBoxProxyURL(scheme, server, port, "", user, values, singBoxName(outbound))
 }
 
+func singBoxSSHURI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	if server == "" {
+		return ""
+	}
+	if port == "" {
+		port = "22"
+	}
+
+	values := url.Values{}
+	for _, item := range []struct {
+		query    string
+		outbound string
+	}{
+		{query: "private_key", outbound: "private_key"},
+		{query: "private_key_path", outbound: "private_key_path"},
+		{query: "private_key_passphrase", outbound: "private_key_passphrase"},
+		{query: "client_version", outbound: "client_version"},
+	} {
+		if value := singBoxString(outbound, item.outbound); value != "" {
+			values.Set(item.query, value)
+		}
+	}
+	for _, item := range []struct {
+		query    string
+		outbound string
+	}{
+		{query: "host_key", outbound: "host_key"},
+		{query: "host_key_algorithms", outbound: "host_key_algorithms"},
+		{query: "cipher", outbound: "cipher"},
+		{query: "mac", outbound: "mac"},
+		{query: "kex_algorithm", outbound: "kex_algorithm"},
+	} {
+		if list := stringListFromAnyValue(outbound[item.outbound]); len(list) > 0 {
+			values.Set(item.query, strings.Join(list, ","))
+		}
+	}
+
+	var user *url.Userinfo
+	username := firstNonEmptyString(singBoxString(outbound, "user"), singBoxString(outbound, "username"))
+	password := singBoxString(outbound, "password")
+	if username != "" || password != "" {
+		if password != "" {
+			user = url.UserPassword(username, password)
+		} else {
+			user = url.User(username)
+		}
+	}
+	return singBoxProxyURL("ssh", server, port, "", user, values, singBoxName(outbound))
+}
+
+func singBoxWireGuardURI(outbound map[string]any) string {
+	peer := singBoxFirstPeer(outbound)
+	server := firstNonEmptyString(singBoxString(outbound, "server"), singBoxMapString(peer, "server"))
+	port := firstNonEmptyString(singBoxPort(outbound), singBoxMapPort(peer, "server_port", "port"))
+	if port == "" {
+		port = "51820"
+	}
+
+	localAddress := stringListFromAnyValue(outbound["local_address"])
+	if len(localAddress) == 0 {
+		localAddress = stringListFromAnyValue(outbound["address"])
+	}
+	privateKey := singBoxString(outbound, "private_key")
+	peerPublicKey := firstNonEmptyString(
+		singBoxString(outbound, "peer_public_key"),
+		singBoxString(outbound, "public_key"),
+		singBoxMapString(peer, "public_key"),
+		singBoxMapString(peer, "peer_public_key"),
+	)
+	if server == "" || privateKey == "" || peerPublicKey == "" || len(localAddress) == 0 {
+		return ""
+	}
+
+	values := url.Values{}
+	values.Set("private_key", privateKey)
+	values.Set("peer_public_key", peerPublicKey)
+	values.Set("local_address", strings.Join(localAddress, ","))
+	for _, item := range []struct {
+		query    string
+		outbound string
+	}{
+		{query: "interface_name", outbound: "interface_name"},
+		{query: "network", outbound: "network"},
+	} {
+		if value := singBoxString(outbound, item.outbound); value != "" {
+			values.Set(item.query, value)
+		}
+	}
+	if boolFromAnyValue(outbound["system_interface"]) {
+		values.Set("system_interface", "1")
+	}
+	for _, item := range []struct {
+		query string
+		key   string
+	}{
+		{query: "workers", key: "workers"},
+		{query: "mtu", key: "mtu"},
+	} {
+		if value := intFromAnyValue(outbound[item.key]); value > 0 {
+			values.Set(item.query, strconv.Itoa(value))
+		}
+	}
+	if preSharedKey := firstNonEmptyString(singBoxString(outbound, "pre_shared_key"), singBoxMapString(peer, "pre_shared_key")); preSharedKey != "" {
+		values.Set("pre_shared_key", preSharedKey)
+	}
+	if allowedIPs := firstNonEmptyStringList(
+		stringListFromAnyValue(outbound["allowed_ips"]),
+		stringListFromAnyValue(peerValue(peer, "allowed_ips")),
+	); len(allowedIPs) > 0 {
+		values.Set("allowed_ips", strings.Join(allowedIPs, ","))
+	}
+	if reserved := firstNonEmptyStringList(
+		stringListFromAnyValue(outbound["reserved"]),
+		stringListFromAnyValue(peerValue(peer, "reserved")),
+	); len(reserved) > 0 {
+		values.Set("reserved", strings.Join(reserved, ","))
+	}
+	return singBoxProxyURL("wireguard", server, port, "", nil, values, singBoxName(outbound))
+}
+
+func singBoxTorURI(outbound map[string]any) string {
+	values := url.Values{}
+	for _, item := range []struct {
+		query    string
+		outbound string
+	}{
+		{query: "executable_path", outbound: "executable_path"},
+		{query: "data_directory", outbound: "data_directory"},
+	} {
+		if value := singBoxString(outbound, item.outbound); value != "" {
+			values.Set(item.query, value)
+		}
+	}
+	if extraArgs := stringListFromAnyValue(outbound["extra_args"]); len(extraArgs) > 0 {
+		values.Set("extra_args", strings.Join(extraArgs, ","))
+	}
+	if torrc := singBoxMap(outbound, "torrc"); torrc != nil {
+		for key, value := range torrc {
+			option := strings.TrimSpace(key)
+			if option == "" {
+				continue
+			}
+			if scalar := strings.TrimSpace(stringFromAnyValue(value)); scalar != "" {
+				values.Set("torrc."+option, scalar)
+			}
+		}
+	}
+
+	result := &url.URL{
+		Scheme:   "tor",
+		Host:     "default",
+		Fragment: singBoxName(outbound),
+	}
+	if len(values) > 0 {
+		result.RawQuery = values.Encode()
+	}
+	return result.String()
+}
+
 func singBoxProxyURL(scheme, server, port, path string, user *url.Userinfo, values url.Values, fragment string) string {
 	result := &url.URL{
 		Scheme:   scheme,
@@ -474,6 +641,50 @@ func singBoxMap(outbound map[string]any, key string) map[string]any {
 	return value
 }
 
+func singBoxFirstPeer(outbound map[string]any) map[string]any {
+	peers, ok := outbound["peers"].([]any)
+	if !ok || len(peers) == 0 {
+		return nil
+	}
+	peer, _ := peers[0].(map[string]any)
+	return peer
+}
+
+func singBoxMapString(values map[string]any, key string) string {
+	if values == nil {
+		return ""
+	}
+	return strings.TrimSpace(stringFromAnyValue(values[key]))
+}
+
+func singBoxMapPort(values map[string]any, keys ...string) string {
+	if values == nil {
+		return ""
+	}
+	for _, key := range keys {
+		if value := intFromAnyValue(values[key]); value > 0 {
+			return strconv.Itoa(value)
+		}
+	}
+	return ""
+}
+
+func peerValue(values map[string]any, key string) any {
+	if values == nil {
+		return nil
+	}
+	return values[key]
+}
+
+func firstNonEmptyStringList(values ...[]string) []string {
+	for _, value := range values {
+		if len(value) > 0 {
+			return value
+		}
+	}
+	return nil
+}
+
 func stringFromAnyValue(value any) string {
 	switch typed := value.(type) {
 	case string:
@@ -486,6 +697,8 @@ func stringFromAnyValue(value any) string {
 		return strconv.Itoa(typed)
 	case int64:
 		return strconv.FormatInt(typed, 10)
+	case bool:
+		return strconv.FormatBool(typed)
 	default:
 		return ""
 	}

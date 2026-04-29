@@ -286,6 +286,44 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
       "version": "5",
       "network": "udp",
       "udp_over_tcp": true
+    },
+    {
+      "type": "ssh",
+      "tag": "香港 08",
+      "server": "ssh.singbox.example.test",
+      "server_port": 22,
+      "user": "qa-user",
+      "password": "ssh-placeholder",
+      "private_key_path": "keys/qa_id_ed25519",
+      "host_key_algorithms": ["ssh-ed25519", "rsa-sha2-512"],
+      "client_version": "SSH-2.0-FluxGateQA"
+    },
+    {
+      "type": "wireguard",
+      "tag": "台北 02",
+      "server": "wg.singbox.example.test",
+      "server_port": 51820,
+      "private_key": "cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI=",
+      "local_address": ["10.66.0.2/32", "fd00::2/128"],
+      "peers": [
+        {
+          "public_key": "cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==",
+          "allowed_ips": ["0.0.0.0/0", "::/0"],
+          "pre_shared_key": "cHNrLXBsYWNlaG9sZGVy",
+          "reserved": [1, 2, 3]
+        }
+      ],
+      "mtu": 1420
+    },
+    {
+      "type": "tor",
+      "tag": "匿名 02",
+      "executable_path": "/usr/bin/tor",
+      "extra_args": ["--quiet", "--SocksPort", "auto"],
+      "data_directory": "cache/tor",
+      "torrc": {
+        "ClientOnly": "1"
+      }
     }
   ]
 }`
@@ -294,8 +332,8 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 11 {
-		t.Fatalf("expected 11 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 14 {
+		t.Fatalf("expected 14 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.singbox.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.singbox.example.test:443?")
@@ -334,6 +372,24 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	assertHasPrefix(t, lines[10], "socks5://qa-user:socks-placeholder@socks.singbox.example.test:1080?")
 	if !strings.Contains(lines[10], "network=udp") || !strings.Contains(lines[10], "udp_over_tcp=1") {
 		t.Fatalf("unexpected sing-box socks URI: %q", lines[10])
+	}
+	assertHasPrefix(t, lines[11], "ssh://qa-user:ssh-placeholder@ssh.singbox.example.test:22?")
+	if !strings.Contains(lines[11], "private_key_path=keys%2Fqa_id_ed25519") || !strings.Contains(lines[11], "host_key_algorithms=ssh-ed25519%2Crsa-sha2-512") {
+		t.Fatalf("unexpected sing-box ssh URI: %q", lines[11])
+	}
+	assertHasPrefix(t, lines[12], "wireguard://wg.singbox.example.test:51820?")
+	if !strings.Contains(lines[12], "private_key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI") ||
+		!strings.Contains(lines[12], "peer_public_key=cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg") ||
+		!strings.Contains(lines[12], "local_address=10.66.0.2%2F32") ||
+		!strings.Contains(lines[12], "allowed_ips=0.0.0.0%2F0") ||
+		!strings.Contains(lines[12], "reserved=1%2C2%2C3") {
+		t.Fatalf("unexpected sing-box wireguard URI: %q", lines[12])
+	}
+	assertHasPrefix(t, lines[13], "tor://default?")
+	if !strings.Contains(lines[13], "executable_path=%2Fusr%2Fbin%2Ftor") ||
+		!strings.Contains(lines[13], "extra_args=--quiet%2C--SocksPort%2Cauto") ||
+		!strings.Contains(lines[13], "torrc.ClientOnly=1") {
+		t.Fatalf("unexpected sing-box tor URI: %q", lines[13])
 	}
 }
 

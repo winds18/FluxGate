@@ -35,6 +35,22 @@ const userTeamSelect = document.querySelector("#user-team");
 const nodeSourceSelect = document.querySelector("#node-source");
 const tokenUserSelect = document.querySelector("#token-user");
 const tokenResultEl = document.querySelector("#token-result");
+const displayTimeZone = "Asia/Shanghai";
+const displayDateTimeFormatter = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: displayTimeZone,
+  year: "numeric",
+  month: "2-digit",
+  day: "2-digit",
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hourCycle: "h23",
+});
+const displayHourFormatter = new Intl.DateTimeFormat("zh-CN", {
+  timeZone: displayTimeZone,
+  hour: "2-digit",
+  hourCycle: "h23",
+});
 
 refreshEl.addEventListener("click", load);
 configCheckEl.addEventListener("click", checkConfig);
@@ -841,14 +857,17 @@ function nodeDetailItem(label, value) {
   return `
     <div class="detail-item">
       <span>${labelForColumn(label)}</span>
-      <strong>${formatDetailValue(value)}</strong>
+      <strong>${formatDetailValue(value, label)}</strong>
     </div>
   `;
 }
 
-function formatDetailValue(value) {
+function formatDetailValue(value, label = "") {
   if (value === null || value === undefined || value === "") {
     return `<span class="cell-muted">--</span>`;
+  }
+  if (isTimeColumn(label)) {
+    return formatTimeCell(value);
   }
   if (Array.isArray(value)) {
     return value.length > 0 ? escapeHTML(value.join(", ")) : `<span class="cell-muted">--</span>`;
@@ -963,11 +982,9 @@ function renderTrafficHourly(rows) {
   renderTrafficBars(trafficHourlyEl, rows, {
     valueKey: "total_bytes",
     label: (row) => {
-      const date = new Date(row.hour);
-      if (Number.isNaN(date.getTime())) return "--";
-      return `${String(date.getHours()).padStart(2, "0")}:00`;
+      return formatHourForDisplay(row.hour);
     },
-    title: (row, total) => `${row.hour} ${formatBytes(total)}`,
+    title: (row, total) => `${formatDateTimeForDisplay(row.hour)} ${formatBytes(total)}`,
     className: "traffic-chart-bars traffic-chart-bars-hourly",
   });
 }
@@ -1031,6 +1048,9 @@ function formatCell(value, column = "") {
   if (value === null || value === undefined || value === "") {
     return `<span class="cell-muted">--</span>`;
   }
+  if (isTimeColumn(column)) {
+    return formatTimeCell(value);
+  }
   if (isStatusColumn(column)) {
     return formatStatus(value);
   }
@@ -1058,6 +1078,57 @@ function isStatusColumn(column) {
 
 function isBytesColumn(column) {
   return column === "used_total" || column.endsWith("_bytes");
+}
+
+function isTimeColumn(column) {
+  return column === "hour" || column === "expire_at" || column.endsWith("_at");
+}
+
+function formatTimeCell(value) {
+  const formatted = formatDateTimeForDisplay(value);
+  if (!formatted) {
+    return escapeHTML(String(value));
+  }
+  return `<time datetime="${escapeHTML(String(value))}" title="${escapeHTML(String(value))}">${escapeHTML(formatted)}</time>`;
+}
+
+function formatDateTimeForDisplay(value) {
+  const date = parseDisplayTime(value);
+  if (!date) {
+    return "";
+  }
+  const parts = Object.fromEntries(displayDateTimeFormatter.formatToParts(date).map((part) => [part.type, part.value]));
+  return `${parts.year}-${parts.month}-${parts.day} ${parts.hour}:${parts.minute}:${parts.second}`;
+}
+
+function formatHourForDisplay(value) {
+  const date = parseDisplayTime(value);
+  if (!date) {
+    return "--";
+  }
+  const parts = Object.fromEntries(displayHourFormatter.formatToParts(date).map((part) => [part.type, part.value]));
+  return `${parts.hour}:00`;
+}
+
+function parseDisplayTime(value) {
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+  if (typeof value !== "string") {
+    return null;
+  }
+  const text = value.trim();
+  if (!text) {
+    return null;
+  }
+  let normalized = text;
+  if (/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}(:\d{2})?$/.test(text)) {
+    normalized = `${text.replace(" ", "T")}Z`;
+  } else if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?(\.\d+)?$/.test(text)) {
+    normalized = `${text}Z`;
+  }
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
 }
 
 function formatLongValue(value) {

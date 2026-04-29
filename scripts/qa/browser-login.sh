@@ -72,6 +72,19 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await expect(page.locator("#app-view")).toBeVisible({ timeout: 10000 });
   await page.waitForTimeout(500);
 
+  const east8TimeSamples = await page.evaluate(() => ({
+    rfc3339: typeof formatCell === "function" ? formatCell("2026-04-29T00:00:00Z", "updated_at") : "",
+    sqlite: typeof formatCell === "function" ? formatCell("2026-04-29 00:00:00", "created_at") : "",
+    hour: typeof formatDateTimeForDisplay === "function" ? formatDateTimeForDisplay("2026-04-29T00:00:00Z") : "",
+  }));
+  if (
+    !east8TimeSamples.rfc3339.includes("2026-04-29 08:00:00") ||
+    !east8TimeSamples.sqlite.includes("2026-04-29 08:00:00") ||
+    east8TimeSamples.hour !== "2026-04-29 08:00:00"
+  ) {
+    throw new Error(`east8 time display failed: ${JSON.stringify(east8TimeSamples)}`);
+  }
+
   const sourceEditCount = await page.locator("#sources button[data-source-action='edit']").count();
   let sourceEditFieldsVisible = false;
   if (sourceEditCount > 0) {
@@ -117,6 +130,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
   state.nodeDetailVisible = nodeDetailVisible;
+  state.east8TimeSamples = east8TimeSamples;
   const cookies = await context.cookies(baseURL);
   await page.screenshot({ path: screenshotPath, fullPage: true });
 

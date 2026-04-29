@@ -902,6 +902,88 @@ func TestNormalizeContentSIP008ServerObjectMap(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSSD(t *testing.T) {
+	rawJSON := `{
+  "airport": "SSD QA",
+  "port": 8388,
+  "encryption": "aes-128-gcm",
+  "password": "qa-placeholder",
+  "servers": [
+    {
+      "remarks": "香港 SSD 01",
+      "server": "ssd-hk.example.test",
+      "plugin": "v2ray-plugin",
+      "plugin_options": "mode=websocket;host=ssd-hk.example.test",
+      "network": "tcp"
+    },
+    {
+      "remarks": "东京 SSD 02",
+      "server": "ssd-tokyo.example.test",
+      "port": 8389,
+      "encryption": "aes-256-gcm",
+      "password": "tokyo-placeholder"
+    },
+    {
+      "remarks": "skip me",
+      "password": "missing-server-placeholder"
+    }
+  ]
+}`
+	raw := "ssd://" + base64.RawStdEncoding.EncodeToString([]byte(rawJSON))
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 SSD URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ssd-hk.example.test:8388?")
+	if !strings.Contains(lines[0], "network=tcp") ||
+		!strings.Contains(lines[0], "plugin=v2ray-plugin") ||
+		!strings.Contains(lines[0], "plugin_opts=mode%3Dwebsocket%3Bhost%3Dssd-hk.example.test") ||
+		!strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%20SSD%2001") {
+		t.Fatalf("unexpected SSD first URI: %q", lines[0])
+	}
+	if lines[1] != "ss://aes-256-gcm:tokyo-placeholder@ssd-tokyo.example.test:8389#%E4%B8%9C%E4%BA%AC%20SSD%2002" {
+		t.Fatalf("unexpected SSD second URI: %q", lines[1])
+	}
+}
+
+func TestNormalizeContentSSDJSONAndWrappedSSDURI(t *testing.T) {
+	rawSSDJSON := `{
+  "port": 8388,
+  "encryption": "aes-128-gcm",
+  "password": "qa-placeholder",
+  "servers": [
+    {
+      "remarks": "首尔 SSD JSON",
+      "server": "ssd-json.example.test"
+    }
+  ]
+}`
+	got, err := NormalizeContent(rawSSDJSON)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	if got != "ss://aes-128-gcm:qa-placeholder@ssd-json.example.test:8388#%E9%A6%96%E5%B0%94%20SSD%20JSON" {
+		t.Fatalf("unexpected SSD JSON URI: %q", got)
+	}
+
+	wrapped := `{
+  "data": {
+    "raw_content": "ssd://` + base64.StdEncoding.EncodeToString([]byte(rawSSDJSON)) + `"
+  }
+}`
+	got, err = NormalizeContent(wrapped)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	if got != "ss://aes-128-gcm:qa-placeholder@ssd-json.example.test:8388#%E9%A6%96%E5%B0%94%20SSD%20JSON" {
+		t.Fatalf("unexpected wrapped SSD URI: %q", got)
+	}
+}
+
 func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

@@ -93,6 +93,9 @@ func NormalizeContent(content string) (string, error) {
 	if normalized := URIList(content); normalized != "" {
 		return normalized, nil
 	}
+	if normalized := SSDURIList(content); normalized != "" {
+		return normalized, nil
+	}
 	if normalized := JSONURIList(content); normalized != "" {
 		return normalized, nil
 	}
@@ -131,6 +134,9 @@ func NormalizeContent(content string) (string, error) {
 			continue
 		}
 		if normalized := URIList(string(decoded)); normalized != "" {
+			return normalized, nil
+		}
+		if normalized := SSDURIList(string(decoded)); normalized != "" {
 			return normalized, nil
 		}
 		if normalized := JSONURIList(string(decoded)); normalized != "" {
@@ -277,6 +283,7 @@ func applyJSONURIName(normalized, name string) string {
 func normalizedStringURIList(value string) string {
 	for _, normalize := range []func(string) string{
 		URIList,
+		SSDURIList,
 		VMessJSONURIList,
 		ClashYAMLURIList,
 		SIP008URIList,
@@ -311,6 +318,7 @@ func normalizedStringURIList(value string) string {
 		decodedContent := string(decoded)
 		for _, normalize := range []func(string) string{
 			URIList,
+			SSDURIList,
 			VMessJSONURIList,
 			ClashYAMLURIList,
 			SIP008URIList,

@@ -12,6 +12,7 @@ import (
 func ClashYAMLURIList(content string) string {
 	var proxies []map[string]string
 	var current map[string]string
+	var scopes []yamlFieldScope
 	inProxies := false
 
 	for _, rawLine := range strings.Split(content, "\n") {
@@ -34,6 +35,7 @@ func ClashYAMLURIList(content string) string {
 				proxies = append(proxies, current)
 			}
 			current = map[string]string{}
+			scopes = nil
 			rest := strings.TrimSpace(strings.TrimPrefix(trimmed, "- "))
 			if strings.HasPrefix(rest, "{") && strings.HasSuffix(rest, "}") {
 				mergeProxyFields(current, parseInlineMap(rest))
@@ -41,16 +43,23 @@ func ClashYAMLURIList(content string) string {
 			}
 			key, value, ok := parseYAMLField(rest)
 			if ok {
-				current[strings.ToLower(key)] = value
+				storeYAMLProxyField(current, nil, key, value)
 			}
 			continue
 		}
 		if current == nil {
 			continue
 		}
+		scopes = trimYAMLFieldScopes(scopes, indent)
 		key, value, ok := parseYAMLField(trimmed)
 		if ok {
-			current[strings.ToLower(key)] = value
+			storeYAMLProxyField(current, scopes, key, value)
+			if value == "" {
+				scopes = append(scopes, yamlFieldScope{
+					Indent: indent,
+					Key:    strings.ToLower(key),
+				})
+			}
 		}
 	}
 	if len(current) > 0 {
@@ -64,6 +73,11 @@ func ClashYAMLURIList(content string) string {
 		}
 	}
 	return strings.Join(uris, "\n")
+}
+
+type yamlFieldScope struct {
+	Indent int
+	Key    string
 }
 
 func clashProxyURI(proxy map[string]string) string {
@@ -631,6 +645,29 @@ func parseInlineMap(value string) map[string]string {
 		}
 	}
 	return result
+}
+
+func trimYAMLFieldScopes(scopes []yamlFieldScope, indent int) []yamlFieldScope {
+	for len(scopes) > 0 && scopes[len(scopes)-1].Indent >= indent {
+		scopes = scopes[:len(scopes)-1]
+	}
+	return scopes
+}
+
+func storeYAMLProxyField(target map[string]string, scopes []yamlFieldScope, key, value string) {
+	key = strings.ToLower(strings.TrimSpace(key))
+	if key == "" {
+		return
+	}
+	if len(scopes) > 0 {
+		parts := make([]string, 0, len(scopes)+1)
+		for _, scope := range scopes {
+			parts = append(parts, scope.Key)
+		}
+		parts = append(parts, key)
+		target[strings.Join(parts, ".")] = value
+	}
+	target[key] = value
 }
 
 func parseYAMLField(line string) (string, string, bool) {

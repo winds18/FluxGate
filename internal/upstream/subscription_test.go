@@ -69,8 +69,10 @@ proxies:
     tls: true
     flow: xtls-rprx-vision
     network: ws
-    ws-path: /vless
-    ws-headers.host: ws.vless.example.test
+    ws-opts:
+      path: /vless
+      headers:
+        Host: ws.vless.example.test
     sni: vless.example.test
     skip-cert-verify: true
     disable-sni: true
@@ -261,7 +263,8 @@ proxies:
     uuid: 00000000-0000-0000-0000-000000000071
     tls: true
     network: grpc
-    grpc-service-name: fluxgate
+    grpc-opts:
+      grpc-service-name: fluxgate
 `
 	got, err := NormalizeContent(raw)
 	if err != nil {
@@ -288,7 +291,8 @@ proxies:
     cipher: auto
     tls: true
     network: grpc
-    grpc-service-name: fluxgate-vmess
+    grpc-opts:
+      grpc-service-name: fluxgate-vmess
     sni: grpc.vmess.example.test
 `
 	got, err := NormalizeContent(raw)

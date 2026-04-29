@@ -157,6 +157,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildAnyTLSOutbound(node)
 	case "shadowtls":
 		return buildShadowTLSOutbound(node)
+	case "naive", "naive+https", "naive+quic":
+		return buildNaiveOutbound(node)
 	default:
 		return nil, false
 	}
@@ -513,6 +515,56 @@ func buildShadowTLSOutbound(node store.Node) (map[string]any, bool) {
 	return outbound, true
 }
 
+func buildNaiveOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || !strings.HasPrefix(node.Protocol, "naive") {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || !strings.HasPrefix(parsed.Scheme, "naive") || parsed.Hostname() == "" {
+		return nil, false
+	}
+	username, password := userPassword(parsed.User)
+	if username == "" || password == "" {
+		return nil, false
+	}
+
+	query := parsed.Query()
+	outbound := map[string]any{
+		"type":        "naive",
+		"tag":         upstreamTag(node),
+		"server":      parsed.Hostname(),
+		"server_port": portWithFallback(parsed.Port(), node.ServerPort, 443),
+		"username":    username,
+		"password":    password,
+	}
+	if concurrency := intQuery(firstNonEmpty(query.Get("insecure_concurrency"), query.Get("insecure-concurrency"))); concurrency > 0 {
+		outbound["insecure_concurrency"] = concurrency
+	}
+	if boolQuery(firstNonEmpty(query.Get("udp_over_tcp"), query.Get("udp-over-tcp"))) {
+		outbound["udp_over_tcp"] = true
+	}
+	if parsed.Scheme == "naive+quic" || boolQuery(query.Get("quic")) {
+		outbound["quic"] = true
+	}
+	if congestionControl := firstNonEmpty(query.Get("quic_congestion_control"), query.Get("quic-congestion-control")); congestionControl != "" {
+		outbound["quic_congestion_control"] = congestionControl
+	}
+
+	tls := map[string]any{"enabled": true}
+	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+		tls["server_name"] = serverName
+	}
+	if certificate := firstNonEmpty(query.Get("certificate"), query.Get("cert")); certificate != "" {
+		tls["certificate"] = certificate
+	}
+	if certificatePath := firstNonEmpty(query.Get("certificate_path"), query.Get("certificate-path"), query.Get("cert_path"), query.Get("cert-path")); certificatePath != "" {
+		tls["certificate_path"] = certificatePath
+	}
+	outbound["tls"] = tls
+
+	return outbound, true
+}
+
 func parseVMessURI(rawURI string) (map[string]any, bool) {
 	rawURI = strings.TrimSpace(rawURI)
 	if !strings.HasPrefix(rawURI, "vmess://") {
@@ -689,6 +741,19 @@ func anyTLSPassword(user *url.Userinfo, queryPassword string) string {
 		return strings.TrimSpace(queryPassword)
 	}
 	return strings.TrimSpace(password)
+}
+
+func userPassword(user *url.Userinfo) (string, string) {
+	if user == nil {
+		return "", ""
+	}
+	username := strings.TrimSpace(user.Username())
+	password, ok := user.Password()
+	password = strings.TrimSpace(password)
+	if !ok {
+		return username, ""
+	}
+	return username, password
 }
 
 func boolQuery(value string) bool {

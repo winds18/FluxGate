@@ -133,6 +133,13 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         51,
+			URI:        "naive://qa-user:qa-placeholder@example.news:443?sni=naive.example.news&quic=1&quic_congestion_control=bbr&udp_over_tcp=1&insecure_concurrency=2#naive",
+			Protocol:   "naive",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         52,
 			URI:        "wireguard://placeholder@example.org:443#unsupported",
 			Protocol:   "wireguard",
 			ServerPort: 443,
@@ -274,7 +281,24 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if !ok || len(shadowtlsALPN) != 1 || shadowtlsALPN[0] != "h2" {
 		t.Fatalf("unexpected shadowtls alpn config: %+v", shadowtlsTLS["alpn"])
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_51") != nil {
+	naive := findOutbound(config.Outbounds, "up_51")
+	if naive == nil {
+		t.Fatalf("expected naive outbound up_51, got %+v", config.Outbounds)
+	}
+	if naive["type"] != "naive" || naive["server"] != "example.news" || naive["server_port"] != 443 {
+		t.Fatalf("unexpected naive server fields: %+v", naive)
+	}
+	if naive["username"] != "qa-user" || naive["password"] != "qa-placeholder" {
+		t.Fatalf("unexpected naive auth fields: %+v", naive)
+	}
+	if naive["quic"] != true || naive["udp_over_tcp"] != true || naive["quic_congestion_control"] != "bbr" || naive["insecure_concurrency"] != 2 {
+		t.Fatalf("unexpected naive transport fields: %+v", naive)
+	}
+	naiveTLS, ok := naive["tls"].(map[string]any)
+	if !ok || naiveTLS["enabled"] != true || naiveTLS["server_name"] != "naive.example.news" {
+		t.Fatalf("unexpected naive tls config: %+v", naive["tls"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_52") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -283,7 +307,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 8 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 9 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

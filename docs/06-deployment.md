@@ -298,6 +298,13 @@ FluxGate 当前默认使用远程构建闭环：
 scripts/deploy/push-and-deploy.sh
 ```
 
+GitHub Actions 镜像构建已配置在 `.github/workflows/docker-image.yml`：
+
+- `pull_request` 只构建验证，不推送镜像。
+- `main`、`codex/**` 和 `v*` tag 推送到 `ghcr.io/winds18/fluxgate`。
+- `main` 会额外发布 `latest` tag。
+- 所有镜像构建上下文通过 `.dockerignore` 排除 `.env`、数据库、日志、测试产物和本机部署配置。
+
 该脚本会：
 
 - 推送当前分支到 GitHub。

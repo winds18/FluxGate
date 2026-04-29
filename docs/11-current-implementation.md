@@ -48,6 +48,8 @@
 - 磁盘清理脚本。
 - 诊断采集脚本。
 - 推送后远程部署脚本。
+- GitHub Actions Docker 镜像构建工作流，支持 PR 构建验证和分支/tag 推送 GHCR。
+- Docker 构建上下文脱敏，默认排除 `.env`、数据库、日志、测试产物和本机部署配置。
 - 远程验收健康检查重试。
 - 首次远程部署最小 sing-box config bootstrap。
 - 远程 Docker build 支持 `GOPROXY`，默认优先使用 `goproxy.cn` 以避开 `proxy.golang.org` 超时。
@@ -154,7 +156,6 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 流量统计采集。
 - 流量采集后的超额自动标记、阻断和配置发布触发。
 - sing-box config 发布/回滚后的自动重启执行器。
-- GitHub Actions 远程镜像构建。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
 
 ## 5. 当前注意事项

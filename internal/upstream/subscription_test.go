@@ -212,6 +212,10 @@ anytls=qx-anytls.example.test:443, password=anytls-placeholder, idle-session-che
 trojan=qx-trojan.example.test:443, password=trojan-placeholder, over-tls=true, tls-host=qx-trojan.example.test, tag=东京 QuantumultX Trojan
 vless=qx-vless.example.test:443, password=00000000-0000-0000-0000-000000000085, over-tls=true, tls-host=qx-vless.example.test, obfs=ws, obfs-uri=/vless, obfs-host=ws.qx-vless.example.test, tag=首尔 QuantumultX VLESS
 vmess=qx-vmess.example.test:443, password=00000000-0000-0000-0000-000000000086, method=auto, over-tls=true, tls-host=qx-vmess.example.test, obfs=wss, obfs-uri=/vmess, obfs-host=ws.qx-vmess.example.test, tag=大阪 QuantumultX VMess
+shadowtls=qx-shadowtls.example.test:443, password=shadowtls-placeholder, version=3, tls-host=shadowtls.qx.example.test, tls-verification=false, alpn=h2, tag=香港 QuantumultX ShadowTLS
+naive+quic=qx-naive.example.test:443, username=qa-user, password=naive-placeholder, tls-host=naive.qx.example.test, alpn=h3, quic-congestion-control=bbr, udp-over-tcp=true, insecure-concurrency=2, tag=新加坡 QuantumultX Naive
+ssh=qx-ssh.example.test:22, username=qa-user, password=ssh-placeholder, private-key-path=keys/qa_id_ed25519, host-key-algorithms="ssh-ed25519,rsa-sha2-512", client-version=SSH-2.0-FluxGateQA, cipher=aes128-gcm@openssh.com, mac=hmac-sha2-256, kex-algorithm=curve25519-sha256, tag=香港 QuantumultX SSH
+wireguard=qx-wg.example.test:51820, private-key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI=, public-key=cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==, self-ip=10.66.0.4/32, self-ip-v6=fd00::4/128, pre-shared-key=cHNrLXBsYWNlaG9sZGVy, allowed-ips="0.0.0.0/0,::/0", reserved="7,8,9", mtu=1420, udp=true, interface-name=wg-qx, system-interface=true, tag=台北 QuantumultX WireGuard
 [rewrite_local]
 ^https://example.test reject`
 	got, err := NormalizeContent(raw)
@@ -219,8 +223,8 @@ vmess=qx-vmess.example.test:443, password=00000000-0000-0000-0000-000000000086, 
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 8 {
-		t.Fatalf("expected 8 Quantumult X proxy URIs, got %d: %q", len(lines), got)
+	if len(lines) != 12 {
+		t.Fatalf("expected 12 Quantumult X proxy URIs, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@qx-ss.example.test:8388?")
 	for _, want := range []string{
@@ -318,6 +322,62 @@ vmess=qx-vmess.example.test:443, password=00000000-0000-0000-0000-000000000086, 
 	} {
 		if !strings.Contains(decodedVMessText, want) {
 			t.Fatalf("expected Quantumult X VMess document to contain %q: %q", want, decodedVMessText)
+		}
+	}
+	assertHasPrefix(t, lines[8], "shadowtls://shadowtls-placeholder@qx-shadowtls.example.test:443?")
+	for _, want := range []string{
+		"version=3",
+		"sni=shadowtls.qx.example.test",
+		"insecure=1",
+		"alpn=h2",
+		"#%E9%A6%99%E6%B8%AF%20QuantumultX%20ShadowTLS",
+	} {
+		if !strings.Contains(lines[8], want) {
+			t.Fatalf("expected Quantumult X ShadowTLS URI to contain %q: %q", want, lines[8])
+		}
+	}
+	assertHasPrefix(t, lines[9], "naive+quic://qa-user:naive-placeholder@qx-naive.example.test:443?")
+	for _, want := range []string{
+		"quic=1",
+		"quic_congestion_control=bbr",
+		"udp_over_tcp=1",
+		"insecure_concurrency=2",
+		"sni=naive.qx.example.test",
+		"alpn=h3",
+		"#%E6%96%B0%E5%8A%A0%E5%9D%A1%20QuantumultX%20Naive",
+	} {
+		if !strings.Contains(lines[9], want) {
+			t.Fatalf("expected Quantumult X Naive URI to contain %q: %q", want, lines[9])
+		}
+	}
+	assertHasPrefix(t, lines[10], "ssh://qa-user:ssh-placeholder@qx-ssh.example.test:22?")
+	for _, want := range []string{
+		"private_key_path=keys%2Fqa_id_ed25519",
+		"host_key_algorithms=ssh-ed25519%2Crsa-sha2-512",
+		"client_version=SSH-2.0-FluxGateQA",
+		"cipher=aes128-gcm%40openssh.com",
+		"mac=hmac-sha2-256",
+		"kex_algorithm=curve25519-sha256",
+		"#%E9%A6%99%E6%B8%AF%20QuantumultX%20SSH",
+	} {
+		if !strings.Contains(lines[10], want) {
+			t.Fatalf("expected Quantumult X SSH URI to contain %q: %q", want, lines[10])
+		}
+	}
+	assertHasPrefix(t, lines[11], "wireguard://qx-wg.example.test:51820?")
+	for _, want := range []string{
+		"private_key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI%3D",
+		"peer_public_key=cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg%3D%3D",
+		"local_address=10.66.0.4%2F32%2Cfd00%3A%3A4%2F128",
+		"allowed_ips=0.0.0.0%2F0%2C%3A%3A%2F0",
+		"reserved=7%2C8%2C9",
+		"network=udp",
+		"interface_name=wg-qx",
+		"system_interface=1",
+		"#%E5%8F%B0%E5%8C%97%20QuantumultX%20WireGuard",
+	} {
+		if !strings.Contains(lines[11], want) {
+			t.Fatalf("expected Quantumult X WireGuard URI to contain %q: %q", want, lines[11])
 		}
 	}
 }

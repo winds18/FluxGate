@@ -105,6 +105,67 @@ func quantumultXProxyURI(line string) string {
 			"min-idle-session", "min_idle_session",
 		)
 		return clashAnyTLSURI(proxy)
+	case "shadowtls", "shadow-tls":
+		proxy["type"] = "shadowtls"
+		proxy["password"] = surgeFirstValue(options, positionals, 1, "password", "passwd", "pass", "psk", "token")
+		if version := surgeOption(options, "version"); version != "" {
+			proxy["version"] = version
+		}
+		return clashShadowTLSURI(proxy)
+	case "naive", "naive+quic", "naive-quic", "naive+https":
+		if protocol == "naive+quic" || protocol == "naive-quic" {
+			proxy["type"] = "naive+quic"
+		} else {
+			proxy["type"] = "naive"
+		}
+		proxy["username"] = surgeFirstValue(options, positionals, 1, "username", "user")
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass", "psk", "token")
+		surgeCopyOptions(proxy, options,
+			"insecure-concurrency", "insecure_concurrency",
+			"quic-congestion-control", "quic_congestion_control",
+		)
+		if surgeBoolOption(options, "quic") {
+			proxy["quic"] = "true"
+		}
+		if surgeBoolOption(options, "udp-over-tcp", "udp_over_tcp", "uot") {
+			proxy["udp-over-tcp"] = "true"
+		}
+		return clashNaiveURI(proxy)
+	case "ssh":
+		proxy["username"] = surgeFirstValue(options, positionals, 1, "username", "user")
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass")
+		surgeCopyOptions(proxy, options,
+			"private-key", "private_key",
+			"private-key-path", "private_key_path",
+			"private-key-passphrase", "private_key_passphrase",
+			"client-version", "client_version",
+			"host-key", "host_key",
+			"host-key-algorithms", "host_key_algorithms",
+			"cipher", "mac",
+			"kex-algorithm", "kex_algorithm",
+		)
+		return clashSSHURI(proxy)
+	case "wireguard", "wg":
+		proxy["type"] = "wireguard"
+		proxy["private-key"] = surgeFirstValue(options, positionals, 1, "private-key", "private_key")
+		proxy["public-key"] = surgeFirstValue(options, positionals, 2, "public-key", "public_key", "peer-public-key", "peer_public_key")
+		if localAddress := surgeWireGuardLocalAddress(options); localAddress != "" {
+			proxy["local-address"] = localAddress
+		}
+		surgeCopyOptions(proxy, options,
+			"pre-shared-key", "pre_shared_key", "preshared-key", "preshared_key", "psk",
+			"allowed-ips", "allowed_ips", "peer-allowed-ips", "peer_allowed_ips",
+			"reserved", "peer-reserved", "peer_reserved",
+			"workers", "mtu",
+			"interface-name", "interface_name",
+		)
+		if surgeBoolOption(options, "udp") {
+			proxy["udp"] = "true"
+		}
+		if surgeBoolOption(options, "system-interface", "system_interface", "system") {
+			proxy["system-interface"] = "true"
+		}
+		return clashWireGuardURI(proxy)
 	case "trojan":
 		proxy["password"] = surgeFirstValue(options, positionals, 1, "password", "passwd", "pass")
 		if proxy["tls"] == "" {
@@ -148,7 +209,7 @@ func parseQuantumultXProxyLine(line string) (string, []string, bool) {
 	}
 	protocol = strings.ToLower(strings.TrimSpace(protocol))
 	switch protocol {
-	case "ss", "shadowsocks", "hysteria2", "hy2", "tuic", "hysteria", "anytls", "any-tls", "trojan", "vless", "vmess", "vmess-aead", "http", "https", "socks", "socks5":
+	case "ss", "shadowsocks", "hysteria2", "hy2", "tuic", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "ssh", "wireguard", "wg", "trojan", "vless", "vmess", "vmess-aead", "http", "https", "socks", "socks5":
 	default:
 		return "", nil, false
 	}

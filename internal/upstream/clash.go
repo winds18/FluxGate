@@ -290,6 +290,9 @@ func clashHysteria2URI(proxy map[string]string) string {
 	if boolMapValue(proxy, "disable-sni", "disable_sni") {
 		values.Set("disable_sni", "1")
 	}
+	if certificatePin := firstMapValue(proxy, "pinSHA256", "pin-sha256", "pin_sha256", "certificate-public-key-sha256", "certificate_public_key_sha256", "fingerprint"); certificatePin != "" {
+		values.Set("pinSHA256", certificatePin)
+	}
 	return proxyURL("hysteria2", password, server, port, values, firstMapValue(proxy, "name"))
 }
 

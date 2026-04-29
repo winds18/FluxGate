@@ -261,6 +261,7 @@ func singBoxHysteria2URI(outbound map[string]any) string {
 		}
 	}
 	appendTLSQueryValues(outbound, values)
+	appendCertificatePinQueryValue(outbound, values)
 	return proxyURL("hysteria2", password, server, port, values, singBoxName(outbound))
 }
 
@@ -854,6 +855,20 @@ func appendTLSQueryValues(outbound map[string]any, values url.Values) {
 	}
 	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
 		values.Set("alpn", strings.Join(alpn, ","))
+	}
+}
+
+func appendCertificatePinQueryValue(outbound map[string]any, values url.Values) {
+	tls := tlsMap(outbound)
+	if tls == nil {
+		return
+	}
+	pins := firstNonEmptyStringList(
+		stringListFromAnyValue(tls["certificate_public_key_sha256"]),
+		stringListFromAnyValue(tls["certificate-public-key-sha256"]),
+	)
+	if len(pins) > 0 {
+		values.Set("pinSHA256", strings.Join(pins, ","))
 	}
 }
 

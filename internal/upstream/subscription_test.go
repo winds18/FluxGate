@@ -199,6 +199,7 @@ proxies:
     sni: hy2.clash.example.test
     skip-cert-verify: true
     disable-sni: true
+    pinSHA256: clash-hy2-pin
   - { name: "大阪 03", type: tuic, server: tuic.clash.example.test, port: 443, uuid: "00000000-0000-0000-0000-000000000055", password: "tuic-placeholder", congestion-controller: bbr, udp-relay-mode: native, sni: tuic.clash.example.test }
   - name: "香港 04"
     type: hysteria
@@ -322,7 +323,8 @@ proxy-groups:
 		!strings.Contains(lines[3], "up_mbps=30") ||
 		!strings.Contains(lines[3], "down_mbps=120") ||
 		!strings.Contains(lines[3], "insecure=1") ||
-		!strings.Contains(lines[3], "disable_sni=1") {
+		!strings.Contains(lines[3], "disable_sni=1") ||
+		!strings.Contains(lines[3], "pinSHA256=clash-hy2-pin") {
 		t.Fatalf("unexpected hysteria2 URI: %q", lines[3])
 	}
 	assertHasPrefix(t, lines[4], "tuic://00000000-0000-0000-0000-000000000055:tuic-placeholder@tuic.clash.example.test:443?")
@@ -940,7 +942,8 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
         "server_name": "hy2.singbox.example.test",
         "insecure": true,
         "disable_sni": true,
-        "alpn": ["h3"]
+        "alpn": ["h3"],
+        "certificate_public_key_sha256": ["singbox-hy2-pin"]
       }
     },
     {
@@ -1109,7 +1112,8 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		!strings.Contains(lines[4], "obfs-password=obfs-placeholder") ||
 		!strings.Contains(lines[4], "up_mbps=40") ||
 		!strings.Contains(lines[4], "down_mbps=160") ||
-		!strings.Contains(lines[4], "disable_sni=1") {
+		!strings.Contains(lines[4], "disable_sni=1") ||
+		!strings.Contains(lines[4], "pinSHA256=singbox-hy2-pin") {
 		t.Fatalf("unexpected sing-box hysteria2 URI: %q", lines[4])
 	}
 	assertHasPrefix(t, lines[5], "tuic://00000000-0000-0000-0000-000000000054:tuic-placeholder@tuic.singbox.example.test:443?")

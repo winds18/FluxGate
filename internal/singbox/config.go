@@ -149,6 +149,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildShadowsocksOutbound(node)
 	case "vmess":
 		return buildVMessOutbound(node)
+	case "hysteria2", "hy2":
+		return buildHysteria2Outbound(node)
 	default:
 		return nil, false
 	}
@@ -299,6 +301,54 @@ func buildVMessOutbound(node store.Node) (map[string]any, bool) {
 	return outbound, true
 }
 
+func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || (node.Protocol != "hysteria2" && node.Protocol != "hy2") {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || (parsed.Scheme != "hysteria2" && parsed.Scheme != "hy2") || parsed.Hostname() == "" {
+		return nil, false
+	}
+	password := hysteria2Password(parsed.User)
+	if password == "" {
+		return nil, false
+	}
+
+	query := parsed.Query()
+	outbound := map[string]any{
+		"type":        "hysteria2",
+		"tag":         upstreamTag(node),
+		"server":      parsed.Hostname(),
+		"server_port": portWithFallback(parsed.Port(), node.ServerPort, 443),
+		"password":    password,
+	}
+
+	if obfsType := strings.TrimSpace(query.Get("obfs")); obfsType != "" {
+		obfs := map[string]any{"type": obfsType}
+		if obfsPassword := strings.TrimSpace(query.Get("obfs-password")); obfsPassword != "" {
+			obfs["password"] = obfsPassword
+		}
+		outbound["obfs"] = obfs
+	}
+
+	tls := map[string]any{"enabled": true}
+	if serverName := firstNonEmpty(query.Get("sni"), parsed.Hostname()); serverName != "" {
+		tls["server_name"] = serverName
+	}
+	if boolQuery(query.Get("insecure")) {
+		tls["insecure"] = true
+	}
+	if fingerprint := firstNonEmpty(query.Get("pinSHA256"), query.Get("pin-sha256"), query.Get("fingerprint")); fingerprint != "" {
+		tls["certificate_public_key_sha256"] = []string{fingerprint}
+	}
+	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
+		tls["alpn"] = alpn
+	}
+	outbound["tls"] = tls
+
+	return outbound, true
+}
+
 func parseVMessURI(rawURI string) (map[string]any, bool) {
 	rawURI = strings.TrimSpace(rawURI)
 	if !strings.HasPrefix(rawURI, "vmess://") {
@@ -435,6 +485,42 @@ func intFromAny(value any) int {
 		}
 	}
 	return 0
+}
+
+func hysteria2Password(user *url.Userinfo) string {
+	if user == nil {
+		return ""
+	}
+	password := user.Username()
+	if value, ok := user.Password(); ok {
+		password += ":" + value
+	}
+	return strings.TrimSpace(password)
+}
+
+func boolQuery(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "1", "true", "yes", "on":
+		return true
+	default:
+		return false
+	}
+}
+
+func splitCSV(value string) []string {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return nil
+	}
+	parts := strings.Split(value, ",")
+	result := make([]string, 0, len(parts))
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part != "" {
+			result = append(result, part)
+		}
+	}
+	return result
 }
 
 func upstreamTag(node store.Node) string {

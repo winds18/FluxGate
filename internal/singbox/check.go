@@ -23,14 +23,17 @@ func CheckConfig(config Config) (CheckResult, error) {
 	if err != nil {
 		return CheckResult{}, err
 	}
-	var parsed map[string]any
-	if err := json.Unmarshal(body, &parsed); err != nil {
+	return CheckConfigBytes(body)
+}
+
+func CheckConfigBytes(body []byte) (CheckResult, error) {
+	var config Config
+	if err := json.Unmarshal(body, &config); err != nil {
 		return CheckResult{}, err
 	}
-
 	result := CheckResult{
 		Valid:                 true,
-		ConfigHash:            hashConfig(body),
+		ConfigHash:            hashConfig(normalizedConfigBytes(config)),
 		InboundCount:          len(config.Inbounds),
 		OutboundCount:         len(config.Outbounds),
 		UpstreamOutboundCount: countUpstreamOutbounds(config.Outbounds),
@@ -41,6 +44,14 @@ func CheckConfig(config Config) (CheckResult, error) {
 		result.Valid = false
 	}
 	return result, nil
+}
+
+func normalizedConfigBytes(config Config) []byte {
+	body, err := Marshal(config)
+	if err != nil {
+		return nil
+	}
+	return body
 }
 
 func validateConfigShape(config Config) []string {

@@ -57,3 +57,50 @@ func TestPublishConfigRejectsInvalidConfig(t *testing.T) {
 		t.Fatalf("invalid config should not publish: %+v", result)
 	}
 }
+
+func TestRollbackConfigRestoresPreviousConfig(t *testing.T) {
+	dir := t.TempDir()
+	configPath := filepath.Join(dir, "config.json")
+	previousPath := filepath.Join(dir, "config.previous.json")
+
+	currentConfig := buildConfig([]store.TokenWithAccount{
+		gatewayToken("active", "active", "vless", nil, 0, 0, 0, "current-user"),
+	}, []store.VirtualNode{
+		{Name: "current", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
+	}, nil, time.Date(2026, 4, 29, 3, 59, 0, 0, time.UTC))
+	previousConfig := buildConfig([]store.TokenWithAccount{
+		gatewayToken("active", "active", "vless", nil, 0, 0, 0, "previous-user"),
+	}, []store.VirtualNode{
+		{Name: "previous", ListenProtocol: "vless", ListenPort: 9443, Status: "active"},
+	}, nil, time.Date(2026, 4, 29, 3, 59, 0, 0, time.UTC))
+
+	currentBody, err := Marshal(currentConfig)
+	if err != nil {
+		t.Fatalf("marshal current: %v", err)
+	}
+	previousBody, err := Marshal(previousConfig)
+	if err != nil {
+		t.Fatalf("marshal previous: %v", err)
+	}
+	if err := os.WriteFile(configPath, currentBody, 0o644); err != nil {
+		t.Fatalf("seed current: %v", err)
+	}
+	if err := os.WriteFile(previousPath, previousBody, 0o644); err != nil {
+		t.Fatalf("seed previous: %v", err)
+	}
+
+	result, err := RollbackConfig(configPath, previousPath)
+	if err != nil {
+		t.Fatalf("rollback config: %v", err)
+	}
+	if !result.Valid || !result.RolledBack || result.ConfigHash == "" {
+		t.Fatalf("unexpected rollback result: %+v", result)
+	}
+	restored, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("read restored config: %v", err)
+	}
+	if string(restored) != string(previousBody) {
+		t.Fatalf("expected previous config restored")
+	}
+}

@@ -14,6 +14,11 @@ type PublishResult struct {
 	PreviousSaved bool `json:"previous_saved"`
 }
 
+type RollbackResult struct {
+	CheckResult
+	RolledBack bool `json:"rolled_back"`
+}
+
 func PublishConfig(config Config, configPath string, previousPath string) (PublishResult, error) {
 	configPath = strings.TrimSpace(configPath)
 	if configPath == "" {
@@ -57,6 +62,42 @@ func PublishConfig(config Config, configPath string, previousPath string) (Publi
 		return result, err
 	}
 	result.Published = true
+	return result, nil
+}
+
+func RollbackConfig(configPath string, previousPath string) (RollbackResult, error) {
+	configPath = strings.TrimSpace(configPath)
+	if configPath == "" {
+		return RollbackResult{}, errors.New("sing-box config path is required")
+	}
+	if strings.TrimSpace(previousPath) == "" {
+		previousPath = configPath + ".previous"
+	}
+
+	body, err := os.ReadFile(previousPath)
+	if err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			result := RollbackResult{CheckResult: CheckResult{Messages: []string{"previous sing-box config does not exist"}}}
+			return result, fmt.Errorf("previous sing-box config does not exist")
+		}
+		return RollbackResult{}, err
+	}
+	check, err := CheckConfigBytes(body)
+	if err != nil {
+		result := RollbackResult{CheckResult: CheckResult{Messages: []string{err.Error()}}}
+		return result, err
+	}
+	result := RollbackResult{CheckResult: check}
+	if !check.Valid {
+		return result, fmt.Errorf("previous sing-box config check failed")
+	}
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		return result, err
+	}
+	if err := writeFileAtomic(configPath, body, 0o644); err != nil {
+		return result, err
+	}
+	result.RolledBack = true
 	return result, nil
 }
 

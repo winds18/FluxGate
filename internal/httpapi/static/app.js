@@ -16,6 +16,7 @@ const tokensEl = document.querySelector("#tokens");
 const refreshEl = document.querySelector("#refresh");
 const configCheckEl = document.querySelector("#config-check");
 const configPublishEl = document.querySelector("#config-publish");
+const configRollbackEl = document.querySelector("#config-rollback");
 const configCheckResultEl = document.querySelector("#config-check-result");
 const teamForm = document.querySelector("#team-form");
 const userForm = document.querySelector("#user-form");
@@ -31,6 +32,7 @@ const tokenResultEl = document.querySelector("#token-result");
 refreshEl.addEventListener("click", load);
 configCheckEl.addEventListener("click", checkConfig);
 configPublishEl.addEventListener("click", publishConfig);
+configRollbackEl.addEventListener("click", rollbackConfig);
 logoutEl.addEventListener("click", logout);
 loginForm.addEventListener("submit", login);
 teamForm.addEventListener("submit", submitTeam);
@@ -281,6 +283,26 @@ async function publishConfig() {
     statusEl.textContent = "发布失败";
   } finally {
     configPublishEl.disabled = false;
+  }
+}
+
+async function rollbackConfig() {
+  configRollbackEl.disabled = true;
+  statusEl.textContent = "回滚配置中";
+  try {
+    const result = await postJSON("/api/sing-box/config/rollback", {});
+    configCheckResultEl.hidden = false;
+    configCheckResultEl.innerHTML = `
+      <strong>${result.rolled_back ? "回滚完成" : "回滚失败"}</strong>
+      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
+    `;
+    statusEl.textContent = result.rolled_back ? "配置已回滚" : "回滚失败";
+  } catch (error) {
+    configCheckResultEl.hidden = false;
+    configCheckResultEl.innerHTML = `<strong>回滚失败</strong><code>${escapeHTML(error.message)}</code>`;
+    statusEl.textContent = "回滚失败";
+  } finally {
+    configRollbackEl.disabled = false;
   }
 }
 

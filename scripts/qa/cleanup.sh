@@ -13,7 +13,8 @@ rm -f "$ROOT_DIR/data/fluxgate.db" \
       "$ROOT_DIR/data/qa-fluxgate.db-shm" \
       "$ROOT_DIR/data/qa-fluxgate.db-wal" \
       "$ROOT_DIR/data/sing-box/config.json" \
-      "$ROOT_DIR/data/sing-box/config.previous.json"
+      "$ROOT_DIR/data/sing-box/config.previous.json" \
+      "$ROOT_DIR/data/sing-box/.config.json."*.tmp
 
 rm -rf "$ROOT_DIR/logs/fluxgate" "$ROOT_DIR/logs/fluxgate-qa"
 

@@ -12,6 +12,7 @@ const usersEl = document.querySelector("#users");
 const sourcesEl = document.querySelector("#sources");
 const nodesEl = document.querySelector("#nodes");
 const virtualNodesEl = document.querySelector("#virtual-nodes");
+const policiesEl = document.querySelector("#policies");
 const tokensEl = document.querySelector("#tokens");
 const refreshEl = document.querySelector("#refresh");
 const configCheckEl = document.querySelector("#config-check");
@@ -23,6 +24,7 @@ const userForm = document.querySelector("#user-form");
 const sourceForm = document.querySelector("#source-form");
 const nodeImportForm = document.querySelector("#node-import-form");
 const virtualNodeForm = document.querySelector("#virtual-node-form");
+const policyForm = document.querySelector("#policy-form");
 const tokenForm = document.querySelector("#token-form");
 const userTeamSelect = document.querySelector("#user-team");
 const nodeSourceSelect = document.querySelector("#node-source");
@@ -40,6 +42,7 @@ userForm.addEventListener("submit", submitUser);
 sourceForm.addEventListener("submit", submitSource);
 nodeImportForm.addEventListener("submit", submitNodeImport);
 virtualNodeForm.addEventListener("submit", submitVirtualNode);
+policyForm.addEventListener("submit", submitPolicy);
 tokenForm.addEventListener("submit", submitToken);
 sourcesEl.addEventListener("click", handleSourceAction);
 tokensEl.addEventListener("click", handleTokenAction);
@@ -106,13 +109,14 @@ function showApp() {
 async function load() {
   statusEl.textContent = "刷新中";
   try {
-    const [overview, teams, users, sources, nodes, virtualNodes, tokens] = await Promise.all([
+    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens] = await Promise.all([
       getJSON("/api/overview"),
       getJSON("/api/teams"),
       getJSON("/api/users"),
       getJSON("/api/sources"),
       getJSON("/api/nodes"),
       getJSON("/api/virtual-nodes"),
+      getJSON("/api/policies"),
       getJSON("/api/tokens"),
     ]);
     appState = { teams, users, sources, virtualNodes };
@@ -123,6 +127,7 @@ async function load() {
     renderSources(sources);
     renderTable(nodesEl, nodes, ["id", "source_name", "raw_name", "display_name", "protocol", "status"]);
     renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "status"]);
+    renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "max_nodes", "status"]);
     renderTokens(tokens);
     statusEl.textContent = "已连接";
   } catch (error) {
@@ -188,6 +193,19 @@ async function submitVirtualNode(event) {
     listen_port: numberField(form, "listen_port"),
   });
   virtualNodeForm.reset();
+}
+
+async function submitPolicy(event) {
+  event.preventDefault();
+  const form = new FormData(policyForm);
+  const scopeID = numberField(form, "scope_id");
+  await postAndReload("/api/policies", {
+    name: textField(form, "name"),
+    scope_type: textField(form, "scope_type") || "team",
+    scope_id: scopeID > 0 ? scopeID : null,
+    max_nodes: numberField(form, "max_nodes"),
+  });
+  policyForm.reset();
 }
 
 async function submitToken(event) {
@@ -373,6 +391,7 @@ function renderMetrics(data) {
     ["来源", data.sources],
     ["节点", data.nodes],
     ["虚拟节点", data.virtual_nodes],
+    ["策略", data.policies],
   ];
   metricsEl.innerHTML = items
     .map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value ?? 0}</strong></div>`)

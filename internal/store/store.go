@@ -117,6 +117,7 @@ func (s *Store) Overview(ctx context.Context, version string) (Overview, error) 
 		"upstream_sources": &overview.Sources,
 		"upstream_nodes":   &overview.Nodes,
 		"virtual_nodes":    &overview.VirtualNodes,
+		"policies":         &overview.Policies,
 	}
 	for table, target := range counts {
 		if err := s.db.QueryRowContext(ctx, "SELECT COUNT(*) FROM "+table).Scan(target); err != nil {

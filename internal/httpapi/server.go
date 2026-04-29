@@ -86,6 +86,8 @@ func (s *Server) routes() {
 
 	s.mux.HandleFunc("GET /api/virtual-nodes", s.handleListVirtualNodes)
 	s.mux.HandleFunc("POST /api/virtual-nodes", s.handleCreateVirtualNode)
+	s.mux.HandleFunc("GET /api/policies", s.handleListPolicies)
+	s.mux.HandleFunc("POST /api/policies", s.handleCreatePolicy)
 
 	s.mux.HandleFunc("POST /api/sing-box/config/generate", s.handleGenerateSingBoxConfig)
 	s.mux.HandleFunc("POST /api/sing-box/config/check", s.handleCheckSingBoxConfig)
@@ -580,6 +582,28 @@ func (s *Server) handleCreateVirtualNode(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusCreated, node)
+}
+
+func (s *Server) handleListPolicies(w http.ResponseWriter, r *http.Request) {
+	policies, err := s.store.ListPolicies(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, policies)
+}
+
+func (s *Server) handleCreatePolicy(w http.ResponseWriter, r *http.Request) {
+	var input store.CreatePolicyInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	policy, err := s.store.CreatePolicy(r.Context(), input)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusCreated, policy)
 }
 
 func (s *Server) handleGenerateSingBoxConfig(w http.ResponseWriter, r *http.Request) {

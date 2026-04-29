@@ -9,6 +9,7 @@ type Overview struct {
 	Sources      int64  `json:"sources"`
 	Nodes        int64  `json:"nodes"`
 	VirtualNodes int64  `json:"virtual_nodes"`
+	Policies     int64  `json:"policies"`
 	Version      string `json:"version"`
 }
 
@@ -127,6 +128,20 @@ type VirtualNode struct {
 	Status         string `json:"status"`
 	CreatedAt      string `json:"created_at"`
 	UpdatedAt      string `json:"updated_at"`
+}
+
+type Policy struct {
+	ID                  int64  `json:"id"`
+	Name                string `json:"name"`
+	ScopeType           string `json:"scope_type"`
+	ScopeID             *int64 `json:"scope_id,omitempty"`
+	IncludeTags         string `json:"include_tags"`
+	ExcludeTags         string `json:"exclude_tags"`
+	AllowedVirtualNodes string `json:"allowed_virtual_nodes"`
+	MaxNodes            int64  `json:"max_nodes"`
+	Status              string `json:"status"`
+	CreatedAt           string `json:"created_at"`
+	UpdatedAt           string `json:"updated_at"`
 }
 
 type ImportResult struct {

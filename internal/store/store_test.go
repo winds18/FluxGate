@@ -226,6 +226,51 @@ func TestTokenCreation(t *testing.T) {
 	}
 }
 
+func TestPolicyCreation(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	team, err := db.CreateTeam(ctx, CreateTeamInput{Name: "Policy Team"})
+	if err != nil {
+		t.Fatalf("create team: %v", err)
+	}
+	policy, err := db.CreatePolicy(ctx, CreatePolicyInput{
+		Name:      "团队默认策略",
+		ScopeType: "team",
+		ScopeID:   &team.ID,
+		MaxNodes:  3,
+	})
+	if err != nil {
+		t.Fatalf("create policy: %v", err)
+	}
+	if policy.ID == 0 || policy.ScopeID == nil || *policy.ScopeID != team.ID || policy.MaxNodes != 3 {
+		t.Fatalf("unexpected policy: %+v", policy)
+	}
+	if policy.IncludeTags != "[]" || policy.ExcludeTags != "[]" || policy.AllowedVirtualNodes != "[]" {
+		t.Fatalf("default policy arrays should be empty JSON arrays: %+v", policy)
+	}
+
+	policies, err := db.ListPolicies(ctx)
+	if err != nil {
+		t.Fatalf("list policies: %v", err)
+	}
+	if len(policies) != 1 || policies[0].Name != "团队默认策略" {
+		t.Fatalf("unexpected policy list: %+v", policies)
+	}
+
+	overview, err := db.Overview(ctx, "test")
+	if err != nil {
+		t.Fatalf("overview: %v", err)
+	}
+	if overview.Policies != 1 {
+		t.Fatalf("overview should include policies: %+v", overview)
+	}
+
+	if _, err := db.CreatePolicy(ctx, CreatePolicyInput{Name: "坏策略", ScopeType: "invalid"}); err == nil {
+		t.Fatal("invalid scope_type should fail")
+	}
+}
+
 func TestTokenLifecycleOperations(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)

@@ -150,6 +150,35 @@
           </div>
         </form>
 
+        <form id="policy-form" class="panel form-panel">
+          <div class="panel-header">
+            <h2>创建策略</h2>
+          </div>
+          <div class="form-body">
+            <label>
+              名称
+              <input name="name" required />
+            </label>
+            <label>
+              范围
+              <select name="scope_type">
+                <option value="team">团队</option>
+                <option value="user">成员</option>
+                <option value="token">Token</option>
+              </select>
+            </label>
+            <label>
+              范围 ID
+              <input name="scope_id" type="number" min="1" />
+            </label>
+            <label>
+              最大节点数
+              <input name="max_nodes" type="number" min="0" value="0" />
+            </label>
+            <button type="submit">创建</button>
+          </div>
+        </form>
+
         <form id="token-form" class="panel form-panel span-2">
           <div class="panel-header">
             <h2>创建 Token</h2>
@@ -211,6 +240,13 @@
           <h2>虚拟节点</h2>
         </div>
         <div id="virtual-nodes" class="table"></div>
+      </section>
+
+      <section class="panel">
+        <div class="panel-header">
+          <h2>策略</h2>
+        </div>
+        <div id="policies" class="table"></div>
       </section>
 
       <section class="panel">

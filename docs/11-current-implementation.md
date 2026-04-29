@@ -15,6 +15,7 @@
 - 管理 API 登录保护。
 - 会话 Cookie 按实际请求协议设置 Secure，支持 HTTPS 反代和 HTTP 局域网调试。
 - 团队、用户、Token 基础页面创建和列表。
+- 策略基础页面创建和列表。
 - Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
 - 上游来源页面创建和列表。
 - subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。
@@ -98,6 +99,9 @@ POST  /api/nodes/{id}/reset-display-name
 GET  /api/virtual-nodes
 POST /api/virtual-nodes
 
+GET  /api/policies
+POST /api/policies
+
 POST /api/sing-box/config/generate
 POST /api/sing-box/config/check
 POST /api/sing-box/config/publish
@@ -152,7 +156,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅更多结构化格式解析。
 - DNS 等更多协议 URI 到 sing-box outbound 的转换。
-- 策略管理。
+- 策略与团队、成员、Token、标签和虚拟节点的绑定生效逻辑。
 - 流量统计采集。
 - 流量采集后的超额自动标记、阻断和配置发布触发。
 - sing-box config 发布/回滚后的自动重启执行器。

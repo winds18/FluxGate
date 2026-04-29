@@ -73,6 +73,16 @@ clash_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(`proxies:
     port: 8388
     cipher: aes-128-gcm
     password: "qa-placeholder"
+  - name: "新加坡 02"
+    type: hysteria2
+    server: hy2.example.sub
+    port: 443
+    password: "hy2-placeholder"
+    obfs: salamander
+    obfs-password: "obfs-placeholder"
+    sni: hy2.example.sub
+    skip-cert-verify: true
+  - { name: "大阪 02", type: tuic, server: tuic.example.sub, port: 443, uuid: "00000000-0000-0000-0000-000000000050", password: "tuic-placeholder", congestion-controller: bbr, udp-relay-mode: native, sni: tuic.example.sub }
 `));')"
 post_json "/api/sources" "{\"name\":\"订阅源A\",\"type\":\"subscription\",\"raw_content\":$clash_subscription_raw,\"refresh_interval_minutes\":5}" "$OUT_DIR/source-subscription.json"
 subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
@@ -188,7 +198,7 @@ if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nod
   exit 1
 fi
 
-if [[ "$source_refresh_imported" != "1" ]]; then
+if [[ "$source_refresh_imported" != "3" ]]; then
   log "unexpected subscription refresh import count: $source_refresh_imported"
   exit 1
 fi

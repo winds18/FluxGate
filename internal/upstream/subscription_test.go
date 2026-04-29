@@ -68,6 +68,16 @@ proxies:
     uuid: 00000000-0000-0000-0000-000000000051
     tls: true
     flow: xtls-rprx-vision
+  - name: "新加坡 03"
+    type: hysteria2
+    server: hy2.clash.example.test
+    port: 443
+    password: "hy2-placeholder"
+    obfs: salamander
+    obfs-password: "obfs-placeholder"
+    sni: hy2.clash.example.test
+    skip-cert-verify: true
+  - { name: "大阪 03", type: tuic, server: tuic.clash.example.test, port: 443, uuid: "00000000-0000-0000-0000-000000000055", password: "tuic-placeholder", congestion-controller: bbr, udp-relay-mode: native, sni: tuic.clash.example.test }
 proxy-groups:
   - name: Auto
     type: select
@@ -79,8 +89,8 @@ proxy-groups:
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 3 {
-		t.Fatalf("expected 3 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 5 {
+		t.Fatalf("expected 5 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.example.test:443?")
@@ -90,6 +100,14 @@ proxy-groups:
 	assertHasPrefix(t, lines[2], "vless://00000000-0000-0000-0000-000000000051@vless.example.test:443?")
 	if !strings.Contains(lines[2], "flow=xtls-rprx-vision") || !strings.Contains(lines[2], "security=tls") {
 		t.Fatalf("unexpected vless URI: %q", lines[2])
+	}
+	assertHasPrefix(t, lines[3], "hysteria2://hy2-placeholder@hy2.clash.example.test:443?")
+	if !strings.Contains(lines[3], "obfs=salamander") || !strings.Contains(lines[3], "obfs-password=obfs-placeholder") || !strings.Contains(lines[3], "insecure=1") {
+		t.Fatalf("unexpected hysteria2 URI: %q", lines[3])
+	}
+	assertHasPrefix(t, lines[4], "tuic://00000000-0000-0000-0000-000000000055:tuic-placeholder@tuic.clash.example.test:443?")
+	if !strings.Contains(lines[4], "congestion_control=bbr") || !strings.Contains(lines[4], "udp_relay_mode=native") {
+		t.Fatalf("unexpected tuic URI: %q", lines[4])
 	}
 }
 

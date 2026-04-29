@@ -77,6 +77,10 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashVLESSURI(proxy)
 	case "vmess":
 		return clashVMessURI(proxy)
+	case "hysteria2", "hy2":
+		return clashHysteria2URI(proxy)
+	case "tuic":
+		return clashTUICURI(proxy)
 	default:
 		return ""
 	}
@@ -168,6 +172,68 @@ func clashVMessURI(proxy map[string]string) string {
 		return ""
 	}
 	return "vmess://" + base64.RawURLEncoding.EncodeToString(encoded)
+}
+
+func clashHysteria2URI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	password := firstMapValue(proxy, "password", "auth", "auth-str", "auth_str")
+	if server == "" || port == "" || password == "" {
+		return ""
+	}
+	values := url.Values{}
+	if obfs := firstMapValue(proxy, "obfs", "obfs-type", "obfs_type"); obfs != "" {
+		values.Set("obfs", obfs)
+	}
+	if obfsPassword := firstMapValue(proxy, "obfs-password", "obfs_password"); obfsPassword != "" {
+		values.Set("obfs-password", obfsPassword)
+	}
+	if sni := firstMapValue(proxy, "sni", "servername", "server_name"); sni != "" {
+		values.Set("sni", sni)
+	}
+	if alpn := firstMapValue(proxy, "alpn"); alpn != "" {
+		values.Set("alpn", alpn)
+	}
+	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
+		values.Set("insecure", "1")
+	}
+	return proxyURL("hysteria2", password, server, port, values, firstMapValue(proxy, "name"))
+}
+
+func clashTUICURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	uuid := firstMapValue(proxy, "uuid")
+	password := firstMapValue(proxy, "password")
+	if server == "" || port == "" || uuid == "" || password == "" {
+		return ""
+	}
+	values := url.Values{}
+	if congestionControl := firstMapValue(proxy, "congestion-control", "congestion_control", "congestion-controller", "congestion_controller"); congestionControl != "" {
+		values.Set("congestion_control", congestionControl)
+	}
+	if udpRelayMode := firstMapValue(proxy, "udp-relay-mode", "udp_relay_mode"); udpRelayMode != "" {
+		values.Set("udp_relay_mode", udpRelayMode)
+	}
+	if sni := firstMapValue(proxy, "sni", "servername", "server_name"); sni != "" {
+		values.Set("sni", sni)
+	}
+	if alpn := firstMapValue(proxy, "alpn"); alpn != "" {
+		values.Set("alpn", alpn)
+	}
+	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
+		values.Set("insecure", "1")
+	}
+	result := &url.URL{
+		Scheme:   "tuic",
+		User:     url.UserPassword(uuid, password),
+		Host:     net.JoinHostPort(server, port),
+		Fragment: firstMapValue(proxy, "name"),
+	}
+	if len(values) > 0 {
+		result.RawQuery = values.Encode()
+	}
+	return result.String()
 }
 
 func proxyURL(scheme, user, server, port string, values url.Values, fragment string) string {

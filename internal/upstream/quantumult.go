@@ -80,6 +80,22 @@ func quantumultXProxyURI(line string) string {
 			"udp-relay-mode", "udp_relay_mode",
 		)
 		return clashTUICURI(proxy)
+	case "hysteria":
+		proxy["password"] = surgeFirstValue(options, positionals, 1, "auth-str", "auth_str", "password", "passwd", "pass", "token")
+		surgeCopyOptions(proxy, options,
+			"auth", "auth-base64", "auth_base64",
+			"up", "up-speed", "up_speed",
+			"down", "down-speed", "down_speed",
+			"up-mbps", "up_mbps", "upmbps",
+			"down-mbps", "down_mbps", "downmbps",
+			"obfs",
+			"recv-window-conn", "recv_window_conn",
+			"recv-window", "recv_window",
+		)
+		if surgeBoolOption(options, "disable-mtu-discovery", "disable_mtu_discovery") {
+			proxy["disable-mtu-discovery"] = "true"
+		}
+		return clashHysteriaURI(proxy)
 	case "trojan":
 		proxy["password"] = surgeFirstValue(options, positionals, 1, "password", "passwd", "pass")
 		if proxy["tls"] == "" {
@@ -123,7 +139,7 @@ func parseQuantumultXProxyLine(line string) (string, []string, bool) {
 	}
 	protocol = strings.ToLower(strings.TrimSpace(protocol))
 	switch protocol {
-	case "ss", "shadowsocks", "hysteria2", "hy2", "tuic", "trojan", "vless", "vmess", "vmess-aead", "http", "https", "socks", "socks5":
+	case "ss", "shadowsocks", "hysteria2", "hy2", "tuic", "hysteria", "trojan", "vless", "vmess", "vmess-aead", "http", "https", "socks", "socks5":
 	default:
 		return "", nil, false
 	}

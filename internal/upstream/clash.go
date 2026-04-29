@@ -102,7 +102,15 @@ type yamlFieldScope struct {
 
 func isClashYAMLProxiesField(line string) bool {
 	key, value, ok := parseYAMLField(line)
-	return ok && strings.EqualFold(strings.TrimSpace(key), "proxies") && strings.TrimSpace(value) == ""
+	return ok && strings.EqualFold(strings.TrimSpace(key), "proxies") && isYAMLBlockListFieldValue(value)
+}
+
+func isYAMLBlockListFieldValue(value string) bool {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return true
+	}
+	return strings.HasPrefix(value, "&") && !strings.ContainsAny(value, "[]{}")
 }
 
 func clashYAMLInlineProxies(line string) []map[string]string {

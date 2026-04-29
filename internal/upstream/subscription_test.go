@@ -473,6 +473,30 @@ proxies: [{ name: "Inline 东京 01", type: trojan, server: inline-trojan.exampl
 	}
 }
 
+func TestNormalizeContentClashYAMLAnchoredProxyList(t *testing.T) {
+	raw := `
+proxies: &airport_nodes
+  - name: "Anchor 香港 01"
+    type: ss
+    server: anchor-ss.example.test
+    port: 8388
+    cipher: aes-128-gcm
+    password: "qa-placeholder"
+proxy-groups:
+  - name: auto
+    type: select
+    proxies: *airport_nodes
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "ss://aes-128-gcm:qa-placeholder@anchor-ss.example.test:8388#Anchor%20%E9%A6%99%E6%B8%AF%2001"
+	if got != want {
+		t.Fatalf("unexpected anchored proxy list URI: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLInternalOutbounds(t *testing.T) {
 	raw := `
 proxies:

@@ -583,11 +583,15 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	transportType := firstMapValue(proxy, "network", "net", "transport")
 	path := firstMapValue(proxy, "ws-path", "ws_path", "path")
 	host := firstMapValue(proxy, "ws-headers.host", "ws_headers.host", "ws-host", "ws_host", "host")
+	serviceName := firstMapValue(proxy, "grpc-service-name", "grpc_service_name", "grpc-opts.grpc-service-name", "grpc_opts.grpc_service_name", "service-name", "service_name")
 	if strings.EqualFold(transportType, "tls") {
 		transportType = ""
 	}
 	if transportType == "" && (path != "" || host != "") {
 		transportType = "ws"
+	}
+	if transportType == "" && serviceName != "" {
+		transportType = "grpc"
 	}
 	if transportType != "" {
 		values.Set("type", transportType)
@@ -597,6 +601,9 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	}
 	if host != "" {
 		values.Set("host", host)
+	}
+	if serviceName != "" {
+		values.Set("service_name", serviceName)
 	}
 }
 

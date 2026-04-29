@@ -248,6 +248,31 @@ proxy-groups:
 	}
 }
 
+func TestNormalizeContentClashYAMLVLESSGRPC(t *testing.T) {
+	raw := `
+proxies:
+  - name: "香港 gRPC"
+    type: vless
+    server: grpc.vless.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000071
+    tls: true
+    network: grpc
+    grpc-service-name: fluxgate
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000071@grpc.vless.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "type=grpc") ||
+		!strings.Contains(got, "service_name=fluxgate") ||
+		!strings.HasSuffix(got, "#%E9%A6%99%E6%B8%AF%20gRPC") {
+		t.Fatalf("unexpected clash vless grpc URI: %q", got)
+	}
+}
+
 func TestNormalizeContentSIP008(t *testing.T) {
 	raw := `{
   "version": 1,
@@ -568,6 +593,40 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		!strings.Contains(lines[13], "extra_args=--quiet%2C--SocksPort%2Cauto") ||
 		!strings.Contains(lines[13], "torrc.ClientOnly=1") {
 		t.Fatalf("unexpected sing-box tor URI: %q", lines[13])
+	}
+}
+
+func TestNormalizeContentSingBoxJSONVLESSGRPC(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "新加坡 gRPC",
+      "server": "grpc.vless.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000072",
+      "tls": {
+        "enabled": true,
+        "server_name": "grpc.vless.singbox.example.test"
+      },
+      "transport": {
+        "type": "grpc",
+        "service_name": "fluxgate"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000072@grpc.vless.singbox.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "sni=grpc.vless.singbox.example.test") ||
+		!strings.Contains(got, "type=grpc") ||
+		!strings.Contains(got, "service_name=fluxgate") ||
+		!strings.HasSuffix(got, "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20gRPC") {
+		t.Fatalf("unexpected sing-box vless grpc URI: %q", got)
 	}
 }
 

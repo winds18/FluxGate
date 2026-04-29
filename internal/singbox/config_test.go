@@ -612,6 +612,27 @@ func TestBuildConfigRoutesPolicyTagsByAuthUser(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesVLESSGRPCTransport(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         70,
+			URI:        "vless://00000000-0000-0000-0000-000000000070@example.grpc:443?security=tls&type=grpc&service_name=fluxgate#grpc",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_70")
+	if outbound == nil {
+		t.Fatalf("expected vless outbound up_70, got %+v", config.Outbounds)
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "grpc" || transport["service_name"] != "fluxgate" {
+		t.Fatalf("unexpected vless grpc transport config: %+v", outbound["transport"])
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

@@ -619,6 +619,9 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 	if path := strings.TrimSpace(stringFromAnyValue(transport["path"])); path != "" {
 		proxy["path"] = path
 	}
+	if serviceName := strings.TrimSpace(stringFromAnyValue(transport["service_name"])); serviceName != "" {
+		proxy["service_name"] = serviceName
+	}
 	if headers, ok := transport["headers"].(map[string]any); ok {
 		host := strings.TrimSpace(stringFromAnyValue(headers["Host"]))
 		if host == "" {

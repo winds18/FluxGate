@@ -45,24 +45,25 @@ type Source struct {
 }
 
 type Node struct {
-	ID            int64   `json:"id"`
-	SourceID      int64   `json:"source_id"`
-	SourceName    string  `json:"source_name,omitempty"`
-	RawName       string  `json:"raw_name"`
-	DisplayName   string  `json:"display_name"`
-	NameMode      string  `json:"name_mode"`
-	URI           string  `json:"uri,omitempty"`
-	URIHash       string  `json:"uri_hash"`
-	Protocol      string  `json:"protocol"`
-	Server        string  `json:"server"`
-	ServerPort    int     `json:"server_port"`
-	Region        string  `json:"region"`
-	Status        string  `json:"status"`
-	LastSeenAt    *string `json:"last_seen_at,omitempty"`
-	LastCheckedAt *string `json:"last_checked_at,omitempty"`
-	LastError     string  `json:"last_error"`
-	CreatedAt     string  `json:"created_at"`
-	UpdatedAt     string  `json:"updated_at"`
+	ID            int64    `json:"id"`
+	SourceID      int64    `json:"source_id"`
+	SourceName    string   `json:"source_name,omitempty"`
+	RawName       string   `json:"raw_name"`
+	DisplayName   string   `json:"display_name"`
+	NameMode      string   `json:"name_mode"`
+	URI           string   `json:"uri,omitempty"`
+	URIHash       string   `json:"uri_hash"`
+	Protocol      string   `json:"protocol"`
+	Server        string   `json:"server"`
+	ServerPort    int      `json:"server_port"`
+	Region        string   `json:"region"`
+	Status        string   `json:"status"`
+	LastSeenAt    *string  `json:"last_seen_at,omitempty"`
+	LastCheckedAt *string  `json:"last_checked_at,omitempty"`
+	LastError     string   `json:"last_error"`
+	Tags          []string `json:"tags"`
+	CreatedAt     string   `json:"created_at"`
+	UpdatedAt     string   `json:"updated_at"`
 }
 
 type Team struct {

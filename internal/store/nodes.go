@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"strings"
 
@@ -59,15 +60,25 @@ func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (Import
 			if err != nil {
 				return result, err
 			}
+			if err := s.replaceNodeTags(ctx, existing.ID, source.DefaultTags); err != nil {
+				return result, err
+			}
 			result.Updated++
 			continue
 		}
 
-		_, err = s.db.ExecContext(ctx, `
+		insertResult, err := s.db.ExecContext(ctx, `
 			INSERT INTO upstream_nodes(source_id, raw_name, display_name, name_mode, uri, uri_hash, protocol, server, server_port, status, last_seen_at)
 			VALUES (?, ?, ?, 'auto', ?, ?, ?, ?, ?, 'active', CURRENT_TIMESTAMP)
 		`, input.SourceID, rawName, displayName, uri, uriHash, protocol, server, port)
 		if err != nil {
+			return result, err
+		}
+		nodeID, err := insertResult.LastInsertId()
+		if err != nil {
+			return result, err
+		}
+		if err := s.replaceNodeTags(ctx, nodeID, source.DefaultTags); err != nil {
 			return result, err
 		}
 		result.Imported++
@@ -91,9 +102,13 @@ func (s *Store) ListNodes(ctx context.Context) ([]Node, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT n.id, n.source_id, s.name, n.raw_name, n.display_name, n.name_mode, n.uri, n.uri_hash,
 		       n.protocol, n.server, n.server_port, n.region, n.status, n.last_seen_at,
-		       n.last_checked_at, n.last_error, n.created_at, n.updated_at
+		       n.last_checked_at, n.last_error, n.created_at, n.updated_at,
+		       COALESCE(GROUP_CONCAT(t.name), '') AS tags
 		FROM upstream_nodes n
 		JOIN upstream_sources s ON s.id = n.source_id
+		LEFT JOIN upstream_node_tags nt ON nt.node_id = n.id
+		LEFT JOIN tags t ON t.id = nt.tag_id
+		GROUP BY n.id
 		ORDER BY n.id DESC
 	`)
 	if err != nil {
@@ -116,10 +131,14 @@ func (s *Store) GetNode(ctx context.Context, id int64) (Node, error) {
 	row := s.db.QueryRowContext(ctx, `
 		SELECT n.id, n.source_id, s.name, n.raw_name, n.display_name, n.name_mode, n.uri, n.uri_hash,
 		       n.protocol, n.server, n.server_port, n.region, n.status, n.last_seen_at,
-		       n.last_checked_at, n.last_error, n.created_at, n.updated_at
+		       n.last_checked_at, n.last_error, n.created_at, n.updated_at,
+		       COALESCE(GROUP_CONCAT(t.name), '') AS tags
 		FROM upstream_nodes n
 		JOIN upstream_sources s ON s.id = n.source_id
+		LEFT JOIN upstream_node_tags nt ON nt.node_id = n.id
+		LEFT JOIN tags t ON t.id = nt.tag_id
 		WHERE n.id = ?
+		GROUP BY n.id
 	`, id)
 	return scanNode(row)
 }
@@ -163,10 +182,14 @@ func (s *Store) nodeBySourceHash(ctx context.Context, sourceID int64, uriHash st
 	row := s.db.QueryRowContext(ctx, `
 		SELECT n.id, n.source_id, s.name, n.raw_name, n.display_name, n.name_mode, n.uri, n.uri_hash,
 		       n.protocol, n.server, n.server_port, n.region, n.status, n.last_seen_at,
-		       n.last_checked_at, n.last_error, n.created_at, n.updated_at
+		       n.last_checked_at, n.last_error, n.created_at, n.updated_at,
+		       COALESCE(GROUP_CONCAT(t.name), '') AS tags
 		FROM upstream_nodes n
 		JOIN upstream_sources s ON s.id = n.source_id
+		LEFT JOIN upstream_node_tags nt ON nt.node_id = n.id
+		LEFT JOIN tags t ON t.id = nt.tag_id
 		WHERE n.source_id = ? AND n.uri_hash = ?
+		GROUP BY n.id
 	`, sourceID, uriHash)
 	return scanNode(row)
 }
@@ -202,6 +225,7 @@ type nodeScanner interface {
 
 func scanNode(scanner nodeScanner) (Node, error) {
 	var node Node
+	var tagCSV sql.NullString
 	err := scanner.Scan(
 		&node.ID,
 		&node.SourceID,
@@ -221,8 +245,78 @@ func scanNode(scanner nodeScanner) (Node, error) {
 		&node.LastError,
 		&node.CreatedAt,
 		&node.UpdatedAt,
+		&tagCSV,
 	)
+	node.Tags = splitTagCSV(tagCSV.String)
 	return node, err
+}
+
+func (s *Store) replaceNodeTags(ctx context.Context, nodeID int64, rawTags string) error {
+	if _, err := s.db.ExecContext(ctx, "DELETE FROM upstream_node_tags WHERE node_id = ?", nodeID); err != nil {
+		return err
+	}
+	for _, name := range parseTagValues(rawTags) {
+		tagID, err := s.ensureTag(ctx, name)
+		if err != nil {
+			return err
+		}
+		if _, err := s.db.ExecContext(ctx, "INSERT OR IGNORE INTO upstream_node_tags(node_id, tag_id) VALUES (?, ?)", nodeID, tagID); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *Store) ensureTag(ctx context.Context, name string) (int64, error) {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return 0, fmt.Errorf("tag name is required")
+	}
+	if _, err := s.db.ExecContext(ctx, "INSERT OR IGNORE INTO tags(name) VALUES (?)", name); err != nil {
+		return 0, err
+	}
+	var id int64
+	err := s.db.QueryRowContext(ctx, "SELECT id FROM tags WHERE name = ?", name).Scan(&id)
+	return id, err
+}
+
+func parseTagValues(raw string) []string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "[]" {
+		return nil
+	}
+	if strings.HasPrefix(raw, "[") {
+		var values []string
+		if err := json.Unmarshal([]byte(raw), &values); err == nil {
+			return cleanTagValues(values)
+		}
+	}
+	return cleanTagValues(strings.Split(raw, ","))
+}
+
+func cleanTagValues(values []string) []string {
+	seen := map[string]bool{}
+	cleaned := make([]string, 0, len(values))
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		key := strings.ToLower(value)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		cleaned = append(cleaned, value)
+	}
+	return cleaned
+}
+
+func splitTagCSV(value string) []string {
+	if strings.TrimSpace(value) == "" {
+		return []string{}
+	}
+	return cleanTagValues(strings.Split(value, ","))
 }
 
 func hashURI(uri string) string {

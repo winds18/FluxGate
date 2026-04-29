@@ -113,6 +113,10 @@
               刷新间隔分钟
               <input name="refresh_interval_minutes" type="number" min="0" step="1" value="0" />
             </label>
+            <label>
+              默认标签
+              <input name="default_tags" placeholder="HK, Premium" />
+            </label>
             <button type="submit">添加</button>
           </div>
         </form>
@@ -146,6 +150,10 @@
             <label>
               端口
               <input name="listen_port" type="number" min="1" max="65535" value="8443" required />
+            </label>
+            <label>
+              上游标签选择器
+              <input name="tag_selector" placeholder='{"include":["HK"]}' />
             </label>
             <button type="submit">创建</button>
           </div>

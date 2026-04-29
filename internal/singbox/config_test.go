@@ -509,6 +509,35 @@ func TestBuildConfigAppliesVirtualNodePolicyToUsers(t *testing.T) {
 	}
 }
 
+func TestBuildConfigRoutesVirtualNodeByTagSelector(t *testing.T) {
+	now := time.Date(2026, 4, 29, 5, 35, 0, 0, time.UTC)
+	config := buildConfig([]store.TokenWithAccount{
+		gatewayToken("active", "active", "vless", nil, 0, 0, 0, "active-user"),
+	}, []store.VirtualNode{
+		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, TagSelector: `{"include":["HK"],"exclude":["Backup"]}`, Status: "active"},
+	}, []store.Node{
+		{ID: 1, URI: "vless://00000000-0000-0000-0000-000000000001@hk.example:443#hk", Protocol: "vless", ServerPort: 443, Status: "active", Tags: []string{"HK", "Primary"}},
+		{ID: 2, URI: "vless://00000000-0000-0000-0000-000000000002@backup.example:443#backup", Protocol: "vless", ServerPort: 443, Status: "active", Tags: []string{"HK", "Backup"}},
+		{ID: 3, URI: "vless://00000000-0000-0000-0000-000000000003@sg.example:443#sg", Protocol: "vless", ServerPort: 443, Status: "active", Tags: []string{"SG"}},
+	}, nil, now)
+
+	selector := findOutbound(config.Outbounds, "vn-hk-upstreams")
+	if selector == nil {
+		t.Fatalf("expected virtual node upstream selector, got %+v", config.Outbounds)
+	}
+	selected, ok := selector["outbounds"].([]string)
+	if !ok || len(selected) != 1 || selected[0] != "up_1" || selector["default"] != "up_1" {
+		t.Fatalf("unexpected virtual node selected outbounds: %+v", selector)
+	}
+	rules, ok := config.Route["rules"].([]map[string]any)
+	if !ok || len(rules) != 1 {
+		t.Fatalf("expected one virtual node route rule, got %+v", config.Route)
+	}
+	if rules[0]["outbound"] != "vn-hk-upstreams" {
+		t.Fatalf("unexpected route rule: %+v", rules[0])
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

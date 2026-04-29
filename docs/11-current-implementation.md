@@ -20,6 +20,7 @@
 - Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
 - 上游来源页面创建和列表。
 - subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。
+- 上游来源 `default_tags` 会在节点导入或刷新时同步到节点标签。
 - subscription 来源刷新时，本次订阅中消失的旧节点会标记为 `inactive`。
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
 - subscription 来源支持解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess 节点。
@@ -33,6 +34,7 @@
 - 单节点手动改名保护。
 - 单节点恢复自动命名。
 - 虚拟节点页面基础创建和列表。
+- 虚拟节点 `tag_selector` 可按上游节点标签生成专属 sing-box selector，并生成入站到该 selector 的 route rule；无匹配上游时会路由到 `block`。
 - Clash/Mihomo 订阅生成。
 - sing-box 客户端订阅生成。
 - sing-box 服务端配置生成骨架。
@@ -160,7 +162,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅更多结构化格式解析。
 - DNS 等更多协议 URI 到 sing-box outbound 的转换。
-- 策略 include/exclude tags 与上游绑定生效逻辑。
+- 策略 include/exclude tags 生效逻辑。
 - 流量统计采集。
 - 流量采集后的超额自动标记、阻断和配置发布触发。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。

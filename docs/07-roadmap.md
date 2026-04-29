@@ -38,7 +38,9 @@
 - 策略 `allowed_virtual_nodes` 和 `max_nodes` 按 Token > 成员 > 团队优先级限制可见虚拟节点，并同步作用于 sing-box 入站用户分配。
 - Token 续期、追加额度、撤销和恢复操作。
 - 来源前缀自动生成和重复前缀编号。
+- 来源默认标签会同步到导入的上游节点。
 - 节点手动改名保护和恢复自动命名。
+- 虚拟节点 `tag_selector` 可按上游标签生成专属 sing-box selector 和 route rule。
 - Clash/Mihomo 与 sing-box 基础订阅生成。
 - sing-box config.json 生成骨架。
 - active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会进入 sing-box outbound，并由默认 selector 承接出口。

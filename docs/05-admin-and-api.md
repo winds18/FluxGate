@@ -71,6 +71,7 @@ over_quota
 - 自动生成节点名前缀
 - 手动修改节点名前缀
 - 设置默认标签
+- `default_tags` 当前会在节点导入或刷新时同步到对应上游节点
 - 手动同步
 - 设置同步间隔
 - 查看同步结果
@@ -111,6 +112,7 @@ over_quota
 - 创建 FluxGate-HK、FluxGate-SG 等展示节点
 - 设置入口协议和端口
 - 绑定上游标签
+- `tag_selector` 当前支持按 `include` / `exclude` 标签生成专属 sing-box selector 和 route rule
 - 选择策略类型
 - 启用/禁用
 

@@ -57,14 +57,14 @@ func buildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNo
 		}
 		inbounds = append(inbounds, Inbound{
 			Type:       "vless",
-			Tag:        "vn-" + node.Name,
+			Tag:        virtualNodeInboundTag(node),
 			Listen:     "::",
 			ListenPort: node.ListenPort,
 			Users:      users,
 		})
 	}
 
-	upstreamOutbounds, upstreamTags := buildUpstreamOutbounds(upstreamNodes)
+	upstreamOutbounds, upstreamTags, upstreamTagByNodeID := buildUpstreamOutbounds(upstreamNodes)
 	outbounds := []map[string]any{
 		{"type": "direct", "tag": "direct"},
 		{"type": "block", "tag": "block"},
@@ -80,6 +80,14 @@ func buildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNo
 			"default":   upstreamTags[0],
 		})
 	}
+	routeRules, virtualNodeOutbounds := buildVirtualNodeUpstreamRouting(inbounds, virtualNodes, upstreamNodes, upstreamTagByNodeID)
+	outbounds = append(outbounds, virtualNodeOutbounds...)
+	route := map[string]any{
+		"final": finalOutbound,
+	}
+	if len(routeRules) > 0 {
+		route["rules"] = routeRules
+	}
 
 	return Config{
 		Log: map[string]any{
@@ -87,9 +95,7 @@ func buildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNo
 		},
 		Inbounds:  inbounds,
 		Outbounds: outbounds,
-		Route: map[string]any{
-			"final": finalOutbound,
-		},
+		Route:     route,
 		Experimental: map[string]any{
 			"v2ray_api": map[string]any{
 				"listen": "0.0.0.0:9090",
@@ -140,18 +146,63 @@ func gatewayTokenUsable(token store.TokenWithAccount, now time.Time) bool {
 	return true
 }
 
-func buildUpstreamOutbounds(nodes []store.Node) ([]map[string]any, []string) {
+func buildUpstreamOutbounds(nodes []store.Node) ([]map[string]any, []string, map[int64]string) {
 	outbounds := make([]map[string]any, 0, len(nodes))
 	tags := make([]string, 0, len(nodes))
+	tagByNodeID := map[int64]string{}
 	for _, node := range nodes {
 		outbound, ok := buildNodeOutbound(node)
 		if !ok {
 			continue
 		}
-		tags = append(tags, outbound["tag"].(string))
+		tag := outbound["tag"].(string)
+		tags = append(tags, tag)
+		tagByNodeID[node.ID] = tag
 		outbounds = append(outbounds, outbound)
 	}
-	return outbounds, tags
+	return outbounds, tags, tagByNodeID
+}
+
+type virtualNodeTagSelector struct {
+	Include []string `json:"include"`
+	Exclude []string `json:"exclude"`
+}
+
+func buildVirtualNodeUpstreamRouting(inbounds []Inbound, virtualNodes []store.VirtualNode, upstreamNodes []store.Node, upstreamTagByNodeID map[int64]string) ([]map[string]any, []map[string]any) {
+	inboundExists := map[string]bool{}
+	for _, inbound := range inbounds {
+		inboundExists[inbound.Tag] = true
+	}
+
+	var rules []map[string]any
+	var outbounds []map[string]any
+	for _, node := range virtualNodes {
+		inboundTag := virtualNodeInboundTag(node)
+		if !inboundExists[inboundTag] {
+			continue
+		}
+		selector, configured := parseVirtualNodeTagSelector(node.TagSelector)
+		if !configured {
+			continue
+		}
+		selectedTags := selectUpstreamTags(upstreamNodes, upstreamTagByNodeID, selector)
+		targetOutbound := "block"
+		if len(selectedTags) > 0 {
+			targetOutbound = virtualNodeUpstreamSelectorTag(node)
+			outbounds = append(outbounds, map[string]any{
+				"type":      "selector",
+				"tag":       targetOutbound,
+				"outbounds": selectedTags,
+				"default":   selectedTags[0],
+			})
+		}
+		rules = append(rules, map[string]any{
+			"inbound":  []string{inboundTag},
+			"action":   "route",
+			"outbound": targetOutbound,
+		})
+	}
+	return rules, outbounds
 }
 
 func buildNodeOutbound(node store.Node) (map[string]any, bool) {
@@ -1197,6 +1248,93 @@ func intQuery(value string) int {
 
 func upstreamTag(node store.Node) string {
 	return fmt.Sprintf("up_%d", node.ID)
+}
+
+func virtualNodeInboundTag(node store.VirtualNode) string {
+	return "vn-" + node.Name
+}
+
+func virtualNodeUpstreamSelectorTag(node store.VirtualNode) string {
+	return "vn-" + node.Name + "-upstreams"
+}
+
+func parseVirtualNodeTagSelector(raw string) (virtualNodeTagSelector, bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" || raw == "{}" {
+		return virtualNodeTagSelector{}, false
+	}
+	var document struct {
+		Include     []string `json:"include"`
+		Exclude     []string `json:"exclude"`
+		IncludeTags []string `json:"include_tags"`
+		ExcludeTags []string `json:"exclude_tags"`
+	}
+	if err := json.Unmarshal([]byte(raw), &document); err != nil {
+		return virtualNodeTagSelector{}, false
+	}
+	selector := virtualNodeTagSelector{
+		Include: cleanTagSelectorValues(append(document.Include, document.IncludeTags...)),
+		Exclude: cleanTagSelectorValues(append(document.Exclude, document.ExcludeTags...)),
+	}
+	return selector, len(selector.Include) > 0 || len(selector.Exclude) > 0
+}
+
+func selectUpstreamTags(nodes []store.Node, upstreamTagByNodeID map[int64]string, selector virtualNodeTagSelector) []string {
+	var selected []string
+	for _, node := range nodes {
+		upstreamTag, ok := upstreamTagByNodeID[node.ID]
+		if !ok || !nodeMatchesTagSelector(node, selector) {
+			continue
+		}
+		selected = append(selected, upstreamTag)
+	}
+	return selected
+}
+
+func nodeMatchesTagSelector(node store.Node, selector virtualNodeTagSelector) bool {
+	nodeTags := tagSet(node.Tags)
+	if len(selector.Include) > 0 && !containsAnyTag(nodeTags, selector.Include) {
+		return false
+	}
+	return !containsAnyTag(nodeTags, selector.Exclude)
+}
+
+func cleanTagSelectorValues(values []string) []string {
+	seen := map[string]bool{}
+	var cleaned []string
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value == "" {
+			continue
+		}
+		key := strings.ToLower(value)
+		if seen[key] {
+			continue
+		}
+		seen[key] = true
+		cleaned = append(cleaned, value)
+	}
+	return cleaned
+}
+
+func tagSet(values []string) map[string]bool {
+	result := map[string]bool{}
+	for _, value := range values {
+		value = strings.TrimSpace(value)
+		if value != "" {
+			result[strings.ToLower(value)] = true
+		}
+	}
+	return result
+}
+
+func containsAnyTag(set map[string]bool, values []string) bool {
+	for _, value := range values {
+		if set[strings.ToLower(strings.TrimSpace(value))] {
+			return true
+		}
+	}
+	return false
 }
 
 func firstNonEmpty(values ...string) string {

@@ -137,6 +137,30 @@ func TestImportNodesMarksMissingSubscriptionNodesInactive(t *testing.T) {
 	}
 }
 
+func TestImportNodesAppliesSourceDefaultTags(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	source, err := db.CreateSource(ctx, CreateSourceInput{Name: "Tagged Source", Type: "manual", DefaultTags: `["HK","Premium"]`})
+	if err != nil {
+		t.Fatalf("create source: %v", err)
+	}
+	if _, err := db.ImportNodes(ctx, ImportNodesInput{
+		SourceID: source.ID,
+		Content:  "vless://uuid@example.com:443#香港%2001",
+	}); err != nil {
+		t.Fatalf("import nodes: %v", err)
+	}
+
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		t.Fatalf("list nodes: %v", err)
+	}
+	if len(nodes) != 1 || !sameStringSet(nodes[0].Tags, []string{"HK", "Premium"}) {
+		t.Fatalf("source default tags should be attached to imported node: %+v", nodes)
+	}
+}
+
 func TestListDueSubscriptionSources(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)
@@ -375,4 +399,20 @@ func TestBootstrapAndAuthenticateAdmin(t *testing.T) {
 	if !second.Skipped || second.Created {
 		t.Fatalf("second bootstrap should skip: %+v", second)
 	}
+}
+
+func sameStringSet(left []string, right []string) bool {
+	if len(left) != len(right) {
+		return false
+	}
+	seen := map[string]bool{}
+	for _, value := range left {
+		seen[value] = true
+	}
+	for _, value := range right {
+		if !seen[value] {
+			return false
+		}
+	}
+	return true
 }

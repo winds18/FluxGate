@@ -55,7 +55,7 @@ policy_list_count="$(json_value "data.length" <"$OUT_DIR/policies.json")"
 post_json "/api/users" "{\"team_id\":$team_id,\"name\":\"QA User\",\"email\":\"qa@example.test\"}" "$OUT_DIR/user.json"
 user_id="$(json_value "data.id" <"$OUT_DIR/user.json")"
 
-post_json "/api/sources" '{"name":"机场A","type":"manual"}' "$OUT_DIR/source-a.json"
+post_json "/api/sources" '{"name":"机场A","type":"manual","default_tags":"[\"QA-HK\"]"}' "$OUT_DIR/source-a.json"
 source_a_id="$(json_value "data.id" <"$OUT_DIR/source-a.json")"
 post_json "/api/sources" '{"name":"机场A","type":"manual"}' "$OUT_DIR/source-b.json"
 source_b_prefix="$(json_value "JSON.stringify(data.display_prefix)" <"$OUT_DIR/source-b.json")"
@@ -96,7 +96,9 @@ post_json "/api/sources/$sip008_source_id/refresh" '{}' "$OUT_DIR/source-sip008-
 sip008_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-sip008-refresh.json")"
 post_json "/api/sources/$singbox_source_id/refresh" '{}' "$OUT_DIR/source-sing-box-refresh.json"
 singbox_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-sing-box-refresh.json")"
-post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443}' "$OUT_DIR/virtual-node.json"
+run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes" -o "$OUT_DIR/nodes.json"
+qa_hk_tagged_count="$(json_value "data.filter((node) => (node.tags || []).includes('QA-HK')).length" <"$OUT_DIR/nodes.json")"
+post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443,"tag_selector":"{\"include\":[\"QA-HK\"]}"}' "$OUT_DIR/virtual-node.json"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-SG","listen_protocol":"vless","listen_port":8444}' "$OUT_DIR/virtual-node-sg.json"
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
 token_id="$(json_value "data.token.id" <"$OUT_DIR/token.json")"
@@ -164,6 +166,11 @@ fi
 
 if [[ "$singbox_refresh_imported" != "8" ]]; then
   log "unexpected sing-box JSON refresh import count: $singbox_refresh_imported"
+  exit 1
+fi
+
+if [[ "$qa_hk_tagged_count" -lt 1 ]]; then
+  log "source default_tags should be attached to imported nodes"
   exit 1
 fi
 
@@ -244,6 +251,16 @@ fi
 
 if ! grep -q '"tag": "up_' "$OUT_DIR/sing-box.json"; then
   log "active upstream node should appear as sing-box outbound"
+  exit 1
+fi
+
+if ! grep -q '"tag": "vn-FluxGate-HK-upstreams"' "$OUT_DIR/sing-box.json"; then
+  log "virtual node tag_selector should create dedicated upstream selector"
+  exit 1
+fi
+
+if ! grep -q '"outbound": "vn-FluxGate-HK-upstreams"' "$OUT_DIR/sing-box.json"; then
+  log "virtual node tag_selector should create route rule to dedicated selector"
   exit 1
 fi
 

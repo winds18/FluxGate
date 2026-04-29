@@ -127,8 +127,8 @@ async function load() {
     renderTable(teamsEl, teams, ["id", "name", "description", "status"]);
     renderTable(usersEl, users, ["id", "team_id", "name", "email", "status"]);
     renderSources(sources);
-    renderTable(nodesEl, nodes, ["id", "source_name", "raw_name", "display_name", "protocol", "status"]);
-    renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "status"]);
+    renderTable(nodesEl, nodes, ["id", "source_name", "raw_name", "display_name", "protocol", "tags", "status"]);
+    renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "tag_selector", "status"]);
     renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "allowed_virtual_nodes", "max_nodes", "status"]);
     renderTokens(tokens);
     statusEl.textContent = "已连接";
@@ -171,6 +171,7 @@ async function submitSource(event) {
     name: textField(form, "name"),
     type: textField(form, "type") || "manual",
     url: textField(form, "url"),
+    default_tags: textField(form, "default_tags"),
     refresh_interval_minutes: numberField(form, "refresh_interval_minutes"),
   });
   sourceForm.reset();
@@ -193,6 +194,7 @@ async function submitVirtualNode(event) {
     name: textField(form, "name"),
     listen_protocol: "vless",
     listen_port: numberField(form, "listen_port"),
+    tag_selector: textField(form, "tag_selector"),
   });
   virtualNodeForm.reset();
 }
@@ -446,6 +448,7 @@ function renderSources(rows) {
           <th>name</th>
           <th>type</th>
           <th>display_prefix</th>
+          <th>default_tags</th>
           <th>refresh_min</th>
           <th>last_sync_at</th>
           <th>last_error</th>
@@ -461,6 +464,7 @@ function renderSources(rows) {
                 <td>${formatCell(row.name)}</td>
                 <td>${formatCell(row.type)}</td>
                 <td>${formatCell(row.display_prefix)}</td>
+                <td>${formatCell(row.default_tags)}</td>
                 <td>${formatCell(row.refresh_interval_minutes)}</td>
                 <td>${formatCell(row.last_sync_at)}</td>
                 <td>${formatCell(row.last_error)}</td>

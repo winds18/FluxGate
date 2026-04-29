@@ -126,8 +126,15 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         50,
-			URI:        "shadowtls://placeholder@example.org:443#unsupported",
+			URI:        "shadowtls://qa-placeholder@example.help:443?version=3&sni=shadow.example.help&alpn=h2&insecure=1#shadowtls",
 			Protocol:   "shadowtls",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         51,
+			URI:        "wireguard://placeholder@example.org:443#unsupported",
+			Protocol:   "wireguard",
 			ServerPort: 443,
 			Status:     "active",
 		},
@@ -249,7 +256,25 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if !ok || len(anytlsALPN) != 2 || anytlsALPN[0] != "h2" || anytlsALPN[1] != "http/1.1" {
 		t.Fatalf("unexpected anytls alpn config: %+v", anytlsTLS["alpn"])
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_50") != nil {
+	shadowtls := findOutbound(config.Outbounds, "up_50")
+	if shadowtls == nil {
+		t.Fatalf("expected shadowtls outbound up_50, got %+v", config.Outbounds)
+	}
+	if shadowtls["type"] != "shadowtls" || shadowtls["server"] != "example.help" || shadowtls["server_port"] != 443 {
+		t.Fatalf("unexpected shadowtls server fields: %+v", shadowtls)
+	}
+	if shadowtls["version"] != 3 || shadowtls["password"] != "qa-placeholder" {
+		t.Fatalf("unexpected shadowtls auth fields: %+v", shadowtls)
+	}
+	shadowtlsTLS, ok := shadowtls["tls"].(map[string]any)
+	if !ok || shadowtlsTLS["enabled"] != true || shadowtlsTLS["server_name"] != "shadow.example.help" || shadowtlsTLS["insecure"] != true {
+		t.Fatalf("unexpected shadowtls tls config: %+v", shadowtls["tls"])
+	}
+	shadowtlsALPN, ok := shadowtlsTLS["alpn"].([]string)
+	if !ok || len(shadowtlsALPN) != 1 || shadowtlsALPN[0] != "h2" {
+		t.Fatalf("unexpected shadowtls alpn config: %+v", shadowtlsTLS["alpn"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_51") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -258,7 +283,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 7 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 8 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

@@ -155,6 +155,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildTUICOutbound(node)
 	case "anytls":
 		return buildAnyTLSOutbound(node)
+	case "shadowtls":
+		return buildShadowTLSOutbound(node)
 	default:
 		return nil, false
 	}
@@ -447,6 +449,54 @@ func buildAnyTLSOutbound(node store.Node) (map[string]any, bool) {
 
 	tls := map[string]any{"enabled": true}
 	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+		tls["server_name"] = serverName
+	}
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+		tls["insecure"] = true
+	}
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+		tls["disable_sni"] = true
+	}
+	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
+		tls["alpn"] = alpn
+	}
+	outbound["tls"] = tls
+
+	return outbound, true
+}
+
+func buildShadowTLSOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "shadowtls" {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || parsed.Scheme != "shadowtls" || parsed.Hostname() == "" {
+		return nil, false
+	}
+
+	query := parsed.Query()
+	version := intQuery(query.Get("version"))
+	if version <= 0 {
+		version = 1
+	}
+	password := anyTLSPassword(parsed.User, query.Get("password"))
+	if version >= 2 && password == "" {
+		return nil, false
+	}
+
+	outbound := map[string]any{
+		"type":        "shadowtls",
+		"tag":         upstreamTag(node),
+		"server":      parsed.Hostname(),
+		"server_port": portWithFallback(parsed.Port(), node.ServerPort, 443),
+		"version":     version,
+	}
+	if password != "" {
+		outbound["password"] = password
+	}
+
+	tls := map[string]any{"enabled": true}
+	if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
 		tls["server_name"] = serverName
 	}
 	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {

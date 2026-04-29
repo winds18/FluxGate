@@ -321,11 +321,43 @@ func (s *Store) AddTokenQuota(ctx context.Context, id int64, quotaBytes int64) (
 	if quotaBytes <= 0 {
 		return Token{}, fmt.Errorf("quota_bytes must be greater than 0")
 	}
-	if _, err := s.db.ExecContext(ctx, `
+	tx, err := s.db.BeginTx(ctx, nil)
+	if err != nil {
+		return Token{}, err
+	}
+	defer rollback(tx)
+
+	if _, err := tx.ExecContext(ctx, `
 		UPDATE tokens
 		SET quota_bytes = quota_bytes + ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
 	`, quotaBytes, id); err != nil {
+		return Token{}, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE tokens
+		SET status = 'active', updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+		  AND status = 'over_quota'
+		  AND quota_bytes > 0
+		  AND used_upload_bytes + used_download_bytes < quota_bytes
+	`, id); err != nil {
+		return Token{}, err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE gateway_accounts
+		SET status = 'active', updated_at = CURRENT_TIMESTAMP
+		WHERE token_id = ?
+		  AND status = 'over_quota'
+		  AND EXISTS (
+		    SELECT 1 FROM tokens
+		    WHERE tokens.id = gateway_accounts.token_id
+		      AND tokens.status = 'active'
+		  )
+	`, id); err != nil {
+		return Token{}, err
+	}
+	if err := tx.Commit(); err != nil {
 		return Token{}, err
 	}
 	return s.GetToken(ctx, id)

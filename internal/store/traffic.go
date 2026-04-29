@@ -230,6 +230,29 @@ func applyUserTrafficDelta(ctx context.Context, tx *sql.Tx, authUser string, sam
 	`, uploadDelta, downloadDelta, sampledAtText, tokenID); err != nil {
 		return err
 	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE tokens
+		SET status = 'over_quota', updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+		  AND status = 'active'
+		  AND quota_bytes > 0
+		  AND used_upload_bytes + used_download_bytes >= quota_bytes
+	`, tokenID); err != nil {
+		return err
+	}
+	if _, err := tx.ExecContext(ctx, `
+		UPDATE gateway_accounts
+		SET status = 'over_quota', updated_at = CURRENT_TIMESTAMP
+		WHERE token_id = ?
+		  AND status = 'active'
+		  AND EXISTS (
+		    SELECT 1 FROM tokens
+		    WHERE tokens.id = gateway_accounts.token_id
+		      AND tokens.status = 'over_quota'
+		  )
+	`, tokenID); err != nil {
+		return err
+	}
 
 	hour := sampledAt.Truncate(time.Hour).Format(time.RFC3339)
 	if _, err := tx.ExecContext(ctx, `

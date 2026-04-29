@@ -93,6 +93,7 @@
 
 - V2Ray stats user/inbound/outbound 计数名称解析。
 - `traffic_samples` 增量样本落库、counter reset 处理、Token 用量累加。
+- 采集入库后自动标记 `over_quota`，追加足够额度后自动恢复 Token 和 gateway account。
 - 用户小时/天级流量汇总表和 Token 流量摘要 API。
 
 范围：

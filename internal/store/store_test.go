@@ -500,6 +500,86 @@ func TestRecordTrafficSamplesUpdatesTokenUsageAndRollups(t *testing.T) {
 	}
 }
 
+func TestTrafficUsageMarksAndRestoresOverQuotaToken(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	team, err := db.CreateTeam(ctx, CreateTeamInput{Name: "Quota Team"})
+	if err != nil {
+		t.Fatalf("create team: %v", err)
+	}
+	user, err := db.CreateUser(ctx, CreateUserInput{TeamID: &team.ID, Name: "Quota User"})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	result, err := db.CreateToken(ctx, "secret", "https://flux.example", CreateTokenInput{
+		UserID:     user.ID,
+		Name:       "quota token",
+		ExpireDays: 30,
+		QuotaBytes: 100,
+	})
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+
+	sampledAt := time.Date(2026, 4, 29, 6, 22, 0, 0, time.UTC)
+	if _, err := db.RecordTrafficSample(ctx, RecordTrafficSampleInput{
+		SampledAt:        sampledAt,
+		MetricType:       "user",
+		MetricName:       result.Account.AuthUser,
+		RawValueUpload:   10,
+		RawValueDownload: 20,
+	}); err != nil {
+		t.Fatalf("record baseline sample: %v", err)
+	}
+	if _, err := db.RecordTrafficSample(ctx, RecordTrafficSampleInput{
+		SampledAt:        sampledAt.Add(time.Minute),
+		MetricType:       "user",
+		MetricName:       result.Account.AuthUser,
+		RawValueUpload:   70,
+		RawValueDownload: 70,
+	}); err != nil {
+		t.Fatalf("record over quota sample: %v", err)
+	}
+
+	token, err := db.GetToken(ctx, result.Token.ID)
+	if err != nil {
+		t.Fatalf("get token: %v", err)
+	}
+	if token.Status != "over_quota" || token.UsedUploadBytes+token.UsedDownloadBytes != 110 {
+		t.Fatalf("token should be over quota: %+v", token)
+	}
+	account, err := db.GetGatewayAccountByToken(ctx, result.Token.ID)
+	if err != nil {
+		t.Fatalf("get gateway account: %v", err)
+	}
+	if account.Status != "over_quota" {
+		t.Fatalf("gateway account should be over quota: %+v", account)
+	}
+
+	token, err = db.AddTokenQuota(ctx, result.Token.ID, 5)
+	if err != nil {
+		t.Fatalf("add insufficient quota: %v", err)
+	}
+	if token.Status != "over_quota" {
+		t.Fatalf("token should stay over quota when added quota is insufficient: %+v", token)
+	}
+	token, err = db.AddTokenQuota(ctx, result.Token.ID, 100)
+	if err != nil {
+		t.Fatalf("add restoring quota: %v", err)
+	}
+	if token.Status != "active" {
+		t.Fatalf("token should restore after enough quota: %+v", token)
+	}
+	account, err = db.GetGatewayAccountByToken(ctx, result.Token.ID)
+	if err != nil {
+		t.Fatalf("get restored gateway account: %v", err)
+	}
+	if account.Status != "active" {
+		t.Fatalf("gateway account should restore after enough quota: %+v", account)
+	}
+}
+
 func TestBootstrapAndAuthenticateAdmin(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)

@@ -105,6 +105,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#sources button[data-source-action='cancel']").first().click();
   }
 
+  const nodeRegionCount = await page.locator("#nodes button[data-node-region-action='open']").count();
+  let nodeCardCount = 0;
+  if (nodeRegionCount > 0) {
+    await page.locator("#nodes button[data-node-region-action='open']").first().click();
+    await expect(page.locator("#nodes .node-card").first()).toBeVisible({ timeout: 5000 });
+    nodeCardCount = await page.locator("#nodes .node-card").count();
+  }
+
   const nodeEditCount = await page.locator("#nodes button[data-node-action='edit']").count();
   let nodeEditFormVisible = false;
   let nodeDetailVisible = false;
@@ -113,7 +121,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await expect(page.locator("#nodes form[data-node-edit-form]").first()).toBeVisible({ timeout: 5000 });
     nodeEditFormVisible = true;
     await page.locator("#nodes button[data-node-action='cancel']").first().click();
-    await page.locator("#nodes button[data-node-action='detail']").first().click();
+    await page.locator("#nodes .node-card-main").first().click();
     await expect(page.locator("#nodes .node-detail-row .detail-code").first()).toBeVisible({ timeout: 5000 });
     nodeDetailVisible = true;
   }
@@ -137,6 +145,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }));
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
+  state.nodeRegionCount = nodeRegionCount;
+  state.nodeCardCount = nodeCardCount;
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
   state.nodeDetailVisible = nodeDetailVisible;

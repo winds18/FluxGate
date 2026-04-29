@@ -80,6 +80,7 @@ let appState = {
   virtualNodes: [],
   editingSourceID: null,
   editingNodeID: null,
+  expandedNodeRegion: null,
   expandedNodeID: null,
   nodeDetail: null,
 };
@@ -176,7 +177,18 @@ async function login(event) {
 
 async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
-  appState = { teams: [], users: [], sources: [], nodes: [], virtualNodes: [], editingSourceID: null, editingNodeID: null, expandedNodeID: null, nodeDetail: null };
+  appState = {
+    teams: [],
+    users: [],
+    sources: [],
+    nodes: [],
+    virtualNodes: [],
+    editingSourceID: null,
+    editingNodeID: null,
+    expandedNodeRegion: null,
+    expandedNodeID: null,
+    nodeDetail: null,
+  };
   tokenResultEl.hidden = true;
   tokenResultEl.textContent = "";
   showLogin();
@@ -413,6 +425,26 @@ function sourceFieldValue(row, name) {
 }
 
 async function handleNodeAction(event) {
+  const regionButton = event.target.closest("button[data-node-region-action]");
+  if (regionButton) {
+    const action = regionButton.dataset.nodeRegionAction;
+    if (action === "open") {
+      appState.expandedNodeRegion = regionButton.dataset.nodeRegion || "";
+      appState.editingNodeID = null;
+      appState.expandedNodeID = null;
+      appState.nodeDetail = null;
+      renderNodes(appState.nodes);
+      return;
+    }
+    if (action === "back") {
+      appState.expandedNodeRegion = null;
+      appState.editingNodeID = null;
+      appState.expandedNodeID = null;
+      appState.nodeDetail = null;
+      renderNodes(appState.nodes);
+      return;
+    }
+  }
   const button = event.target.closest("button[data-node-action]");
   if (!button) return;
   const id = Number.parseInt(button.dataset.nodeId || "0", 10);
@@ -769,88 +801,146 @@ function renderNodes(rows) {
     nodesEl.innerHTML = `<div class="empty">暂无数据</div>`;
     return;
   }
-  nodesEl.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>${labelForColumn("id")}</th>
-          <th>${labelForColumn("source_name")}</th>
-          <th>${labelForColumn("raw_name")}</th>
-          <th>${labelForColumn("display_name")}</th>
-          <th>${labelForColumn("name_mode")}</th>
-          <th>${labelForColumn("protocol")}</th>
-          <th>${labelForColumn("tags")}</th>
-          <th>${labelForColumn("status")}</th>
-          <th>${labelForColumn("actions")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map((row) => renderNodeRow(row)).join("")}
-      </tbody>
-    </table>
+  const groups = groupNodesByRegion(rows);
+  const selectedGroup = groups.find((group) => group.region === appState.expandedNodeRegion);
+  if (appState.expandedNodeRegion && !selectedGroup) {
+    appState.expandedNodeRegion = null;
+    appState.editingNodeID = null;
+    appState.expandedNodeID = null;
+    appState.nodeDetail = null;
+  }
+  nodesEl.innerHTML = appState.expandedNodeRegion && selectedGroup ? renderNodeRegion(selectedGroup, groups) : renderNodeRegions(groups);
+}
+
+function groupNodesByRegion(rows) {
+  const groups = new Map();
+  for (const row of rows || []) {
+    const region = normalizedNodeRegion(row);
+    if (!groups.has(region)) {
+      groups.set(region, []);
+    }
+    groups.get(region).push(row);
+  }
+  return Array.from(groups.entries())
+    .map(([region, items]) => ({ region, items }))
+    .sort((left, right) => {
+      if (left.region === "其他") return 1;
+      if (right.region === "其他") return -1;
+      return left.region.localeCompare(right.region, "zh-CN");
+    });
+}
+
+function normalizedNodeRegion(row) {
+  const region = String(row?.region || "").trim();
+  return region || "其他";
+}
+
+function renderNodeRegions(groups) {
+  const total = groups.reduce((sum, group) => sum + group.items.length, 0);
+  return `
+    <div class="node-browser" data-node-view="regions">
+      <div class="node-browser-header">
+        <div>
+          <strong>地区聚合</strong>
+          <span>${formatCell(total)} 个节点 · ${formatCell(groups.length)} 个地区</span>
+        </div>
+      </div>
+      <div class="node-region-grid">
+        ${groups.map((group) => renderNodeRegionCard(group)).join("")}
+      </div>
+    </div>
   `;
 }
 
-function renderNodeRow(row) {
+function renderNodeRegionCard(group) {
+  const activeCount = group.items.filter((node) => node.status === "active").length;
+  const protocolCount = new Set(group.items.map((node) => node.protocol).filter(Boolean)).size;
+  const sourceCount = new Set(group.items.map((node) => node.source_name || node.source_id).filter(Boolean)).size;
+  return `
+    <button class="node-region-card" type="button" data-node-region-action="open" data-node-region="${escapeHTML(group.region)}">
+      <span class="node-region-name">${escapeHTML(group.region)}</span>
+      <strong>${formatCell(group.items.length)} 个节点</strong>
+      <span>${formatCell(activeCount)} 可用 · ${formatCell(protocolCount)} 协议 · ${formatCell(sourceCount)} 来源</span>
+    </button>
+  `;
+}
+
+function renderNodeRegion(group, groups) {
+  return `
+    <div class="node-browser" data-node-view="cards" data-node-region="${escapeHTML(group.region)}">
+      <div class="node-browser-header">
+        <button class="table-button ghost-button" type="button" data-node-region-action="back">返回地区</button>
+        <div>
+          <strong>${escapeHTML(group.region)}</strong>
+          <span>${formatCell(group.items.length)} 个节点 · 共 ${formatCell(groups.length)} 个地区</span>
+        </div>
+      </div>
+      <div class="node-card-grid">
+        ${group.items.map((row) => renderNodeCard(row)).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderNodeCard(row) {
   const isEditing = appState.editingNodeID === row.id;
   const isExpanded = appState.expandedNodeID === row.id;
   const detail = isExpanded ? appState.nodeDetail || row : null;
   return `
-    <tr data-node-id="${row.id}">
-      <td>${formatCell(row.id, "id")}</td>
-      <td>${formatCell(row.source_name, "source_name")}</td>
-      <td>${formatCell(row.raw_name, "raw_name")}</td>
-      <td>${isEditing ? renderNodeEditForm(row) : formatCell(row.display_name, "display_name")}</td>
-      <td>${formatCell(row.name_mode, "name_mode")}</td>
-      <td>${formatCell(row.protocol, "protocol")}</td>
-      <td>${formatCell(row.tags, "tags")}</td>
-      <td>${formatCell(row.status, "status")}</td>
-      <td class="table-actions node-actions">
+    <article class="node-card ${isExpanded ? "node-card-expanded" : ""}" data-node-id="${row.id}">
+      <button class="node-card-main" type="button" data-node-action="detail" data-node-id="${row.id}">
+        <span class="node-card-title">${escapeHTML(row.display_name || row.raw_name || `节点 ${row.id}`)}</span>
+        <span class="node-card-subtitle">${escapeHTML(row.source_name || "未知来源")} · ${escapeHTML(row.protocol || "--")}</span>
+        <span class="node-card-meta">
+          <span>${formatStatus(row.status)}</span>
+          <span>${labelForColumn("name_mode")}：${formatCell(row.name_mode, "name_mode")}</span>
+        </span>
+        <span class="node-card-tags">${formatCell(row.tags, "tags")}</span>
+      </button>
+      ${isEditing ? renderNodeEditForm(row) : ""}
+      <div class="table-actions node-actions">
         ${
           isEditing
             ? `<button class="table-button ghost-button" type="button" data-node-action="cancel" data-node-id="${row.id}">取消</button>`
             : `<button class="table-button" type="button" data-node-action="edit" data-node-id="${row.id}">编辑</button>`
         }
-        <button class="table-button ghost-button" type="button" data-node-action="detail" data-node-id="${row.id}">${isExpanded ? "收起" : "详情"}</button>
         <button class="table-button ghost-button" type="button" data-node-action="reset-name" data-node-id="${row.id}" ${row.name_mode === "auto" ? "disabled" : ""}>恢复自动</button>
-      </td>
-    </tr>
-    ${detail ? renderNodeDetailRow(detail) : ""}
+      </div>
+      ${detail ? renderNodeDetailPanel(detail) : ""}
+    </article>
   `;
 }
 
-function renderNodeDetailRow(node) {
+function renderNodeDetailPanel(node) {
   return `
-    <tr class="node-detail-row">
-      <td colspan="9">
-        <div class="node-detail-panel">
-          <div class="detail-grid">
-            ${nodeDetailItem("id", node.id)}
-            ${nodeDetailItem("source_id", node.source_id)}
-            ${nodeDetailItem("source_name", node.source_name)}
-            ${nodeDetailItem("raw_name", node.raw_name)}
-            ${nodeDetailItem("display_name", node.display_name)}
-            ${nodeDetailItem("name_mode", node.name_mode)}
-            ${nodeDetailItem("protocol", node.protocol)}
-            ${nodeDetailItem("server", node.server)}
-            ${nodeDetailItem("server_port", node.server_port)}
-            ${nodeDetailItem("region", node.region)}
-            ${nodeDetailItem("tags", node.tags)}
-            ${nodeDetailItem("status", node.status)}
-            ${nodeDetailItem("last_seen_at", node.last_seen_at)}
-            ${nodeDetailItem("last_checked_at", node.last_checked_at)}
-            ${nodeDetailItem("last_error", node.last_error)}
-            ${nodeDetailItem("created_at", node.created_at)}
-            ${nodeDetailItem("updated_at", node.updated_at)}
-            ${nodeDetailItem("uri_hash", node.uri_hash)}
-          </div>
-          <div class="detail-item detail-item-wide">
-            <span>${labelForColumn("uri")}</span>
-            <code class="detail-code">${escapeHTML(String(node.uri || ""))}</code>
-          </div>
+    <div class="node-detail-row">
+      <div class="node-detail-panel">
+        <div class="detail-grid">
+          ${nodeDetailItem("id", node.id)}
+          ${nodeDetailItem("source_id", node.source_id)}
+          ${nodeDetailItem("source_name", node.source_name)}
+          ${nodeDetailItem("raw_name", node.raw_name)}
+          ${nodeDetailItem("display_name", node.display_name)}
+          ${nodeDetailItem("name_mode", node.name_mode)}
+          ${nodeDetailItem("protocol", node.protocol)}
+          ${nodeDetailItem("server", node.server)}
+          ${nodeDetailItem("server_port", node.server_port)}
+          ${nodeDetailItem("region", node.region || "其他")}
+          ${nodeDetailItem("tags", node.tags)}
+          ${nodeDetailItem("status", node.status)}
+          ${nodeDetailItem("last_seen_at", node.last_seen_at)}
+          ${nodeDetailItem("last_checked_at", node.last_checked_at)}
+          ${nodeDetailItem("last_error", node.last_error)}
+          ${nodeDetailItem("created_at", node.created_at)}
+          ${nodeDetailItem("updated_at", node.updated_at)}
+          ${nodeDetailItem("uri_hash", node.uri_hash)}
         </div>
-      </td>
-    </tr>
+        <div class="detail-item detail-item-wide">
+          <span>${labelForColumn("uri")}</span>
+          <code class="detail-code">${escapeHTML(String(node.uri || ""))}</code>
+        </div>
+      </div>
+    </div>
   `;
 }
 

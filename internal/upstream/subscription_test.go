@@ -1225,6 +1225,55 @@ func TestNormalizeContentSurgeProxyListHysteriaAndTLSHelpers(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyListNaiveAndSSH(t *testing.T) {
+	raw := `
+[Proxy]
+新加坡 Surge Naive = naive+quic, naive.surge.example.test, 443, qa-user, naive-placeholder, sni=naive.surge.example.test, alpn=h3, skip-cert-verify=true, quic-congestion-control=bbr, udp-over-tcp=true, insecure-concurrency=2
+香港 Surge SSH = ssh, ssh.surge.example.test, 22, qa-user, ssh-placeholder, private-key-path=keys/qa_id_ed25519, host-key-algorithms="ssh-ed25519,rsa-sha2-512", client-version=SSH-2.0-FluxGateQA, cipher=aes128-gcm@openssh.com, mac=hmac-sha2-256, kex-algorithm=curve25519-sha256
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Surge Naive/SSH URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "naive+quic://qa-user:naive-placeholder@naive.surge.example.test:443?")
+	for _, want := range []string{
+		"quic=1",
+		"quic_congestion_control=bbr",
+		"udp_over_tcp=1",
+		"insecure_concurrency=2",
+		"sni=naive.surge.example.test",
+		"alpn=h3",
+		"insecure=1",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Surge Naive URI to contain %q: %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20Surge%20Naive") {
+		t.Fatalf("unexpected Surge Naive fragment: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "ssh://qa-user:ssh-placeholder@ssh.surge.example.test:22?")
+	for _, want := range []string{
+		"private_key_path=keys%2Fqa_id_ed25519",
+		"host_key_algorithms=ssh-ed25519%2Crsa-sha2-512",
+		"client_version=SSH-2.0-FluxGateQA",
+		"cipher=aes128-gcm%40openssh.com",
+		"mac=hmac-sha2-256",
+		"kex_algorithm=curve25519-sha256",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Surge SSH URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#%E9%A6%99%E6%B8%AF%20Surge%20SSH") {
+		t.Fatalf("unexpected Surge SSH fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

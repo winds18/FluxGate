@@ -129,6 +129,39 @@ func surgeProxyURI(line string) string {
 			proxy["version"] = version
 		}
 		return clashShadowTLSURI(proxy)
+	case "naive", "naive+quic", "naive-quic", "naive+https":
+		if protocol == "naive+quic" || protocol == "naive-quic" {
+			proxy["type"] = "naive+quic"
+		} else {
+			proxy["type"] = "naive"
+		}
+		proxy["username"] = surgeFirstValue(options, positionals, 2, "username", "user")
+		proxy["password"] = surgeFirstValue(options, positionals, 3, "password", "passwd", "psk", "token")
+		surgeCopyOptions(proxy, options,
+			"insecure-concurrency", "insecure_concurrency",
+			"quic-congestion-control", "quic_congestion_control",
+		)
+		if surgeBoolOption(options, "quic") {
+			proxy["quic"] = "true"
+		}
+		if surgeBoolOption(options, "udp-over-tcp", "udp_over_tcp", "uot") {
+			proxy["udp-over-tcp"] = "true"
+		}
+		return clashNaiveURI(proxy)
+	case "ssh":
+		proxy["username"] = surgeFirstValue(options, positionals, 2, "username", "user")
+		proxy["password"] = surgeFirstValue(options, positionals, 3, "password", "passwd")
+		surgeCopyOptions(proxy, options,
+			"private-key", "private_key",
+			"private-key-path", "private_key_path",
+			"private-key-passphrase", "private_key_passphrase",
+			"client-version", "client_version",
+			"host-key", "host_key",
+			"host-key-algorithms", "host_key_algorithms",
+			"cipher", "mac",
+			"kex-algorithm", "kex_algorithm",
+		)
+		return clashSSHURI(proxy)
 	case "trojan":
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "psk")
 		if proxy["tls"] == "" {

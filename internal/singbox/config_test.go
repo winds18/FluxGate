@@ -143,7 +143,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         52,
-			URI:        "hysteria://qa-placeholder@example.zone:443?auth_str=qa-auth&up_mbps=20&down_mbps=80&obfs=obfs-placeholder&protocol=udp&sni=hysteria.example.zone&alpn=h3&insecure=1#hysteria",
+			URI:        "hysteria://qa-placeholder@example.zone:443?auth_str=qa-auth&up_mbps=20&down_mbps=80&obfs=obfs-placeholder&recv_window_conn=1048576&recv_window=2097152&disable_mtu_discovery=1&protocol=udp&sni=hysteria.example.zone&alpn=h3&insecure=1#hysteria",
 			Protocol:   "hysteria",
 			ServerPort: 443,
 			Status:     "active",
@@ -397,6 +397,9 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	}
 	if hysteria["obfs"] != "obfs-placeholder" || hysteria["network"] != "udp" {
 		t.Fatalf("unexpected hysteria transport fields: %+v", hysteria)
+	}
+	if hysteria["recv_window_conn"] != 1048576 || hysteria["recv_window"] != 2097152 || hysteria["disable_mtu_discovery"] != true {
+		t.Fatalf("unexpected hysteria window fields: %+v", hysteria)
 	}
 	hysteriaTLS, ok := hysteria["tls"].(map[string]any)
 	if !ok || hysteriaTLS["enabled"] != true || hysteriaTLS["server_name"] != "hysteria.example.zone" || hysteriaTLS["insecure"] != true {

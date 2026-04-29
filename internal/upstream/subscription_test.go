@@ -205,6 +205,9 @@ proxies:
     up-mbps: 20
     down-mbps: 80
     obfs: "obfs-placeholder"
+    recv-window-conn: 1048576
+    recv-window: 2097152
+    disable-mtu-discovery: true
     protocol: udp
     sni: hysteria.clash.example.test
     skip-cert-verify: true
@@ -319,7 +322,13 @@ proxy-groups:
 		t.Fatalf("unexpected tuic URI: %q", lines[4])
 	}
 	assertHasPrefix(t, lines[5], "hysteria://hysteria-auth@hysteria.clash.example.test:443?")
-	if !strings.Contains(lines[5], "up_mbps=20") || !strings.Contains(lines[5], "down_mbps=80") || !strings.Contains(lines[5], "network=udp") || !strings.Contains(lines[5], "insecure=1") {
+	if !strings.Contains(lines[5], "up_mbps=20") ||
+		!strings.Contains(lines[5], "down_mbps=80") ||
+		!strings.Contains(lines[5], "recv_window_conn=1048576") ||
+		!strings.Contains(lines[5], "recv_window=2097152") ||
+		!strings.Contains(lines[5], "disable_mtu_discovery=1") ||
+		!strings.Contains(lines[5], "network=udp") ||
+		!strings.Contains(lines[5], "insecure=1") {
 		t.Fatalf("unexpected hysteria URI: %q", lines[5])
 	}
 	assertHasPrefix(t, lines[6], "https://qa-user:http-placeholder@http.clash.example.test:8080/connect?")

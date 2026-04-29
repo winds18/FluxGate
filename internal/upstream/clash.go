@@ -347,6 +347,15 @@ func clashHysteriaURI(proxy map[string]string) string {
 	if obfs := firstMapValue(proxy, "obfs"); obfs != "" {
 		values.Set("obfs", obfs)
 	}
+	if recvWindowConn := firstMapValue(proxy, "recv-window-conn", "recv_window_conn"); recvWindowConn != "" {
+		values.Set("recv_window_conn", recvWindowConn)
+	}
+	if recvWindow := firstMapValue(proxy, "recv-window", "recv_window"); recvWindow != "" {
+		values.Set("recv_window", recvWindow)
+	}
+	if boolMapValue(proxy, "disable-mtu-discovery", "disable_mtu_discovery") {
+		values.Set("disable_mtu_discovery", "1")
+	}
 	if network := firstMapValue(proxy, "protocol", "network"); network != "" {
 		values.Set("network", network)
 	}

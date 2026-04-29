@@ -1057,6 +1057,57 @@ func TestNormalizeContentJSONWrappedSurgeProxyList(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyListVLESSAndVMess(t *testing.T) {
+	raw := `
+[Proxy]
+香港 Surge VLESS = vless, vless.surge.example.test, 443, uuid=00000000-0000-0000-0000-000000000089, tls=true, sni=vless.surge.example.test, obfs=ws, obfs-uri=/vless, obfs-host=ws.vless.surge.example.test, flow=xtls-rprx-vision
+东京 Surge VMess = vmess, vmess.surge.example.test, 443, username=00000000-0000-0000-0000-000000000090, tls=true, sni=vmess.surge.example.test, ws=true, ws-path=/vmess, ws-host=ws.vmess.surge.example.test, encrypt-method=auto, alter-id=0
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Surge VLESS/VMess URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000089@vless.surge.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=vless.surge.example.test",
+		"type=ws",
+		"path=%2Fvless",
+		"host=ws.vless.surge.example.test",
+		"flow=xtls-rprx-vision",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Surge VLESS URI to contain %q: %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%20Surge%20VLESS") {
+		t.Fatalf("unexpected Surge VLESS fragment: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "vmess://")
+	decoded := decodeVMessURIForTest(t, lines[1])
+	for _, want := range []string{
+		`"ps":"东京 Surge VMess"`,
+		`"add":"vmess.surge.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000090"`,
+		`"aid":"0"`,
+		`"scy":"auto"`,
+		`"net":"ws"`,
+		`"host":"ws.vmess.surge.example.test"`,
+		`"path":"/vmess"`,
+		`"tls":"tls"`,
+		`"sni":"vmess.surge.example.test"`,
+	} {
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected Surge VMess document to contain %s: %q", want, decoded)
+		}
+	}
+}
+
 func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

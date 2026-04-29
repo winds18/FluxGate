@@ -63,6 +63,20 @@ func surgeProxyURI(line string) string {
 			proxy["plugin_opts"] = pluginOpts
 		}
 		return clashShadowsocksURI(proxy)
+	case "vless":
+		proxy["uuid"] = surgeFirstValue(options, positionals, 2, "uuid", "id", "username", "user", "password")
+		if flow := surgeOption(options, "flow"); flow != "" {
+			proxy["flow"] = flow
+		}
+		return clashVLESSURI(proxy)
+	case "vmess", "vmess-aead":
+		proxy["uuid"] = surgeFirstValue(options, positionals, 2, "uuid", "id", "username", "user", "password")
+		proxy["alterid"] = surgeOption(options, "alter-id", "alter_id", "alterid", "aid")
+		proxy["cipher"] = surgeOption(options, "encrypt-method", "method", "cipher", "security")
+		if headerType := surgeOption(options, "header-type", "header_type"); headerType != "" {
+			proxy["header-type"] = headerType
+		}
+		return clashVMessURI(proxy)
 	case "trojan":
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "psk")
 		if proxy["tls"] == "" {
@@ -199,10 +213,13 @@ func surgeApplyTransportOptions(proxy map[string]string, options map[string]stri
 	if surgeBoolOption(options, "ws", "websocket") {
 		proxy["network"] = "ws"
 	}
-	if path := surgeOption(options, "ws-path", "ws_path", "path"); path != "" {
+	if obfs := strings.ToLower(surgeOption(options, "obfs")); obfs == "ws" || obfs == "websocket" {
+		proxy["network"] = "ws"
+	}
+	if path := surgeOption(options, "ws-path", "ws_path", "obfs-uri", "obfs_uri", "path"); path != "" {
 		proxy["ws-path"] = path
 	}
-	if host := surgeOption(options, "ws-host", "ws_host", "host"); host != "" {
+	if host := surgeOption(options, "ws-host", "ws_host", "obfs-host", "obfs_host", "host"); host != "" {
 		proxy["ws-headers.host"] = host
 	}
 	if headerHost := surgeWSHeaderHost(surgeOption(options, "ws-headers", "ws_headers")); headerHost != "" {

@@ -274,9 +274,9 @@ async function publishConfig() {
     configCheckResultEl.hidden = false;
     configCheckResultEl.innerHTML = `
       <strong>${result.published ? "发布完成" : "发布失败"}</strong>
-      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} previous=${result.previous_saved ? "yes" : "no"} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
+      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} previous=${result.previous_saved ? "已保存" : "无"} restart=${result.restart_required ? "需要" : "无需"} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
     `;
-    statusEl.textContent = result.published ? "配置已发布" : "发布失败";
+    statusEl.textContent = result.published ? "配置已发布，需重启 sing-box" : "发布失败";
   } catch (error) {
     configCheckResultEl.hidden = false;
     configCheckResultEl.innerHTML = `<strong>发布失败</strong><code>${escapeHTML(error.message)}</code>`;
@@ -294,9 +294,9 @@ async function rollbackConfig() {
     configCheckResultEl.hidden = false;
     configCheckResultEl.innerHTML = `
       <strong>${result.rolled_back ? "回滚完成" : "回滚失败"}</strong>
-      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
+      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} restart=${result.restart_required ? "需要" : "无需"} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
     `;
-    statusEl.textContent = result.rolled_back ? "配置已回滚" : "回滚失败";
+    statusEl.textContent = result.rolled_back ? "配置已回滚，需重启 sing-box" : "回滚失败";
   } catch (error) {
     configCheckResultEl.hidden = false;
     configCheckResultEl.innerHTML = `<strong>回滚失败</strong><code>${escapeHTML(error.message)}</code>`;

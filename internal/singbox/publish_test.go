@@ -28,7 +28,7 @@ func TestPublishConfigWritesCurrentAndPreviousConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("publish config: %v", err)
 	}
-	if !result.Valid || !result.Published || !result.PreviousSaved || result.ConfigHash == "" {
+	if !result.Valid || !result.Published || !result.PreviousSaved || !result.RestartRequired || result.ConfigHash == "" {
 		t.Fatalf("unexpected publish result: %+v", result)
 	}
 	body, err := os.ReadFile(configPath)
@@ -53,7 +53,7 @@ func TestPublishConfigRejectsInvalidConfig(t *testing.T) {
 	if err == nil {
 		t.Fatal("expected invalid config error")
 	}
-	if result.Valid || result.Published {
+	if result.Valid || result.Published || result.RestartRequired {
 		t.Fatalf("invalid config should not publish: %+v", result)
 	}
 }
@@ -93,7 +93,7 @@ func TestRollbackConfigRestoresPreviousConfig(t *testing.T) {
 	if err != nil {
 		t.Fatalf("rollback config: %v", err)
 	}
-	if !result.Valid || !result.RolledBack || result.ConfigHash == "" {
+	if !result.Valid || !result.RolledBack || !result.RestartRequired || result.ConfigHash == "" {
 		t.Fatalf("unexpected rollback result: %+v", result)
 	}
 	restored, err := os.ReadFile(configPath)

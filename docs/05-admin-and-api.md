@@ -271,6 +271,8 @@ POST /api/sing-box/config/rollback
 POST /api/sing-box/restart
 ```
 
+当前已落地 `config/publish` 和 `config/rollback`，响应会返回 `restart_required`，用于提示配置文件已变更且需要重启 sing-box 后才会生效；自动重启执行器仍在后续实现。
+
 ### 2.12 统计
 
 ```text

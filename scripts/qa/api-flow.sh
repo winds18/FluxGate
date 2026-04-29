@@ -111,11 +111,14 @@ config_check_upstreams="$(json_value "data.upstream_outbound_count" <"$OUT_DIR/s
 run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/publish" -o "$OUT_DIR/sing-box-publish.json"
 config_publish_done="$(json_value "data.published" <"$OUT_DIR/sing-box-publish.json")"
 config_publish_hash="$(json_value "data.config_hash" <"$OUT_DIR/sing-box-publish.json")"
+config_publish_restart_required="$(json_value "data.restart_required" <"$OUT_DIR/sing-box-publish.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/publish" -o "$OUT_DIR/sing-box-publish-again.json"
 config_publish_again_previous="$(json_value "data.previous_saved" <"$OUT_DIR/sing-box-publish-again.json")"
+config_publish_again_restart_required="$(json_value "data.restart_required" <"$OUT_DIR/sing-box-publish-again.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/rollback" -o "$OUT_DIR/sing-box-rollback.json"
 config_rollback_done="$(json_value "data.rolled_back" <"$OUT_DIR/sing-box-rollback.json")"
 config_rollback_hash="$(json_value "data.config_hash" <"$OUT_DIR/sing-box-rollback.json")"
+config_rollback_restart_required="$(json_value "data.restart_required" <"$OUT_DIR/sing-box-rollback.json")"
 
 if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   log "unexpected auto prefix for duplicate source: $source_b_prefix"
@@ -182,8 +185,18 @@ if [[ "$config_publish_done" != "true" || "$config_publish_hash" != "$config_che
   exit 1
 fi
 
+if [[ "$config_publish_restart_required" != "true" || "$config_publish_again_restart_required" != "true" ]]; then
+  log "sing-box config publish should mark restart required: first=$config_publish_restart_required second=$config_publish_again_restart_required"
+  exit 1
+fi
+
 if [[ "$config_publish_again_previous" != "true" || "$config_rollback_done" != "true" || "$config_rollback_hash" != "$config_check_hash" ]]; then
   log "sing-box config rollback should restore previous checked config: previous=$config_publish_again_previous rollback=$config_rollback_done rollback_hash=$config_rollback_hash check_hash=$config_check_hash"
+  exit 1
+fi
+
+if [[ "$config_rollback_restart_required" != "true" ]]; then
+  log "sing-box config rollback should mark restart required: rollback=$config_rollback_restart_required"
   exit 1
 fi
 

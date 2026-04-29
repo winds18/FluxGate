@@ -10,13 +10,15 @@ import (
 
 type PublishResult struct {
 	CheckResult
-	Published     bool `json:"published"`
-	PreviousSaved bool `json:"previous_saved"`
+	Published       bool `json:"published"`
+	PreviousSaved   bool `json:"previous_saved"`
+	RestartRequired bool `json:"restart_required"`
 }
 
 type RollbackResult struct {
 	CheckResult
-	RolledBack bool `json:"rolled_back"`
+	RolledBack      bool `json:"rolled_back"`
+	RestartRequired bool `json:"restart_required"`
 }
 
 func PublishConfig(config Config, configPath string, previousPath string) (PublishResult, error) {
@@ -62,6 +64,7 @@ func PublishConfig(config Config, configPath string, previousPath string) (Publi
 		return result, err
 	}
 	result.Published = true
+	result.RestartRequired = true
 	return result, nil
 }
 
@@ -98,6 +101,7 @@ func RollbackConfig(configPath string, previousPath string) (RollbackResult, err
 		return result, err
 	}
 	result.RolledBack = true
+	result.RestartRequired = true
 	return result, nil
 }
 

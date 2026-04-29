@@ -909,7 +909,7 @@ func buildHysteriaOutbound(node store.Node) (map[string]any, bool) {
 
 	query := parsed.Query()
 	auth := firstNonEmpty(query.Get("auth"), query.Get("auth_base64"), query.Get("auth-base64"))
-	authStr := firstNonEmpty(query.Get("auth_str"), query.Get("auth-str"), query.Get("password"), parsed.User.Username())
+	authStr := firstNonEmpty(query.Get("auth_str"), query.Get("auth-str"), query.Get("password"), query.Get("token"), parsed.User.Username())
 	if auth == "" && authStr == "" {
 		return nil, false
 	}

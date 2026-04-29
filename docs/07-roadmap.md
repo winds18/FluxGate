@@ -64,6 +64,7 @@
 - Clash YAML 和 URI 导入链路会保留 Hysteria 窗口和 MTU 发现参数并同步为 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 上下行带宽、TLS 标志和证书 pin 参数并同步为 sing-box outbound。
 - Hysteria2/Hy2 URI 可从查询参数读取 `password`、`auth`、`auth_str` 或 `token` 认证密码。
+- Hysteria v1 URI 可从查询参数读取 `token` 认证字符串。
 - sing-box 服务端配置生成会过滤不可用 Token，避免已撤销、已过期或已超额用户继续进入网关配置。
 - 本地 smoke、API flow、页面截图验收脚本。
 - 远程部署探测、磁盘清理、诊断采集脚本骨架。

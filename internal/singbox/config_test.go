@@ -1064,6 +1064,33 @@ func TestBuildConfigSupportsHysteria2QueryPassword(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsHysteriaTokenAuth(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         81,
+			URI:        "hysteria://token-auth.hysteria.example:443?token=hysteria-token-placeholder&up_mbps=30&down_mbps=90&obfs=obfs-placeholder&sni=hysteria-token.example&insecure=1#hysteria-token",
+			Protocol:   "hysteria",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_81")
+	if outbound == nil {
+		t.Fatalf("expected hysteria outbound up_81, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "hysteria" || outbound["server"] != "token-auth.hysteria.example" || outbound["server_port"] != 443 || outbound["auth_str"] != "hysteria-token-placeholder" {
+		t.Fatalf("unexpected hysteria token auth fields: %+v", outbound)
+	}
+	if outbound["up_mbps"] != 30 || outbound["down_mbps"] != 90 || outbound["obfs"] != "obfs-placeholder" {
+		t.Fatalf("unexpected hysteria token auth options: %+v", outbound)
+	}
+	tls, ok := outbound["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "hysteria-token.example" || tls["insecure"] != true {
+		t.Fatalf("unexpected hysteria token auth tls: %+v", outbound["tls"])
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

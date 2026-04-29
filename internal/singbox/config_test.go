@@ -53,17 +53,20 @@ func TestBuildConfigFiltersUnusableGatewayTokens(t *testing.T) {
 func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	ssCredential := base64.RawURLEncoding.EncodeToString([]byte("aes-128-gcm:qa-placeholder"))
 	vmessURI := vmessURI(t, map[string]any{
-		"add":  "vmess.example.net",
-		"port": "443",
-		"id":   "00000000-0000-0000-0000-000000000046",
-		"aid":  "0",
-		"scy":  "auto",
-		"net":  "ws",
-		"host": "ws.example.net",
-		"path": "/ws",
-		"tls":  "tls",
-		"sni":  "vmess.example.net",
-		"ps":   "vmess",
+		"add":           "vmess.example.net",
+		"port":          "443",
+		"id":            "00000000-0000-0000-0000-000000000046",
+		"aid":           "0",
+		"scy":           "auto",
+		"net":           "ws",
+		"host":          "ws.example.net",
+		"path":          "/ws",
+		"tls":           "tls",
+		"sni":           "vmess.example.net",
+		"allowInsecure": true,
+		"disable_sni":   "1",
+		"alpn":          "h2,http/1.1",
+		"ps":            "vmess",
 	})
 	config := buildConfig(nil, []store.VirtualNode{
 		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
@@ -257,8 +260,12 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("unexpected vmess auth fields: %+v", vmess)
 	}
 	vmessTLS, ok := vmess["tls"].(map[string]any)
-	if !ok || vmessTLS["enabled"] != true || vmessTLS["server_name"] != "vmess.example.net" {
+	if !ok || vmessTLS["enabled"] != true || vmessTLS["server_name"] != "vmess.example.net" || vmessTLS["insecure"] != true || vmessTLS["disable_sni"] != true {
 		t.Fatalf("unexpected vmess tls config: %+v", vmess["tls"])
+	}
+	vmessALPN, ok := vmessTLS["alpn"].([]string)
+	if !ok || len(vmessALPN) != 2 || vmessALPN[0] != "h2" || vmessALPN[1] != "http/1.1" {
+		t.Fatalf("unexpected vmess alpn config: %+v", vmessTLS["alpn"])
 	}
 	transport, ok := vmess["transport"].(map[string]any)
 	if !ok || transport["type"] != "ws" || transport["path"] != "/ws" {

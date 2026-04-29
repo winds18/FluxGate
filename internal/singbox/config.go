@@ -423,10 +423,30 @@ func buildVMessOutbound(node store.Node) (map[string]any, bool) {
 	if alterID := intFromAny(doc["aid"]); alterID > 0 {
 		outbound["alter_id"] = alterID
 	}
-	if strings.EqualFold(stringFromAny(doc["tls"]), "tls") || strings.TrimSpace(stringFromAny(doc["sni"])) != "" {
+	vmessInsecure := boolFromAny(doc["allowInsecure"]) ||
+		boolFromAny(doc["allowinsecure"]) ||
+		boolFromAny(doc["insecure"]) ||
+		boolFromAny(doc["skip-cert-verify"]) ||
+		boolFromAny(doc["skip_cert_verify"])
+	vmessDisableSNI := boolFromAny(doc["disable_sni"]) || boolFromAny(doc["disable-sni"])
+	vmessALPN := splitCSV(stringFromAny(doc["alpn"]))
+	if strings.EqualFold(stringFromAny(doc["tls"]), "tls") ||
+		strings.TrimSpace(stringFromAny(doc["sni"])) != "" ||
+		vmessInsecure ||
+		vmessDisableSNI ||
+		len(vmessALPN) > 0 {
 		tls := map[string]any{"enabled": true}
 		if serverName := firstNonEmpty(stringFromAny(doc["sni"]), stringFromAny(doc["host"]), server); serverName != "" {
 			tls["server_name"] = serverName
+		}
+		if vmessInsecure {
+			tls["insecure"] = true
+		}
+		if vmessDisableSNI {
+			tls["disable_sni"] = true
+		}
+		if len(vmessALPN) > 0 {
+			tls["alpn"] = vmessALPN
 		}
 		outbound["tls"] = tls
 	}
@@ -1126,6 +1146,15 @@ func stringFromAny(value any) string {
 		return strconv.FormatFloat(typed, 'f', -1, 64)
 	default:
 		return ""
+	}
+}
+
+func boolFromAny(value any) bool {
+	switch typed := value.(type) {
+	case bool:
+		return typed
+	default:
+		return boolQuery(stringFromAny(value))
 	}
 }
 

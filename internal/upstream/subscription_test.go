@@ -133,6 +133,20 @@ proxies:
     reserved: 1,2,3
     mtu: 1420
     udp: true
+  - name: "东京 VMess"
+    type: vmess
+    server: vmess.clash.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000056
+    alter-id: 0
+    cipher: auto
+    network: ws
+    ws-path: /ws
+    ws-headers.host: ws.clash.example.test
+    tls: true
+    sni: vmess.clash.example.test
+    skip-cert-verify: true
+    alpn: h2,http/1.1
 proxy-groups:
   - name: Auto
     type: select
@@ -144,8 +158,8 @@ proxy-groups:
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 13 {
-		t.Fatalf("expected 13 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 14 {
+		t.Fatalf("expected 14 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.example.test:443?")
@@ -201,6 +215,17 @@ proxy-groups:
 		!strings.Contains(lines[12], "network=udp") ||
 		!strings.Contains(lines[12], "mtu=1420") {
 		t.Fatalf("unexpected clash wireguard URI: %q", lines[12])
+	}
+	assertHasPrefix(t, lines[13], "vmess://")
+	decodedVMess, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[13], "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode clash vmess URI: %v", err)
+	}
+	decodedVMessText := string(decodedVMess)
+	if !strings.Contains(decodedVMessText, `"allowInsecure":"1"`) ||
+		!strings.Contains(decodedVMessText, `"alpn":"h2,http/1.1"`) ||
+		!strings.Contains(decodedVMessText, `"sni":"vmess.clash.example.test"`) {
+		t.Fatalf("unexpected clash vmess document: %q", decodedVMessText)
 	}
 }
 

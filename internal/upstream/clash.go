@@ -179,9 +179,13 @@ func clashVMessURI(proxy map[string]string) string {
 		"path": firstMapValue(proxy, "ws-path", "ws_path", "path"),
 		"tls":  "",
 		"sni":  firstMapValue(proxy, "sni", "servername", "server_name"),
+		"alpn": firstMapValue(proxy, "alpn"),
 	}
 	if tlsEnabled(proxy) {
 		doc["tls"] = "tls"
+	}
+	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
+		doc["allowInsecure"] = "1"
 	}
 	encoded, err := json.Marshal(doc)
 	if err != nil {

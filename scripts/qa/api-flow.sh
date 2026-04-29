@@ -153,6 +153,20 @@ clash_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(`proxies:
     reserved: 1,2,3
     mtu: 1420
     udp: true
+  - name: "东京 VMess"
+    type: vmess
+    server: vmess.clash.example.sub
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000056
+    alter-id: 0
+    cipher: auto
+    network: ws
+    ws-path: /ws
+    ws-headers.host: ws.clash.example.sub
+    tls: true
+    sni: vmess.clash.example.sub
+    skip-cert-verify: true
+    alpn: h2,http/1.1
 `));')"
 post_json "/api/sources" "{\"name\":\"订阅源A\",\"type\":\"subscription\",\"raw_content\":$clash_subscription_raw,\"refresh_interval_minutes\":5}" "$OUT_DIR/source-subscription.json"
 subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
@@ -216,6 +230,7 @@ clash_shadowtls_node_count="$(json_value "data.filter((node) => node.raw_name ==
 clash_naive_node_count="$(json_value "data.filter((node) => node.raw_name === '新加坡 Naive' && node.protocol === 'naive+quic').length" <"$OUT_DIR/nodes.json")"
 clash_ssh_node_count="$(json_value "data.filter((node) => node.raw_name === '香港 SSH' && node.protocol === 'ssh').length" <"$OUT_DIR/nodes.json")"
 clash_wireguard_node_count="$(json_value "data.filter((node) => node.raw_name === '台北 WireGuard' && node.protocol === 'wireguard').length" <"$OUT_DIR/nodes.json")"
+clash_vmess_node_count="$(json_value "data.filter((node) => node.raw_name === '东京 VMess' && node.protocol === 'vmess').length" <"$OUT_DIR/nodes.json")"
 first_node_id="$(json_value "data[0]?.id ?? 0" <"$OUT_DIR/nodes.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes/$first_node_id" -o "$OUT_DIR/node-detail.json"
 node_detail_id="$(json_value "data.id" <"$OUT_DIR/node-detail.json")"
@@ -297,7 +312,7 @@ if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nod
   exit 1
 fi
 
-if [[ "$source_refresh_imported" != "11" ]]; then
+if [[ "$source_refresh_imported" != "12" ]]; then
   log "unexpected subscription refresh import count: $source_refresh_imported"
   exit 1
 fi
@@ -349,6 +364,11 @@ fi
 
 if [[ "$clash_wireguard_node_count" -lt 1 ]]; then
   log "Clash YAML WireGuard proxy should import as active node: wireguard=$clash_wireguard_node_count"
+  exit 1
+fi
+
+if [[ "$clash_vmess_node_count" -lt 1 ]]; then
+  log "Clash YAML VMess proxy should import as active node: vmess=$clash_vmess_node_count"
   exit 1
 fi
 

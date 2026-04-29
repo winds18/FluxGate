@@ -29,6 +29,7 @@
 - subscription 来源支持解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段内的 base64 URI 列表也会归一化。
 - subscription 来源支持解析以节点名称为 key 的 JSON URI 对象映射；当 URI 缺少 fragment 时会使用映射 key 或对象内 `name` 作为节点名。
 - subscription 来源支持解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点。
+- Clash YAML 解析支持嵌套 `proxies` 列表，可兼容带内嵌 provider 节点清单的订阅结构。
 - Clash YAML 解析支持常见块状和内联 `ws-opts`、`grpc-opts` 嵌套写法，能保留 WebSocket path/host 和 gRPC service name。
 - Clash YAML 解析支持行内和块状数组标量，例如 `alpn: [h2, http/1.1]`、`alpn: ... - h2` 和 WireGuard `allowed-ips`/`reserved` 列表。
 - subscription 来源支持解析 SIP008 Shadowsocks 订阅。

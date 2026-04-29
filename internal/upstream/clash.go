@@ -14,6 +14,7 @@ func ClashYAMLURIList(content string) string {
 	var current map[string]string
 	var scopes []yamlFieldScope
 	inProxies := false
+	proxiesIndent := -1
 	proxyItemIndent := -1
 
 	for _, rawLine := range strings.Split(content, "\n") {
@@ -22,14 +23,22 @@ func ClashYAMLURIList(content string) string {
 			continue
 		}
 		indent := len(rawLine) - len(strings.TrimLeft(rawLine, " \t"))
+		if inProxies && indent <= proxiesIndent && !strings.HasPrefix(trimmed, "- ") {
+			if len(current) > 0 {
+				proxies = append(proxies, current)
+			}
+			current = nil
+			scopes = nil
+			inProxies = false
+			proxiesIndent = -1
+			proxyItemIndent = -1
+		}
 		if !inProxies {
-			if trimmed == "proxies:" {
+			if isClashYAMLProxiesField(trimmed) {
 				inProxies = true
+				proxiesIndent = indent
 			}
 			continue
-		}
-		if indent == 0 && !strings.HasPrefix(trimmed, "- ") {
-			break
 		}
 		if strings.HasPrefix(trimmed, "- ") {
 			if current != nil && proxyItemIndent >= 0 && indent > proxyItemIndent {
@@ -85,6 +94,11 @@ func ClashYAMLURIList(content string) string {
 type yamlFieldScope struct {
 	Indent int
 	Key    string
+}
+
+func isClashYAMLProxiesField(line string) bool {
+	key, value, ok := parseYAMLField(line)
+	return ok && strings.EqualFold(strings.TrimSpace(key), "proxies") && strings.TrimSpace(value) == ""
 }
 
 func clashProxyURI(proxy map[string]string) string {

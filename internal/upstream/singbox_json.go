@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 )
@@ -49,9 +50,33 @@ func singBoxObjectList(raw json.RawMessage) []map[string]any {
 	}
 	var item map[string]any
 	if err := json.Unmarshal(raw, &item); err == nil && len(item) > 0 {
+		if _, ok := item["type"]; !ok {
+			return singBoxObjectMap(item)
+		}
 		return []map[string]any{item}
 	}
 	return nil
+}
+
+func singBoxObjectMap(items map[string]any) []map[string]any {
+	keys := make([]string, 0, len(items))
+	for key := range items {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+
+	result := make([]map[string]any, 0, len(keys))
+	for _, key := range keys {
+		item, ok := items[key].(map[string]any)
+		if !ok || len(item) == 0 {
+			continue
+		}
+		if strings.TrimSpace(stringFromAnyValue(item["tag"])) == "" && strings.TrimSpace(stringFromAnyValue(item["name"])) == "" {
+			item["tag"] = key
+		}
+		result = append(result, item)
+	}
+	return result
 }
 
 func singBoxOutboundURI(outbound map[string]any) string {

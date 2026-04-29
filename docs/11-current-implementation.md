@@ -32,6 +32,7 @@
 - subscription 来源支持解析 SIP008 Shadowsocks 订阅。
 - subscription 来源支持解析 sing-box JSON `outbounds` 中的常见 Shadowsocks/Trojan/VLESS/VMess/Hysteria2/TUIC/AnyTLS/ShadowTLS/Hysteria/HTTP/SOCKS/SSH/WireGuard/Tor 节点。
 - subscription 来源支持解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
+- sing-box JSON `outbounds` 和 `endpoints` 支持数组、单个对象和按名称分组的对象映射；对象映射缺少 `tag`/`name` 时会使用映射键作为节点名。
 - subscription 来源支持按 `refresh_interval_minutes` 定时同步；后台调度默认每 60 秒检查一批到期来源。
 - 上游来源自动前缀。
 - 重复来源名前缀自动编号，例如 `[机场A]`、`[机场A-2]`。

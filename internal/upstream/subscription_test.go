@@ -858,6 +858,60 @@ func TestNormalizeContentSingBoxJSONDirect(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONObjectMaps(t *testing.T) {
+	raw := `{
+  "outbounds": {
+    "ss-map": {
+      "type": "shadowsocks",
+      "server": "ss.map.example.test",
+      "server_port": 8388,
+      "method": "aes-128-gcm",
+      "password": "qa-placeholder"
+    },
+    "direct-map": {
+      "type": "direct"
+    }
+  },
+  "endpoints": {
+    "wg-map": {
+      "type": "wireguard",
+      "address": "10.66.0.3/32",
+      "private_key": "map-private",
+      "peers": [
+        {
+          "address": "wg.map.example.test",
+          "port": 51820,
+          "public_key": "map-peer",
+          "allowed_ips": "0.0.0.0/0,::/0"
+        }
+      ]
+    }
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "direct://default#direct-map" {
+		t.Fatalf("unexpected direct map URI: %q", lines[0])
+	}
+	if lines[1] != "ss://aes-128-gcm:qa-placeholder@ss.map.example.test:8388#ss-map" {
+		t.Fatalf("unexpected shadowsocks map URI: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "wireguard://wg.map.example.test:51820?")
+	if !strings.Contains(lines[2], "private_key=map-private") ||
+		!strings.Contains(lines[2], "peer_public_key=map-peer") ||
+		!strings.Contains(lines[2], "local_address=10.66.0.3%2F32") ||
+		!strings.Contains(lines[2], "allowed_ips=0.0.0.0%2F0%2C%3A%3A%2F0") ||
+		!strings.HasSuffix(lines[2], "#wg-map") {
+		t.Fatalf("unexpected wireguard endpoint map URI: %q", lines[2])
+	}
+}
+
 func TestNormalizeContentSingBoxJSONBlock(t *testing.T) {
 	raw := `{
   "outbounds": [

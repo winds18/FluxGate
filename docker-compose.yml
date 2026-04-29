@@ -23,7 +23,7 @@ services:
     volumes:
       - ./data/sing-box:/etc/sing-box
       - ./logs/sing-box:/var/log/sing-box
-    command: -D /var/lib/sing-box -C /etc/sing-box run
+    command: run -D /var/lib/sing-box -c /etc/sing-box/config.json
     ports:
       - "8443:8443/tcp"
       - "8444:8444/tcp"

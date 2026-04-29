@@ -167,6 +167,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildSOCKSOutbound(node)
 	case "ssh":
 		return buildSSHOutbound(node)
+	case "wireguard", "wg":
+		return buildWireGuardOutbound(node)
 	default:
 		return nil, false
 	}
@@ -784,6 +786,75 @@ func buildSSHOutbound(node store.Node) (map[string]any, bool) {
 	return outbound, true
 }
 
+func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || (node.Protocol != "wireguard" && node.Protocol != "wg") {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || (parsed.Scheme != "wireguard" && parsed.Scheme != "wg") || parsed.Hostname() == "" {
+		return nil, false
+	}
+
+	query := parsed.Query()
+	privateKey := firstNonEmpty(query.Get("private_key"), query.Get("private-key"), parsed.User.Username())
+	peerPublicKey := firstNonEmpty(query.Get("peer_public_key"), query.Get("peer-public-key"), query.Get("public_key"), query.Get("public-key"))
+	localAddress := splitCSV(firstNonEmpty(query.Get("local_address"), query.Get("local-address"), query.Get("address")))
+	if privateKey == "" || peerPublicKey == "" || len(localAddress) == 0 {
+		return nil, false
+	}
+
+	serverPort := portWithFallback(parsed.Port(), node.ServerPort, 51820)
+	outbound := map[string]any{
+		"type":            "wireguard",
+		"tag":             upstreamTag(node),
+		"server":          parsed.Hostname(),
+		"server_port":     serverPort,
+		"local_address":   localAddress,
+		"private_key":     privateKey,
+		"peer_public_key": peerPublicKey,
+	}
+	if systemInterface := boolQuery(firstNonEmpty(query.Get("system_interface"), query.Get("system-interface"), query.Get("system"))); systemInterface {
+		outbound["system_interface"] = true
+	}
+	if interfaceName := firstNonEmpty(query.Get("interface_name"), query.Get("interface-name"), query.Get("name")); interfaceName != "" {
+		outbound["interface_name"] = interfaceName
+	}
+	preSharedKey := firstNonEmpty(query.Get("pre_shared_key"), query.Get("pre-shared-key"), query.Get("preshared_key"), query.Get("psk"))
+	if preSharedKey != "" {
+		outbound["pre_shared_key"] = preSharedKey
+	}
+	if reserved, ok := byteListQuery(query.Get("reserved")); ok {
+		outbound["reserved"] = reserved
+	}
+	if workers := intQuery(query.Get("workers")); workers > 0 {
+		outbound["workers"] = workers
+	}
+	if mtu := intQuery(query.Get("mtu")); mtu > 0 {
+		outbound["mtu"] = mtu
+	}
+	if network := firstNonEmpty(query.Get("network"), query.Get("protocol")); network != "" {
+		outbound["network"] = network
+	}
+
+	if allowedIPs := splitCSV(firstNonEmpty(query.Get("allowed_ips"), query.Get("allowed-ips"), query.Get("peer_allowed_ips"), query.Get("peer-allowed-ips"))); len(allowedIPs) > 0 {
+		peer := map[string]any{
+			"server":      parsed.Hostname(),
+			"server_port": serverPort,
+			"public_key":  peerPublicKey,
+			"allowed_ips": allowedIPs,
+		}
+		if preSharedKey != "" {
+			peer["pre_shared_key"] = preSharedKey
+		}
+		if reserved, ok := byteListQuery(firstNonEmpty(query.Get("peer_reserved"), query.Get("peer-reserved"), query.Get("reserved"))); ok {
+			peer["reserved"] = reserved
+		}
+		outbound["peers"] = []map[string]any{peer}
+	}
+
+	return outbound, true
+}
+
 func parseVMessURI(rawURI string) (map[string]any, bool) {
 	rawURI = strings.TrimSpace(rawURI)
 	if !strings.HasPrefix(rawURI, "vmess://") {
@@ -989,6 +1060,22 @@ func socksVersion(scheme string, queryVersion string) string {
 	default:
 		return ""
 	}
+}
+
+func byteListQuery(value string) ([]int, bool) {
+	parts := splitCSV(value)
+	if len(parts) == 0 {
+		return nil, false
+	}
+	result := make([]int, 0, len(parts))
+	for _, part := range parts {
+		value, err := strconv.Atoi(part)
+		if err != nil || value < 0 || value > 255 {
+			return nil, false
+		}
+		result = append(result, value)
+	}
+	return result, true
 }
 
 func boolQuery(value string) bool {

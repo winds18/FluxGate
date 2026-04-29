@@ -168,9 +168,16 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         56,
-			URI:        "wireguard://placeholder@example.org:443#unsupported",
+			URI:        "wireguard://example.wg:51820?private_key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI=&peer_public_key=cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==&pre_shared_key=cHNrLXBsYWNlaG9sZGVy&local_address=10.66.0.2/32,fd00::2/128&allowed_ips=0.0.0.0/0,::/0&reserved=1,2,3&workers=2&mtu=1420&network=udp&system_interface=1&interface_name=wg-qa#wireguard",
 			Protocol:   "wireguard",
-			ServerPort: 443,
+			ServerPort: 51820,
+			Status:     "active",
+		},
+		{
+			ID:         57,
+			URI:        "tor://default#unsupported",
+			Protocol:   "tor",
+			ServerPort: 0,
 			Status:     "active",
 		},
 	}, time.Date(2026, 4, 29, 1, 17, 0, 0, time.UTC))
@@ -403,7 +410,43 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if !ok || len(kexAlgorithm) != 1 || kexAlgorithm[0] != "curve25519-sha256" {
 		t.Fatalf("unexpected ssh kex algorithms: %+v", ssh["kex_algorithm"])
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_56") != nil {
+	wireguard := findOutbound(config.Outbounds, "up_56")
+	if wireguard == nil {
+		t.Fatalf("expected wireguard outbound up_56, got %+v", config.Outbounds)
+	}
+	if wireguard["type"] != "wireguard" || wireguard["server"] != "example.wg" || wireguard["server_port"] != 51820 {
+		t.Fatalf("unexpected wireguard server fields: %+v", wireguard)
+	}
+	if wireguard["private_key"] != "cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI=" || wireguard["peer_public_key"] != "cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==" || wireguard["pre_shared_key"] != "cHNrLXBsYWNlaG9sZGVy" {
+		t.Fatalf("unexpected wireguard key fields: %+v", wireguard)
+	}
+	localAddress, ok := wireguard["local_address"].([]string)
+	if !ok || len(localAddress) != 2 || localAddress[0] != "10.66.0.2/32" || localAddress[1] != "fd00::2/128" {
+		t.Fatalf("unexpected wireguard local address: %+v", wireguard["local_address"])
+	}
+	if wireguard["system_interface"] != true || wireguard["interface_name"] != "wg-qa" || wireguard["workers"] != 2 || wireguard["mtu"] != 1420 || wireguard["network"] != "udp" {
+		t.Fatalf("unexpected wireguard interface fields: %+v", wireguard)
+	}
+	reserved, ok := wireguard["reserved"].([]int)
+	if !ok || len(reserved) != 3 || reserved[0] != 1 || reserved[1] != 2 || reserved[2] != 3 {
+		t.Fatalf("unexpected wireguard reserved bytes: %+v", wireguard["reserved"])
+	}
+	peers, ok := wireguard["peers"].([]map[string]any)
+	if !ok || len(peers) != 1 {
+		t.Fatalf("unexpected wireguard peers: %+v", wireguard["peers"])
+	}
+	peerAllowedIPs, ok := peers[0]["allowed_ips"].([]string)
+	if !ok || len(peerAllowedIPs) != 2 || peerAllowedIPs[0] != "0.0.0.0/0" || peerAllowedIPs[1] != "::/0" {
+		t.Fatalf("unexpected wireguard peer allowed ips: %+v", peers[0]["allowed_ips"])
+	}
+	if peers[0]["server"] != "example.wg" || peers[0]["server_port"] != 51820 || peers[0]["public_key"] != "cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==" || peers[0]["pre_shared_key"] != "cHNrLXBsYWNlaG9sZGVy" {
+		t.Fatalf("unexpected wireguard peer fields: %+v", peers[0])
+	}
+	peerReserved, ok := peers[0]["reserved"].([]int)
+	if !ok || len(peerReserved) != 3 || peerReserved[0] != 1 || peerReserved[1] != 2 || peerReserved[2] != 3 {
+		t.Fatalf("unexpected wireguard peer reserved bytes: %+v", peers[0]["reserved"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_57") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -412,7 +455,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 13 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || tags[11] != "up_54" || tags[12] != "up_55" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 14 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || tags[11] != "up_54" || tags[12] != "up_55" || tags[13] != "up_56" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

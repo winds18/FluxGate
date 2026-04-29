@@ -29,7 +29,7 @@
 - Clash/Mihomo 订阅生成。
 - sing-box 客户端订阅生成。
 - sing-box 服务端配置生成骨架。
-- active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
+- active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
 - Token hash 存储，明文只在创建时返回。
 - 订阅请求日志 Token 路径脱敏。
@@ -139,7 +139,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅定时同步。
 - 上游订阅更多协议格式解析。
-- WireGuard/Tor 等更多协议 URI 到 sing-box outbound 的转换。
+- Tor 等更多协议 URI 到 sing-box outbound 的转换。
 - 策略管理。
 - 流量统计采集。
 - 流量采集后的超额自动标记、阻断和配置发布触发。
@@ -153,5 +153,6 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 生产部署仍应由 `scripts/deploy/bootstrap-remote.sh` 生成 `.env` 后再修改密钥；管理员引导账号只在没有管理员记录时创建。
 - 管理 API 需要管理员会话；订阅接口 `/sub/{token}` 继续使用订阅 Token 鉴权，不依赖管理员登录。
 - 需要局域网访问管理后台时，通过部署侧配置 `FLUXGATE_HOST_BIND=0.0.0.0` 和 `FLUXGATE_HTTP_PORT`，公开仓库不保存真实访问地址。
+- sing-box 官方文档已标注 WireGuard outbound 废弃；当前仅按 Phase 1 既有 outbound 骨架兼容解析，后续应评估迁移到 endpoint 模型。
 - 本地 QA 产生的 `data/`、`logs/`、`tmp/` 均被 `.gitignore` 排除，并默认在测试退出时清理。
 - Playwright Chromium 已在本机安装一次，后续截图脚本会复用缓存。

@@ -867,6 +867,41 @@ func TestNormalizeContentSIP008(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSIP008ServerObjectMap(t *testing.T) {
+	raw := `{
+  "version": 1,
+  "servers": {
+    "香港 SIP008 映射": {
+      "server": "sip008-map.example.test",
+      "server_port": 8388,
+      "method": "aes-128-gcm",
+      "password": "qa-placeholder",
+      "plugin": "v2ray-plugin",
+      "plugin_opts": "mode=websocket;host=sip008-map.example.test",
+      "network": "tcp"
+    },
+    "东京 SIP008 映射": {
+      "name": "东京 自定义名",
+      "server": "sip008-map-2.example.test",
+      "server_port": 8389,
+      "method": "aes-256-gcm",
+      "password": "qa-placeholder"
+    }
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-256-gcm:qa-placeholder@sip008-map-2.example.test:8389#%E4%B8%9C%E4%BA%AC%20%E8%87%AA%E5%AE%9A%E4%B9%89%E5%90%8D",
+		"ss://aes-128-gcm:qa-placeholder@sip008-map.example.test:8388?network=tcp&plugin=v2ray-plugin&plugin_opts=mode%3Dwebsocket%3Bhost%3Dsip008-map.example.test#%E9%A6%99%E6%B8%AF%20SIP008%20%E6%98%A0%E5%B0%84",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected SIP008 object map URI: %q", got)
+	}
+}
+
 func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

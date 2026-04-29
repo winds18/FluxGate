@@ -3,6 +3,7 @@ package upstream
 import (
 	"context"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -91,6 +92,9 @@ func NormalizeContent(content string) (string, error) {
 	if normalized := URIList(content); normalized != "" {
 		return normalized, nil
 	}
+	if normalized := JSONURIList(content); normalized != "" {
+		return normalized, nil
+	}
 	if normalized := ClashYAMLURIList(content); normalized != "" {
 		return normalized, nil
 	}
@@ -122,6 +126,9 @@ func NormalizeContent(content string) (string, error) {
 		if normalized := URIList(string(decoded)); normalized != "" {
 			return normalized, nil
 		}
+		if normalized := JSONURIList(string(decoded)); normalized != "" {
+			return normalized, nil
+		}
 		if normalized := ClashYAMLURIList(string(decoded)); normalized != "" {
 			return normalized, nil
 		}
@@ -151,4 +158,40 @@ func URIList(content string) string {
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+func JSONURIList(content string) string {
+	decoder := json.NewDecoder(strings.NewReader(strings.TrimSpace(content)))
+	decoder.UseNumber()
+	var doc any
+	if err := decoder.Decode(&doc); err != nil {
+		return ""
+	}
+	var uris []string
+	collectJSONURIs(doc, &uris)
+	return URIList(strings.Join(uris, "\n"))
+}
+
+func collectJSONURIs(value any, uris *[]string) {
+	switch typed := value.(type) {
+	case string:
+		if URIList(typed) != "" {
+			*uris = append(*uris, typed)
+		}
+	case []any:
+		for _, item := range typed {
+			collectJSONURIs(item, uris)
+		}
+	case map[string]any:
+		for _, key := range []string{"uri", "url", "link", "share"} {
+			if item, ok := typed[key]; ok {
+				collectJSONURIs(item, uris)
+			}
+		}
+		for _, key := range []string{"uris", "nodes", "proxies", "items", "urls", "links"} {
+			if item, ok := typed[key]; ok {
+				collectJSONURIs(item, uris)
+			}
+		}
+	}
 }

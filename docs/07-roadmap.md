@@ -95,7 +95,7 @@
 - `traffic_samples` 增量样本落库、counter reset 处理、Token 用量累加。
 - 采集入库后自动标记 `over_quota`，追加足够额度后自动恢复 Token 和 gateway account。
 - 用户小时/天级流量汇总表和 Token 今日、本月、累计流量摘要 API。
-- 管理后台基于小时/日汇总 API 展示最近 24 小时和最近 14 天流量图。
+- 管理后台基于小时/日汇总 API 展示最近 24 小时和最近 14 天流量图，并展示近 14 天上游出口流量摘要。
 - 订阅响应头返回标准 `subscription-userinfo` 和 FluxGate 用量、额度、剩余额度头。
 - stats 可插拔轮询调度器，可把采集器返回的 V2Ray counters 转换为流量样本并写入现有汇总链路。
 

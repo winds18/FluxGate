@@ -2,6 +2,7 @@ package store
 
 import (
 	"context"
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -637,6 +638,81 @@ func TestListTrafficHourlyAtFillsRecentHours(t *testing.T) {
 	}
 	if hours[2].Hour != "2026-04-29T08:00:00Z" || hours[2].UploadBytes != 30 || hours[2].DownloadBytes != 55 || hours[2].TotalBytes != 85 {
 		t.Fatalf("unexpected current hour summary: %+v", hours[2])
+	}
+}
+
+func TestListOutboundTrafficAtSummarizesUpstreamNodes(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	source, err := db.CreateSource(ctx, CreateSourceInput{Name: "Outbound Source", Type: "manual"})
+	if err != nil {
+		t.Fatalf("create source: %v", err)
+	}
+	result, err := db.ImportNodes(ctx, ImportNodesInput{
+		SourceID: source.ID,
+		Content:  "vless://uuid@example.com:443#HK%2001",
+	})
+	if err != nil {
+		t.Fatalf("import nodes: %v", err)
+	}
+	if result.Imported != 1 {
+		t.Fatalf("expected one imported node, got %+v", result)
+	}
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		t.Fatalf("list nodes: %v", err)
+	}
+	if len(nodes) != 1 {
+		t.Fatalf("expected one node, got %+v", nodes)
+	}
+
+	now := time.Date(2026, 4, 29, 8, 30, 0, 0, time.UTC)
+	outboundTag := fmt.Sprintf("up_%d", nodes[0].ID)
+	for _, input := range []RecordTrafficSampleInput{
+		{
+			SampledAt:        now.AddDate(0, 0, -1),
+			MetricType:       "outbound",
+			MetricName:       outboundTag,
+			RawValueUpload:   0,
+			RawValueDownload: 0,
+		},
+		{
+			SampledAt:        now.AddDate(0, 0, -1).Add(time.Hour),
+			MetricType:       "outbound",
+			MetricName:       outboundTag,
+			RawValueUpload:   10,
+			RawValueDownload: 20,
+		},
+		{
+			SampledAt:        now,
+			MetricType:       "outbound",
+			MetricName:       outboundTag,
+			RawValueUpload:   30,
+			RawValueDownload: 50,
+		},
+	} {
+		if _, err := db.RecordTrafficSample(ctx, input); err != nil {
+			t.Fatalf("record traffic sample: %v", err)
+		}
+	}
+
+	summaries, err := db.ListOutboundTrafficAt(ctx, now, 2)
+	if err != nil {
+		t.Fatalf("list outbound traffic: %v", err)
+	}
+	if len(summaries) != 1 {
+		t.Fatalf("expected one outbound summary, got %+v", summaries)
+	}
+	summary := summaries[0]
+	if summary.OutboundTag != outboundTag || summary.UpstreamNodeID == nil || *summary.UpstreamNodeID != nodes[0].ID {
+		t.Fatalf("unexpected outbound identity: %+v", summary)
+	}
+	if summary.NodeName != nodes[0].DisplayName || summary.SourceName != source.Name {
+		t.Fatalf("unexpected outbound names: %+v", summary)
+	}
+	if summary.UploadBytes != 30 || summary.DownloadBytes != 50 || summary.TotalBytes != 80 {
+		t.Fatalf("unexpected outbound traffic totals: %+v", summary)
 	}
 }
 

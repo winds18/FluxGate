@@ -284,6 +284,7 @@ POST /api/sing-box/restart
 GET /api/traffic/tokens
 GET /api/traffic/daily?days=14
 GET /api/traffic/hourly?hours=24
+GET /api/traffic/outbounds?days=14
 
 GET /api/stats/overview
 GET /api/stats/users

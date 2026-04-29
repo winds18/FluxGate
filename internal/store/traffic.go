@@ -64,6 +64,17 @@ type TrafficHourlySummary struct {
 	TotalBytes    int64  `json:"total_bytes"`
 }
 
+type OutboundTrafficSummary struct {
+	OutboundTag    string `json:"outbound_tag"`
+	UpstreamNodeID *int64 `json:"upstream_node_id,omitempty"`
+	NodeName       string `json:"node_name"`
+	SourceName     string `json:"source_name"`
+	UploadBytes    int64  `json:"upload_bytes"`
+	DownloadBytes  int64  `json:"download_bytes"`
+	TotalBytes     int64  `json:"total_bytes"`
+	UpdatedAt      string `json:"updated_at"`
+}
+
 func (s *Store) RecordTrafficSample(ctx context.Context, input RecordTrafficSampleInput) (TrafficSample, error) {
 	normalized, err := normalizeTrafficSampleInput(input)
 	if err != nil {
@@ -220,6 +231,66 @@ func (s *Store) ListTrafficDailyAt(ctx context.Context, now time.Time, days int)
 		summaries = append(summaries, item)
 	}
 	return summaries, nil
+}
+
+func (s *Store) ListOutboundTraffic(ctx context.Context, days int) ([]OutboundTrafficSummary, error) {
+	return s.ListOutboundTrafficAt(ctx, time.Now().UTC(), days)
+}
+
+func (s *Store) ListOutboundTrafficAt(ctx context.Context, now time.Time, days int) ([]OutboundTrafficSummary, error) {
+	if days <= 0 {
+		days = 14
+	}
+	if days > 90 {
+		days = 90
+	}
+	end := now.UTC()
+	start := end.AddDate(0, 0, -days+1)
+	rows, err := s.db.QueryContext(ctx, `
+		SELECT o.outbound_tag,
+		       o.upstream_node_id,
+		       COALESCE(n.display_name, ''),
+		       COALESCE(src.name, ''),
+		       SUM(o.upload_bytes),
+		       SUM(o.download_bytes),
+		       SUM(o.upload_bytes + o.download_bytes),
+		       MAX(o.updated_at)
+		FROM traffic_outbound_daily o
+		LEFT JOIN upstream_nodes n ON n.id = o.upstream_node_id
+		LEFT JOIN upstream_sources src ON src.id = n.source_id
+		WHERE o.day >= ? AND o.day <= ?
+		GROUP BY o.outbound_tag, o.upstream_node_id, n.display_name, src.name
+		ORDER BY SUM(o.upload_bytes + o.download_bytes) DESC, o.outbound_tag ASC
+		LIMIT 100
+	`, start.Format("2006-01-02"), end.Format("2006-01-02"))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	summaries := make([]OutboundTrafficSummary, 0)
+	for rows.Next() {
+		var item OutboundTrafficSummary
+		var upstreamNodeID sql.NullInt64
+		if err := rows.Scan(
+			&item.OutboundTag,
+			&upstreamNodeID,
+			&item.NodeName,
+			&item.SourceName,
+			&item.UploadBytes,
+			&item.DownloadBytes,
+			&item.TotalBytes,
+			&item.UpdatedAt,
+		); err != nil {
+			return nil, err
+		}
+		if upstreamNodeID.Valid {
+			id := upstreamNodeID.Int64
+			item.UpstreamNodeID = &id
+		}
+		summaries = append(summaries, item)
+	}
+	return summaries, rows.Err()
 }
 
 func (s *Store) ListTrafficHourly(ctx context.Context, hours int) ([]TrafficHourlySummary, error) {

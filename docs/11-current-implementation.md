@@ -48,7 +48,7 @@
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
 - 流量统计入库骨架已落地：可解析 V2Ray stats 的 user/inbound/outbound 计数名称，写入 `traffic_samples`，计算 counter delta，并把 user 维度增量累加到 Token 用量和小时/天汇总表。
 - user 维度流量入库后会自动判断 Token 额度；超额时将 Token 和 gateway account 标记为 `over_quota`，追加足够额度后自动恢复为 `active`。
-- 管理 API 和后台页面可查看 Token 今日、本月和累计流量用量摘要，并展示最近 24 小时和最近 14 天流量图。
+- 管理 API 和后台页面可查看 Token 今日、本月和累计流量用量摘要，展示最近 24 小时/最近 14 天流量图，并查看近 14 天上游出口流量摘要。
 - 订阅响应头返回标准 `subscription-userinfo`，并提供 FluxGate 专属的已用、总额和剩余额度头。
 - stats 可插拔轮询调度器已落地，能将采集器返回的 V2Ray counters 转换为流量样本并写入现有用量汇总链路。
 - Token hash 存储，明文只在创建时返回。
@@ -115,6 +115,7 @@ POST /api/policies
 GET  /api/traffic/tokens
 GET  /api/traffic/daily?days=14
 GET  /api/traffic/hourly?hours=24
+GET  /api/traffic/outbounds?days=14
 
 POST /api/sing-box/config/generate
 POST /api/sing-box/config/check

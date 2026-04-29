@@ -16,6 +16,7 @@ const policiesEl = document.querySelector("#policies");
 const tokensEl = document.querySelector("#tokens");
 const trafficHourlyEl = document.querySelector("#traffic-hourly");
 const trafficDailyEl = document.querySelector("#traffic-daily");
+const trafficOutboundsEl = document.querySelector("#traffic-outbounds");
 const trafficTokensEl = document.querySelector("#traffic-tokens");
 const refreshEl = document.querySelector("#refresh");
 const configCheckEl = document.querySelector("#config-check");
@@ -114,7 +115,7 @@ function showApp() {
 async function load() {
   statusEl.textContent = "刷新中";
   try {
-    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficHourly, trafficDaily, trafficTokens] = await Promise.all([
+    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficHourly, trafficDaily, trafficOutbounds, trafficTokens] = await Promise.all([
       getJSON("/api/overview"),
       getJSON("/api/teams"),
       getJSON("/api/users"),
@@ -125,6 +126,7 @@ async function load() {
       getJSON("/api/tokens"),
       getJSON("/api/traffic/hourly?hours=24"),
       getJSON("/api/traffic/daily?days=14"),
+      getJSON("/api/traffic/outbounds?days=14"),
       getJSON("/api/traffic/tokens"),
     ]);
     appState = { teams, users, sources, virtualNodes };
@@ -139,6 +141,7 @@ async function load() {
     renderTokens(tokens);
     renderTrafficHourly(trafficHourly);
     renderTrafficDaily(trafficDaily);
+    renderTrafficOutbounds(trafficOutbounds);
     renderTrafficTokens(trafficTokens);
     statusEl.textContent = "已连接";
   } catch (error) {
@@ -555,6 +558,23 @@ function renderTrafficTokens(rows) {
     "used_download_bytes",
     "used_total_bytes",
     "quota_bytes",
+    "updated_at",
+  ]);
+}
+
+function renderTrafficOutbounds(rows) {
+  if (!rows || rows.length === 0) {
+    trafficOutboundsEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  renderTable(trafficOutboundsEl, rows, [
+    "outbound_tag",
+    "upstream_node_id",
+    "node_name",
+    "source_name",
+    "upload_bytes",
+    "download_bytes",
+    "total_bytes",
     "updated_at",
   ]);
 }

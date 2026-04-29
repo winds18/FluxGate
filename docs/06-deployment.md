@@ -209,6 +209,7 @@ scripts/deploy/remote-build.sh
 scripts/deploy/deploy-remote.sh
 scripts/deploy/verify-remote.sh
 scripts/deploy/collect-diagnostics.sh
+scripts/sing-box/reload-config.sh
 ```
 
 ### 6.1 系统环境探测

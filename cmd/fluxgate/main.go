@@ -13,6 +13,7 @@ import (
 	"github.com/winds18/FluxGate/internal/config"
 	"github.com/winds18/FluxGate/internal/httpapi"
 	"github.com/winds18/FluxGate/internal/observability"
+	"github.com/winds18/FluxGate/internal/stats"
 	"github.com/winds18/FluxGate/internal/store"
 	"github.com/winds18/FluxGate/internal/upstreamsync"
 )
@@ -57,6 +58,20 @@ func main() {
 
 	refresher := upstreamsync.Refresher{Store: db}
 	go refresher.RunScheduler(ctx, cfg.SourceSyncPollInterval, cfg.SourceSyncBatchLimit, logger)
+
+	if cfg.SingBoxV2RayAPIAddr != "" && cfg.StatsPollInterval > 0 {
+		collector := stats.V2RayGRPCCollector{
+			Addr:           cfg.SingBoxV2RayAPIAddr,
+			QueryPattern:   cfg.SingBoxV2RayStatsPattern,
+			RequestTimeout: cfg.SingBoxV2RayAPITimeout,
+			DialTimeout:    cfg.SingBoxV2RayAPITimeout,
+		}
+		poller := stats.Poller{Collector: collector, Recorder: db, Logger: logger}
+		go poller.RunScheduler(ctx, cfg.StatsPollInterval)
+		logger.Info("stats poller enabled", "interval", cfg.StatsPollInterval.String())
+	} else {
+		logger.Info("stats poller disabled")
+	}
 
 	srv := &http.Server{
 		Addr:              cfg.HTTPAddr,

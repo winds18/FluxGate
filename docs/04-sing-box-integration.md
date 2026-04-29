@@ -205,7 +205,7 @@ stats Collector 定时轮询 sing-box stats
 -> 判断超额
 ```
 
-当前控制面已经具备可插拔 Poller 调度器；真实 sing-box gRPC client 后续接入同一个 Collector 接口。
+当前控制面已经具备可插拔 Poller 调度器，并已接入 sing-box V2Ray gRPC stats client；配置 `SING_BOX_V2RAY_API_ADDR` 后会定时轮询 counters，并写入既有流量样本和汇总链路。
 
 注意：
 

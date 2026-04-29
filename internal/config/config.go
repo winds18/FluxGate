@@ -28,6 +28,9 @@ type Config struct {
 	SingBoxRestartCommand     string
 	SingBoxRestartArgs        []string
 	SingBoxRestartTimeout     time.Duration
+	SingBoxV2RayAPIAddr       string
+	SingBoxV2RayStatsPattern  string
+	SingBoxV2RayAPITimeout    time.Duration
 	SourceSyncPollInterval    time.Duration
 	SourceSyncBatchLimit      int
 	StatsPollInterval         time.Duration
@@ -56,6 +59,9 @@ func Load() Config {
 		SingBoxRestartCommand:     env("SING_BOX_RESTART_COMMAND", ""),
 		SingBoxRestartArgs:        envFields("SING_BOX_RESTART_ARGS"),
 		SingBoxRestartTimeout:     time.Duration(envInt("SING_BOX_RESTART_TIMEOUT_SECONDS", 15)) * time.Second,
+		SingBoxV2RayAPIAddr:       env("SING_BOX_V2RAY_API_ADDR", ""),
+		SingBoxV2RayStatsPattern:  env("SING_BOX_V2RAY_STATS_PATTERN", "traffic"),
+		SingBoxV2RayAPITimeout:    time.Duration(envInt("SING_BOX_V2RAY_API_TIMEOUT_SECONDS", 5)) * time.Second,
 		SourceSyncPollInterval:    time.Duration(envInt("SOURCE_SYNC_POLL_SECONDS", 60)) * time.Second,
 		SourceSyncBatchLimit:      envInt("SOURCE_SYNC_BATCH_LIMIT", 20),
 		StatsPollInterval:         time.Duration(envInt("STATS_POLL_INTERVAL_SECONDS", 30)) * time.Second,

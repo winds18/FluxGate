@@ -98,6 +98,8 @@
 - 管理后台基于小时/日汇总 API 展示最近 24 小时和最近 14 天流量图，并展示近 14 天上游出口流量摘要。
 - 订阅响应头返回标准 `subscription-userinfo` 和 FluxGate 用量、额度、剩余额度头。
 - stats 可插拔轮询调度器，可把采集器返回的 V2Ray counters 转换为流量样本并写入现有汇总链路。
+- 真实 sing-box V2Ray gRPC stats 采集器已接入主进程，可从 Docker 内网的 V2Ray API 轮询 counters。
+- sing-box 配置生成会把 active 上游 outbound tag 纳入 stats 配置，支撑上游出口维度流量汇总。
 
 范围：
 

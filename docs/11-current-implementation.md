@@ -58,6 +58,8 @@
 - 管理后台 Token 流量摘要可展示额度使用率进度条，并按接近超额和已超额状态变色。
 - 订阅响应头返回标准 `subscription-userinfo`，并提供 FluxGate 专属的已用、总额和剩余额度头。
 - stats 可插拔轮询调度器已落地，能将采集器返回的 V2Ray counters 转换为流量样本并写入现有用量汇总链路。
+- 真实 sing-box V2Ray gRPC stats 采集器已接入主进程；配置 `SING_BOX_V2RAY_API_ADDR` 后会按 `STATS_POLL_INTERVAL_SECONDS` 轮询并写入现有统计链路。
+- sing-box 服务端配置生成会把 active 上游 outbound tag 写入 V2Ray stats 配置，支持上游出口流量汇总。
 - Token hash 存储，明文只在创建时返回。
 - 订阅请求日志 Token 路径脱敏。
 - 结构化 JSON 服务日志。
@@ -187,7 +189,6 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅更多结构化格式解析。
 - DNS 等更多协议 URI 到 sing-box outbound 的转换。
-- 真实 sing-box gRPC 统计采集器和 Dashboard 流量图。
 - 流量超额后的配置发布触发。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
 
@@ -198,6 +199,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 管理 API 需要管理员会话；订阅接口 `/sub/{token}` 继续使用订阅 Token 鉴权，不依赖管理员登录。
 - 需要局域网访问管理后台时，通过部署侧配置 `FLUXGATE_HOST_BIND=0.0.0.0` 和 `FLUXGATE_HTTP_PORT`，公开仓库不保存真实访问地址。
 - `SING_BOX_AUTO_RESTART` 默认关闭；如果要让控制面重启 sing-box，需要在部署侧显式挂载 Docker socket 或改用 `command` driver，并提供对应容器/宿主机权限。
+- `SING_BOX_V2RAY_API_ADDR` 为空时 stats 轮询器不会启动；生产部署应绑定 Docker 内网地址，不应暴露到公网。
 - sing-box 官方文档已标注 WireGuard outbound 废弃；当前仅按 Phase 1 既有 outbound 骨架兼容解析，后续应评估迁移到 endpoint 模型。
 - 本地 QA 产生的 `data/`、`logs/`、`tmp/` 均被 `.gitignore` 排除，并默认在测试退出时清理。
 - Playwright Chromium 已在本机安装一次，后续截图脚本会复用缓存。

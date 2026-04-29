@@ -100,9 +100,10 @@ func buildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNo
 			"v2ray_api": map[string]any{
 				"listen": "0.0.0.0:9090",
 				"stats": map[string]any{
-					"enabled":  true,
-					"inbounds": inboundTags(inbounds),
-					"users":    userNamesFromInbounds(inbounds),
+					"enabled":   true,
+					"inbounds":  inboundTags(inbounds),
+					"outbounds": upstreamTags,
+					"users":     userNamesFromInbounds(inbounds),
 				},
 			},
 		},

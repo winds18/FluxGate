@@ -192,6 +192,17 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if config.Route["final"] != upstreamSelectorTag {
 		t.Fatalf("expected route final to selector, got %+v", config.Route)
 	}
+	stats, ok := config.Experimental["v2ray_api"].(map[string]any)["stats"].(map[string]any)
+	if !ok {
+		t.Fatalf("missing v2ray stats config: %+v", config.Experimental)
+	}
+	statOutbounds, ok := stats["outbounds"].([]string)
+	if !ok {
+		t.Fatalf("missing stat outbounds: %+v", stats)
+	}
+	if len(statOutbounds) != 15 || statOutbounds[0] != "up_42" || statOutbounds[len(statOutbounds)-1] != "up_57" {
+		t.Fatalf("unexpected stat outbounds: %+v", statOutbounds)
+	}
 	vless := findOutbound(config.Outbounds, "up_42")
 	if vless == nil {
 		t.Fatalf("expected vless outbound up_42, got %+v", config.Outbounds)

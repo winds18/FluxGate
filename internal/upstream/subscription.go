@@ -96,6 +96,9 @@ func NormalizeContent(content string) (string, error) {
 	if normalized := JSONURIList(content); normalized != "" {
 		return normalized, nil
 	}
+	if normalized := VMessJSONURIList(content); normalized != "" {
+		return normalized, nil
+	}
 	if normalized := ClashYAMLURIList(content); normalized != "" {
 		return normalized, nil
 	}
@@ -131,6 +134,9 @@ func NormalizeContent(content string) (string, error) {
 			return normalized, nil
 		}
 		if normalized := JSONURIList(string(decoded)); normalized != "" {
+			return normalized, nil
+		}
+		if normalized := VMessJSONURIList(string(decoded)); normalized != "" {
 			return normalized, nil
 		}
 		if normalized := ClashYAMLURIList(string(decoded)); normalized != "" {
@@ -193,6 +199,11 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 		nodeName := firstJSONString(typed, "name", "remarks", "tag", "ps", "id")
 		if nodeName == "" {
 			nodeName = name
+		}
+		vmessName := firstNonEmptyString(firstJSONString(typed, "ps", "name", "remarks", "tag"), name)
+		if uri := vmessJSONURI(typed, vmessName); uri != "" {
+			*uris = append(*uris, uri)
+			return
 		}
 		handled := map[string]bool{}
 		for _, key := range []string{"uri", "url", "link", "share"} {
@@ -266,6 +277,7 @@ func applyJSONURIName(normalized, name string) string {
 func normalizedStringURIList(value string) string {
 	for _, normalize := range []func(string) string{
 		URIList,
+		VMessJSONURIList,
 		ClashYAMLURIList,
 		SIP008URIList,
 		SingBoxJSONURIList,
@@ -299,6 +311,7 @@ func normalizedStringURIList(value string) string {
 		decodedContent := string(decoded)
 		for _, normalize := range []func(string) string{
 			URIList,
+			VMessJSONURIList,
 			ClashYAMLURIList,
 			SIP008URIList,
 			SingBoxJSONURIList,

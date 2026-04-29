@@ -2022,10 +2022,124 @@ func TestNormalizeContentV2RayJSONHTTPAndSOCKS(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentVMessJSON(t *testing.T) {
+	raw := `{
+  "v": "2",
+  "ps": "香港 VMess JSON",
+  "add": "vmess.raw.example.test",
+  "port": "443",
+  "id": "00000000-0000-0000-0000-000000000085",
+  "aid": "0",
+  "scy": "auto",
+  "net": "ws",
+  "type": "none",
+  "host": "ws.raw.example.test",
+  "path": "/raw",
+  "tls": "tls",
+  "sni": "vmess.raw.example.test",
+  "alpn": ["h2", "http/1.1"],
+  "allowInsecure": "1"
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vmess://")
+	decoded := decodeVMessURIForTest(t, got)
+	for _, want := range []string{
+		`"ps":"香港 VMess JSON"`,
+		`"add":"vmess.raw.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000085"`,
+		`"net":"ws"`,
+		`"type":"none"`,
+		`"host":"ws.raw.example.test"`,
+		`"path":"/raw"`,
+		`"tls":"tls"`,
+		`"sni":"vmess.raw.example.test"`,
+		`"alpn":"h2,http/1.1"`,
+		`"allowInsecure":"1"`,
+	} {
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected raw vmess document to contain %s: %q", want, decoded)
+		}
+	}
+}
+
+func TestNormalizeContentVMessJSONArrayAndObjectMap(t *testing.T) {
+	raw := `[
+  {
+    "ps": "东京 VMess JSON",
+    "add": "tokyo.raw.example.test",
+    "port": 443,
+    "id": "00000000-0000-0000-0000-000000000086"
+  },
+  {
+    "大阪 VMess 映射": {
+      "add": "osaka.raw.example.test",
+      "port": "8443",
+      "id": "00000000-0000-0000-0000-000000000087",
+      "net": "grpc",
+      "path": "fluxgate-grpc",
+      "tls": true
+    }
+  }
+]`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 URIs, got %d: %q", len(lines), got)
+	}
+	first := decodeVMessURIForTest(t, lines[0])
+	if !strings.Contains(first, `"ps":"东京 VMess JSON"`) ||
+		!strings.Contains(first, `"add":"tokyo.raw.example.test"`) ||
+		!strings.Contains(first, `"port":"443"`) {
+		t.Fatalf("unexpected vmess JSON array document: %q", first)
+	}
+	second := decodeVMessURIForTest(t, lines[1])
+	if !strings.Contains(second, `"ps":"大阪 VMess 映射"`) ||
+		!strings.Contains(second, `"add":"osaka.raw.example.test"`) ||
+		!strings.Contains(second, `"net":"grpc"`) ||
+		!strings.Contains(second, `"path":"fluxgate-grpc"`) ||
+		!strings.Contains(second, `"tls":"tls"`) {
+		t.Fatalf("unexpected vmess JSON object-map document: %q", second)
+	}
+}
+
+func TestNormalizeContentJSONWrappedVMessJSON(t *testing.T) {
+	raw := `{
+  "data": {
+    "raw_content": "{\"ps\":\"内嵌 VMess JSON\",\"add\":\"embedded.raw.example.test\",\"port\":\"443\",\"id\":\"00000000-0000-0000-0000-000000000088\",\"tls\":\"tls\"}"
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	decoded := decodeVMessURIForTest(t, got)
+	if !strings.Contains(decoded, `"ps":"内嵌 VMess JSON"`) ||
+		!strings.Contains(decoded, `"add":"embedded.raw.example.test"`) ||
+		!strings.Contains(decoded, `"tls":"tls"`) {
+		t.Fatalf("unexpected wrapped vmess JSON document: %q", decoded)
+	}
+}
+
 func TestNormalizeContentRejectsUnsupportedContent(t *testing.T) {
 	if _, err := NormalizeContent("not a subscription"); err == nil {
 		t.Fatal("expected unsupported content error")
 	}
+}
+
+func decodeVMessURIForTest(t *testing.T, value string) string {
+	t.Helper()
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(value, "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode vmess URI: %v", err)
+	}
+	return string(decoded)
 }
 
 func assertHasPrefix(t *testing.T, value, prefix string) {

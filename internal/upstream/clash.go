@@ -95,6 +95,8 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashNaiveURI(proxy)
 	case "ssh":
 		return clashSSHURI(proxy)
+	case "wireguard", "wg":
+		return clashWireGuardURI(proxy)
 	default:
 		return ""
 	}
@@ -470,6 +472,59 @@ func clashSSHURI(proxy map[string]string) string {
 		user = url.UserPassword(username, password)
 	}
 	return proxyURLWithUser("ssh", user, server, port, "", values, firstMapValue(proxy, "name"))
+}
+
+func clashWireGuardURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstNonEmptyString(firstMapValue(proxy, "port"), "51820")
+	privateKey := firstMapValue(proxy, "private-key", "private_key")
+	peerPublicKey := firstMapValue(proxy, "public-key", "public_key", "peer-public-key", "peer_public_key")
+	localAddress := clashWireGuardLocalAddress(proxy)
+	if server == "" || privateKey == "" || peerPublicKey == "" || localAddress == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	values.Set("private_key", privateKey)
+	values.Set("peer_public_key", peerPublicKey)
+	values.Set("local_address", localAddress)
+	for _, item := range []struct {
+		query string
+		keys  []string
+	}{
+		{query: "pre_shared_key", keys: []string{"pre-shared-key", "pre_shared_key", "preshared-key", "preshared_key", "psk"}},
+		{query: "allowed_ips", keys: []string{"allowed-ips", "allowed_ips", "peer-allowed-ips", "peer_allowed_ips"}},
+		{query: "reserved", keys: []string{"reserved", "peer-reserved", "peer_reserved"}},
+		{query: "workers", keys: []string{"workers"}},
+		{query: "mtu", keys: []string{"mtu"}},
+		{query: "network", keys: []string{"network", "protocol"}},
+		{query: "interface_name", keys: []string{"interface-name", "interface_name"}},
+	} {
+		if value := firstMapValue(proxy, item.keys...); value != "" {
+			values.Set(item.query, value)
+		}
+	}
+	if boolMapValue(proxy, "udp") && values.Get("network") == "" {
+		values.Set("network", "udp")
+	}
+	if boolMapValue(proxy, "system-interface", "system_interface", "system") {
+		values.Set("system_interface", "1")
+	}
+	return proxyURLWithUser("wireguard", nil, server, port, "", values, firstMapValue(proxy, "name"))
+}
+
+func clashWireGuardLocalAddress(proxy map[string]string) string {
+	if address := firstMapValue(proxy, "local-address", "local_address", "address"); address != "" {
+		return address
+	}
+	var addresses []string
+	if ipv4 := firstMapValue(proxy, "ip", "ipv4"); ipv4 != "" {
+		addresses = append(addresses, ipv4)
+	}
+	if ipv6 := firstMapValue(proxy, "ipv6"); ipv6 != "" {
+		addresses = append(addresses, ipv6)
+	}
+	return strings.Join(addresses, ",")
 }
 
 func proxyURL(scheme, user, server, port string, values url.Values, fragment string) string {

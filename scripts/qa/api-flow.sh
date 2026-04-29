@@ -140,6 +140,19 @@ clash_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(`proxies:
     private-key-path: keys/qa_id_ed25519
     host-key-algorithms: ssh-ed25519,rsa-sha2-512
     client-version: SSH-2.0-FluxGateQA
+  - name: "台北 WireGuard"
+    type: wireguard
+    server: wg.clash.example.sub
+    port: 51820
+    private-key: cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI=
+    public-key: cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==
+    ip: 10.66.0.2/32
+    ipv6: fd00::2/128
+    pre-shared-key: cHNrLXBsYWNlaG9sZGVy
+    allowed-ips: 0.0.0.0/0,::/0
+    reserved: 1,2,3
+    mtu: 1420
+    udp: true
 `));')"
 post_json "/api/sources" "{\"name\":\"订阅源A\",\"type\":\"subscription\",\"raw_content\":$clash_subscription_raw,\"refresh_interval_minutes\":5}" "$OUT_DIR/source-subscription.json"
 subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
@@ -202,6 +215,7 @@ clash_anytls_node_count="$(json_value "data.filter((node) => node.raw_name === '
 clash_shadowtls_node_count="$(json_value "data.filter((node) => node.raw_name === '东京 ShadowTLS' && node.protocol === 'shadowtls').length" <"$OUT_DIR/nodes.json")"
 clash_naive_node_count="$(json_value "data.filter((node) => node.raw_name === '新加坡 Naive' && node.protocol === 'naive+quic').length" <"$OUT_DIR/nodes.json")"
 clash_ssh_node_count="$(json_value "data.filter((node) => node.raw_name === '香港 SSH' && node.protocol === 'ssh').length" <"$OUT_DIR/nodes.json")"
+clash_wireguard_node_count="$(json_value "data.filter((node) => node.raw_name === '台北 WireGuard' && node.protocol === 'wireguard').length" <"$OUT_DIR/nodes.json")"
 first_node_id="$(json_value "data[0]?.id ?? 0" <"$OUT_DIR/nodes.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes/$first_node_id" -o "$OUT_DIR/node-detail.json"
 node_detail_id="$(json_value "data.id" <"$OUT_DIR/node-detail.json")"
@@ -283,7 +297,7 @@ if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nod
   exit 1
 fi
 
-if [[ "$source_refresh_imported" != "10" ]]; then
+if [[ "$source_refresh_imported" != "11" ]]; then
   log "unexpected subscription refresh import count: $source_refresh_imported"
   exit 1
 fi
@@ -330,6 +344,11 @@ fi
 
 if [[ "$clash_ssh_node_count" -lt 1 ]]; then
   log "Clash YAML SSH proxy should import as active node: ssh=$clash_ssh_node_count"
+  exit 1
+fi
+
+if [[ "$clash_wireguard_node_count" -lt 1 ]]; then
+  log "Clash YAML WireGuard proxy should import as active node: wireguard=$clash_wireguard_node_count"
   exit 1
 fi
 

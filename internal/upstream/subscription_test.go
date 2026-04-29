@@ -120,6 +120,19 @@ proxies:
     private-key-path: keys/qa_id_ed25519
     host-key-algorithms: ssh-ed25519,rsa-sha2-512
     client-version: SSH-2.0-FluxGateQA
+  - name: "台北 WireGuard"
+    type: wireguard
+    server: wg.clash.example.test
+    port: 51820
+    private-key: cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI=
+    public-key: cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==
+    ip: 10.66.0.2/32
+    ipv6: fd00::2/128
+    pre-shared-key: cHNrLXBsYWNlaG9sZGVy
+    allowed-ips: 0.0.0.0/0,::/0
+    reserved: 1,2,3
+    mtu: 1420
+    udp: true
 proxy-groups:
   - name: Auto
     type: select
@@ -131,8 +144,8 @@ proxy-groups:
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 12 {
-		t.Fatalf("expected 12 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 13 {
+		t.Fatalf("expected 13 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.example.test:443?")
@@ -178,6 +191,16 @@ proxy-groups:
 	assertHasPrefix(t, lines[11], "ssh://qa-user:ssh-placeholder@ssh.clash.example.test:22?")
 	if !strings.Contains(lines[11], "private_key_path=keys%2Fqa_id_ed25519") || !strings.Contains(lines[11], "host_key_algorithms=ssh-ed25519%2Crsa-sha2-512") || !strings.Contains(lines[11], "client_version=SSH-2.0-FluxGateQA") {
 		t.Fatalf("unexpected clash ssh URI: %q", lines[11])
+	}
+	assertHasPrefix(t, lines[12], "wireguard://wg.clash.example.test:51820?")
+	if !strings.Contains(lines[12], "private_key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI") ||
+		!strings.Contains(lines[12], "peer_public_key=cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg") ||
+		!strings.Contains(lines[12], "local_address=10.66.0.2%2F32%2Cfd00%3A%3A2%2F128") ||
+		!strings.Contains(lines[12], "allowed_ips=0.0.0.0%2F0%2C%3A%3A%2F0") ||
+		!strings.Contains(lines[12], "reserved=1%2C2%2C3") ||
+		!strings.Contains(lines[12], "network=udp") ||
+		!strings.Contains(lines[12], "mtu=1420") {
+		t.Fatalf("unexpected clash wireguard URI: %q", lines[12])
 	}
 }
 

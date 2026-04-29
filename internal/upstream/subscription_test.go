@@ -231,6 +231,61 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
         "enabled": true,
         "server_name": "anytls.singbox.example.test"
       }
+    },
+    {
+      "type": "shadowtls",
+      "tag": "东京 07",
+      "server": "shadow.singbox.example.test",
+      "server_port": 443,
+      "version": 3,
+      "password": "shadow-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "shadow.singbox.example.test",
+        "insecure": true
+      }
+    },
+    {
+      "type": "hysteria",
+      "tag": "香港 07",
+      "server": "hysteria.singbox.example.test",
+      "server_port": 443,
+      "auth_str": "hysteria-auth",
+      "up_mbps": 20,
+      "down_mbps": 80,
+      "obfs": "obfs-placeholder",
+      "network": "udp",
+      "tls": {
+        "enabled": true,
+        "server_name": "hysteria.singbox.example.test",
+        "insecure": true,
+        "alpn": ["h3"]
+      }
+    },
+    {
+      "type": "http",
+      "tag": "首尔 07",
+      "server": "http.singbox.example.test",
+      "server_port": 8443,
+      "username": "qa-user",
+      "password": "http-placeholder",
+      "path": "/connect",
+      "tls": {
+        "enabled": true,
+        "server_name": "http.singbox.example.test",
+        "insecure": true
+      }
+    },
+    {
+      "type": "socks",
+      "tag": "大阪 07",
+      "server": "socks.singbox.example.test",
+      "server_port": 1080,
+      "username": "qa-user",
+      "password": "socks-placeholder",
+      "version": "5",
+      "network": "udp",
+      "udp_over_tcp": true
     }
   ]
 }`
@@ -239,8 +294,8 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 7 {
-		t.Fatalf("expected 7 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 11 {
+		t.Fatalf("expected 11 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.singbox.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.singbox.example.test:443?")
@@ -263,6 +318,22 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	assertHasPrefix(t, lines[6], "anytls://anytls-placeholder@anytls.singbox.example.test:443?")
 	if !strings.Contains(lines[6], "idle_session_check_interval=20s") || !strings.Contains(lines[6], "min_idle_session=2") {
 		t.Fatalf("unexpected sing-box anytls URI: %q", lines[6])
+	}
+	assertHasPrefix(t, lines[7], "shadowtls://shadow-placeholder@shadow.singbox.example.test:443?")
+	if !strings.Contains(lines[7], "version=3") || !strings.Contains(lines[7], "sni=shadow.singbox.example.test") {
+		t.Fatalf("unexpected sing-box shadowtls URI: %q", lines[7])
+	}
+	assertHasPrefix(t, lines[8], "hysteria://hysteria-auth@hysteria.singbox.example.test:443?")
+	if !strings.Contains(lines[8], "up_mbps=20") || !strings.Contains(lines[8], "down_mbps=80") || !strings.Contains(lines[8], "network=udp") {
+		t.Fatalf("unexpected sing-box hysteria URI: %q", lines[8])
+	}
+	assertHasPrefix(t, lines[9], "https://qa-user:http-placeholder@http.singbox.example.test:8443/connect?")
+	if !strings.Contains(lines[9], "sni=http.singbox.example.test") || !strings.Contains(lines[9], "insecure=1") {
+		t.Fatalf("unexpected sing-box http URI: %q", lines[9])
+	}
+	assertHasPrefix(t, lines[10], "socks5://qa-user:socks-placeholder@socks.singbox.example.test:1080?")
+	if !strings.Contains(lines[10], "network=udp") || !strings.Contains(lines[10], "udp_over_tcp=1") {
+		t.Fatalf("unexpected sing-box socks URI: %q", lines[10])
 	}
 }
 

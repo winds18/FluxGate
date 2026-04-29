@@ -48,6 +48,14 @@ func singBoxOutboundURI(outbound map[string]any) string {
 		return singBoxTUICURI(outbound)
 	case "anytls":
 		return singBoxAnyTLSURI(outbound)
+	case "shadowtls":
+		return singBoxShadowTLSURI(outbound)
+	case "hysteria":
+		return singBoxHysteriaURI(outbound)
+	case "http", "https":
+		return singBoxHTTPURI(outbound)
+	case "socks", "socks4", "socks4a", "socks5":
+		return singBoxSOCKSURI(outbound)
 	default:
 		return ""
 	}
@@ -232,6 +240,165 @@ func singBoxAnyTLSURI(outbound map[string]any) string {
 	}
 	appendTLSQueryValues(outbound, values)
 	return proxyURL("anytls", password, server, port, values, singBoxName(outbound))
+}
+
+func singBoxShadowTLSURI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	if server == "" || port == "" {
+		return ""
+	}
+
+	version := intFromAnyValue(outbound["version"])
+	if version <= 0 {
+		version = 1
+	}
+	password := singBoxString(outbound, "password")
+	if version >= 2 && password == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	values.Set("version", strconv.Itoa(version))
+	appendTLSQueryValues(outbound, values)
+	var user *url.Userinfo
+	if password != "" {
+		user = url.User(password)
+	}
+	return singBoxProxyURL("shadowtls", server, port, "", user, values, singBoxName(outbound))
+}
+
+func singBoxHysteriaURI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	if server == "" || port == "" {
+		return ""
+	}
+
+	auth := singBoxString(outbound, "auth")
+	authBase64 := singBoxString(outbound, "auth_base64")
+	authStr := firstNonEmptyString(singBoxString(outbound, "auth_str"), singBoxString(outbound, "password"))
+	if auth == "" && authBase64 == "" && authStr == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	if authBase64 != "" {
+		values.Set("auth_base64", authBase64)
+	} else if auth != "" {
+		values.Set("auth", auth)
+	}
+	for _, item := range []struct {
+		key      string
+		outbound string
+	}{
+		{key: "up", outbound: "up"},
+		{key: "up_mbps", outbound: "up_mbps"},
+		{key: "down", outbound: "down"},
+		{key: "down_mbps", outbound: "down_mbps"},
+		{key: "obfs", outbound: "obfs"},
+		{key: "recv_window_conn", outbound: "recv_window_conn"},
+		{key: "recv_window", outbound: "recv_window"},
+		{key: "network", outbound: "network"},
+	} {
+		if value := singBoxString(outbound, item.outbound); value != "" {
+			values.Set(item.key, value)
+		}
+	}
+	if boolFromAnyValue(outbound["disable_mtu_discovery"]) {
+		values.Set("disable_mtu_discovery", "1")
+	}
+	appendTLSQueryValues(outbound, values)
+	var user *url.Userinfo
+	if authStr != "" {
+		user = url.User(authStr)
+	}
+	return singBoxProxyURL("hysteria", server, port, "", user, values, singBoxName(outbound))
+}
+
+func singBoxHTTPURI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	if server == "" || port == "" {
+		return ""
+	}
+
+	scheme := "http"
+	if strings.EqualFold(singBoxString(outbound, "type"), "https") || tlsMap(outbound) != nil {
+		scheme = "https"
+	}
+	values := url.Values{}
+	appendTLSQueryValues(outbound, values)
+	var user *url.Userinfo
+	username := singBoxString(outbound, "username")
+	password := singBoxString(outbound, "password")
+	if username != "" || password != "" {
+		if password != "" {
+			user = url.UserPassword(username, password)
+		} else {
+			user = url.User(username)
+		}
+	}
+	path := singBoxString(outbound, "path")
+	if path != "" && !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return singBoxProxyURL(scheme, server, port, path, user, values, singBoxName(outbound))
+}
+
+func singBoxSOCKSURI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	if server == "" || port == "" {
+		return ""
+	}
+
+	scheme := "socks5"
+	outboundType := strings.ToLower(singBoxString(outbound, "type"))
+	switch outboundType {
+	case "socks4", "socks4a", "socks5":
+		scheme = outboundType
+	default:
+		switch strings.ToLower(singBoxString(outbound, "version")) {
+		case "4":
+			scheme = "socks4"
+		case "4a":
+			scheme = "socks4a"
+		}
+	}
+
+	values := url.Values{}
+	if network := singBoxString(outbound, "network"); network != "" {
+		values.Set("network", network)
+	}
+	if boolFromAnyValue(outbound["udp_over_tcp"]) {
+		values.Set("udp_over_tcp", "1")
+	}
+	var user *url.Userinfo
+	username := singBoxString(outbound, "username")
+	password := singBoxString(outbound, "password")
+	if username != "" || password != "" {
+		if password != "" {
+			user = url.UserPassword(username, password)
+		} else {
+			user = url.User(username)
+		}
+	}
+	return singBoxProxyURL(scheme, server, port, "", user, values, singBoxName(outbound))
+}
+
+func singBoxProxyURL(scheme, server, port, path string, user *url.Userinfo, values url.Values, fragment string) string {
+	result := &url.URL{
+		Scheme:   scheme,
+		User:     user,
+		Host:     net.JoinHostPort(server, port),
+		Path:     path,
+		Fragment: fragment,
+	}
+	if len(values) > 0 {
+		result.RawQuery = values.Encode()
+	}
+	return result.String()
 }
 
 func singBoxName(outbound map[string]any) string {

@@ -347,6 +347,33 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLTrojanHTTPUpgradeTransport(t *testing.T) {
+	raw := `
+proxies:
+  - name: "东京 HTTPUpgrade"
+    type: trojan
+    server: upgrade.trojan.example.test
+    port: 443
+    password: trojan-placeholder
+    tls: true
+    httpupgrade-opts:
+      host: upgrade.example.test
+      path: /upgrade
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@upgrade.trojan.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "type=httpupgrade") ||
+		!strings.Contains(got, "host=upgrade.example.test") ||
+		!strings.Contains(got, "path=%2Fupgrade") ||
+		!strings.HasSuffix(got, "#%E4%B8%9C%E4%BA%AC%20HTTPUpgrade") {
+		t.Fatalf("unexpected clash trojan httpupgrade URI: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLInlineLists(t *testing.T) {
 	raw := `
 proxies:
@@ -1096,6 +1123,41 @@ func TestNormalizeContentSingBoxJSONVLESSHTTPTransport(t *testing.T) {
 		!strings.Contains(got, "idle_timeout=20s") ||
 		!strings.Contains(got, "ping_timeout=10s") {
 		t.Fatalf("unexpected sing-box vless http transport URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONTrojanHTTPUpgradeTransport(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "trojan",
+      "tag": "东京 HTTPUpgrade",
+      "server": "upgrade.trojan.singbox.example.test",
+      "server_port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "upgrade.trojan.singbox.example.test"
+      },
+      "transport": {
+        "type": "httpupgrade",
+        "host": "upgrade.singbox.example.test",
+        "path": "/upgrade"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@upgrade.trojan.singbox.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "sni=upgrade.trojan.singbox.example.test") ||
+		!strings.Contains(got, "type=httpupgrade") ||
+		!strings.Contains(got, "host=upgrade.singbox.example.test") ||
+		!strings.Contains(got, "path=%2Fupgrade") {
+		t.Fatalf("unexpected sing-box trojan httpupgrade URI: %q", got)
 	}
 }
 

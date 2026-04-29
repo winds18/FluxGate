@@ -468,6 +468,15 @@ func transportFromQuery(query url.Values) map[string]any {
 			transport["ping_timeout"] = pingTimeout
 		}
 		return transport
+	case "httpupgrade", "http-upgrade", "http_upgrade":
+		transport := map[string]any{"type": "httpupgrade"}
+		if host := firstNonEmpty(query.Get("host"), query.Get("httpupgrade_host"), query.Get("httpupgrade-host"), query.Get("http_upgrade_host"), query.Get("http-upgrade-host")); host != "" {
+			transport["host"] = host
+		}
+		if path := firstNonEmpty(query.Get("path"), query.Get("httpupgrade_path"), query.Get("httpupgrade-path"), query.Get("http_upgrade_path"), query.Get("http-upgrade-path")); path != "" {
+			transport["path"] = path
+		}
+		return transport
 	default:
 		return nil
 	}

@@ -668,12 +668,17 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	wsHost := firstMapValue(proxy, "ws-headers.host", "ws_headers.host", "ws-host", "ws_host")
 	httpPath := firstMapValue(proxy, "http-opts.path", "http_opts.path")
 	httpHost := firstMapValue(proxy, "http-opts.host", "http_opts.host", "http-opts.headers.host", "http_opts.headers.host")
+	httpUpgradePath := firstMapValue(proxy, "httpupgrade-opts.path", "httpupgrade_opts.path", "http-upgrade-opts.path", "http_upgrade_opts.path")
+	httpUpgradeHost := firstMapValue(proxy, "httpupgrade-opts.host", "httpupgrade_opts.host", "httpupgrade-opts.headers.host", "httpupgrade_opts.headers.host", "http-upgrade-opts.host", "http_upgrade_opts.host", "http-upgrade-opts.headers.host", "http_upgrade_opts.headers.host")
 	httpMethod := firstMapValue(proxy, "http-opts.method", "http_opts.method", "method")
 	httpIdleTimeout := firstMapValue(proxy, "http-opts.idle-timeout", "http_opts.idle_timeout", "idle-timeout", "idle_timeout")
 	httpPingTimeout := firstMapValue(proxy, "http-opts.ping-timeout", "http_opts.ping_timeout", "ping-timeout", "ping_timeout")
-	path := firstNonEmptyString(wsPath, httpPath, firstMapValue(proxy, "path"))
-	host := firstNonEmptyString(wsHost, httpHost, firstMapValue(proxy, "host"))
+	path := firstNonEmptyString(wsPath, httpPath, httpUpgradePath, firstMapValue(proxy, "path"))
+	host := firstNonEmptyString(wsHost, httpHost, httpUpgradeHost, firstMapValue(proxy, "host"))
 	serviceName := firstMapValue(proxy, "grpc-service-name", "grpc_service_name", "grpc-opts.grpc-service-name", "grpc_opts.grpc_service_name", "service-name", "service_name")
+	if strings.EqualFold(transportType, "http-upgrade") || strings.EqualFold(transportType, "http_upgrade") {
+		transportType = "httpupgrade"
+	}
 	if strings.EqualFold(transportType, "tls") {
 		transportType = ""
 	}
@@ -682,6 +687,9 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	}
 	if transportType == "" && (wsPath != "" || wsHost != "") {
 		transportType = "ws"
+	}
+	if transportType == "" && (httpUpgradePath != "" || httpUpgradeHost != "") {
+		transportType = "httpupgrade"
 	}
 	if transportType == "" && serviceName != "" {
 		transportType = "grpc"

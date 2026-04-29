@@ -789,6 +789,11 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 			proxy["ping_timeout"] = pingTimeout
 		}
 	}
+	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "httpupgrade") {
+		if host := strings.TrimSpace(stringFromAnyValue(transport["host"])); host != "" {
+			proxy["host"] = host
+		}
+	}
 	if serviceName := strings.TrimSpace(stringFromAnyValue(transport["service_name"])); serviceName != "" {
 		proxy["service_name"] = serviceName
 	}

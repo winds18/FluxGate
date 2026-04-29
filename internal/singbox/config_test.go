@@ -806,6 +806,27 @@ func TestBuildConfigPreservesVLESSHTTPTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesTrojanHTTPUpgradeTransport(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         75,
+			URI:        "trojan://trojan-placeholder@example.upgrade:443?security=tls&type=httpupgrade&host=upgrade.example.test&path=/upgrade#upgrade",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_75")
+	if outbound == nil {
+		t.Fatalf("expected trojan outbound up_75, got %+v", config.Outbounds)
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "httpupgrade" || transport["host"] != "upgrade.example.test" || transport["path"] != "/upgrade" {
+		t.Fatalf("unexpected trojan httpupgrade transport config: %+v", outbound["transport"])
+	}
+}
+
 func TestBuildConfigPreservesVLESSRealityTLS(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

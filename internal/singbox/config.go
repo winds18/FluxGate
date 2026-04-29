@@ -151,6 +151,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildVMessOutbound(node)
 	case "hysteria2", "hy2":
 		return buildHysteria2Outbound(node)
+	case "tuic":
+		return buildTUICOutbound(node)
 	default:
 		return nil, false
 	}
@@ -349,6 +351,66 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 	return outbound, true
 }
 
+func buildTUICOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "tuic" {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || parsed.Scheme != "tuic" || parsed.Hostname() == "" {
+		return nil, false
+	}
+
+	query := parsed.Query()
+	uuid, password := tuicCredentials(parsed.User, query.Get("uuid"), query.Get("password"))
+	if uuid == "" || password == "" {
+		return nil, false
+	}
+
+	outbound := map[string]any{
+		"type":        "tuic",
+		"tag":         upstreamTag(node),
+		"server":      parsed.Hostname(),
+		"server_port": portWithFallback(parsed.Port(), node.ServerPort, 443),
+		"uuid":        uuid,
+		"password":    password,
+	}
+
+	if congestionControl := firstNonEmpty(query.Get("congestion_control"), query.Get("congestion-controller")); congestionControl != "" {
+		outbound["congestion_control"] = congestionControl
+	}
+	if boolQuery(firstNonEmpty(query.Get("udp_over_stream"), query.Get("udp-over-stream"))) {
+		outbound["udp_over_stream"] = true
+	} else if udpRelayMode := firstNonEmpty(query.Get("udp_relay_mode"), query.Get("udp-relay-mode")); udpRelayMode != "" {
+		outbound["udp_relay_mode"] = udpRelayMode
+	}
+	if boolQuery(firstNonEmpty(query.Get("zero_rtt_handshake"), query.Get("zero-rtt-handshake"), query.Get("reduce-rtt"))) {
+		outbound["zero_rtt_handshake"] = true
+	}
+	if heartbeat := firstNonEmpty(query.Get("heartbeat"), query.Get("heartbeat-interval")); heartbeat != "" {
+		outbound["heartbeat"] = heartbeat
+	}
+	if network := strings.TrimSpace(query.Get("network")); network != "" {
+		outbound["network"] = network
+	}
+
+	tls := map[string]any{"enabled": true}
+	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+		tls["server_name"] = serverName
+	}
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+		tls["insecure"] = true
+	}
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+		tls["disable_sni"] = true
+	}
+	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
+		tls["alpn"] = alpn
+	}
+	outbound["tls"] = tls
+
+	return outbound, true
+}
+
 func parseVMessURI(rawURI string) (map[string]any, bool) {
 	rawURI = strings.TrimSpace(rawURI)
 	if !strings.HasPrefix(rawURI, "vmess://") {
@@ -496,6 +558,21 @@ func hysteria2Password(user *url.Userinfo) string {
 		password += ":" + value
 	}
 	return strings.TrimSpace(password)
+}
+
+func tuicCredentials(user *url.Userinfo, queryUUID string, queryPassword string) (string, string) {
+	uuid := strings.TrimSpace(queryUUID)
+	password := strings.TrimSpace(queryPassword)
+	if user == nil {
+		return uuid, password
+	}
+	if username := strings.TrimSpace(user.Username()); username != "" {
+		uuid = username
+	}
+	if value, ok := user.Password(); ok && strings.TrimSpace(value) != "" {
+		password = strings.TrimSpace(value)
+	}
+	return uuid, password
 }
 
 func boolQuery(value string) bool {

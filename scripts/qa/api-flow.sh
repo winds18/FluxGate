@@ -56,8 +56,9 @@ post_json "/api/sources" '{"name":"订阅源A","type":"subscription","raw_conten
 subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
 vmess_uri="$(node -e 'const doc={add:"vmess.example.net",port:"443",id:"00000000-0000-0000-0000-000000000046",aid:"0",scy:"auto",net:"ws",host:"ws.example.test",path:"/ws",tls:"tls",sni:"vmess.example.net",ps:"VMess QA"}; process.stdout.write("vmess://"+Buffer.from(JSON.stringify(doc)).toString("base64url"));')"
 hysteria2_uri="hysteria2://qa-placeholder@example.dev:443?obfs=salamander&obfs-password=obfs-placeholder&sni=hy2.example.dev&insecure=1#首尔%2002"
+tuic_uri="tuic://00000000-0000-0000-0000-000000000048:qa-placeholder@example.io:443?congestion_control=bbr&udp_relay_mode=native&sni=tuic.example.io&alpn=h3&insecure=1#大阪%2001"
 
-post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\\ntrojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京%2001\\nss://aes-128-gcm:qa-placeholder@example.net:8388#首尔%2001\\n$vmess_uri\\n$hysteria2_uri\"}" "$OUT_DIR/import.json"
+post_json "/api/nodes/import" "{\"source_id\":$source_a_id,\"content\":\"vless://uuid@example.com:443#香港%2001\\ntrojan://qa-placeholder@example.org:443?security=tls&sni=edge.example.test#东京%2001\\nss://aes-128-gcm:qa-placeholder@example.net:8388#首尔%2001\\n$vmess_uri\\n$hysteria2_uri\\n$tuic_uri\"}" "$OUT_DIR/import.json"
 post_json "/api/sources/$subscription_source_id/refresh" '{}' "$OUT_DIR/source-refresh.json"
 source_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-refresh.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443}' "$OUT_DIR/virtual-node.json"
@@ -148,6 +149,11 @@ fi
 
 if ! grep -q '"type": "hysteria2"' "$OUT_DIR/sing-box.json"; then
   log "active hysteria2 upstream node should appear as sing-box outbound"
+  exit 1
+fi
+
+if ! grep -q '"type": "tuic"' "$OUT_DIR/sing-box.json"; then
+  log "active tuic upstream node should appear as sing-box outbound"
   exit 1
 fi
 

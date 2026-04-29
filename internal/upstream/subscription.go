@@ -31,6 +31,7 @@ var supportedURIPrefixes = []string{
 	"socks5://",
 	"ss://",
 	"ssh://",
+	"tor://",
 	"trojan://",
 	"tuic://",
 	"vless://",

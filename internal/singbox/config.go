@@ -169,6 +169,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildSSHOutbound(node)
 	case "wireguard", "wg":
 		return buildWireGuardOutbound(node)
+	case "tor":
+		return buildTorOutbound(node)
 	default:
 		return nil, false
 	}
@@ -855,6 +857,36 @@ func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
 	return outbound, true
 }
 
+func buildTorOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "tor" {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || parsed.Scheme != "tor" {
+		return nil, false
+	}
+
+	query := parsed.Query()
+	outbound := map[string]any{
+		"type": "tor",
+		"tag":  upstreamTag(node),
+	}
+	if executablePath := firstNonEmpty(query.Get("executable_path"), query.Get("executable-path")); executablePath != "" {
+		outbound["executable_path"] = executablePath
+	}
+	if extraArgs := splitCSV(firstNonEmpty(query.Get("extra_args"), query.Get("extra-args"), query.Get("args"))); len(extraArgs) > 0 {
+		outbound["extra_args"] = extraArgs
+	}
+	if dataDirectory := firstNonEmpty(query.Get("data_directory"), query.Get("data-directory")); dataDirectory != "" {
+		outbound["data_directory"] = dataDirectory
+	}
+	if torrc := torrcQuery(query); len(torrc) > 0 {
+		outbound["torrc"] = torrc
+	}
+
+	return outbound, true
+}
+
 func parseVMessURI(rawURI string) (map[string]any, bool) {
 	rawURI = strings.TrimSpace(rawURI)
 	if !strings.HasPrefix(rawURI, "vmess://") {
@@ -1076,6 +1108,43 @@ func byteListQuery(value string) ([]int, bool) {
 		result = append(result, value)
 	}
 	return result, true
+}
+
+func torrcQuery(query url.Values) map[string]any {
+	torrc := map[string]any{}
+	for key, values := range query {
+		option := ""
+		switch {
+		case strings.HasPrefix(key, "torrc."):
+			option = strings.TrimPrefix(key, "torrc.")
+		case strings.HasPrefix(key, "torrc_"):
+			option = strings.TrimPrefix(key, "torrc_")
+		}
+		option = strings.TrimSpace(option)
+		if option == "" || len(values) == 0 {
+			continue
+		}
+		value := strings.TrimSpace(values[len(values)-1])
+		if value == "" {
+			continue
+		}
+		torrc[option] = scalarQueryValue(value)
+	}
+	return torrc
+}
+
+func scalarQueryValue(value string) any {
+	if integer, err := strconv.Atoi(value); err == nil {
+		return integer
+	}
+	switch strings.ToLower(value) {
+	case "true", "yes", "on":
+		return true
+	case "false", "no", "off":
+		return false
+	default:
+		return value
+	}
 }
 
 func boolQuery(value string) bool {

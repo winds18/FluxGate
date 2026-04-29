@@ -26,6 +26,7 @@ func TestNormalizeContentSupportsCurrentOutboundURIList(t *testing.T) {
 		"https://qa-user:qa-placeholder@example.proxy:8443/connect#HTTP",
 		"socks5://qa-user:qa-placeholder@example.socks:1080#SOCKS",
 		"ssh://qa-user:qa-placeholder@example.ssh:22#SSH",
+		"tor://default?executable_path=/usr/bin/tor&data_directory=cache%2Ftor#Tor",
 		"wireguard://example.wg:51820?private_key=qa-private&peer_public_key=qa-peer&local_address=10.66.0.2/32#WireGuard",
 	}, "\n")
 	got, err := NormalizeContent(raw)

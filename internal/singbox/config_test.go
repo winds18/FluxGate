@@ -175,8 +175,15 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         57,
-			URI:        "tor://default#unsupported",
+			URI:        "tor://default?executable_path=/usr/bin/tor&extra_args=--quiet,--SocksPort,auto&data_directory=cache%2Ftor&torrc.ClientOnly=1&torrc.SocksPort=auto#tor",
 			Protocol:   "tor",
+			ServerPort: 0,
+			Status:     "active",
+		},
+		{
+			ID:         58,
+			URI:        "unknown://default#unsupported",
+			Protocol:   "unknown",
 			ServerPort: 0,
 			Status:     "active",
 		},
@@ -446,7 +453,22 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if !ok || len(peerReserved) != 3 || peerReserved[0] != 1 || peerReserved[1] != 2 || peerReserved[2] != 3 {
 		t.Fatalf("unexpected wireguard peer reserved bytes: %+v", peers[0]["reserved"])
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_57") != nil {
+	tor := findOutbound(config.Outbounds, "up_57")
+	if tor == nil {
+		t.Fatalf("expected tor outbound up_57, got %+v", config.Outbounds)
+	}
+	if tor["type"] != "tor" || tor["executable_path"] != "/usr/bin/tor" || tor["data_directory"] != "cache/tor" {
+		t.Fatalf("unexpected tor base fields: %+v", tor)
+	}
+	extraArgs, ok := tor["extra_args"].([]string)
+	if !ok || len(extraArgs) != 3 || extraArgs[0] != "--quiet" || extraArgs[1] != "--SocksPort" || extraArgs[2] != "auto" {
+		t.Fatalf("unexpected tor extra args: %+v", tor["extra_args"])
+	}
+	torrc, ok := tor["torrc"].(map[string]any)
+	if !ok || torrc["ClientOnly"] != 1 || torrc["SocksPort"] != "auto" {
+		t.Fatalf("unexpected torrc fields: %+v", tor["torrc"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_58") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -455,7 +477,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 14 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || tags[11] != "up_54" || tags[12] != "up_55" || tags[13] != "up_56" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 15 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || tags[11] != "up_54" || tags[12] != "up_55" || tags[13] != "up_56" || tags[14] != "up_57" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

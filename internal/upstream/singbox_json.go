@@ -249,6 +249,17 @@ func singBoxHysteria2URI(outbound map[string]any) string {
 			values.Set("obfs-password", obfsPassword)
 		}
 	}
+	for _, item := range []struct {
+		key      string
+		outbound string
+	}{
+		{key: "up_mbps", outbound: "up_mbps"},
+		{key: "down_mbps", outbound: "down_mbps"},
+	} {
+		if value := singBoxString(outbound, item.outbound); value != "" {
+			values.Set(item.key, value)
+		}
+	}
 	appendTLSQueryValues(outbound, values)
 	return proxyURL("hysteria2", password, server, port, values, singBoxName(outbound))
 }

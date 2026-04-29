@@ -655,6 +655,12 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 		}
 		outbound["obfs"] = obfs
 	}
+	if upMbps := intQuery(firstNonEmpty(query.Get("up_mbps"), query.Get("up-mbps"), query.Get("upmbps"))); upMbps > 0 {
+		outbound["up_mbps"] = upMbps
+	}
+	if downMbps := intQuery(firstNonEmpty(query.Get("down_mbps"), query.Get("down-mbps"), query.Get("downmbps"))); downMbps > 0 {
+		outbound["down_mbps"] = downMbps
+	}
 
 	tls := map[string]any{"enabled": true}
 	if serverName := firstNonEmpty(query.Get("sni"), parsed.Hostname()); serverName != "" {

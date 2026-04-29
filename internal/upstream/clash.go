@@ -272,6 +272,12 @@ func clashHysteria2URI(proxy map[string]string) string {
 	if obfsPassword := firstMapValue(proxy, "obfs-password", "obfs_password"); obfsPassword != "" {
 		values.Set("obfs-password", obfsPassword)
 	}
+	if upMbps := firstMapValue(proxy, "up-mbps", "up_mbps", "upmbps"); upMbps != "" {
+		values.Set("up_mbps", upMbps)
+	}
+	if downMbps := firstMapValue(proxy, "down-mbps", "down_mbps", "downmbps"); downMbps != "" {
+		values.Set("down_mbps", downMbps)
+	}
 	if sni := firstMapValue(proxy, "sni", "servername", "server_name"); sni != "" {
 		values.Set("sni", sni)
 	}

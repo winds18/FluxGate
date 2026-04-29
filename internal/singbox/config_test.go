@@ -108,7 +108,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         47,
-			URI:        "hysteria2://qa-placeholder@example.dev:443?obfs=salamander&obfs-password=obfs-placeholder&sni=hy2.example.dev&insecure=1#hy2",
+			URI:        "hysteria2://qa-placeholder@example.dev:443?obfs=salamander&obfs-password=obfs-placeholder&up_mbps=40&down_mbps=160&sni=hy2.example.dev&insecure=1#hy2",
 			Protocol:   "hysteria2",
 			ServerPort: 443,
 			Status:     "active",
@@ -299,6 +299,9 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	}
 	if hysteria2["password"] != "qa-placeholder" {
 		t.Fatalf("unexpected hysteria2 auth fields: %+v", hysteria2)
+	}
+	if hysteria2["up_mbps"] != 40 || hysteria2["down_mbps"] != 160 {
+		t.Fatalf("unexpected hysteria2 bandwidth fields: %+v", hysteria2)
 	}
 	hysteria2TLS, ok := hysteria2["tls"].(map[string]any)
 	if !ok || hysteria2TLS["enabled"] != true || hysteria2TLS["server_name"] != "hy2.example.dev" || hysteria2TLS["insecure"] != true {

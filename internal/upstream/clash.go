@@ -729,6 +729,9 @@ func parseYAMLScalar(value string) string {
 	if value == "" {
 		return ""
 	}
+	if strings.HasPrefix(value, "[") && strings.HasSuffix(value, "]") {
+		return parseYAMLInlineList(value)
+	}
 	if strings.HasPrefix(value, "\"") && strings.HasSuffix(value, "\"") {
 		unquoted, err := strconv.Unquote(value)
 		if err == nil {
@@ -739,6 +742,21 @@ func parseYAMLScalar(value string) string {
 		return strings.TrimSpace(strings.ReplaceAll(value[1:len(value)-1], "''", "'"))
 	}
 	return strings.TrimSpace(value)
+}
+
+func parseYAMLInlineList(value string) string {
+	value = strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(value, "]"), "["))
+	if value == "" {
+		return ""
+	}
+	items := make([]string, 0)
+	for _, part := range splitOutsideQuotes(value, ',') {
+		item := parseYAMLScalar(strings.TrimSpace(part))
+		if item != "" {
+			items = append(items, item)
+		}
+	}
+	return strings.Join(items, ",")
 }
 
 func stripInlineComment(value string) string {

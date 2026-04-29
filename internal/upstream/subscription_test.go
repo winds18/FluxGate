@@ -279,6 +279,46 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLInlineLists(t *testing.T) {
+	raw := `
+proxies:
+  - name: "香港 ALPN"
+    type: vless
+    server: alpn.vless.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000074
+    tls: true
+    alpn: [h2, http/1.1]
+  - name: "台北 WireGuard"
+    type: wireguard
+    server: wg.inline.example.test
+    port: 51820
+    private-key: private-key-placeholder
+    public-key: public-key-placeholder
+    local-address: [10.66.0.2/32, fd00::2/128]
+    allowed-ips: [0.0.0.0/0, ::/0]
+    reserved: [1, 2, 3]
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 normalized nodes, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000074@alpn.vless.example.test:443?")
+	if !strings.Contains(lines[0], "security=tls") || !strings.Contains(lines[0], "alpn=h2%2Chttp%2F1.1") {
+		t.Fatalf("unexpected clash vless inline list URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "wireguard://wg.inline.example.test:51820?")
+	if !strings.Contains(lines[1], "local_address=10.66.0.2%2F32%2Cfd00%3A%3A2%2F128") ||
+		!strings.Contains(lines[1], "allowed_ips=0.0.0.0%2F0%2C%3A%3A%2F0") ||
+		!strings.Contains(lines[1], "reserved=1%2C2%2C3") {
+		t.Fatalf("unexpected clash wireguard inline list URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentClashYAMLVLESSReality(t *testing.T) {
 	raw := `
 proxies:

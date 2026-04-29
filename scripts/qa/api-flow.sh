@@ -124,6 +124,16 @@ if ! grep -q "$gateway_user" "$OUT_DIR/sing-box.json"; then
   exit 1
 fi
 
+if ! grep -q '"tag": "up_' "$OUT_DIR/sing-box.json"; then
+  log "active upstream node should appear as sing-box outbound"
+  exit 1
+fi
+
+if ! grep -q '"final": "FluxGate-upstreams"' "$OUT_DIR/sing-box.json"; then
+  log "sing-box route final should use upstream selector when upstream nodes exist"
+  exit 1
+fi
+
 if [[ "$KEEP_ARTIFACTS" == "true" ]]; then
   log "API flow passed; artifacts: $OUT_DIR"
 else

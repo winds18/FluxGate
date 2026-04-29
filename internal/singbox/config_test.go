@@ -22,7 +22,7 @@ func TestBuildConfigFiltersUnusableGatewayTokens(t *testing.T) {
 		gatewayToken("active", "active", "trojan", nil, 0, 0, 0, "unsupported-user"),
 	}, []store.VirtualNode{
 		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
-	}, now)
+	}, nil, now)
 
 	if len(config.Inbounds) != 1 {
 		t.Fatalf("expected one inbound, got %+v", config.Inbounds)
@@ -48,6 +48,64 @@ func TestBuildConfigFiltersUnusableGatewayTokens(t *testing.T) {
 	}
 }
 
+func TestBuildConfigAddsVLESSUpstreamOutbounds(t *testing.T) {
+	config := buildConfig(nil, []store.VirtualNode{
+		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
+	}, []store.Node{
+		{
+			ID:         42,
+			URI:        "vless://00000000-0000-0000-0000-000000000042@example.com:443?security=tls&sni=edge.example.com&flow=xtls-rprx-vision#hk",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         43,
+			URI:        "vless://00000000-0000-0000-0000-000000000043@example.net:443#inactive",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "inactive",
+		},
+		{
+			ID:         44,
+			URI:        "trojan://secret@example.org:443#unsupported",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	}, time.Date(2026, 4, 29, 1, 17, 0, 0, time.UTC))
+
+	if config.Route["final"] != upstreamSelectorTag {
+		t.Fatalf("expected route final to selector, got %+v", config.Route)
+	}
+	vless := findOutbound(config.Outbounds, "up_42")
+	if vless == nil {
+		t.Fatalf("expected vless outbound up_42, got %+v", config.Outbounds)
+	}
+	if vless["server"] != "example.com" || vless["server_port"] != 443 {
+		t.Fatalf("unexpected vless server fields: %+v", vless)
+	}
+	if vless["uuid"] != "00000000-0000-0000-0000-000000000042" || vless["flow"] != "xtls-rprx-vision" {
+		t.Fatalf("unexpected vless auth fields: %+v", vless)
+	}
+	tls, ok := vless["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "edge.example.com" {
+		t.Fatalf("unexpected tls config: %+v", vless["tls"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_44") != nil {
+		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
+	}
+
+	selector := findOutbound(config.Outbounds, upstreamSelectorTag)
+	if selector == nil {
+		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
+	}
+	tags, ok := selector["outbounds"].([]string)
+	if !ok || len(tags) != 1 || tags[0] != "up_42" || selector["default"] != "up_42" {
+		t.Fatalf("unexpected selector outbounds: %+v", selector)
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{
@@ -64,4 +122,13 @@ func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Ti
 			UUID:     "00000000-0000-0000-0000-000000000000",
 		},
 	}
+}
+
+func findOutbound(outbounds []map[string]any, tag string) map[string]any {
+	for _, outbound := range outbounds {
+		if outbound["tag"] == tag {
+			return outbound
+		}
+	}
+	return nil
 }

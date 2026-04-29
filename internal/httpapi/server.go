@@ -616,7 +616,12 @@ func (s *Server) handleGenerateSingBoxConfig(w http.ResponseWriter, r *http.Requ
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	config := singbox.BuildConfig(tokens, virtualNodes)
+	upstreamNodes, err := s.store.ListNodes(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	config := singbox.BuildConfig(tokens, virtualNodes, upstreamNodes)
 	body, err := singbox.Marshal(config)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())

@@ -813,6 +813,35 @@ func TestBuildConfigPreservesVLESSRealityTLS(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesTrojanRealityTLS(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         73,
+			URI:        "trojan://trojan-placeholder@reality.trojan.example:443?security=reality&sni=www.example.test&pbk=trojan-reality-public-key&sid=b1c2d3e4&fp=chrome#trojan-reality",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_73")
+	if outbound == nil {
+		t.Fatalf("expected trojan outbound up_73, got %+v", config.Outbounds)
+	}
+	tls, ok := outbound["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "www.example.test" {
+		t.Fatalf("unexpected trojan reality tls config: %+v", outbound["tls"])
+	}
+	reality, ok := tls["reality"].(map[string]any)
+	if !ok || reality["enabled"] != true || reality["public_key"] != "trojan-reality-public-key" || reality["short_id"] != "b1c2d3e4" {
+		t.Fatalf("unexpected trojan reality config: %+v", tls["reality"])
+	}
+	utls, ok := tls["utls"].(map[string]any)
+	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected trojan reality utls config: %+v", tls["utls"])
+	}
+}
+
 func TestBuildConfigPreservesVMessGRPCTransport(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

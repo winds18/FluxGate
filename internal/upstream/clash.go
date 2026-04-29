@@ -165,7 +165,9 @@ func clashTrojanURI(proxy map[string]string) string {
 		return ""
 	}
 	values := url.Values{}
-	if tlsEnabled(proxy) {
+	if clashRealityPublicKey(proxy) != "" || strings.EqualFold(firstMapValue(proxy, "security"), "reality") {
+		values.Set("security", "reality")
+	} else if tlsEnabled(proxy) || strings.EqualFold(firstMapValue(proxy, "security"), "tls") {
 		values.Set("security", "tls")
 	}
 	appendClashTransportQueryValues(proxy, values)

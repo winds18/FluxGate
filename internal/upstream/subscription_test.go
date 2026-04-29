@@ -434,6 +434,34 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLTrojanReality(t *testing.T) {
+	raw := `
+proxies:
+  - name: "香港 Trojan Reality"
+    type: trojan
+    server: reality.trojan.example.test
+    port: 443
+    password: trojan-placeholder
+    sni: www.example.test
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: trojan-reality-public-key
+      short-id: b1c2d3e4
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@reality.trojan.example.test:443?")
+	if !strings.Contains(got, "security=reality") ||
+		!strings.Contains(got, "pbk=trojan-reality-public-key") ||
+		!strings.Contains(got, "sid=b1c2d3e4") ||
+		!strings.Contains(got, "fp=chrome") ||
+		!strings.Contains(got, "sni=www.example.test") {
+		t.Fatalf("unexpected clash trojan reality URI: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLVMessGRPC(t *testing.T) {
 	raw := `
 proxies:
@@ -1035,6 +1063,45 @@ func TestNormalizeContentSingBoxJSONVLESSReality(t *testing.T) {
 		!strings.Contains(got, "sni=www.example.test") ||
 		!strings.Contains(got, "flow=xtls-rprx-vision") {
 		t.Fatalf("unexpected sing-box vless reality URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONTrojanReality(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "trojan",
+      "tag": "香港 Trojan Reality",
+      "server": "reality.trojan.singbox.example.test",
+      "server_port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.example.test",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "trojan-reality-public-key",
+          "short_id": "b1c2d3e4"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@reality.trojan.singbox.example.test:443?")
+	if !strings.Contains(got, "security=reality") ||
+		!strings.Contains(got, "pbk=trojan-reality-public-key") ||
+		!strings.Contains(got, "sid=b1c2d3e4") ||
+		!strings.Contains(got, "fp=chrome") ||
+		!strings.Contains(got, "sni=www.example.test") {
+		t.Fatalf("unexpected sing-box trojan reality URI: %q", got)
 	}
 }
 

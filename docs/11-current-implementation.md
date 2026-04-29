@@ -50,6 +50,7 @@
 - user 维度流量入库后会自动判断 Token 额度；超额时将 Token 和 gateway account 标记为 `over_quota`，追加足够额度后自动恢复为 `active`。
 - 管理 API 和后台页面可查看 Token 今日、本月和累计流量用量摘要。
 - 订阅响应头返回标准 `subscription-userinfo`，并提供 FluxGate 专属的已用、总额和剩余额度头。
+- stats 可插拔轮询调度器已落地，能将采集器返回的 V2Ray counters 转换为流量样本并写入现有用量汇总链路。
 - Token hash 存储，明文只在创建时返回。
 - 订阅请求日志 Token 路径脱敏。
 - 结构化 JSON 服务日志。
@@ -168,7 +169,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅更多结构化格式解析。
 - DNS 等更多协议 URI 到 sing-box outbound 的转换。
-- 真实 sing-box gRPC 统计轮询、采集调度和 Dashboard 流量图。
+- 真实 sing-box gRPC 统计采集器和 Dashboard 流量图。
 - 流量超额后的配置发布触发。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
 

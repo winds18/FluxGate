@@ -195,14 +195,17 @@ FluxGate 通过 sing-box 的统计能力采集：
 采集流程：
 
 ```text
-定时轮询 sing-box stats
+stats Collector 定时轮询 sing-box stats
 -> 读取累计值
+-> 转换 V2Ray counter 名称为 user/inbound/outbound 样本
 -> 和上次 raw value 对比计算 delta
 -> 写 traffic_samples
 -> 汇总 hourly/daily
 -> 更新 tokens.used_upload_bytes / used_download_bytes
 -> 判断超额
 ```
+
+当前控制面已经具备可插拔 Poller 调度器；真实 sing-box gRPC client 后续接入同一个 Collector 接口。
 
 注意：
 

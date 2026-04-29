@@ -781,6 +781,31 @@ func TestBuildConfigPreservesVLESSGRPCTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesVLESSWebSocketEarlyData(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         76,
+			URI:        "vless://00000000-0000-0000-0000-000000000076@example.ws:443?security=tls&type=ws&path=/ws&host=ws.example.test&max_early_data=2048&early_data_header_name=Sec-WebSocket-Protocol#ws-early",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_76")
+	if outbound == nil {
+		t.Fatalf("expected vless outbound up_76, got %+v", config.Outbounds)
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "ws" || transport["path"] != "/ws" || transport["max_early_data"] != 2048 || transport["early_data_header_name"] != "Sec-WebSocket-Protocol" {
+		t.Fatalf("unexpected vless websocket early data config: %+v", outbound["transport"])
+	}
+	headers, ok := transport["headers"].(map[string]any)
+	if !ok || headers["Host"] != "ws.example.test" {
+		t.Fatalf("unexpected vless websocket headers: %+v", transport["headers"])
+	}
+}
+
 func TestBuildConfigPreservesVLESSHTTPTransport(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

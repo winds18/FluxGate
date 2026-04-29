@@ -666,6 +666,8 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	}
 	wsPath := firstMapValue(proxy, "ws-path", "ws_path")
 	wsHost := firstMapValue(proxy, "ws-headers.host", "ws_headers.host", "ws-host", "ws_host")
+	wsMaxEarlyData := firstMapValue(proxy, "ws-opts.max-early-data", "ws_opts.max_early_data", "ws-opts.max_early_data", "ws_opts.max-early-data", "max-early-data", "max_early_data")
+	wsEarlyDataHeaderName := firstMapValue(proxy, "ws-opts.early-data-header-name", "ws_opts.early_data_header_name", "ws-opts.early_data_header_name", "ws_opts.early-data-header-name", "early-data-header-name", "early_data_header_name")
 	httpPath := firstMapValue(proxy, "http-opts.path", "http_opts.path")
 	httpHost := firstMapValue(proxy, "http-opts.host", "http_opts.host", "http-opts.headers.host", "http_opts.headers.host")
 	httpUpgradePath := firstMapValue(proxy, "httpupgrade-opts.path", "httpupgrade_opts.path", "http-upgrade-opts.path", "http_upgrade_opts.path")
@@ -685,7 +687,7 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	if transportType == "" && (httpPath != "" || httpHost != "" || httpMethod != "" || httpIdleTimeout != "" || httpPingTimeout != "") {
 		transportType = "http"
 	}
-	if transportType == "" && (wsPath != "" || wsHost != "") {
+	if transportType == "" && (wsPath != "" || wsHost != "" || wsMaxEarlyData != "" || wsEarlyDataHeaderName != "") {
 		transportType = "ws"
 	}
 	if transportType == "" && (httpUpgradePath != "" || httpUpgradeHost != "") {
@@ -705,6 +707,14 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	}
 	if serviceName != "" {
 		values.Set("service_name", serviceName)
+	}
+	if strings.EqualFold(transportType, "ws") || strings.EqualFold(transportType, "websocket") {
+		if wsMaxEarlyData != "" {
+			values.Set("max_early_data", wsMaxEarlyData)
+		}
+		if wsEarlyDataHeaderName != "" {
+			values.Set("early_data_header_name", wsEarlyDataHeaderName)
+		}
 	}
 	if strings.EqualFold(transportType, "http") {
 		if httpMethod != "" {

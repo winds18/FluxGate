@@ -443,6 +443,12 @@ func transportFromQuery(query url.Values) map[string]any {
 		if host := firstNonEmpty(query.Get("host"), query.Get("ws_host"), query.Get("ws-host")); host != "" {
 			transport["headers"] = map[string]any{"Host": host}
 		}
+		if maxEarlyData := intQuery(firstNonEmpty(query.Get("max_early_data"), query.Get("max-early-data"))); maxEarlyData > 0 {
+			transport["max_early_data"] = maxEarlyData
+		}
+		if earlyDataHeaderName := firstNonEmpty(query.Get("early_data_header_name"), query.Get("early-data-header-name")); earlyDataHeaderName != "" {
+			transport["early_data_header_name"] = earlyDataHeaderName
+		}
 		return transport
 	case "grpc":
 		transport := map[string]any{"type": "grpc"}

@@ -347,6 +347,39 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLTrojanWebSocketEarlyData(t *testing.T) {
+	raw := `
+proxies:
+  - name: "东京 WS Early"
+    type: trojan
+    server: ws.trojan.example.test
+    port: 443
+    password: trojan-placeholder
+    tls: true
+    network: ws
+    ws-opts:
+      path: /ws
+      headers:
+        Host: ws.example.test
+      max-early-data: 2048
+      early-data-header-name: Sec-WebSocket-Protocol
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@ws.trojan.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "type=ws") ||
+		!strings.Contains(got, "path=%2Fws") ||
+		!strings.Contains(got, "host=ws.example.test") ||
+		!strings.Contains(got, "max_early_data=2048") ||
+		!strings.Contains(got, "early_data_header_name=Sec-WebSocket-Protocol") ||
+		!strings.HasSuffix(got, "#%E4%B8%9C%E4%BA%AC%20WS%20Early") {
+		t.Fatalf("unexpected clash trojan websocket early data URI: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLTrojanHTTPUpgradeTransport(t *testing.T) {
 	raw := `
 proxies:
@@ -1123,6 +1156,47 @@ func TestNormalizeContentSingBoxJSONVLESSHTTPTransport(t *testing.T) {
 		!strings.Contains(got, "idle_timeout=20s") ||
 		!strings.Contains(got, "ping_timeout=10s") {
 		t.Fatalf("unexpected sing-box vless http transport URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONTrojanWebSocketEarlyData(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "trojan",
+      "tag": "东京 WS Early",
+      "server": "ws.trojan.singbox.example.test",
+      "server_port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "ws.trojan.singbox.example.test"
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/ws",
+        "headers": {
+          "Host": "ws.singbox.example.test"
+        },
+        "max_early_data": 2048,
+        "early_data_header_name": "Sec-WebSocket-Protocol"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@ws.trojan.singbox.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "sni=ws.trojan.singbox.example.test") ||
+		!strings.Contains(got, "type=ws") ||
+		!strings.Contains(got, "path=%2Fws") ||
+		!strings.Contains(got, "host=ws.singbox.example.test") ||
+		!strings.Contains(got, "max_early_data=2048") ||
+		!strings.Contains(got, "early_data_header_name=Sec-WebSocket-Protocol") {
+		t.Fatalf("unexpected sing-box trojan websocket early data URI: %q", got)
 	}
 }
 

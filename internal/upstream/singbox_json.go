@@ -775,6 +775,14 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 	if path := strings.TrimSpace(stringFromAnyValue(transport["path"])); path != "" {
 		proxy["path"] = path
 	}
+	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "ws") {
+		if maxEarlyData := intFromAnyValue(transport["max_early_data"]); maxEarlyData > 0 {
+			proxy["max_early_data"] = strconv.Itoa(maxEarlyData)
+		}
+		if earlyDataHeaderName := strings.TrimSpace(stringFromAnyValue(transport["early_data_header_name"])); earlyDataHeaderName != "" {
+			proxy["early_data_header_name"] = earlyDataHeaderName
+		}
+	}
 	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "http") {
 		if hosts := stringListFromAnyValue(transport["host"]); len(hosts) > 0 {
 			proxy["host"] = strings.Join(hosts, ",")

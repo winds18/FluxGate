@@ -50,6 +50,7 @@
 - DNS URI 和 sing-box JSON `dns` outbound 可进入 sing-box 配置，但不会进入普通上游 selector 或 outbound stats 列表。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan/VMess TLS 参数并同步进入 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS WebSocket 传输参数并同步为 sing-box outbound transport。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan WebSocket early data 参数并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS gRPC 传输参数并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTP transport 参数并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTPUpgrade transport 参数并同步为 sing-box outbound transport。

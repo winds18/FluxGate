@@ -44,7 +44,7 @@ curl -fsS -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" \
 
 post_json "/api/teams" '{"name":"QA Team","description":"automated smoke"}' "$OUT_DIR/team.json"
 team_id="$(json_value "data.id" <"$OUT_DIR/team.json")"
-post_json "/api/policies" "{\"name\":\"QA 默认策略\",\"scope_type\":\"team\",\"scope_id\":$team_id,\"max_nodes\":5}" "$OUT_DIR/policy.json"
+post_json "/api/policies" "{\"name\":\"QA 默认策略\",\"scope_type\":\"team\",\"scope_id\":$team_id,\"max_nodes\":1}" "$OUT_DIR/policy.json"
 policy_id="$(json_value "data.id" <"$OUT_DIR/policy.json")"
 policy_scope_id="$(json_value "data.scope_id" <"$OUT_DIR/policy.json")"
 policy_max_nodes="$(json_value "data.max_nodes" <"$OUT_DIR/policy.json")"
@@ -96,6 +96,7 @@ sip008_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-s
 post_json "/api/sources/$singbox_source_id/refresh" '{}' "$OUT_DIR/source-sing-box-refresh.json"
 singbox_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-sing-box-refresh.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443}' "$OUT_DIR/virtual-node.json"
+post_json "/api/virtual-nodes" '{"name":"FluxGate-SG","listen_protocol":"vless","listen_port":8444}' "$OUT_DIR/virtual-node-sg.json"
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
 token_id="$(json_value "data.token.id" <"$OUT_DIR/token.json")"
 plain_token="$(json_value "data.plain_token" <"$OUT_DIR/token.json")"
@@ -140,7 +141,7 @@ if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   exit 1
 fi
 
-if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nodes" != "5" || "$policy_list_count" -lt 1 ]]; then
+if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nodes" != "1" || "$policy_list_count" -lt 1 ]]; then
   log "policy create/list should work: id=$policy_id scope_id=$policy_scope_id team_id=$team_id max_nodes=$policy_max_nodes list_count=$policy_list_count"
   exit 1
 fi
@@ -192,6 +193,11 @@ fi
 
 if ! grep -q 'FluxGate-HK' "$OUT_DIR/subscription.yaml"; then
   log "subscription missing FluxGate-HK"
+  exit 1
+fi
+
+if grep -q 'FluxGate-SG' "$OUT_DIR/subscription.yaml"; then
+  log "team policy max_nodes=1 should hide FluxGate-SG from subscription"
   exit 1
 fi
 

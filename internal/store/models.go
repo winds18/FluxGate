@@ -115,6 +115,7 @@ type GatewayAccount struct {
 
 type TokenWithAccount struct {
 	Token
+	UserTeamID     *int64         `json:"user_team_id,omitempty"`
 	GatewayAccount GatewayAccount `json:"gateway_account"`
 }
 

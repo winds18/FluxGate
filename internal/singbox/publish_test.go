@@ -22,7 +22,7 @@ func TestPublishConfigWritesCurrentAndPreviousConfig(t *testing.T) {
 		gatewayToken("active", "active", "vless", nil, 0, 0, 0, "qa-user"),
 	}, []store.VirtualNode{
 		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
-	}, nil, time.Date(2026, 4, 29, 3, 49, 0, 0, time.UTC))
+	}, nil, nil, time.Date(2026, 4, 29, 3, 49, 0, 0, time.UTC))
 
 	result, err := PublishConfig(config, configPath, previousPath)
 	if err != nil {
@@ -67,12 +67,12 @@ func TestRollbackConfigRestoresPreviousConfig(t *testing.T) {
 		gatewayToken("active", "active", "vless", nil, 0, 0, 0, "current-user"),
 	}, []store.VirtualNode{
 		{Name: "current", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
-	}, nil, time.Date(2026, 4, 29, 3, 59, 0, 0, time.UTC))
+	}, nil, nil, time.Date(2026, 4, 29, 3, 59, 0, 0, time.UTC))
 	previousConfig := buildConfig([]store.TokenWithAccount{
 		gatewayToken("active", "active", "vless", nil, 0, 0, 0, "previous-user"),
 	}, []store.VirtualNode{
 		{Name: "previous", ListenProtocol: "vless", ListenPort: 9443, Status: "active"},
-	}, nil, time.Date(2026, 4, 29, 3, 59, 0, 0, time.UTC))
+	}, nil, nil, time.Date(2026, 4, 29, 3, 59, 0, 0, time.UTC))
 
 	currentBody, err := Marshal(currentConfig)
 	if err != nil {

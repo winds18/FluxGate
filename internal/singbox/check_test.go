@@ -15,7 +15,7 @@ func TestCheckConfigSummarizesGeneratedConfig(t *testing.T) {
 		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
 	}, []store.Node{
 		{ID: 42, URI: "vless://00000000-0000-0000-0000-000000000042@example.com:443#hk", Protocol: "vless", ServerPort: 443, Status: "active"},
-	}, time.Date(2026, 4, 29, 3, 41, 0, 0, time.UTC))
+	}, nil, time.Date(2026, 4, 29, 3, 41, 0, 0, time.UTC))
 
 	result, err := CheckConfig(config)
 	if err != nil {

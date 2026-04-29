@@ -203,6 +203,7 @@ func (s *Store) TokenByHash(ctx context.Context, tokenHash string) (TokenWithAcc
 	row := s.db.QueryRowContext(ctx, `
 		SELECT t.id, t.user_id, t.token_prefix, t.name, t.status, t.expire_at, t.quota_bytes,
 		       t.used_upload_bytes, t.used_download_bytes, t.last_used_at, t.created_at, t.updated_at, t.revoked_at,
+		       u.team_id,
 		       g.id, g.token_id, g.protocol, g.auth_user, g.uuid, g.password, g.status, g.created_at, g.updated_at
 		FROM tokens t
 		JOIN users u ON u.id = t.user_id
@@ -217,8 +218,10 @@ func (s *Store) ListTokens(ctx context.Context) ([]TokenWithAccount, error) {
 	rows, err := s.db.QueryContext(ctx, `
 		SELECT t.id, t.user_id, t.token_prefix, t.name, t.status, t.expire_at, t.quota_bytes,
 		       t.used_upload_bytes, t.used_download_bytes, t.last_used_at, t.created_at, t.updated_at, t.revoked_at,
+		       u.team_id,
 		       g.id, g.token_id, g.protocol, g.auth_user, g.uuid, g.password, g.status, g.created_at, g.updated_at
 		FROM tokens t
+		JOIN users u ON u.id = t.user_id
 		JOIN gateway_accounts g ON g.token_id = t.id
 		ORDER BY t.id DESC
 	`)
@@ -380,6 +383,7 @@ func scanToken(scanner scanner) (Token, error) {
 func scanTokenWithAccount(scanner scanner) (TokenWithAccount, error) {
 	var item TokenWithAccount
 	var expireAt sql.NullString
+	var userTeamID sql.NullInt64
 	err := scanner.Scan(
 		&item.ID,
 		&item.UserID,
@@ -394,6 +398,7 @@ func scanTokenWithAccount(scanner scanner) (TokenWithAccount, error) {
 		&item.CreatedAt,
 		&item.UpdatedAt,
 		&item.RevokedAt,
+		&userTeamID,
 		&item.GatewayAccount.ID,
 		&item.GatewayAccount.TokenID,
 		&item.GatewayAccount.Protocol,
@@ -412,6 +417,9 @@ func scanTokenWithAccount(scanner scanner) (TokenWithAccount, error) {
 		if err == nil {
 			item.ExpireAt = &parsed
 		}
+	}
+	if userTeamID.Valid {
+		item.UserTeamID = &userTeamID.Int64
 	}
 	return item, nil
 }

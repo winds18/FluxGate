@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/winds18/FluxGate/internal/policy"
 	"github.com/winds18/FluxGate/internal/store"
 )
 
@@ -37,25 +38,21 @@ type VLESSUser struct {
 const upstreamSelectorTag = "FluxGate-upstreams"
 
 func BuildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNode, upstreamNodes []store.Node) Config {
-	return buildConfig(tokens, virtualNodes, upstreamNodes, time.Now().UTC())
+	return buildConfig(tokens, virtualNodes, upstreamNodes, nil, time.Now().UTC())
 }
 
-func buildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNode, upstreamNodes []store.Node, now time.Time) Config {
-	users := make([]VLESSUser, 0, len(tokens))
-	for _, token := range tokens {
-		if !gatewayTokenUsable(token, now) {
-			continue
-		}
-		users = append(users, VLESSUser{
-			Name: token.GatewayAccount.AuthUser,
-			UUID: token.GatewayAccount.UUID,
-			Flow: "",
-		})
-	}
+func BuildConfigWithPolicies(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNode, upstreamNodes []store.Node, policies []store.Policy) Config {
+	return buildConfig(tokens, virtualNodes, upstreamNodes, policies, time.Now().UTC())
+}
 
+func buildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNode, upstreamNodes []store.Node, policies []store.Policy, now time.Time) Config {
 	inbounds := make([]Inbound, 0, len(virtualNodes))
 	for _, node := range virtualNodes {
 		if node.Status != "active" || node.ListenProtocol != "vless" {
+			continue
+		}
+		users := vlessUsersForVirtualNode(tokens, node, virtualNodes, policies, now)
+		if len(users) == 0 {
 			continue
 		}
 		inbounds = append(inbounds, Inbound{
@@ -99,11 +96,29 @@ func buildConfig(tokens []store.TokenWithAccount, virtualNodes []store.VirtualNo
 				"stats": map[string]any{
 					"enabled":  true,
 					"inbounds": inboundTags(inbounds),
-					"users":    userNames(users),
+					"users":    userNamesFromInbounds(inbounds),
 				},
 			},
 		},
 	}
+}
+
+func vlessUsersForVirtualNode(tokens []store.TokenWithAccount, node store.VirtualNode, virtualNodes []store.VirtualNode, policies []store.Policy, now time.Time) []VLESSUser {
+	users := make([]VLESSUser, 0, len(tokens))
+	for _, token := range tokens {
+		if !gatewayTokenUsable(token, now) {
+			continue
+		}
+		if !policy.VirtualNodeAllowed(token, node, virtualNodes, policies) {
+			continue
+		}
+		users = append(users, VLESSUser{
+			Name: token.GatewayAccount.AuthUser,
+			UUID: token.GatewayAccount.UUID,
+			Flow: "",
+		})
+	}
+	return users
 }
 
 func gatewayTokenUsable(token store.TokenWithAccount, now time.Time) bool {
@@ -1210,6 +1225,21 @@ func userNames(users []VLESSUser) []string {
 	names := make([]string, 0, len(users))
 	for _, user := range users {
 		names = append(names, user.Name)
+	}
+	return names
+}
+
+func userNamesFromInbounds(inbounds []Inbound) []string {
+	var names []string
+	seen := map[string]bool{}
+	for _, inbound := range inbounds {
+		for _, name := range userNames(inbound.Users) {
+			if seen[name] {
+				continue
+			}
+			seen[name] = true
+			names = append(names, name)
+		}
 	}
 	return names
 }

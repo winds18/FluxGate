@@ -24,7 +24,7 @@ func TestBuildConfigFiltersUnusableGatewayTokens(t *testing.T) {
 		gatewayToken("active", "active", "trojan", nil, 0, 0, 0, "unsupported-user"),
 	}, []store.VirtualNode{
 		{Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
-	}, nil, now)
+	}, nil, nil, now)
 
 	if len(config.Inbounds) != 1 {
 		t.Fatalf("expected one inbound, got %+v", config.Inbounds)
@@ -187,7 +187,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 			ServerPort: 0,
 			Status:     "active",
 		},
-	}, time.Date(2026, 4, 29, 1, 17, 0, 0, time.UTC))
+	}, nil, time.Date(2026, 4, 29, 1, 17, 0, 0, time.UTC))
 
 	if config.Route["final"] != upstreamSelectorTag {
 		t.Fatalf("expected route final to selector, got %+v", config.Route)
@@ -479,6 +479,33 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	tags, ok := selector["outbounds"].([]string)
 	if !ok || len(tags) != 15 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || tags[10] != "up_53" || tags[11] != "up_54" || tags[12] != "up_55" || tags[13] != "up_56" || tags[14] != "up_57" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
+	}
+}
+
+func TestBuildConfigAppliesVirtualNodePolicyToUsers(t *testing.T) {
+	now := time.Date(2026, 4, 29, 5, 10, 0, 0, time.UTC)
+	teamID := int64(10)
+	policyScopeID := teamID
+	token := gatewayToken("active", "active", "vless", nil, 0, 0, 0, "team-user")
+	token.ID = 30
+	token.UserID = 20
+	token.UserTeamID = &teamID
+
+	config := buildConfig([]store.TokenWithAccount{token}, []store.VirtualNode{
+		{ID: 1, Name: "hk", ListenProtocol: "vless", ListenPort: 8443, Status: "active"},
+		{ID: 2, Name: "sg", ListenProtocol: "vless", ListenPort: 8444, Status: "active"},
+	}, nil, []store.Policy{
+		{ScopeType: "team", ScopeID: &policyScopeID, MaxNodes: 1, Status: "active"},
+	}, now)
+
+	if len(config.Inbounds) != 1 {
+		t.Fatalf("expected one allowed inbound, got %+v", config.Inbounds)
+	}
+	if len(config.Inbounds[0].Users) != 1 || config.Inbounds[0].Users[0].Name != "team-user" {
+		t.Fatalf("first virtual node should contain user: %+v", config.Inbounds[0].Users)
+	}
+	if config.Inbounds[0].Tag != "vn-hk" {
+		t.Fatalf("unexpected allowed inbound: %+v", config.Inbounds[0])
 	}
 }
 

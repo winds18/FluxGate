@@ -15,6 +15,7 @@ import (
 
 	"github.com/winds18/FluxGate/internal/config"
 	"github.com/winds18/FluxGate/internal/observability"
+	"github.com/winds18/FluxGate/internal/policy"
 	"github.com/winds18/FluxGate/internal/security"
 	"github.com/winds18/FluxGate/internal/singbox"
 	"github.com/winds18/FluxGate/internal/store"
@@ -732,7 +733,11 @@ func (s *Server) buildSingBoxConfig(ctx context.Context) (singbox.Config, error)
 	if err != nil {
 		return singbox.Config{}, err
 	}
-	return singbox.BuildConfig(tokens, virtualNodes, upstreamNodes), nil
+	policies, err := s.store.ListPolicies(ctx)
+	if err != nil {
+		return singbox.Config{}, err
+	}
+	return singbox.BuildConfigWithPolicies(tokens, virtualNodes, upstreamNodes, policies), nil
 }
 
 func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
@@ -756,6 +761,12 @@ func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
+	policies, err := s.store.ListPolicies(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	virtualNodes = policy.FilterVirtualNodes(virtualNodes, token, policies)
 	target := r.URL.Query().Get("target")
 	if target == "" {
 		target = inferTarget(r.UserAgent())

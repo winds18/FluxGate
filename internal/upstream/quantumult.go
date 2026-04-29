@@ -185,8 +185,8 @@ func quantumultXProxyURI(line string) string {
 		proxy["alterid"] = surgeOption(options, "alter-id", "alter_id", "alterid", "aid")
 		return clashVMessURI(proxy)
 	case "http", "https":
-		proxy["username"] = surgeOption(options, "username", "user")
-		proxy["password"] = surgeOption(options, "password", "passwd", "pass")
+		proxy["username"] = surgeFirstValue(options, positionals, 1, "username", "user")
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass")
 		if protocol == "https" {
 			proxy["type"] = "https"
 			proxy["tls"] = "true"
@@ -194,8 +194,8 @@ func quantumultXProxyURI(line string) string {
 		return clashHTTPURI(proxy)
 	case "socks", "socks5":
 		proxy["type"] = "socks5"
-		proxy["username"] = surgeOption(options, "username", "user")
-		proxy["password"] = surgeOption(options, "password", "passwd", "pass")
+		proxy["username"] = surgeFirstValue(options, positionals, 1, "username", "user")
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass")
 		return clashSOCKSURI(proxy)
 	default:
 		return ""

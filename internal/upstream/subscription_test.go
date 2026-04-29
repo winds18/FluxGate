@@ -216,6 +216,8 @@ shadowtls=qx-shadowtls.example.test:443, password=shadowtls-placeholder, version
 naive+quic=qx-naive.example.test:443, username=qa-user, password=naive-placeholder, tls-host=naive.qx.example.test, alpn=h3, quic-congestion-control=bbr, udp-over-tcp=true, insecure-concurrency=2, tag=新加坡 QuantumultX Naive
 ssh=qx-ssh.example.test:22, username=qa-user, password=ssh-placeholder, private-key-path=keys/qa_id_ed25519, host-key-algorithms="ssh-ed25519,rsa-sha2-512", client-version=SSH-2.0-FluxGateQA, cipher=aes128-gcm@openssh.com, mac=hmac-sha2-256, kex-algorithm=curve25519-sha256, tag=香港 QuantumultX SSH
 wireguard=qx-wg.example.test:51820, private-key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI=, public-key=cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==, self-ip=10.66.0.4/32, self-ip-v6=fd00::4/128, pre-shared-key=cHNrLXBsYWNlaG9sZGVy, allowed-ips="0.0.0.0/0,::/0", reserved="7,8,9", mtu=1420, udp=true, interface-name=wg-qx, system-interface=true, tag=台北 QuantumultX WireGuard
+http=qx-http.example.test:8080, qa-user, http-placeholder, tag=首尔 QuantumultX HTTP
+socks5=qx-socks.example.test:1080, qa-user, socks-placeholder, protocol=udp, tag=大阪 QuantumultX SOCKS
 [rewrite_local]
 ^https://example.test reject`
 	got, err := NormalizeContent(raw)
@@ -223,8 +225,8 @@ wireguard=qx-wg.example.test:51820, private-key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXIt
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 12 {
-		t.Fatalf("expected 12 Quantumult X proxy URIs, got %d: %q", len(lines), got)
+	if len(lines) != 14 {
+		t.Fatalf("expected 14 Quantumult X proxy URIs, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@qx-ss.example.test:8388?")
 	for _, want := range []string{
@@ -379,6 +381,15 @@ wireguard=qx-wg.example.test:51820, private-key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXIt
 		if !strings.Contains(lines[11], want) {
 			t.Fatalf("expected Quantumult X WireGuard URI to contain %q: %q", want, lines[11])
 		}
+	}
+	assertHasPrefix(t, lines[12], "http://qa-user:http-placeholder@qx-http.example.test:8080")
+	if !strings.HasSuffix(lines[12], "#%E9%A6%96%E5%B0%94%20QuantumultX%20HTTP") {
+		t.Fatalf("unexpected Quantumult X HTTP URI: %q", lines[12])
+	}
+	assertHasPrefix(t, lines[13], "socks5://qa-user:socks-placeholder@qx-socks.example.test:1080?")
+	if !strings.Contains(lines[13], "network=udp") ||
+		!strings.HasSuffix(lines[13], "#%E5%A4%A7%E9%98%AA%20QuantumultX%20SOCKS") {
+		t.Fatalf("unexpected Quantumult X SOCKS URI: %q", lines[13])
 	}
 }
 

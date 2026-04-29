@@ -279,6 +279,37 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLVLESSReality(t *testing.T) {
+	raw := `
+proxies:
+  - name: "香港 Reality"
+    type: vless
+    server: reality.vless.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000075
+    flow: xtls-rprx-vision
+    network: tcp
+    sni: www.example.test
+    client-fingerprint: chrome
+    reality-opts:
+      public-key: reality-public-key-placeholder
+      short-id: a1b2c3d4
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000075@reality.vless.example.test:443?")
+	if !strings.Contains(got, "security=reality") ||
+		!strings.Contains(got, "pbk=reality-public-key-placeholder") ||
+		!strings.Contains(got, "sid=a1b2c3d4") ||
+		!strings.Contains(got, "fp=chrome") ||
+		!strings.Contains(got, "sni=www.example.test") ||
+		!strings.Contains(got, "flow=xtls-rprx-vision") {
+		t.Fatalf("unexpected clash vless reality URI: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLVMessGRPC(t *testing.T) {
 	raw := `
 proxies:
@@ -673,6 +704,47 @@ func TestNormalizeContentSingBoxJSONVLESSGRPC(t *testing.T) {
 		!strings.Contains(got, "service_name=fluxgate") ||
 		!strings.HasSuffix(got, "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20gRPC") {
 		t.Fatalf("unexpected sing-box vless grpc URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONVLESSReality(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "新加坡 Reality",
+      "server": "reality.vless.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000076",
+      "flow": "xtls-rprx-vision",
+      "tls": {
+        "enabled": true,
+        "server_name": "www.example.test",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "reality-public-key-placeholder",
+          "short_id": "a1b2c3d4"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000076@reality.vless.singbox.example.test:443?")
+	if !strings.Contains(got, "security=reality") ||
+		!strings.Contains(got, "pbk=reality-public-key-placeholder") ||
+		!strings.Contains(got, "sid=a1b2c3d4") ||
+		!strings.Contains(got, "fp=chrome") ||
+		!strings.Contains(got, "sni=www.example.test") ||
+		!strings.Contains(got, "flow=xtls-rprx-vision") {
+		t.Fatalf("unexpected sing-box vless reality URI: %q", got)
 	}
 }
 

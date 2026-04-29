@@ -641,6 +641,38 @@ func TestBuildConfigPreservesVLESSGRPCTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesVLESSRealityTLS(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         72,
+			URI:        "vless://00000000-0000-0000-0000-000000000072@reality.vless.example:443?security=reality&sni=www.example.test&flow=xtls-rprx-vision&pbk=reality-public-key-placeholder&sid=a1b2c3d4&fp=chrome#reality",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_72")
+	if outbound == nil {
+		t.Fatalf("expected vless outbound up_72, got %+v", config.Outbounds)
+	}
+	tls, ok := outbound["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "www.example.test" {
+		t.Fatalf("unexpected vless reality tls config: %+v", outbound["tls"])
+	}
+	reality, ok := tls["reality"].(map[string]any)
+	if !ok || reality["enabled"] != true || reality["public_key"] != "reality-public-key-placeholder" || reality["short_id"] != "a1b2c3d4" {
+		t.Fatalf("unexpected vless reality config: %+v", tls["reality"])
+	}
+	utls, ok := tls["utls"].(map[string]any)
+	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected vless reality utls config: %+v", tls["utls"])
+	}
+	if outbound["flow"] != "xtls-rprx-vision" {
+		t.Fatalf("unexpected vless reality flow: %+v", outbound)
+	}
+}
+
 func TestBuildConfigPreservesVMessGRPCTransport(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

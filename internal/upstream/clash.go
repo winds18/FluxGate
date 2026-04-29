@@ -156,7 +156,9 @@ func clashVLESSURI(proxy map[string]string) string {
 		return ""
 	}
 	values := url.Values{}
-	if tlsEnabled(proxy) {
+	if clashRealityPublicKey(proxy) != "" || strings.EqualFold(firstMapValue(proxy, "security"), "reality") {
+		values.Set("security", "reality")
+	} else if tlsEnabled(proxy) {
 		values.Set("security", "tls")
 	}
 	if flow := firstMapValue(proxy, "flow"); flow != "" {
@@ -604,6 +606,22 @@ func appendClashTLSQueryValues(proxy map[string]string, values url.Values) {
 	if alpn := firstMapValue(proxy, "alpn"); alpn != "" {
 		values.Set("alpn", alpn)
 	}
+	if publicKey := clashRealityPublicKey(proxy); publicKey != "" {
+		values.Set("pbk", publicKey)
+	}
+	if shortID := firstMapValue(proxy, "reality-opts.short-id", "reality_opts.short_id", "short-id", "short_id", "sid"); shortID != "" {
+		values.Set("sid", shortID)
+	}
+	if fingerprint := firstMapValue(proxy, "client-fingerprint", "client_fingerprint", "fingerprint", "fp"); fingerprint != "" {
+		values.Set("fp", fingerprint)
+	}
+	if spiderX := firstMapValue(proxy, "reality-opts.spider-x", "reality_opts.spider_x", "spider-x", "spider_x", "spx"); spiderX != "" {
+		values.Set("spx", spiderX)
+	}
+}
+
+func clashRealityPublicKey(proxy map[string]string) string {
+	return firstMapValue(proxy, "reality-opts.public-key", "reality_opts.public_key", "public-key", "public_key", "pbk")
 }
 
 func appendClashTransportQueryValues(proxy map[string]string, values url.Values) {

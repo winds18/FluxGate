@@ -612,6 +612,20 @@ func appendSingBoxTLSProxyValues(outbound map[string]any, proxy map[string]strin
 	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
 		proxy["alpn"] = strings.Join(alpn, ",")
 	}
+	if reality, ok := tls["reality"].(map[string]any); ok && boolFromAnyValue(reality["enabled"]) {
+		proxy["security"] = "reality"
+		if publicKey := strings.TrimSpace(stringFromAnyValue(reality["public_key"])); publicKey != "" {
+			proxy["pbk"] = publicKey
+		}
+		if shortID := strings.TrimSpace(stringFromAnyValue(reality["short_id"])); shortID != "" {
+			proxy["sid"] = shortID
+		}
+	}
+	if utls, ok := tls["utls"].(map[string]any); ok && boolFromAnyValue(utls["enabled"]) {
+		if fingerprint := strings.TrimSpace(stringFromAnyValue(utls["fingerprint"])); fingerprint != "" {
+			proxy["fp"] = fingerprint
+		}
+	}
 }
 
 func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string]string) {

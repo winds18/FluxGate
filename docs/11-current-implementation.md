@@ -33,6 +33,7 @@
 - Clash/Mihomo 订阅生成。
 - sing-box 客户端订阅生成。
 - sing-box 服务端配置生成骨架。
+- sing-box config check API 和管理后台检查入口，可返回配置 hash、入站/出站/用户摘要。
 - active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
 - Token hash 存储，明文只在创建时返回。
@@ -93,6 +94,7 @@ GET  /api/virtual-nodes
 POST /api/virtual-nodes
 
 POST /api/sing-box/config/generate
+POST /api/sing-box/config/check
 GET  /sub/{token}
 ```
 
@@ -146,7 +148,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 策略管理。
 - 流量统计采集。
 - 流量采集后的超额自动标记、阻断和配置发布触发。
-- sing-box config 发布、check、回滚的 API 集成。
+- sing-box config 发布、回滚的 API 集成。
 - GitHub Actions 远程镜像构建。
 - 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
 

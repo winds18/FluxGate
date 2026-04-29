@@ -63,6 +63,7 @@
 - Clash/Mihomo 订阅生成。
 - sing-box config.json 生成。
 - `sing-box check` 校验。
+- 管理后台可触发 sing-box config check 并查看配置摘要。
 - 发布配置并重启容器。
 
 验收：

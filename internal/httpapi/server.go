@@ -88,6 +88,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/virtual-nodes", s.handleCreateVirtualNode)
 
 	s.mux.HandleFunc("POST /api/sing-box/config/generate", s.handleGenerateSingBoxConfig)
+	s.mux.HandleFunc("POST /api/sing-box/config/check", s.handleCheckSingBoxConfig)
 	s.mux.HandleFunc("GET /sub/{token}", s.handleSubscription)
 }
 
@@ -580,22 +581,11 @@ func (s *Server) handleCreateVirtualNode(w http.ResponseWriter, r *http.Request)
 }
 
 func (s *Server) handleGenerateSingBoxConfig(w http.ResponseWriter, r *http.Request) {
-	tokens, err := s.store.ListTokens(r.Context())
+	config, err := s.buildSingBoxConfig(r.Context())
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	virtualNodes, err := s.store.ListVirtualNodes(r.Context())
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	upstreamNodes, err := s.store.ListNodes(r.Context())
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	config := singbox.BuildConfig(tokens, virtualNodes, upstreamNodes)
 	body, err := singbox.Marshal(config)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
@@ -603,6 +593,40 @@ func (s *Server) handleGenerateSingBoxConfig(w http.ResponseWriter, r *http.Requ
 	}
 	w.Header().Set("content-type", "application/json; charset=utf-8")
 	_, _ = w.Write(body)
+}
+
+func (s *Server) handleCheckSingBoxConfig(w http.ResponseWriter, r *http.Request) {
+	config, err := s.buildSingBoxConfig(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	result, err := singbox.CheckConfig(config)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	status := http.StatusOK
+	if !result.Valid {
+		status = http.StatusUnprocessableEntity
+	}
+	writeJSON(w, status, result)
+}
+
+func (s *Server) buildSingBoxConfig(ctx context.Context) (singbox.Config, error) {
+	tokens, err := s.store.ListTokens(ctx)
+	if err != nil {
+		return singbox.Config{}, err
+	}
+	virtualNodes, err := s.store.ListVirtualNodes(ctx)
+	if err != nil {
+		return singbox.Config{}, err
+	}
+	upstreamNodes, err := s.store.ListNodes(ctx)
+	if err != nil {
+		return singbox.Config{}, err
+	}
+	return singbox.BuildConfig(tokens, virtualNodes, upstreamNodes), nil
 }
 
 func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {

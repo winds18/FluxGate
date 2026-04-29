@@ -104,6 +104,10 @@ token_restored_status="$(json_value "data.status" <"$OUT_DIR/token-restore.json"
 log "+ curl -fsS $BASE_URL/sub/<redacted>?target=clash -o $OUT_DIR/subscription.yaml"
 curl -fsS "$BASE_URL/sub/$plain_token?target=clash" -o "$OUT_DIR/subscription.yaml"
 run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/generate" -o "$OUT_DIR/sing-box.json"
+run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/check" -o "$OUT_DIR/sing-box-check.json"
+config_check_valid="$(json_value "data.valid" <"$OUT_DIR/sing-box-check.json")"
+config_check_hash="$(json_value "data.config_hash" <"$OUT_DIR/sing-box-check.json")"
+config_check_upstreams="$(json_value "data.upstream_outbound_count" <"$OUT_DIR/sing-box-check.json")"
 
 if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   log "unexpected auto prefix for duplicate source: $source_b_prefix"
@@ -157,6 +161,11 @@ fi
 
 if ! grep -q "$gateway_user" "$OUT_DIR/sing-box.json"; then
   log "restored token should appear in sing-box config"
+  exit 1
+fi
+
+if [[ "$config_check_valid" != "true" || -z "$config_check_hash" || "$config_check_upstreams" -lt 1 ]]; then
+  log "sing-box config check should pass with upstreams: valid=$config_check_valid hash=$config_check_hash upstreams=$config_check_upstreams"
   exit 1
 fi
 

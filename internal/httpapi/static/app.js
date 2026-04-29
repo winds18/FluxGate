@@ -14,6 +14,8 @@ const nodesEl = document.querySelector("#nodes");
 const virtualNodesEl = document.querySelector("#virtual-nodes");
 const tokensEl = document.querySelector("#tokens");
 const refreshEl = document.querySelector("#refresh");
+const configCheckEl = document.querySelector("#config-check");
+const configCheckResultEl = document.querySelector("#config-check-result");
 const teamForm = document.querySelector("#team-form");
 const userForm = document.querySelector("#user-form");
 const sourceForm = document.querySelector("#source-form");
@@ -26,6 +28,7 @@ const tokenUserSelect = document.querySelector("#token-user");
 const tokenResultEl = document.querySelector("#token-result");
 
 refreshEl.addEventListener("click", load);
+configCheckEl.addEventListener("click", checkConfig);
 logoutEl.addEventListener("click", logout);
 loginForm.addEventListener("submit", login);
 teamForm.addEventListener("submit", submitTeam);
@@ -236,6 +239,26 @@ async function handleTokenAction(event) {
   } catch (error) {
     statusEl.textContent = "更新失败";
     button.disabled = false;
+  }
+}
+
+async function checkConfig() {
+  configCheckEl.disabled = true;
+  statusEl.textContent = "检查配置中";
+  try {
+    const result = await postJSON("/api/sing-box/config/check", {});
+    configCheckResultEl.hidden = false;
+    configCheckResultEl.innerHTML = `
+      <strong>${result.valid ? "检查通过" : "检查失败"}</strong>
+      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} in=${formatCell(result.inbound_count)} out=${formatCell(result.outbound_count)} upstream=${formatCell(result.upstream_outbound_count)} users=${formatCell(result.user_count)}</code>
+    `;
+    statusEl.textContent = result.valid ? "配置可用" : "配置异常";
+  } catch (error) {
+    configCheckResultEl.hidden = false;
+    configCheckResultEl.innerHTML = `<strong>检查失败</strong><code>${escapeHTML(error.message)}</code>`;
+    statusEl.textContent = "配置异常";
+  } finally {
+    configCheckEl.disabled = false;
   }
 }
 

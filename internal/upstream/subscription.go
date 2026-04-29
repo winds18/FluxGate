@@ -94,6 +94,9 @@ func NormalizeContent(content string) (string, error) {
 	if normalized := SIP008URIList(content); normalized != "" {
 		return normalized, nil
 	}
+	if normalized := SingBoxJSONURIList(content); normalized != "" {
+		return normalized, nil
+	}
 
 	compact := strings.Map(func(r rune) rune {
 		switch r {
@@ -120,6 +123,9 @@ func NormalizeContent(content string) (string, error) {
 			return normalized, nil
 		}
 		if normalized := SIP008URIList(string(decoded)); normalized != "" {
+			return normalized, nil
+		}
+		if normalized := SingBoxJSONURIList(string(decoded)); normalized != "" {
 			return normalized, nil
 		}
 	}

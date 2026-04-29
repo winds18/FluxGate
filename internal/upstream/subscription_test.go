@@ -127,6 +127,87 @@ func TestNormalizeContentSIP008(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSON(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "selector",
+      "tag": "auto",
+      "outbounds": ["香港 03"]
+    },
+    {
+      "type": "shadowsocks",
+      "tag": "香港 03",
+      "server": "ss.singbox.example.test",
+      "server_port": 8388,
+      "method": "aes-128-gcm",
+      "password": "qa-placeholder"
+    },
+    {
+      "type": "trojan",
+      "tag": "东京 02",
+      "server": "trojan.singbox.example.test",
+      "server_port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "edge.singbox.example.test",
+        "insecure": true
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "首尔 05",
+      "server": "vless.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000052",
+      "flow": "xtls-rprx-vision",
+      "tls": {
+        "enabled": true,
+        "server_name": "vless.singbox.example.test"
+      }
+    },
+    {
+      "type": "vmess",
+      "tag": "大阪 02",
+      "server": "vmess.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000053",
+      "security": "auto",
+      "tls": {
+        "enabled": true,
+        "server_name": "vmess.singbox.example.test"
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/ws",
+        "headers": {
+          "Host": "ws.singbox.example.test"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 normalized nodes, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.singbox.example.test:8388#")
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.singbox.example.test:443?")
+	if !strings.Contains(lines[1], "sni=edge.singbox.example.test") || !strings.Contains(lines[1], "insecure=1") {
+		t.Fatalf("unexpected sing-box trojan URI: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "vless://00000000-0000-0000-0000-000000000052@vless.singbox.example.test:443?")
+	if !strings.Contains(lines[2], "flow=xtls-rprx-vision") || !strings.Contains(lines[2], "security=tls") {
+		t.Fatalf("unexpected sing-box vless URI: %q", lines[2])
+	}
+	assertHasPrefix(t, lines[3], "vmess://")
+}
+
 func TestNormalizeContentRejectsUnsupportedContent(t *testing.T) {
 	if _, err := NormalizeContent("not a subscription"); err == nil {
 		t.Fatal("expected unsupported content error")

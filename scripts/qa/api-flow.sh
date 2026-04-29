@@ -72,6 +72,9 @@ subscription_refresh_interval="$(json_value "data.refresh_interval_minutes" <"$O
 sip008_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(JSON.stringify({version:1,servers:[{remarks:"首尔 04",server:"sip008.example.sub",server_port:8388,method:"aes-128-gcm",password:"qa-placeholder"}]})));')"
 post_json "/api/sources" "{\"name\":\"SIP008订阅\",\"type\":\"subscription\",\"raw_content\":$sip008_subscription_raw,\"refresh_interval_minutes\":0}" "$OUT_DIR/source-sip008.json"
 sip008_source_id="$(json_value "data.id" <"$OUT_DIR/source-sip008.json")"
+singbox_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(JSON.stringify({outbounds:[{type:"shadowsocks",tag:"香港 05",server:"singbox.example.sub",server_port:8388,method:"aes-128-gcm",password:"qa-placeholder"}]})));')"
+post_json "/api/sources" "{\"name\":\"sing-box订阅\",\"type\":\"subscription\",\"raw_content\":$singbox_subscription_raw,\"refresh_interval_minutes\":0}" "$OUT_DIR/source-sing-box.json"
+singbox_source_id="$(json_value "data.id" <"$OUT_DIR/source-sing-box.json")"
 vmess_uri="$(node -e 'const doc={add:"vmess.example.net",port:"443",id:"00000000-0000-0000-0000-000000000046",aid:"0",scy:"auto",net:"ws",host:"ws.example.test",path:"/ws",tls:"tls",sni:"vmess.example.net",ps:"VMess QA"}; process.stdout.write("vmess://"+Buffer.from(JSON.stringify(doc)).toString("base64url"));')"
 hysteria2_uri="hysteria2://qa-placeholder@example.dev:443?obfs=salamander&obfs-password=obfs-placeholder&sni=hy2.example.dev&insecure=1#首尔%2002"
 tuic_uri="tuic://00000000-0000-0000-0000-000000000048:qa-placeholder@example.io:443?congestion_control=bbr&udp_relay_mode=native&sni=tuic.example.io&alpn=h3&insecure=1#大阪%2001"
@@ -90,6 +93,8 @@ post_json "/api/sources/$subscription_source_id/refresh" '{}' "$OUT_DIR/source-r
 source_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-refresh.json")"
 post_json "/api/sources/$sip008_source_id/refresh" '{}' "$OUT_DIR/source-sip008-refresh.json"
 sip008_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-sip008-refresh.json")"
+post_json "/api/sources/$singbox_source_id/refresh" '{}' "$OUT_DIR/source-sing-box-refresh.json"
+singbox_refresh_imported="$(json_value "data.result.imported" <"$OUT_DIR/source-sing-box-refresh.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443}' "$OUT_DIR/virtual-node.json"
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
 token_id="$(json_value "data.token.id" <"$OUT_DIR/token.json")"
@@ -148,6 +153,11 @@ fi
 
 if [[ "$sip008_refresh_imported" != "1" ]]; then
   log "unexpected SIP008 refresh import count: $sip008_refresh_imported"
+  exit 1
+fi
+
+if [[ "$singbox_refresh_imported" != "1" ]]; then
+  log "unexpected sing-box JSON refresh import count: $singbox_refresh_imported"
   exit 1
 fi
 

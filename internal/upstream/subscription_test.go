@@ -1274,6 +1274,37 @@ func TestNormalizeContentSurgeProxyListNaiveAndSSH(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyListWireGuard(t *testing.T) {
+	raw := `
+[Proxy]
+台北 Surge WireGuard = wireguard, wg.surge.example.test, 51820, private-key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI=, public-key=cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg==, self-ip=10.66.0.3/32, self-ip-v6=fd00::3/128, pre-shared-key=cHNrLXBsYWNlaG9sZGVy, allowed-ips="0.0.0.0/0,::/0", reserved="4,5,6", mtu=1420, udp=true, interface-name=wg-surge, system-interface=true
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "wireguard://wg.surge.example.test:51820?")
+	for _, want := range []string{
+		"private_key=cHJpdmF0ZS1rZXktcGxhY2Vob2xkZXItMzI",
+		"peer_public_key=cHVibGljLWtleS1wbGFjZWhvbGRlci0zMg",
+		"local_address=10.66.0.3%2F32%2Cfd00%3A%3A3%2F128",
+		"pre_shared_key=cHNrLXBsYWNlaG9sZGVy",
+		"allowed_ips=0.0.0.0%2F0%2C%3A%3A%2F0",
+		"reserved=4%2C5%2C6",
+		"mtu=1420",
+		"network=udp",
+		"interface_name=wg-surge",
+		"system_interface=1",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected Surge WireGuard URI to contain %q: %q", want, got)
+		}
+	}
+	if !strings.HasSuffix(got, "#%E5%8F%B0%E5%8C%97%20Surge%20WireGuard") {
+		t.Fatalf("unexpected Surge WireGuard fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

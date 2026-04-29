@@ -162,6 +162,27 @@ func surgeProxyURI(line string) string {
 			"kex-algorithm", "kex_algorithm",
 		)
 		return clashSSHURI(proxy)
+	case "wireguard", "wg":
+		proxy["type"] = "wireguard"
+		proxy["private-key"] = surgeFirstValue(options, positionals, 2, "private-key", "private_key")
+		proxy["public-key"] = surgeFirstValue(options, positionals, 3, "public-key", "public_key", "peer-public-key", "peer_public_key")
+		if localAddress := surgeWireGuardLocalAddress(options); localAddress != "" {
+			proxy["local-address"] = localAddress
+		}
+		surgeCopyOptions(proxy, options,
+			"pre-shared-key", "pre_shared_key", "preshared-key", "preshared_key", "psk",
+			"allowed-ips", "allowed_ips", "peer-allowed-ips", "peer_allowed_ips",
+			"reserved", "peer-reserved", "peer_reserved",
+			"workers", "mtu",
+			"interface-name", "interface_name",
+		)
+		if surgeBoolOption(options, "udp") {
+			proxy["udp"] = "true"
+		}
+		if surgeBoolOption(options, "system-interface", "system_interface", "system") {
+			proxy["system-interface"] = "true"
+		}
+		return clashWireGuardURI(proxy)
 	case "trojan":
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "psk")
 		if proxy["tls"] == "" {
@@ -285,6 +306,20 @@ func surgeCopyOptions(proxy map[string]string, options map[string]string, keys .
 			proxy[strings.ToLower(key)] = value
 		}
 	}
+}
+
+func surgeWireGuardLocalAddress(options map[string]string) string {
+	if address := surgeOption(options, "local-address", "local_address", "address"); address != "" {
+		return address
+	}
+	var addresses []string
+	if ipv4 := surgeOption(options, "self-ip", "self_ip", "client-ip", "client_ip", "ip", "ipv4"); ipv4 != "" {
+		addresses = append(addresses, ipv4)
+	}
+	if ipv6 := surgeOption(options, "self-ip-v6", "self_ip_v6", "ipv6"); ipv6 != "" {
+		addresses = append(addresses, ipv6)
+	}
+	return strings.Join(addresses, ",")
 }
 
 func surgeApplyTLSOptions(proxy map[string]string, options map[string]string) {

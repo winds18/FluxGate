@@ -206,6 +206,7 @@ func TestNormalizeContentQuantumultXServerLocal(t *testing.T) {
 	raw := `[server_local]
 shadowsocks=qx-ss.example.test:8388, method=aes-128-gcm, password=qa-placeholder, obfs=wss, obfs-uri=/ss, obfs-host=ws.qx-ss.example.test, tag=香港 QuantumultX SS
 hysteria2=qx-hy2.example.test:443, password=hy2-placeholder, obfs=salamander, obfs-password=obfs-placeholder, up-mbps=30, down-mbps=120, over-tls=true, tls-host=qx-hy2.example.test, tls-verification=false, disable-sni=true, alpn=h3, pinSHA256=hy2-pin-placeholder, tag=新加坡 QuantumultX Hysteria2
+tuic=qx-tuic.example.test:443, uuid=00000000-0000-0000-0000-000000000087, password=tuic-placeholder, congestion-controller=bbr, udp-relay-mode=native, over-tls=true, tls-host=qx-tuic.example.test, tls-verification=false, alpn=h3, tag=大阪 QuantumultX TUIC
 trojan=qx-trojan.example.test:443, password=trojan-placeholder, over-tls=true, tls-host=qx-trojan.example.test, tag=东京 QuantumultX Trojan
 vless=qx-vless.example.test:443, password=00000000-0000-0000-0000-000000000085, over-tls=true, tls-host=qx-vless.example.test, obfs=ws, obfs-uri=/vless, obfs-host=ws.qx-vless.example.test, tag=首尔 QuantumultX VLESS
 vmess=qx-vmess.example.test:443, password=00000000-0000-0000-0000-000000000086, method=auto, over-tls=true, tls-host=qx-vmess.example.test, obfs=wss, obfs-uri=/vmess, obfs-host=ws.qx-vmess.example.test, tag=大阪 QuantumultX VMess
@@ -216,8 +217,8 @@ vmess=qx-vmess.example.test:443, password=00000000-0000-0000-0000-000000000086, 
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 5 {
-		t.Fatalf("expected 5 Quantumult X proxy URIs, got %d: %q", len(lines), got)
+	if len(lines) != 6 {
+		t.Fatalf("expected 6 Quantumult X proxy URIs, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@qx-ss.example.test:8388?")
 	for _, want := range []string{
@@ -245,18 +246,31 @@ vmess=qx-vmess.example.test:443, password=00000000-0000-0000-0000-000000000086, 
 			t.Fatalf("expected Quantumult X Hysteria2 URI to contain %q: %q", want, lines[1])
 		}
 	}
-	assertHasPrefix(t, lines[2], "trojan://trojan-placeholder@qx-trojan.example.test:443?")
-	if !strings.Contains(lines[2], "security=tls") || !strings.Contains(lines[2], "sni=qx-trojan.example.test") {
-		t.Fatalf("unexpected Quantumult X Trojan URI: %q", lines[2])
-	}
-	assertHasPrefix(t, lines[3], "vless://00000000-0000-0000-0000-000000000085@qx-vless.example.test:443?")
-	for _, want := range []string{"security=tls", "type=ws", "path=%2Fvless", "host=ws.qx-vless.example.test"} {
-		if !strings.Contains(lines[3], want) {
-			t.Fatalf("expected Quantumult X VLESS URI to contain %q: %q", want, lines[3])
+	assertHasPrefix(t, lines[2], "tuic://00000000-0000-0000-0000-000000000087:tuic-placeholder@qx-tuic.example.test:443?")
+	for _, want := range []string{
+		"congestion_control=bbr",
+		"udp_relay_mode=native",
+		"sni=qx-tuic.example.test",
+		"insecure=1",
+		"alpn=h3",
+		"#%E5%A4%A7%E9%98%AA%20QuantumultX%20TUIC",
+	} {
+		if !strings.Contains(lines[2], want) {
+			t.Fatalf("expected Quantumult X TUIC URI to contain %q: %q", want, lines[2])
 		}
 	}
-	assertHasPrefix(t, lines[4], "vmess://")
-	decodedVMessText := decodeVMessURIForTest(t, lines[4])
+	assertHasPrefix(t, lines[3], "trojan://trojan-placeholder@qx-trojan.example.test:443?")
+	if !strings.Contains(lines[3], "security=tls") || !strings.Contains(lines[3], "sni=qx-trojan.example.test") {
+		t.Fatalf("unexpected Quantumult X Trojan URI: %q", lines[3])
+	}
+	assertHasPrefix(t, lines[4], "vless://00000000-0000-0000-0000-000000000085@qx-vless.example.test:443?")
+	for _, want := range []string{"security=tls", "type=ws", "path=%2Fvless", "host=ws.qx-vless.example.test"} {
+		if !strings.Contains(lines[4], want) {
+			t.Fatalf("expected Quantumult X VLESS URI to contain %q: %q", want, lines[4])
+		}
+	}
+	assertHasPrefix(t, lines[5], "vmess://")
+	decodedVMessText := decodeVMessURIForTest(t, lines[5])
 	for _, want := range []string{
 		`"ps":"大阪 QuantumultX VMess"`,
 		`"add":"qx-vmess.example.test"`,

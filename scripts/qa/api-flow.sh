@@ -120,6 +120,17 @@ clash_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(`proxies:
     skip-cert-verify: true
     path: connect
   - { name: "首尔 SOCKS", type: socks5, server: socks.clash.example.sub, port: 1080, username: "qa-user", password: "socks-placeholder", udp-over-tcp: true, network: udp }
+  - name: "香港 AnyTLS"
+    type: anytls
+    server: anytls.clash.example.sub
+    port: 443
+    password: "anytls-placeholder"
+    idle-session-check-interval: 20s
+    idle-session-timeout: 45s
+    min-idle-session: 2
+    sni: anytls.clash.example.sub
+  - { name: "东京 ShadowTLS", type: shadowtls, server: shadowtls.clash.example.sub, port: 443, version: 3, password: "shadow-placeholder", sni: shadowtls.clash.example.sub, skip-cert-verify: true }
+  - { name: "新加坡 Naive", type: naive+quic, server: naive.clash.example.sub, port: 443, username: "qa-user", password: "naive-placeholder", sni: naive.clash.example.sub, quic: true, quic-congestion-control: bbr, udp-over-tcp: true, insecure-concurrency: 2 }
 `));')"
 post_json "/api/sources" "{\"name\":\"订阅源A\",\"type\":\"subscription\",\"raw_content\":$clash_subscription_raw,\"refresh_interval_minutes\":5}" "$OUT_DIR/source-subscription.json"
 subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
@@ -178,6 +189,9 @@ us_route_region_count="$(json_value "data.filter((node) => node.raw_name === '�
 singapore_region_count="$(json_value "data.filter((node) => node.region === '🇸🇬新加坡').length" <"$OUT_DIR/nodes.json")"
 clash_http_node_count="$(json_value "data.filter((node) => node.raw_name === '东京 HTTP' && node.protocol === 'https').length" <"$OUT_DIR/nodes.json")"
 clash_socks_node_count="$(json_value "data.filter((node) => node.raw_name === '首尔 SOCKS' && node.protocol === 'socks5').length" <"$OUT_DIR/nodes.json")"
+clash_anytls_node_count="$(json_value "data.filter((node) => node.raw_name === '香港 AnyTLS' && node.protocol === 'anytls').length" <"$OUT_DIR/nodes.json")"
+clash_shadowtls_node_count="$(json_value "data.filter((node) => node.raw_name === '东京 ShadowTLS' && node.protocol === 'shadowtls').length" <"$OUT_DIR/nodes.json")"
+clash_naive_node_count="$(json_value "data.filter((node) => node.raw_name === '新加坡 Naive' && node.protocol === 'naive+quic').length" <"$OUT_DIR/nodes.json")"
 first_node_id="$(json_value "data[0]?.id ?? 0" <"$OUT_DIR/nodes.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes/$first_node_id" -o "$OUT_DIR/node-detail.json"
 node_detail_id="$(json_value "data.id" <"$OUT_DIR/node-detail.json")"
@@ -259,7 +273,7 @@ if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nod
   exit 1
 fi
 
-if [[ "$source_refresh_imported" != "6" ]]; then
+if [[ "$source_refresh_imported" != "9" ]]; then
   log "unexpected subscription refresh import count: $source_refresh_imported"
   exit 1
 fi
@@ -296,6 +310,11 @@ fi
 
 if [[ "$clash_http_node_count" -lt 1 || "$clash_socks_node_count" -lt 1 ]]; then
   log "Clash YAML HTTP/SOCKS proxies should import as active nodes: http=$clash_http_node_count socks=$clash_socks_node_count"
+  exit 1
+fi
+
+if [[ "$clash_anytls_node_count" -lt 1 || "$clash_shadowtls_node_count" -lt 1 || "$clash_naive_node_count" -lt 1 ]]; then
+  log "Clash YAML AnyTLS/ShadowTLS/Naive proxies should import as active nodes: anytls=$clash_anytls_node_count shadowtls=$clash_shadowtls_node_count naive=$clash_naive_node_count"
   exit 1
 fi
 

@@ -87,6 +87,12 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashHTTPURI(proxy)
 	case "socks", "socks4", "socks4a", "socks5":
 		return clashSOCKSURI(proxy)
+	case "anytls":
+		return clashAnyTLSURI(proxy)
+	case "shadowtls":
+		return clashShadowTLSURI(proxy)
+	case "naive", "naive+quic":
+		return clashNaiveURI(proxy)
 	default:
 		return ""
 	}
@@ -354,6 +360,80 @@ func clashSOCKSURI(proxy map[string]string) string {
 	return proxyURLWithUser(scheme, clashUserInfo(proxy), server, port, "", values, firstMapValue(proxy, "name"))
 }
 
+func clashAnyTLSURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	password := firstMapValue(proxy, "password")
+	if server == "" || port == "" || password == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	if checkInterval := firstMapValue(proxy, "idle-session-check-interval", "idle_session_check_interval"); checkInterval != "" {
+		values.Set("idle_session_check_interval", checkInterval)
+	}
+	if timeout := firstMapValue(proxy, "idle-session-timeout", "idle_session_timeout"); timeout != "" {
+		values.Set("idle_session_timeout", timeout)
+	}
+	if minIdleSession := firstMapValue(proxy, "min-idle-session", "min_idle_session"); minIdleSession != "" {
+		values.Set("min_idle_session", minIdleSession)
+	}
+	appendClashTLSQueryValues(proxy, values)
+	return proxyURL("anytls", password, server, port, values, firstMapValue(proxy, "name"))
+}
+
+func clashShadowTLSURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	if server == "" || port == "" {
+		return ""
+	}
+
+	version := firstNonEmptyString(firstMapValue(proxy, "version"), "1")
+	password := firstMapValue(proxy, "password")
+	if version != "1" && password == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	values.Set("version", version)
+	appendClashTLSQueryValues(proxy, values)
+	var user *url.Userinfo
+	if password != "" {
+		user = url.User(password)
+	}
+	return proxyURLWithUser("shadowtls", user, server, port, "", values, firstMapValue(proxy, "name"))
+}
+
+func clashNaiveURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	username := firstMapValue(proxy, "username", "user")
+	password := firstMapValue(proxy, "password")
+	if server == "" || port == "" || username == "" || password == "" {
+		return ""
+	}
+
+	proxyType := strings.ToLower(firstMapValue(proxy, "type"))
+	scheme := "naive"
+	values := url.Values{}
+	if proxyType == "naive+quic" || boolMapValue(proxy, "quic") {
+		scheme = "naive+quic"
+		values.Set("quic", "1")
+	}
+	if concurrency := firstMapValue(proxy, "insecure-concurrency", "insecure_concurrency"); concurrency != "" {
+		values.Set("insecure_concurrency", concurrency)
+	}
+	if boolMapValue(proxy, "udp-over-tcp", "udp_over_tcp", "uot") {
+		values.Set("udp_over_tcp", "1")
+	}
+	if congestionControl := firstMapValue(proxy, "quic-congestion-control", "quic_congestion_control"); congestionControl != "" {
+		values.Set("quic_congestion_control", congestionControl)
+	}
+	appendClashTLSQueryValues(proxy, values)
+	return proxyURLWithUser(scheme, url.UserPassword(username, password), server, port, "", values, firstMapValue(proxy, "name"))
+}
+
 func proxyURL(scheme, user, server, port string, values url.Values, fragment string) string {
 	result := &url.URL{
 		Scheme:   scheme,
@@ -391,6 +471,21 @@ func clashUserInfo(proxy map[string]string) *url.Userinfo {
 		return url.UserPassword(username, password)
 	}
 	return url.User(username)
+}
+
+func appendClashTLSQueryValues(proxy map[string]string, values url.Values) {
+	if sni := firstMapValue(proxy, "sni", "peer", "servername", "server_name"); sni != "" {
+		values.Set("sni", sni)
+	}
+	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
+		values.Set("insecure", "1")
+	}
+	if boolMapValue(proxy, "disable-sni", "disable_sni") {
+		values.Set("disable_sni", "1")
+	}
+	if alpn := firstMapValue(proxy, "alpn"); alpn != "" {
+		values.Set("alpn", alpn)
+	}
 }
 
 func parseInlineMap(value string) map[string]string {

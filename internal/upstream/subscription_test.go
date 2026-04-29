@@ -100,6 +100,17 @@ proxies:
     skip-cert-verify: true
     path: connect
   - { name: "首尔 SOCKS", type: socks5, server: socks.clash.example.test, port: 1080, username: qa-user, password: "socks-placeholder", udp-over-tcp: true, network: udp }
+  - name: "香港 AnyTLS"
+    type: anytls
+    server: anytls.clash.example.test
+    port: 443
+    password: "anytls-placeholder"
+    idle-session-check-interval: 20s
+    idle-session-timeout: 45s
+    min-idle-session: 2
+    sni: anytls.clash.example.test
+  - { name: "东京 ShadowTLS", type: shadowtls, server: shadowtls.clash.example.test, port: 443, version: 3, password: "shadow-placeholder", sni: shadowtls.clash.example.test, skip-cert-verify: true }
+  - { name: "新加坡 Naive", type: naive+quic, server: naive.clash.example.test, port: 443, username: qa-user, password: "naive-placeholder", sni: naive.clash.example.test, quic: true, quic-congestion-control: bbr, udp-over-tcp: true, insecure-concurrency: 2 }
 proxy-groups:
   - name: Auto
     type: select
@@ -111,8 +122,8 @@ proxy-groups:
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 8 {
-		t.Fatalf("expected 8 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 11 {
+		t.Fatalf("expected 11 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.example.test:443?")
@@ -142,6 +153,18 @@ proxy-groups:
 	assertHasPrefix(t, lines[7], "socks5://qa-user:socks-placeholder@socks.clash.example.test:1080?")
 	if !strings.Contains(lines[7], "network=udp") || !strings.Contains(lines[7], "udp_over_tcp=1") || !strings.HasSuffix(lines[7], "#%E9%A6%96%E5%B0%94%20SOCKS") {
 		t.Fatalf("unexpected clash socks URI: %q", lines[7])
+	}
+	assertHasPrefix(t, lines[8], "anytls://anytls-placeholder@anytls.clash.example.test:443?")
+	if !strings.Contains(lines[8], "idle_session_check_interval=20s") || !strings.Contains(lines[8], "idle_session_timeout=45s") || !strings.Contains(lines[8], "min_idle_session=2") || !strings.Contains(lines[8], "sni=anytls.clash.example.test") {
+		t.Fatalf("unexpected clash anytls URI: %q", lines[8])
+	}
+	assertHasPrefix(t, lines[9], "shadowtls://shadow-placeholder@shadowtls.clash.example.test:443?")
+	if !strings.Contains(lines[9], "version=3") || !strings.Contains(lines[9], "sni=shadowtls.clash.example.test") || !strings.Contains(lines[9], "insecure=1") {
+		t.Fatalf("unexpected clash shadowtls URI: %q", lines[9])
+	}
+	assertHasPrefix(t, lines[10], "naive+quic://qa-user:naive-placeholder@naive.clash.example.test:443?")
+	if !strings.Contains(lines[10], "quic=1") || !strings.Contains(lines[10], "quic_congestion_control=bbr") || !strings.Contains(lines[10], "udp_over_tcp=1") || !strings.Contains(lines[10], "insecure_concurrency=2") || !strings.Contains(lines[10], "sni=naive.clash.example.test") {
+		t.Fatalf("unexpected clash naive URI: %q", lines[10])
 	}
 }
 

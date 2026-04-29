@@ -320,6 +320,16 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 		}
 		outbound["tls"] = tls
 	}
+	if transportType := strings.ToLower(firstNonEmpty(query.Get("type"), query.Get("network"), query.Get("net"))); transportType == "ws" || transportType == "websocket" {
+		transport := map[string]any{"type": "ws"}
+		if path := firstNonEmpty(query.Get("path"), query.Get("ws_path"), query.Get("ws-path")); path != "" {
+			transport["path"] = path
+		}
+		if host := firstNonEmpty(query.Get("host"), query.Get("ws_host"), query.Get("ws-host")); host != "" {
+			transport["headers"] = map[string]any{"Host": host}
+		}
+		outbound["transport"] = transport
+	}
 	return outbound, true
 }
 

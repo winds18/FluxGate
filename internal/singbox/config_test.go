@@ -73,7 +73,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	}, []store.Node{
 		{
 			ID:         42,
-			URI:        "vless://00000000-0000-0000-0000-000000000042@example.com:443?security=tls&sni=edge.example.com&flow=xtls-rprx-vision&insecure=1&disable_sni=1&alpn=h2,http/1.1#hk",
+			URI:        "vless://00000000-0000-0000-0000-000000000042@example.com:443?security=tls&sni=edge.example.com&flow=xtls-rprx-vision&insecure=1&disable_sni=1&alpn=h2,http/1.1&type=ws&path=%2Fvless&host=ws.example.com#hk",
 			Protocol:   "vless",
 			ServerPort: 443,
 			Status:     "active",
@@ -223,6 +223,14 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	vlessALPN, ok := vlessTLS["alpn"].([]string)
 	if !ok || len(vlessALPN) != 2 || vlessALPN[0] != "h2" || vlessALPN[1] != "http/1.1" {
 		t.Fatalf("unexpected vless alpn config: %+v", vlessTLS["alpn"])
+	}
+	vlessTransport, ok := vless["transport"].(map[string]any)
+	if !ok || vlessTransport["type"] != "ws" || vlessTransport["path"] != "/vless" {
+		t.Fatalf("unexpected vless transport config: %+v", vless["transport"])
+	}
+	vlessTransportHeaders, ok := vlessTransport["headers"].(map[string]any)
+	if !ok || vlessTransportHeaders["Host"] != "ws.example.com" {
+		t.Fatalf("unexpected vless transport headers: %+v", vlessTransport["headers"])
 	}
 	trojan := findOutbound(config.Outbounds, "up_44")
 	if trojan == nil {

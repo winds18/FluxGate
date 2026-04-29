@@ -147,6 +147,7 @@ func clashVLESSURI(proxy map[string]string) string {
 	if flow := firstMapValue(proxy, "flow"); flow != "" {
 		values.Set("flow", flow)
 	}
+	appendClashTransportQueryValues(proxy, values)
 	appendClashTLSQueryValues(proxy, values)
 	return proxyURL("vless", uuid, server, port, values, firstMapValue(proxy, "name"))
 }
@@ -575,6 +576,27 @@ func appendClashTLSQueryValues(proxy map[string]string, values url.Values) {
 	}
 	if alpn := firstMapValue(proxy, "alpn"); alpn != "" {
 		values.Set("alpn", alpn)
+	}
+}
+
+func appendClashTransportQueryValues(proxy map[string]string, values url.Values) {
+	transportType := firstMapValue(proxy, "network", "net", "transport")
+	path := firstMapValue(proxy, "ws-path", "ws_path", "path")
+	host := firstMapValue(proxy, "ws-headers.host", "ws_headers.host", "ws-host", "ws_host", "host")
+	if strings.EqualFold(transportType, "tls") {
+		transportType = ""
+	}
+	if transportType == "" && (path != "" || host != "") {
+		transportType = "ws"
+	}
+	if transportType != "" {
+		values.Set("type", transportType)
+	}
+	if path != "" {
+		values.Set("path", path)
+	}
+	if host != "" {
+		values.Set("host", host)
 	}
 }
 

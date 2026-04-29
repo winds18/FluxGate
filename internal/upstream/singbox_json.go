@@ -104,6 +104,7 @@ func singBoxVLESSURI(outbound map[string]any) string {
 		proxy["tls"] = "true"
 	}
 	appendSingBoxTLSProxyValues(outbound, proxy)
+	appendSingBoxTransportProxyValues(outbound, proxy)
 	return clashVLESSURI(proxy)
 }
 
@@ -604,6 +605,28 @@ func appendSingBoxTLSProxyValues(outbound map[string]any, proxy map[string]strin
 	}
 	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
 		proxy["alpn"] = strings.Join(alpn, ",")
+	}
+}
+
+func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string]string) {
+	transport := singBoxMap(outbound, "transport")
+	if transport == nil {
+		return
+	}
+	if transportType := strings.TrimSpace(stringFromAnyValue(transport["type"])); transportType != "" {
+		proxy["network"] = transportType
+	}
+	if path := strings.TrimSpace(stringFromAnyValue(transport["path"])); path != "" {
+		proxy["path"] = path
+	}
+	if headers, ok := transport["headers"].(map[string]any); ok {
+		host := strings.TrimSpace(stringFromAnyValue(headers["Host"]))
+		if host == "" {
+			host = strings.TrimSpace(stringFromAnyValue(headers["host"]))
+		}
+		if host != "" {
+			proxy["host"] = host
+		}
 	}
 }
 

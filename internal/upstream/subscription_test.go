@@ -68,6 +68,9 @@ proxies:
     uuid: 00000000-0000-0000-0000-000000000051
     tls: true
     flow: xtls-rprx-vision
+    network: ws
+    ws-path: /vless
+    ws-headers.host: ws.vless.example.test
     sni: vless.example.test
     skip-cert-verify: true
     disable-sni: true
@@ -176,6 +179,9 @@ proxy-groups:
 	}
 	assertHasPrefix(t, lines[2], "vless://00000000-0000-0000-0000-000000000051@vless.example.test:443?")
 	if !strings.Contains(lines[2], "flow=xtls-rprx-vision") ||
+		!strings.Contains(lines[2], "type=ws") ||
+		!strings.Contains(lines[2], "path=%2Fvless") ||
+		!strings.Contains(lines[2], "host=ws.vless.example.test") ||
 		!strings.Contains(lines[2], "security=tls") ||
 		!strings.Contains(lines[2], "sni=vless.example.test") ||
 		!strings.Contains(lines[2], "insecure=1") ||
@@ -319,6 +325,13 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
         "insecure": true,
         "disable_sni": true,
         "alpn": ["h3"]
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/vless",
+        "headers": {
+          "Host": "ws.vless.singbox.example.test"
+        }
       }
     },
     {
@@ -503,7 +516,10 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		!strings.Contains(lines[2], "sni=vless.singbox.example.test") ||
 		!strings.Contains(lines[2], "insecure=1") ||
 		!strings.Contains(lines[2], "disable_sni=1") ||
-		!strings.Contains(lines[2], "alpn=h3") {
+		!strings.Contains(lines[2], "alpn=h3") ||
+		!strings.Contains(lines[2], "type=ws") ||
+		!strings.Contains(lines[2], "path=%2Fvless") ||
+		!strings.Contains(lines[2], "host=ws.vless.singbox.example.test") {
 		t.Fatalf("unexpected sing-box vless URI: %q", lines[2])
 	}
 	assertHasPrefix(t, lines[3], "vmess://")

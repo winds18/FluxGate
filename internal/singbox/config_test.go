@@ -140,6 +140,13 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         52,
+			URI:        "hysteria://qa-placeholder@example.zone:443?auth_str=qa-auth&up_mbps=20&down_mbps=80&obfs=obfs-placeholder&protocol=udp&sni=hysteria.example.zone&alpn=h3&insecure=1#hysteria",
+			Protocol:   "hysteria",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         53,
 			URI:        "wireguard://placeholder@example.org:443#unsupported",
 			Protocol:   "wireguard",
 			ServerPort: 443,
@@ -298,7 +305,28 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	if !ok || naiveTLS["enabled"] != true || naiveTLS["server_name"] != "naive.example.news" {
 		t.Fatalf("unexpected naive tls config: %+v", naive["tls"])
 	}
-	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_52") != nil {
+	hysteria := findOutbound(config.Outbounds, "up_52")
+	if hysteria == nil {
+		t.Fatalf("expected hysteria outbound up_52, got %+v", config.Outbounds)
+	}
+	if hysteria["type"] != "hysteria" || hysteria["server"] != "example.zone" || hysteria["server_port"] != 443 {
+		t.Fatalf("unexpected hysteria server fields: %+v", hysteria)
+	}
+	if hysteria["auth_str"] != "qa-auth" || hysteria["up_mbps"] != 20 || hysteria["down_mbps"] != 80 {
+		t.Fatalf("unexpected hysteria auth or bandwidth fields: %+v", hysteria)
+	}
+	if hysteria["obfs"] != "obfs-placeholder" || hysteria["network"] != "udp" {
+		t.Fatalf("unexpected hysteria transport fields: %+v", hysteria)
+	}
+	hysteriaTLS, ok := hysteria["tls"].(map[string]any)
+	if !ok || hysteriaTLS["enabled"] != true || hysteriaTLS["server_name"] != "hysteria.example.zone" || hysteriaTLS["insecure"] != true {
+		t.Fatalf("unexpected hysteria tls config: %+v", hysteria["tls"])
+	}
+	hysteriaALPN, ok := hysteriaTLS["alpn"].([]string)
+	if !ok || len(hysteriaALPN) != 1 || hysteriaALPN[0] != "h3" {
+		t.Fatalf("unexpected hysteria alpn config: %+v", hysteriaTLS["alpn"])
+	}
+	if findOutbound(config.Outbounds, "up_43") != nil || findOutbound(config.Outbounds, "up_53") != nil {
 		t.Fatalf("inactive or unsupported nodes should be skipped: %+v", config.Outbounds)
 	}
 
@@ -307,7 +335,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
 	}
 	tags, ok := selector["outbounds"].([]string)
-	if !ok || len(tags) != 9 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || selector["default"] != "up_42" {
+	if !ok || len(tags) != 10 || tags[0] != "up_42" || tags[1] != "up_44" || tags[2] != "up_45" || tags[3] != "up_46" || tags[4] != "up_47" || tags[5] != "up_48" || tags[6] != "up_49" || tags[7] != "up_50" || tags[8] != "up_51" || tags[9] != "up_52" || selector["default"] != "up_42" {
 		t.Fatalf("unexpected selector outbounds: %+v", selector)
 	}
 }

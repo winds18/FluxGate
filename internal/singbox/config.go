@@ -167,7 +167,12 @@ func buildUpstreamOutbounds(nodes []store.Node) ([]map[string]any, []string, map
 }
 
 func routeableUpstreamOutbound(outbound map[string]any) bool {
-	return !strings.EqualFold(strings.TrimSpace(stringFromAny(outbound["type"])), "dns")
+	switch strings.ToLower(strings.TrimSpace(stringFromAny(outbound["type"]))) {
+	case "dns", "block":
+		return false
+	default:
+		return true
+	}
 }
 
 type routeTagSelector struct {
@@ -277,6 +282,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildDNSOutbound(node)
 	case "direct":
 		return buildDirectOutbound(node)
+	case "block":
+		return buildBlockOutbound(node)
 	default:
 		return nil, false
 	}
@@ -1133,6 +1140,20 @@ func buildDirectOutbound(node store.Node) (map[string]any, bool) {
 	}
 	return map[string]any{
 		"type": "direct",
+		"tag":  upstreamTag(node),
+	}, true
+}
+
+func buildBlockOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "block" {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || parsed.Scheme != "block" {
+		return nil, false
+	}
+	return map[string]any{
+		"type": "block",
 		"tag":  upstreamTag(node),
 	}, true
 }

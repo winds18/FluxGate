@@ -609,6 +609,58 @@ func TestBuildConfigAddsDirectOutboundAndSelectsIt(t *testing.T) {
 	}
 }
 
+func TestBuildConfigAddsBlockOutboundWithoutSelectingIt(t *testing.T) {
+	config := buildConfig([]store.TokenWithAccount{
+		gatewayToken("active", "active", "vless", nil, 0, 0, 0, "block-user"),
+	}, []store.VirtualNode{
+		{Name: "block-only", ListenProtocol: "vless", ListenPort: 8443, TagSelector: `{"include":["BLOCK"]}`, Status: "active"},
+	}, []store.Node{
+		{
+			ID:         64,
+			URI:        "block://default#Block",
+			Protocol:   "block",
+			ServerPort: 0,
+			Status:     "active",
+			Tags:       []string{"BLOCK"},
+		},
+		{
+			ID:         65,
+			URI:        "vless://00000000-0000-0000-0000-000000000065@example.com:443#hk",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	}, nil, time.Date(2026, 4, 29, 16, 58, 0, 0, time.UTC))
+
+	block := findOutbound(config.Outbounds, "up_64")
+	if block == nil || block["type"] != "block" {
+		t.Fatalf("expected block outbound up_64, got %+v", config.Outbounds)
+	}
+	selector := findOutbound(config.Outbounds, upstreamSelectorTag)
+	if selector == nil {
+		t.Fatalf("expected upstream selector, got %+v", config.Outbounds)
+	}
+	tags, ok := selector["outbounds"].([]string)
+	if !ok || len(tags) != 1 || tags[0] != "up_65" || selector["default"] != "up_65" {
+		t.Fatalf("block outbound should not enter traffic selector: %+v", selector)
+	}
+	stats, ok := config.Experimental["v2ray_api"].(map[string]any)["stats"].(map[string]any)
+	if !ok {
+		t.Fatalf("missing v2ray stats config: %+v", config.Experimental)
+	}
+	statOutbounds, ok := stats["outbounds"].([]string)
+	if !ok || len(statOutbounds) != 1 || statOutbounds[0] != "up_65" {
+		t.Fatalf("block outbound should not enter stats outbounds: %+v", stats)
+	}
+	if virtualSelector := findOutbound(config.Outbounds, "vn-block-only-upstreams"); virtualSelector != nil {
+		t.Fatalf("block outbound should not create a virtual upstream selector: %+v", virtualSelector)
+	}
+	rules, ok := config.Route["rules"].([]map[string]any)
+	if !ok || len(rules) != 1 || rules[0]["outbound"] != "block" {
+		t.Fatalf("block-only virtual selector should route normal traffic to built-in block: %+v", config.Route)
+	}
+}
+
 func TestBuildConfigAppliesVirtualNodePolicyToUsers(t *testing.T) {
 	now := time.Date(2026, 4, 29, 5, 10, 0, 0, time.UTC)
 	teamID := int64(10)

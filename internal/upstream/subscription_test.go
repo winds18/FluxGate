@@ -20,6 +20,7 @@ func TestNormalizeContentSupportsCurrentOutboundURIList(t *testing.T) {
 	raw := strings.Join([]string{
 		"tuic://00000000-0000-0000-0000-000000000048:qa-placeholder@example.io:443#TUIC",
 		"anytls://qa-placeholder@example.chat:443#AnyTLS",
+		"block://default#Block",
 		"dns://default#DNS",
 		"direct://default#Direct",
 		"shadowtls://qa-placeholder@example.help:443#ShadowTLS",
@@ -252,6 +253,29 @@ proxy-groups:
 		!strings.Contains(decodedVMessText, `"alpn":"h2,http/1.1"`) ||
 		!strings.Contains(decodedVMessText, `"sni":"vmess.clash.example.test"`) {
 		t.Fatalf("unexpected clash vmess document: %q", decodedVMessText)
+	}
+}
+
+func TestNormalizeContentClashYAMLInternalOutbounds(t *testing.T) {
+	raw := `
+proxies:
+  - name: "本地直连"
+    type: direct
+  - name: "拒绝访问"
+    type: reject
+  - { name: "静默拦截", type: reject-drop }
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"direct://default#%E6%9C%AC%E5%9C%B0%E7%9B%B4%E8%BF%9E",
+		"block://default#%E6%8B%92%E7%BB%9D%E8%AE%BF%E9%97%AE",
+		"block://default#%E9%9D%99%E9%BB%98%E6%8B%A6%E6%88%AA",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected clash internal outbound URIs: %q", got)
 	}
 }
 
@@ -831,6 +855,24 @@ func TestNormalizeContentSingBoxJSONDirect(t *testing.T) {
 	}
 	if got != "direct://default#%E6%9C%AC%E5%9C%B0%E7%9B%B4%E8%BF%9E" {
 		t.Fatalf("unexpected sing-box direct URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONBlock(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "block",
+      "tag": "内部拦截"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	if got != "block://default#%E5%86%85%E9%83%A8%E6%8B%A6%E6%88%AA" {
+		t.Fatalf("unexpected sing-box block URI: %q", got)
 	}
 }
 

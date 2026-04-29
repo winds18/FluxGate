@@ -46,6 +46,7 @@
 - sing-box config.json 生成骨架。
 - active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会进入 sing-box outbound，并由默认 selector 承接出口。
 - Direct URI 和 sing-box JSON `direct` outbound 可进入默认上游 selector 和 outbound stats 列表。
+- Block URI、Clash `reject`/`reject-drop` 和 sing-box JSON `block` outbound 可进入 sing-box 配置，但不会进入普通上游 selector 或 outbound stats 列表。
 - DNS URI 和 sing-box JSON `dns` outbound 可进入 sing-box 配置，但不会进入普通上游 selector 或 outbound stats 列表。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan/VMess TLS 参数并同步进入 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS WebSocket 传输参数并同步为 sing-box outbound transport。

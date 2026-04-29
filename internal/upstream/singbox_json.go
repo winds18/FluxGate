@@ -66,6 +66,8 @@ func singBoxOutboundURI(outbound map[string]any) string {
 		return singBoxDNSURI(outbound)
 	case "direct":
 		return singBoxInternalURI("direct", outbound, "Direct")
+	case "block":
+		return singBoxInternalURI("block", outbound, "Block")
 	default:
 		return ""
 	}

@@ -118,6 +118,10 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashSSHURI(proxy)
 	case "wireguard", "wg":
 		return clashWireGuardURI(proxy)
+	case "direct":
+		return clashInternalURI("direct", proxy, "Direct")
+	case "block", "reject", "reject-drop":
+		return clashInternalURI("block", proxy, "Block")
 	default:
 		return ""
 	}
@@ -559,6 +563,14 @@ func clashWireGuardLocalAddress(proxy map[string]string) string {
 		addresses = append(addresses, ipv6)
 	}
 	return strings.Join(addresses, ",")
+}
+
+func clashInternalURI(scheme string, proxy map[string]string, fallbackName string) string {
+	return (&url.URL{
+		Scheme:   scheme,
+		Host:     "default",
+		Fragment: firstNonEmptyString(firstMapValue(proxy, "name"), fallbackName),
+	}).String()
 }
 
 func proxyURL(scheme, user, server, port string, values url.Values, fragment string) string {

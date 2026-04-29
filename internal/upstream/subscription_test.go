@@ -185,6 +185,52 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
           "Host": "ws.singbox.example.test"
         }
       }
+    },
+    {
+      "type": "hysteria2",
+      "tag": "香港 06",
+      "server": "hy2.singbox.example.test",
+      "server_port": 443,
+      "password": "hy2-placeholder",
+      "obfs": {
+        "type": "salamander",
+        "password": "obfs-placeholder"
+      },
+      "tls": {
+        "enabled": true,
+        "server_name": "hy2.singbox.example.test",
+        "insecure": true,
+        "alpn": ["h3"]
+      }
+    },
+    {
+      "type": "tuic",
+      "tag": "东京 06",
+      "server": "tuic.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000054",
+      "password": "tuic-placeholder",
+      "congestion_control": "bbr",
+      "udp_relay_mode": "native",
+      "tls": {
+        "enabled": true,
+        "server_name": "tuic.singbox.example.test",
+        "alpn": ["h3"]
+      }
+    },
+    {
+      "type": "anytls",
+      "tag": "首尔 06",
+      "server": "anytls.singbox.example.test",
+      "server_port": 443,
+      "password": "anytls-placeholder",
+      "idle_session_check_interval": "20s",
+      "idle_session_timeout": "45s",
+      "min_idle_session": 2,
+      "tls": {
+        "enabled": true,
+        "server_name": "anytls.singbox.example.test"
+      }
     }
   ]
 }`
@@ -193,8 +239,8 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 4 {
-		t.Fatalf("expected 4 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 7 {
+		t.Fatalf("expected 7 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.singbox.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.singbox.example.test:443?")
@@ -206,6 +252,18 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		t.Fatalf("unexpected sing-box vless URI: %q", lines[2])
 	}
 	assertHasPrefix(t, lines[3], "vmess://")
+	assertHasPrefix(t, lines[4], "hysteria2://hy2-placeholder@hy2.singbox.example.test:443?")
+	if !strings.Contains(lines[4], "obfs=salamander") || !strings.Contains(lines[4], "obfs-password=obfs-placeholder") {
+		t.Fatalf("unexpected sing-box hysteria2 URI: %q", lines[4])
+	}
+	assertHasPrefix(t, lines[5], "tuic://00000000-0000-0000-0000-000000000054:tuic-placeholder@tuic.singbox.example.test:443?")
+	if !strings.Contains(lines[5], "congestion_control=bbr") || !strings.Contains(lines[5], "udp_relay_mode=native") {
+		t.Fatalf("unexpected sing-box tuic URI: %q", lines[5])
+	}
+	assertHasPrefix(t, lines[6], "anytls://anytls-placeholder@anytls.singbox.example.test:443?")
+	if !strings.Contains(lines[6], "idle_session_check_interval=20s") || !strings.Contains(lines[6], "min_idle_session=2") {
+		t.Fatalf("unexpected sing-box anytls URI: %q", lines[6])
+	}
 }
 
 func TestNormalizeContentRejectsUnsupportedContent(t *testing.T) {

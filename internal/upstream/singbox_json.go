@@ -3,6 +3,8 @@ package upstream
 import (
 	"encoding/base64"
 	"encoding/json"
+	"net"
+	"net/url"
 	"strconv"
 	"strings"
 )
@@ -40,6 +42,12 @@ func singBoxOutboundURI(outbound map[string]any) string {
 		return singBoxVLESSURI(outbound)
 	case "vmess":
 		return singBoxVMessURI(outbound)
+	case "hysteria2":
+		return singBoxHysteria2URI(outbound)
+	case "tuic":
+		return singBoxTUICURI(outbound)
+	case "anytls":
+		return singBoxAnyTLSURI(outbound)
 	default:
 		return ""
 	}
@@ -141,6 +149,91 @@ func singBoxVMessURI(outbound map[string]any) string {
 	return "vmess://" + base64.RawURLEncoding.EncodeToString(encoded)
 }
 
+func singBoxHysteria2URI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	password := singBoxString(outbound, "password")
+	if server == "" || port == "" || password == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	if obfs := singBoxMap(outbound, "obfs"); obfs != nil {
+		if obfsType := strings.TrimSpace(stringFromAnyValue(obfs["type"])); obfsType != "" {
+			values.Set("obfs", obfsType)
+		}
+		if obfsPassword := strings.TrimSpace(stringFromAnyValue(obfs["password"])); obfsPassword != "" {
+			values.Set("obfs-password", obfsPassword)
+		}
+	}
+	appendTLSQueryValues(outbound, values)
+	return proxyURL("hysteria2", password, server, port, values, singBoxName(outbound))
+}
+
+func singBoxTUICURI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	uuid := singBoxString(outbound, "uuid")
+	password := singBoxString(outbound, "password")
+	if server == "" || port == "" || uuid == "" || password == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	for _, item := range []struct {
+		key      string
+		outbound string
+	}{
+		{key: "congestion_control", outbound: "congestion_control"},
+		{key: "udp_relay_mode", outbound: "udp_relay_mode"},
+		{key: "heartbeat", outbound: "heartbeat"},
+		{key: "network", outbound: "network"},
+	} {
+		if value := singBoxString(outbound, item.outbound); value != "" {
+			values.Set(item.key, value)
+		}
+	}
+	if boolFromAnyValue(outbound["udp_over_stream"]) {
+		values.Set("udp_over_stream", "1")
+	}
+	if boolFromAnyValue(outbound["zero_rtt_handshake"]) {
+		values.Set("zero_rtt_handshake", "1")
+	}
+	appendTLSQueryValues(outbound, values)
+	return (&url.URL{
+		Scheme:   "tuic",
+		User:     url.UserPassword(uuid, password),
+		Host:     net.JoinHostPort(server, port),
+		RawQuery: values.Encode(),
+		Fragment: singBoxName(outbound),
+	}).String()
+}
+
+func singBoxAnyTLSURI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	password := singBoxString(outbound, "password")
+	if server == "" || port == "" || password == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	for _, item := range []struct {
+		key      string
+		outbound string
+	}{
+		{key: "idle_session_check_interval", outbound: "idle_session_check_interval"},
+		{key: "idle_session_timeout", outbound: "idle_session_timeout"},
+		{key: "min_idle_session", outbound: "min_idle_session"},
+	} {
+		if value := singBoxString(outbound, item.outbound); value != "" {
+			values.Set(item.key, value)
+		}
+	}
+	appendTLSQueryValues(outbound, values)
+	return proxyURL("anytls", password, server, port, values, singBoxName(outbound))
+}
+
 func singBoxName(outbound map[string]any) string {
 	return firstNonEmptyString(singBoxString(outbound, "tag"), singBoxString(outbound, "name"))
 }
@@ -176,6 +269,25 @@ func singBoxTLSBool(outbound map[string]any, key string) bool {
 	return boolFromAnyValue(tls[key])
 }
 
+func appendTLSQueryValues(outbound map[string]any, values url.Values) {
+	tls := tlsMap(outbound)
+	if tls == nil {
+		return
+	}
+	if serverName := strings.TrimSpace(stringFromAnyValue(tls["server_name"])); serverName != "" {
+		values.Set("sni", serverName)
+	}
+	if boolFromAnyValue(tls["insecure"]) {
+		values.Set("insecure", "1")
+	}
+	if boolFromAnyValue(tls["disable_sni"]) {
+		values.Set("disable_sni", "1")
+	}
+	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
+		values.Set("alpn", strings.Join(alpn, ","))
+	}
+}
+
 func tlsMap(outbound map[string]any) map[string]any {
 	tls, ok := outbound["tls"].(map[string]any)
 	if !ok {
@@ -185,6 +297,14 @@ func tlsMap(outbound map[string]any) map[string]any {
 		return nil
 	}
 	return tls
+}
+
+func singBoxMap(outbound map[string]any, key string) map[string]any {
+	value, ok := outbound[key].(map[string]any)
+	if !ok {
+		return nil
+	}
+	return value
 }
 
 func stringFromAnyValue(value any) string {
@@ -202,6 +322,41 @@ func stringFromAnyValue(value any) string {
 	default:
 		return ""
 	}
+}
+
+func stringListFromAnyValue(value any) []string {
+	switch typed := value.(type) {
+	case []any:
+		result := make([]string, 0, len(typed))
+		for _, item := range typed {
+			if value := strings.TrimSpace(stringFromAnyValue(item)); value != "" {
+				result = append(result, value)
+			}
+		}
+		return result
+	case []string:
+		result := make([]string, 0, len(typed))
+		for _, item := range typed {
+			if value := strings.TrimSpace(item); value != "" {
+				result = append(result, value)
+			}
+		}
+		return result
+	case string:
+		return splitCommaList(typed)
+	default:
+		return nil
+	}
+}
+
+func splitCommaList(value string) []string {
+	var result []string
+	for _, item := range strings.Split(value, ",") {
+		if item = strings.TrimSpace(item); item != "" {
+			result = append(result, item)
+		}
+	}
+	return result
 }
 
 func intFromAnyValue(value any) int {

@@ -96,6 +96,9 @@ func NormalizeContent(content string) (string, error) {
 	if normalized := SSDURIList(content); normalized != "" {
 		return normalized, nil
 	}
+	if normalized := SurgeProxyURIList(content); normalized != "" {
+		return normalized, nil
+	}
 	if normalized := JSONURIList(content); normalized != "" {
 		return normalized, nil
 	}
@@ -137,6 +140,9 @@ func NormalizeContent(content string) (string, error) {
 			return normalized, nil
 		}
 		if normalized := SSDURIList(string(decoded)); normalized != "" {
+			return normalized, nil
+		}
+		if normalized := SurgeProxyURIList(string(decoded)); normalized != "" {
 			return normalized, nil
 		}
 		if normalized := JSONURIList(string(decoded)); normalized != "" {
@@ -284,6 +290,7 @@ func normalizedStringURIList(value string) string {
 	for _, normalize := range []func(string) string{
 		URIList,
 		SSDURIList,
+		SurgeProxyURIList,
 		VMessJSONURIList,
 		ClashYAMLURIList,
 		SIP008URIList,
@@ -319,6 +326,7 @@ func normalizedStringURIList(value string) string {
 		for _, normalize := range []func(string) string{
 			URIList,
 			SSDURIList,
+			SurgeProxyURIList,
 			VMessJSONURIList,
 			ClashYAMLURIList,
 			SIP008URIList,

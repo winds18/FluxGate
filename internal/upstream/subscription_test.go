@@ -984,6 +984,79 @@ func TestNormalizeContentSSDJSONAndWrappedSSDURI(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyList(t *testing.T) {
+	raw := `
+[General]
+loglevel = notify
+
+[Proxy]
+香港 Surge SS = ss, ss.surge.example.test, 8388, encrypt-method=aes-128-gcm, password=qa-placeholder, plugin=v2ray-plugin, plugin-opts=mode=websocket;host=ss.surge.example.test, network=tcp
+东京 Surge Trojan = trojan, trojan.surge.example.test, 443, password=trojan-placeholder, sni=trojan.surge.example.test, skip-cert-verify=true, ws=true, ws-path=/trojan, ws-headers=Host:ws.trojan.surge.example.test
+首尔 Surge HTTPS = https, http.surge.example.test, 8443, username=qa-user, password=http-placeholder, sni=http.surge.example.test
+大阪 Surge SOCKS = socks5, socks.surge.example.test, 1080, username=qa-user, password=socks-placeholder, udp-relay=true
+
+[Rule]
+FINAL,DIRECT
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 Surge URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.surge.example.test:8388?")
+	if !strings.Contains(lines[0], "network=tcp") ||
+		!strings.Contains(lines[0], "plugin=v2ray-plugin") ||
+		!strings.Contains(lines[0], "plugin_opts=mode%3Dwebsocket%3Bhost%3Dss.surge.example.test") ||
+		!strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%20Surge%20SS") {
+		t.Fatalf("unexpected Surge SS URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.surge.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=trojan.surge.example.test",
+		"insecure=1",
+		"type=ws",
+		"path=%2Ftrojan",
+		"host=ws.trojan.surge.example.test",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Surge Trojan URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#%E4%B8%9C%E4%BA%AC%20Surge%20Trojan") {
+		t.Fatalf("unexpected Surge Trojan fragment: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "https://qa-user:http-placeholder@http.surge.example.test:8443?")
+	if !strings.Contains(lines[2], "sni=http.surge.example.test") ||
+		!strings.HasSuffix(lines[2], "#%E9%A6%96%E5%B0%94%20Surge%20HTTPS") {
+		t.Fatalf("unexpected Surge HTTPS URI: %q", lines[2])
+	}
+	if lines[3] != "socks5://qa-user:socks-placeholder@socks.surge.example.test:1080?network=udp#%E5%A4%A7%E9%98%AA%20Surge%20SOCKS" {
+		t.Fatalf("unexpected Surge SOCKS URI: %q", lines[3])
+	}
+}
+
+func TestNormalizeContentJSONWrappedSurgeProxyList(t *testing.T) {
+	raw := `{
+  "data": {
+    "raw_content": "[Proxy]\n香港 包装 Surge = trojan, wrapped-surge.example.test, 443, password=trojan-placeholder, sni=wrapped-surge.example.test"
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@wrapped-surge.example.test:443?")
+	if !strings.Contains(got, "security=tls") ||
+		!strings.Contains(got, "sni=wrapped-surge.example.test") ||
+		!strings.HasSuffix(got, "#%E9%A6%99%E6%B8%AF%20%E5%8C%85%E8%A3%85%20Surge") {
+		t.Fatalf("unexpected wrapped Surge URI: %q", got)
+	}
+}
+
 func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

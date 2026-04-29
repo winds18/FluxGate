@@ -458,6 +458,8 @@ proxies:
   - name: "拒绝访问"
     type: reject
   - { name: "静默拦截", type: reject-drop }
+  - { name: "无丢包拦截", type: reject-no-drop }
+  - { name: "小图拦截", type: reject-tinygif }
   - name: "内部 DNS"
     type: dns
 `
@@ -469,6 +471,8 @@ proxies:
 		"direct://default#%E6%9C%AC%E5%9C%B0%E7%9B%B4%E8%BF%9E",
 		"block://default#%E6%8B%92%E7%BB%9D%E8%AE%BF%E9%97%AE",
 		"block://default#%E9%9D%99%E9%BB%98%E6%8B%A6%E6%88%AA",
+		"block://default#%E6%97%A0%E4%B8%A2%E5%8C%85%E6%8B%A6%E6%88%AA",
+		"block://default#%E5%B0%8F%E5%9B%BE%E6%8B%A6%E6%88%AA",
 		"dns://default#%E5%86%85%E9%83%A8%20DNS",
 	}, "\n")
 	if got != want {

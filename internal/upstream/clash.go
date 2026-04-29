@@ -134,7 +134,7 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashWireGuardURI(proxy)
 	case "direct":
 		return clashInternalURI("direct", proxy, "Direct")
-	case "block", "reject", "reject-drop":
+	case "block", "reject", "reject-drop", "reject-no-drop", "reject-tinygif":
 		return clashInternalURI("block", proxy, "Block")
 	case "dns":
 		return clashInternalURI("dns", proxy, "DNS")

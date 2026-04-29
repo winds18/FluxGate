@@ -109,6 +109,17 @@ clash_subscription_raw="$(node -e 'process.stdout.write(JSON.stringify(`proxies:
     protocol: udp
     sni: hysteria.example.sub
     skip-cert-verify: true
+  - name: "东京 HTTP"
+    type: http
+    server: http.clash.example.sub
+    port: 8080
+    username: qa-user
+    password: "http-placeholder"
+    tls: true
+    sni: http.clash.example.sub
+    skip-cert-verify: true
+    path: connect
+  - { name: "首尔 SOCKS", type: socks5, server: socks.clash.example.sub, port: 1080, username: "qa-user", password: "socks-placeholder", udp-over-tcp: true, network: udp }
 `));')"
 post_json "/api/sources" "{\"name\":\"订阅源A\",\"type\":\"subscription\",\"raw_content\":$clash_subscription_raw,\"refresh_interval_minutes\":5}" "$OUT_DIR/source-subscription.json"
 subscription_source_id="$(json_value "data.id" <"$OUT_DIR/source-subscription.json")"
@@ -165,6 +176,8 @@ china_hk_region_count="$(json_value "data.filter((node) => node.region === '🇨
 china_tw_region_count="$(json_value "data.filter((node) => node.region === '🇨🇳中国|台湾').length" <"$OUT_DIR/nodes.json")"
 us_route_region_count="$(json_value "data.filter((node) => node.raw_name === '香港-美国' && node.region === '🇺🇸美国').length" <"$OUT_DIR/nodes.json")"
 singapore_region_count="$(json_value "data.filter((node) => node.region === '🇸🇬新加坡').length" <"$OUT_DIR/nodes.json")"
+clash_http_node_count="$(json_value "data.filter((node) => node.raw_name === '东京 HTTP' && node.protocol === 'https').length" <"$OUT_DIR/nodes.json")"
+clash_socks_node_count="$(json_value "data.filter((node) => node.raw_name === '首尔 SOCKS' && node.protocol === 'socks5').length" <"$OUT_DIR/nodes.json")"
 first_node_id="$(json_value "data[0]?.id ?? 0" <"$OUT_DIR/nodes.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/nodes/$first_node_id" -o "$OUT_DIR/node-detail.json"
 node_detail_id="$(json_value "data.id" <"$OUT_DIR/node-detail.json")"
@@ -246,7 +259,7 @@ if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nod
   exit 1
 fi
 
-if [[ "$source_refresh_imported" != "4" ]]; then
+if [[ "$source_refresh_imported" != "6" ]]; then
   log "unexpected subscription refresh import count: $source_refresh_imported"
   exit 1
 fi
@@ -278,6 +291,11 @@ fi
 
 if [[ "$us_route_region_count" -lt 1 || "$singapore_region_count" -lt 1 ]]; then
   log "node region normalization should group known countries and route destinations: us_route=$us_route_region_count singapore=$singapore_region_count"
+  exit 1
+fi
+
+if [[ "$clash_http_node_count" -lt 1 || "$clash_socks_node_count" -lt 1 ]]; then
+  log "Clash YAML HTTP/SOCKS proxies should import as active nodes: http=$clash_http_node_count socks=$clash_socks_node_count"
   exit 1
 fi
 

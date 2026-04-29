@@ -83,6 +83,10 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashTUICURI(proxy)
 	case "hysteria":
 		return clashHysteriaURI(proxy)
+	case "http", "https":
+		return clashHTTPURI(proxy)
+	case "socks", "socks4", "socks4a", "socks5":
+		return clashSOCKSURI(proxy)
 	default:
 		return ""
 	}
@@ -291,6 +295,65 @@ func clashHysteriaURI(proxy map[string]string) string {
 	return result.String()
 }
 
+func clashHTTPURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	if server == "" || port == "" {
+		return ""
+	}
+
+	proxyType := strings.ToLower(firstMapValue(proxy, "type"))
+	values := url.Values{}
+	sni := firstMapValue(proxy, "sni", "servername", "server_name")
+	if sni != "" {
+		values.Set("sni", sni)
+	}
+	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
+		values.Set("insecure", "1")
+	}
+
+	scheme := "http"
+	if proxyType == "https" || tlsEnabled(proxy) || sni != "" || values.Get("insecure") != "" {
+		scheme = "https"
+	}
+
+	path := firstMapValue(proxy, "path")
+	if path != "" && !strings.HasPrefix(path, "/") {
+		path = "/" + path
+	}
+	return proxyURLWithUser(scheme, clashUserInfo(proxy), server, port, path, values, firstMapValue(proxy, "name"))
+}
+
+func clashSOCKSURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	if server == "" || port == "" {
+		return ""
+	}
+
+	scheme := "socks5"
+	switch proxyType := strings.ToLower(firstMapValue(proxy, "type")); proxyType {
+	case "socks4", "socks4a", "socks5":
+		scheme = proxyType
+	default:
+		switch strings.ToLower(firstMapValue(proxy, "version")) {
+		case "4":
+			scheme = "socks4"
+		case "4a":
+			scheme = "socks4a"
+		}
+	}
+
+	values := url.Values{}
+	if network := firstMapValue(proxy, "network", "protocol"); network != "" {
+		values.Set("network", network)
+	}
+	if boolMapValue(proxy, "udp-over-tcp", "udp_over_tcp", "uot") {
+		values.Set("udp_over_tcp", "1")
+	}
+	return proxyURLWithUser(scheme, clashUserInfo(proxy), server, port, "", values, firstMapValue(proxy, "name"))
+}
+
 func proxyURL(scheme, user, server, port string, values url.Values, fragment string) string {
 	result := &url.URL{
 		Scheme:   scheme,
@@ -302,6 +365,32 @@ func proxyURL(scheme, user, server, port string, values url.Values, fragment str
 		result.RawQuery = values.Encode()
 	}
 	return result.String()
+}
+
+func proxyURLWithUser(scheme string, user *url.Userinfo, server, port, path string, values url.Values, fragment string) string {
+	result := &url.URL{
+		Scheme:   scheme,
+		User:     user,
+		Host:     net.JoinHostPort(server, port),
+		Path:     path,
+		Fragment: fragment,
+	}
+	if len(values) > 0 {
+		result.RawQuery = values.Encode()
+	}
+	return result.String()
+}
+
+func clashUserInfo(proxy map[string]string) *url.Userinfo {
+	username := firstMapValue(proxy, "username", "user")
+	password := firstMapValue(proxy, "password")
+	if username == "" && password == "" {
+		return nil
+	}
+	if password != "" {
+		return url.UserPassword(username, password)
+	}
+	return url.User(username)
 }
 
 func parseInlineMap(value string) map[string]string {

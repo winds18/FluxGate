@@ -89,6 +89,17 @@ proxies:
     protocol: udp
     sni: hysteria.clash.example.test
     skip-cert-verify: true
+  - name: "东京 HTTP"
+    type: http
+    server: http.clash.example.test
+    port: 8080
+    username: qa-user
+    password: "http-placeholder"
+    tls: true
+    sni: http.clash.example.test
+    skip-cert-verify: true
+    path: connect
+  - { name: "首尔 SOCKS", type: socks5, server: socks.clash.example.test, port: 1080, username: qa-user, password: "socks-placeholder", udp-over-tcp: true, network: udp }
 proxy-groups:
   - name: Auto
     type: select
@@ -100,8 +111,8 @@ proxy-groups:
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 6 {
-		t.Fatalf("expected 6 normalized nodes, got %d: %q", len(lines), got)
+	if len(lines) != 8 {
+		t.Fatalf("expected 8 normalized nodes, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "ss://aes-128-gcm:qa-placeholder@ss.example.test:8388#")
 	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@trojan.example.test:443?")
@@ -123,6 +134,14 @@ proxy-groups:
 	assertHasPrefix(t, lines[5], "hysteria://hysteria-auth@hysteria.clash.example.test:443?")
 	if !strings.Contains(lines[5], "up_mbps=20") || !strings.Contains(lines[5], "down_mbps=80") || !strings.Contains(lines[5], "network=udp") || !strings.Contains(lines[5], "insecure=1") {
 		t.Fatalf("unexpected hysteria URI: %q", lines[5])
+	}
+	assertHasPrefix(t, lines[6], "https://qa-user:http-placeholder@http.clash.example.test:8080/connect?")
+	if !strings.Contains(lines[6], "sni=http.clash.example.test") || !strings.Contains(lines[6], "insecure=1") || !strings.HasSuffix(lines[6], "#%E4%B8%9C%E4%BA%AC%20HTTP") {
+		t.Fatalf("unexpected clash http URI: %q", lines[6])
+	}
+	assertHasPrefix(t, lines[7], "socks5://qa-user:socks-placeholder@socks.clash.example.test:1080?")
+	if !strings.Contains(lines[7], "network=udp") || !strings.Contains(lines[7], "udp_over_tcp=1") || !strings.HasSuffix(lines[7], "#%E9%A6%96%E5%B0%94%20SOCKS") {
+		t.Fatalf("unexpected clash socks URI: %q", lines[7])
 	}
 }
 

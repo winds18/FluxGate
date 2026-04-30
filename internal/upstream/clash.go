@@ -232,6 +232,9 @@ func clashVLESSURI(proxy map[string]string) string {
 	if flow := firstMapValue(proxy, "flow"); flow != "" {
 		values.Set("flow", flow)
 	}
+	if packetEncoding := firstMapValue(proxy, "packet-encoding", "packet_encoding", "packetEncoding"); packetEncoding != "" {
+		values.Set("packet_encoding", packetEncoding)
+	}
 	appendClashTransportQueryValues(proxy, values)
 	appendClashTLSQueryValues(proxy, values)
 	return proxyURL("vless", uuid, server, port, values, firstMapValue(proxy, "name"))

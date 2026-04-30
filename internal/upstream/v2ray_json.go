@@ -78,6 +78,13 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 				"cipher":  firstNonEmptyString(v2rayString(user, "security"), v2rayString(user, "encryption"), v2rayString(user, "cipher")),
 				"flow":    v2rayString(user, "flow"),
 			}
+			if packetEncoding := firstNonEmptyString(
+				v2rayString(user, "packetEncoding"),
+				v2rayString(user, "packet_encoding"),
+				v2rayString(user, "packet-encoding"),
+			); packetEncoding != "" {
+				proxy["packet-encoding"] = packetEncoding
+			}
 			appendV2RayStreamProxyValues(outbound, proxy)
 			if uri := build(proxy); uri != "" {
 				uris = append(uris, uri)

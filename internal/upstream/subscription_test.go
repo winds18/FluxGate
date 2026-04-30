@@ -3418,6 +3418,41 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONVLESSPacketEncoding(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray VLESS Packet Encoding",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "packet-encoding.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000094",
+                "encryption": "none",
+                "packetEncoding": "xudp"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000094@packet-encoding.v2ray.example.test:443?")
+	if !strings.Contains(got, "packet_encoding=xudp") ||
+		!strings.HasSuffix(got, "#%E9%A6%99%E6%B8%AF%20V2Ray%20VLESS%20Packet%20Encoding") {
+		t.Fatalf("unexpected v2ray vless packet encoding URI: %q", got)
+	}
+}
+
 func TestNormalizeContentV2RayJSONTransportHostAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

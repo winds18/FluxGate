@@ -132,7 +132,7 @@
 - V2Ray/Xray JSON `grpcSettings.multiMode` 会保留为 sing-box gRPC transport 的 `multi_mode` 参数。
 - V2Ray/Xray JSON `grpcSettings` 支持 `service-name`、`idle-timeout`、`health-check-timeout`、`permit-without-stream` 和 `multi-mode` 这类 hyphen 别名。
 - V2Ray/Xray JSON 存在 `quicSettings`/`quic_settings`/`quic-settings` 时会保留为 QUIC transport。
-- V2Ray/Xray JSON VMess/VLESS `vnext` endpoint 可识别 `address`、`server`、`host`、`add` 和 `server_port`/`serverPort`/`server-port` 别名，VMess user 可识别 `alter-id`/`aid` 和 `cipher` 别名。
+- V2Ray/Xray JSON VMess/VLESS `vnext` endpoint 可识别 `address`、`server`、`host`、`add` 和 `server_port`/`serverPort`/`server-port` 别名；VMess user 可识别 `alter-id`/`aid` 和 `cipher` 别名，VLESS user 可识别 `packetEncoding`/`packet_encoding`/`packet-encoding` 并同步为 sing-box `packet_encoding`。
 - V2Ray/Xray JSON Trojan/HTTP/SOCKS outbound 可兼容 `host`/`add`、`serverPort`/`server-port`、`pass`、`users`、`accounts` 数组、`accounts` 用户名到密码映射和 server 层 `username`/`password` 认证写法。
 - 节点来源前缀和展示名规则。
 - 标签管理。

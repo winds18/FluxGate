@@ -73,7 +73,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	}, []store.Node{
 		{
 			ID:         42,
-			URI:        "vless://00000000-0000-0000-0000-000000000042@example.com:443?security=tls&sni=edge.example.com&flow=xtls-rprx-vision&insecure=1&disable_sni=1&alpn=h2,http/1.1&type=ws&path=%2Fvless&host=ws.example.com#hk",
+			URI:        "vless://00000000-0000-0000-0000-000000000042@example.com:443?security=tls&sni=edge.example.com&flow=xtls-rprx-vision&packet_encoding=xudp&insecure=1&disable_sni=1&alpn=h2,http/1.1&type=ws&path=%2Fvless&host=ws.example.com#hk",
 			Protocol:   "vless",
 			ServerPort: 443,
 			Status:     "active",
@@ -215,6 +215,9 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	}
 	if vless["uuid"] != "00000000-0000-0000-0000-000000000042" || vless["flow"] != "xtls-rprx-vision" {
 		t.Fatalf("unexpected vless auth fields: %+v", vless)
+	}
+	if vless["packet_encoding"] != "xudp" {
+		t.Fatalf("unexpected vless packet encoding: %+v", vless)
 	}
 	vlessTLS, ok := vless["tls"].(map[string]any)
 	if !ok || vlessTLS["enabled"] != true || vlessTLS["server_name"] != "edge.example.com" || vlessTLS["insecure"] != true || vlessTLS["disable_sni"] != true {

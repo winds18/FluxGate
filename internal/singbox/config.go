@@ -317,6 +317,9 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 	if flow := strings.TrimSpace(query.Get("flow")); flow != "" {
 		outbound["flow"] = flow
 	}
+	if packetEncoding := firstNonEmpty(query.Get("packet_encoding"), query.Get("packet-encoding"), query.Get("packetEncoding")); packetEncoding != "" {
+		outbound["packet_encoding"] = packetEncoding
+	}
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("security"), "reality") ||
 		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name")) != "" ||

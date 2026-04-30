@@ -100,10 +100,19 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 		}
 		if protocol == "shadowsocks" {
 			proxy["method"] = firstNonEmptyString(v2rayString(server, "method"), v2rayString(server, "cipher"))
-			if plugin := v2rayString(server, "plugin"); plugin != "" {
+			if plugin := firstNonEmptyString(v2rayString(server, "plugin"), v2rayString(settings, "plugin")); plugin != "" {
 				proxy["plugin"] = plugin
 			}
-			if pluginOpts := firstNonEmptyString(v2rayString(server, "plugin_opts"), v2rayString(server, "plugin-opts")); pluginOpts != "" {
+			if pluginOpts := firstNonEmptyString(
+				v2rayString(server, "plugin_opts"),
+				v2rayString(server, "plugin-opts"),
+				v2rayString(server, "plugin_options"),
+				v2rayString(server, "plugin-options"),
+				v2rayString(settings, "plugin_opts"),
+				v2rayString(settings, "plugin-opts"),
+				v2rayString(settings, "plugin_options"),
+				v2rayString(settings, "plugin-options"),
+			); pluginOpts != "" {
 				proxy["plugin_opts"] = pluginOpts
 			}
 			if network := firstNonEmptyString(

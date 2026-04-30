@@ -3335,6 +3335,41 @@ func TestNormalizeContentV2RayJSONShadowsocksNetwork(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONShadowsocksPluginOptions(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray SS Plugin",
+      "protocol": "shadowsocks",
+      "settings": {
+        "plugin": "v2ray-plugin",
+        "plugin_options": "mode=websocket;host=ss-plugin.v2ray.example.test",
+        "servers": [
+          {
+            "address": "ss-plugin.v2ray.example.test",
+            "port": 8388,
+            "method": "aes-128-gcm",
+            "password": "qa-placeholder"
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "ss://aes-128-gcm:qa-placeholder@ss-plugin.v2ray.example.test:8388?")
+	if !strings.Contains(got, "plugin=v2ray-plugin") ||
+		!strings.Contains(got, "plugin_opts=mode%3Dwebsocket%3Bhost%3Dss-plugin.v2ray.example.test") {
+		t.Fatalf("expected v2ray shadowsocks plugin options to be preserved: %q", got)
+	}
+	if !strings.HasSuffix(got, "#%E9%A6%99%E6%B8%AF%20V2Ray%20SS%20Plugin") {
+		t.Fatalf("unexpected v2ray shadowsocks plugin fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentV2RayJSONSOCKSUDPFlag(t *testing.T) {
 	raw := `{
   "outbounds": [

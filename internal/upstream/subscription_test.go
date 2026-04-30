@@ -3494,6 +3494,61 @@ func TestNormalizeContentV2RayJSONTransportHostAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONStreamSettingAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray Stream Hyphen",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "stream-hyphen.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000094",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "stream-settings": {
+        "network": "ws",
+        "security": "tls",
+        "tls-settings": {
+          "server-name": "stream-hyphen-sni.v2ray.example.test"
+        },
+        "ws-settings": {
+          "path": "/stream",
+          "headers": {
+            "Host": "stream-host.v2ray.example.test"
+          }
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000094@stream-hyphen.v2ray.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=stream-hyphen-sni.v2ray.example.test",
+		"type=ws",
+		"path=%2Fstream",
+		"host=stream-host.v2ray.example.test",
+		"#%E9%A6%99%E6%B8%AF%20V2Ray%20Stream%20Hyphen",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected v2ray stream setting alias URI to contain %q: %q", want, got)
+		}
+	}
+}
+
 func TestNormalizeContentV2RayJSONWebSocketEarlyDataAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

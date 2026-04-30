@@ -261,10 +261,7 @@ func v2raySOCKSUDPOverTCPEnabled(settings, server map[string]any) bool {
 }
 
 func appendV2RayStreamProxyValues(outbound map[string]any, proxy map[string]string) {
-	stream := v2rayMap(outbound["streamSettings"])
-	if stream == nil {
-		stream = v2rayMap(outbound["stream_settings"])
-	}
+	stream := firstNonNilMap(v2rayMap(outbound["streamSettings"]), v2rayMap(outbound["stream_settings"]), v2rayMap(outbound["stream-settings"]))
 	if stream == nil {
 		return
 	}
@@ -273,8 +270,15 @@ func appendV2RayStreamProxyValues(outbound map[string]any, proxy map[string]stri
 		proxy["network"] = network
 	}
 	security := strings.ToLower(v2rayString(stream, "security"))
-	tlsSettings := firstNonNilMap(v2rayMap(stream["tlsSettings"]), v2rayMap(stream["tls_settings"]), v2rayMap(stream["xtlsSettings"]))
-	realitySettings := firstNonNilMap(v2rayMap(stream["realitySettings"]), v2rayMap(stream["reality_settings"]))
+	tlsSettings := firstNonNilMap(
+		v2rayMap(stream["tlsSettings"]),
+		v2rayMap(stream["tls_settings"]),
+		v2rayMap(stream["tls-settings"]),
+		v2rayMap(stream["xtlsSettings"]),
+		v2rayMap(stream["xtls_settings"]),
+		v2rayMap(stream["xtls-settings"]),
+	)
+	realitySettings := firstNonNilMap(v2rayMap(stream["realitySettings"]), v2rayMap(stream["reality_settings"]), v2rayMap(stream["reality-settings"]))
 	if security == "tls" || security == "xtls" || tlsSettings != nil {
 		proxy["tls"] = "true"
 	}
@@ -369,7 +373,7 @@ func v2rayUTLSFingerprint(tls map[string]any) string {
 }
 
 func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) {
-	if ws := firstNonNilMap(v2rayMap(stream["wsSettings"]), v2rayMap(stream["ws_settings"])); ws != nil {
+	if ws := firstNonNilMap(v2rayMap(stream["wsSettings"]), v2rayMap(stream["ws_settings"]), v2rayMap(stream["ws-settings"])); ws != nil {
 		if path := v2rayString(ws, "path"); path != "" {
 			proxy["ws-path"] = path
 		}
@@ -388,10 +392,10 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 			proxy["early-data-header-name"] = earlyHeader
 		}
 	}
-	if tcp := firstNonNilMap(v2rayMap(stream["tcpSettings"]), v2rayMap(stream["tcp_settings"])); tcp != nil {
+	if tcp := firstNonNilMap(v2rayMap(stream["tcpSettings"]), v2rayMap(stream["tcp_settings"]), v2rayMap(stream["tcp-settings"])); tcp != nil {
 		appendV2RayTCPHeaderValues(tcp, proxy)
 	}
-	if grpc := firstNonNilMap(v2rayMap(stream["grpcSettings"]), v2rayMap(stream["grpc_settings"])); grpc != nil {
+	if grpc := firstNonNilMap(v2rayMap(stream["grpcSettings"]), v2rayMap(stream["grpc_settings"]), v2rayMap(stream["grpc-settings"])); grpc != nil {
 		if serviceName := firstNonEmptyString(v2rayString(grpc, "serviceName"), v2rayString(grpc, "service_name"), v2rayString(grpc, "service-name")); serviceName != "" {
 			proxy["grpc-service-name"] = serviceName
 		}
@@ -415,7 +419,14 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 			proxy["grpc-multi-mode"] = "1"
 		}
 	}
-	if http := firstNonNilMap(v2rayMap(stream["httpSettings"]), v2rayMap(stream["http_settings"]), v2rayMap(stream["h2Settings"])); http != nil {
+	if http := firstNonNilMap(
+		v2rayMap(stream["httpSettings"]),
+		v2rayMap(stream["http_settings"]),
+		v2rayMap(stream["http-settings"]),
+		v2rayMap(stream["h2Settings"]),
+		v2rayMap(stream["h2_settings"]),
+		v2rayMap(stream["h2-settings"]),
+	); http != nil {
 		if hosts := v2rayHeaderHosts(http); len(hosts) > 0 {
 			proxy["http-opts.host"] = strings.Join(hosts, ",")
 		}
@@ -426,7 +437,14 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 			proxy["http-opts.method"] = method
 		}
 	}
-	if upgrade := firstNonNilMap(v2rayMap(stream["httpupgradeSettings"]), v2rayMap(stream["httpupgrade_settings"]), v2rayMap(stream["httpUpgradeSettings"])); upgrade != nil {
+	if upgrade := firstNonNilMap(
+		v2rayMap(stream["httpupgradeSettings"]),
+		v2rayMap(stream["httpupgrade_settings"]),
+		v2rayMap(stream["httpupgrade-settings"]),
+		v2rayMap(stream["httpUpgradeSettings"]),
+		v2rayMap(stream["http_upgrade_settings"]),
+		v2rayMap(stream["http-upgrade-settings"]),
+	); upgrade != nil {
 		if hosts := firstNonEmptyStringList(stringListFromAnyValue(upgrade["host"]), v2rayHeaderHosts(upgrade)); len(hosts) > 0 {
 			proxy["httpupgrade-opts.host"] = strings.Join(hosts, ",")
 		}

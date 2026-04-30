@@ -136,7 +136,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         51,
-			URI:        "naive://qa-user:qa-placeholder@example.news:443?sni=naive.example.news&quic=1&quic_congestion_control=bbr&udp_over_tcp=1&insecure_concurrency=2&alpn=h3&insecure=1&disable_sni=1#naive",
+			URI:        "naive://qa-user:qa-placeholder@example.news:443?sni=naive.example.news&quic=1&quic_congestion_control=bbr&udp_over_tcp=1&insecure_concurrency=2&alpn=h3&insecure=1&disable_sni=1&fp=chrome#naive",
 			Protocol:   "naive",
 			ServerPort: 443,
 			Status:     "active",
@@ -411,6 +411,10 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	naiveALPN, ok := naiveTLS["alpn"].([]string)
 	if !ok || len(naiveALPN) != 1 || naiveALPN[0] != "h3" {
 		t.Fatalf("unexpected naive alpn config: %+v", naiveTLS["alpn"])
+	}
+	naiveUTLS, ok := naiveTLS["utls"].(map[string]any)
+	if !ok || naiveUTLS["enabled"] != true || naiveUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected naive utls config: %+v", naiveTLS["utls"])
 	}
 	hysteria := findOutbound(config.Outbounds, "up_52")
 	if hysteria == nil {

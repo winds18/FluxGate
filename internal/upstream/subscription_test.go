@@ -2150,6 +2150,59 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONNaive(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "naive",
+      "tag": "新加坡 sing-box Naive",
+      "server": "naive.singbox.example.test",
+      "server_port": 443,
+      "username": "qa-user",
+      "password": "naive-placeholder",
+      "quic": true,
+      "quic_congestion_control": "bbr",
+      "udp_over_tcp": true,
+      "insecure_concurrency": 2,
+      "tls": {
+        "enabled": true,
+        "server_name": "naive.singbox.example.test",
+        "insecure": true,
+        "disable_sni": true,
+        "alpn": ["h3"],
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "naive+quic://qa-user:naive-placeholder@naive.singbox.example.test:443?")
+	for _, want := range []string{
+		"quic=1",
+		"quic_congestion_control=bbr",
+		"udp_over_tcp=1",
+		"insecure_concurrency=2",
+		"sni=naive.singbox.example.test",
+		"insecure=1",
+		"disable_sni=1",
+		"alpn=h3",
+		"fp=chrome",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected sing-box Naive URI to contain %q: %q", want, got)
+		}
+	}
+	if !strings.HasSuffix(got, "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20sing-box%20Naive") {
+		t.Fatalf("unexpected sing-box Naive fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentSingBoxJSONVLESSGRPC(t *testing.T) {
 	raw := `{
   "outbounds": [

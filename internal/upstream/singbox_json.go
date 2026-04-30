@@ -120,6 +120,8 @@ func singBoxOutboundURI(outbound map[string]any) string {
 		return singBoxAnyTLSURI(outbound)
 	case "shadowtls":
 		return singBoxShadowTLSURI(outbound)
+	case "naive", "naive+quic":
+		return singBoxNaiveURI(outbound)
 	case "hysteria":
 		return singBoxHysteriaURI(outbound)
 	case "http", "https":
@@ -431,6 +433,39 @@ func singBoxHysteriaURI(outbound map[string]any) string {
 		user = url.User(authStr)
 	}
 	return singBoxProxyURL("hysteria", server, port, "", user, values, singBoxName(outbound))
+}
+
+func singBoxNaiveURI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	username := firstNonEmptyString(singBoxString(outbound, "username"), singBoxString(outbound, "user"))
+	password := singBoxString(outbound, "password")
+	if server == "" || port == "" || username == "" || password == "" {
+		return ""
+	}
+
+	scheme := "naive"
+	values := url.Values{}
+	if strings.EqualFold(singBoxString(outbound, "type"), "naive+quic") || boolFromAnyValue(outbound["quic"]) {
+		scheme = "naive+quic"
+		values.Set("quic", "1")
+	}
+	for _, item := range []struct {
+		key      string
+		outbound string
+	}{
+		{key: "insecure_concurrency", outbound: "insecure_concurrency"},
+		{key: "quic_congestion_control", outbound: "quic_congestion_control"},
+	} {
+		if value := singBoxString(outbound, item.outbound); value != "" {
+			values.Set(item.key, value)
+		}
+	}
+	if boolFromAnyValue(outbound["udp_over_tcp"]) {
+		values.Set("udp_over_tcp", "1")
+	}
+	appendTLSQueryValues(outbound, values)
+	return proxyURLWithUser(scheme, url.UserPassword(username, password), server, port, "", values, singBoxName(outbound))
 }
 
 func singBoxHTTPURI(outbound map[string]any) string {

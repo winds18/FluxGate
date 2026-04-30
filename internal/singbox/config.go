@@ -1150,6 +1150,8 @@ func buildSOCKSOutbound(node store.Node) (map[string]any, bool) {
 	}
 	if network := firstNonEmpty(query.Get("network"), query.Get("protocol")); network != "" {
 		outbound["network"] = network
+	} else if boolQuery(firstNonEmpty(query.Get("udp"), query.Get("udp_relay"), query.Get("udp-relay"))) {
+		outbound["network"] = "udp"
 	}
 	if boolQuery(firstNonEmpty(query.Get("udp_over_tcp"), query.Get("udp-over-tcp"), query.Get("uot"))) {
 		outbound["udp_over_tcp"] = true

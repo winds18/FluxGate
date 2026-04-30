@@ -157,7 +157,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         54,
-			URI:        "socks5://qa-user:qa-placeholder@example.socks:1080?network=udp&udp_over_tcp=1#socks",
+			URI:        "socks5://qa-user:qa-placeholder@example.socks:1080?udp=1&udp_over_tcp=1#socks",
 			Protocol:   "socks5",
 			ServerPort: 1080,
 			Status:     "active",

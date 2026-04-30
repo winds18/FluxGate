@@ -2265,6 +2265,33 @@ func TestNormalizeContentSingBoxJSONNaive(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONSOCKSUDPFlag(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "socks",
+      "tag": "首尔 sing-box SOCKS UDP",
+      "server": "socks-udp.singbox.example.test",
+      "server_port": 1080,
+      "username": "qa-user",
+      "password": "socks-placeholder",
+      "udp": true
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "socks5://qa-user:socks-placeholder@socks-udp.singbox.example.test:1080?")
+	if !strings.Contains(got, "udp=1") || strings.Contains(got, "network=udp") {
+		t.Fatalf("unexpected sing-box SOCKS UDP URI: %q", got)
+	}
+	if !strings.HasSuffix(got, "#%E9%A6%96%E5%B0%94%20sing-box%20SOCKS%20UDP") {
+		t.Fatalf("unexpected sing-box SOCKS UDP fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentSingBoxJSONVLESSGRPC(t *testing.T) {
 	raw := `{
   "outbounds": [

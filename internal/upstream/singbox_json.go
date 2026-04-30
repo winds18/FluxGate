@@ -522,6 +522,8 @@ func singBoxSOCKSURI(outbound map[string]any) string {
 	values := url.Values{}
 	if network := singBoxString(outbound, "network"); network != "" {
 		values.Set("network", network)
+	} else if boolFromAnyValue(outbound["udp"]) || boolFromAnyValue(outbound["udp_relay"]) || boolFromAnyValue(outbound["udp-relay"]) {
+		values.Set("udp", "1")
 	}
 	if boolFromAnyValue(outbound["udp_over_tcp"]) {
 		values.Set("udp_over_tcp", "1")

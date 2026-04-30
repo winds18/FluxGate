@@ -109,6 +109,7 @@
 - SOCKS URI 支持 `udp`、`udp_relay` 和 `udp-relay` 标志，并会归一为 sing-box outbound 的 `network=udp`。
 - Clash YAML SOCKS 节点支持保留 `udp`、`udp_relay` 和 `udp-relay` 标志，结构化导入后会继续进入 SOCKS UDP 转换链路。
 - Surge SOCKS 节点支持保留 `udp=true` 标志，结构化导入后会继续进入 SOCKS UDP 转换链路。
+- Quantumult X SOCKS 节点支持保留 `udp=true` 标志，结构化导入后会继续进入 SOCKS UDP 转换链路。
 - Hysteria2/Hy2 URI 支持从 `password`、`auth`、`auth_str` 或 `token` 查询参数读取认证密码，兼容缺少 userinfo 的订阅写法。
 - Hysteria v1 URI 支持从 `token` 查询参数读取认证字符串，兼容部分上游订阅的 token 写法。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。

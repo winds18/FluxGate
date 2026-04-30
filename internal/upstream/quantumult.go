@@ -196,6 +196,9 @@ func quantumultXProxyURI(line string) string {
 		proxy["type"] = "socks5"
 		proxy["username"] = surgeFirstValue(options, positionals, 1, "username", "user")
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass")
+		if surgeBoolOption(options, "udp", "udp-relay", "udp_relay") && proxy["network"] == "" {
+			proxy["udp"] = "true"
+		}
 		return clashSOCKSURI(proxy)
 	default:
 		return ""

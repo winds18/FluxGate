@@ -431,6 +431,22 @@ trojan=qx-grpc-trojan.example.test:443, password=trojan-placeholder, over-tls=tr
 	}
 }
 
+func TestNormalizeContentQuantumultXSOCKSUDPFlag(t *testing.T) {
+	raw := `[server_local]
+socks5=qx-socks-udp.example.test:1080, qa-user, socks-placeholder, udp=true, tag=首尔 QuantumultX SOCKS UDP`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "socks5://qa-user:socks-placeholder@qx-socks-udp.example.test:1080?")
+	if !strings.Contains(got, "udp=1") || strings.Contains(got, "network=udp") {
+		t.Fatalf("unexpected Quantumult X SOCKS UDP URI: %q", got)
+	}
+	if !strings.HasSuffix(got, "#%E9%A6%96%E5%B0%94%20QuantumultX%20SOCKS%20UDP") {
+		t.Fatalf("unexpected Quantumult X SOCKS UDP fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONWrappedBase64URIList(t *testing.T) {
 	payload := strings.Join([]string{
 		"vless://00000000-0000-0000-0000-000000000081@example.com:443#香港 02",

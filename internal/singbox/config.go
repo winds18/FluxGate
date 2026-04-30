@@ -1403,14 +1403,14 @@ func parseVMessURI(rawURI string) (map[string]any, bool) {
 
 func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 	parsed, err := url.Parse(rawURI)
-	if err != nil || parsed.Scheme != "vmess" || parsed.Hostname() == "" || parsed.User == nil {
-		return nil, false
-	}
-	uuid := strings.TrimSpace(parsed.User.Username())
-	if uuid == "" {
+	if err != nil || parsed.Scheme != "vmess" || parsed.Hostname() == "" {
 		return nil, false
 	}
 	query := parsed.Query()
+	uuid := firstNonEmpty(userinfoUsername(parsed.User), query.Get("uuid"), query.Get("id"), query.Get("user_id"), query.Get("user-id"))
+	if uuid == "" {
+		return nil, false
+	}
 	doc := map[string]any{
 		"v":    "2",
 		"ps":   strings.TrimSpace(parsed.Fragment),
@@ -1428,6 +1428,9 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 	}
 	if multiMode := firstNonEmpty(query.Get("multi_mode"), query.Get("multi-mode"), query.Get("grpc_multi_mode"), query.Get("grpc-multi-mode")); multiMode != "" {
 		doc["multi_mode"] = multiMode
+	}
+	if serviceName := firstNonEmpty(query.Get("service_name"), query.Get("serviceName"), query.Get("grpc_service_name"), query.Get("grpc-service-name")); serviceName != "" {
+		doc["service_name"] = serviceName
 	}
 	if packetEncoding := firstNonEmpty(query.Get("packet_encoding"), query.Get("packet-encoding"), query.Get("packetEncoding")); packetEncoding != "" {
 		doc["packet_encoding"] = packetEncoding

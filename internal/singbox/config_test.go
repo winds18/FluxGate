@@ -1121,6 +1121,37 @@ func TestBuildConfigSupportsVMessUserinfoURI(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsVMessQueryCredentials(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         88,
+			URI:        "vmess://query-vmess.example:443?id=00000000-0000-0000-0000-000000000088&encryption=auto&security=tls&type=grpc&service_name=query-vmess&sni=query-vmess.example&packet_encoding=packetaddr#vmess-query",
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_88")
+	if outbound == nil {
+		t.Fatalf("expected vmess outbound up_88, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "vmess" || outbound["server"] != "query-vmess.example" || outbound["server_port"] != 443 {
+		t.Fatalf("unexpected vmess query credential server fields: %+v", outbound)
+	}
+	if outbound["uuid"] != "00000000-0000-0000-0000-000000000088" || outbound["security"] != "auto" || outbound["packet_encoding"] != "packetaddr" {
+		t.Fatalf("unexpected vmess query credential auth fields: %+v", outbound)
+	}
+	tls, ok := outbound["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "query-vmess.example" {
+		t.Fatalf("unexpected vmess query credential tls: %+v", outbound["tls"])
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "grpc" || transport["service_name"] != "query-vmess" {
+		t.Fatalf("unexpected vmess query credential transport: %+v", outbound["transport"])
+	}
+}
+
 func TestBuildConfigSupportsHysteria2QueryPassword(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

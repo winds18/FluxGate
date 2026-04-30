@@ -659,6 +659,41 @@ func TestNormalizeContentJSONCommonCollectionFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONCommonCollectionAliasFields(t *testing.T) {
+	raw := `{
+  "data": {
+    "nodeList": [
+      "vless://00000000-0000-0000-0000-000000000092@node-list.example.test:443"
+    ],
+    "proxy_list": [
+      "trojan://trojan-placeholder@proxy-list.example.test:443?security=tls"
+    ],
+    "serverList": [
+      "ss://aes-128-gcm:qa-placeholder@server-list.example.test:8388"
+    ],
+    "subscription_list": [
+      {
+        "name": "香港 subscription_list",
+        "uri": "hysteria2://hy2-placeholder@subscription-list.example.test:443"
+      }
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"vless://00000000-0000-0000-0000-000000000092@node-list.example.test:443",
+		"trojan://trojan-placeholder@proxy-list.example.test:443?security=tls",
+		"ss://aes-128-gcm:qa-placeholder@server-list.example.test:8388",
+		"hysteria2://hy2-placeholder@subscription-list.example.test:443#%E9%A6%99%E6%B8%AF%20subscription_list",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON common collection alias fields: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONCommonShareLinkFields(t *testing.T) {
 	raw := `{
   "items": [

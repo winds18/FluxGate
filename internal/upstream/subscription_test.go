@@ -1309,6 +1309,33 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLVMessPacketEncoding(t *testing.T) {
+	raw := `
+proxies:
+  - name: "大阪 VMess Packet Encoding"
+    type: vmess
+    server: packet.vmess.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000096
+    cipher: auto
+    packetEncoding: packetaddr
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vmess://")
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(got, "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode clash vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	if !strings.Contains(decodedText, `"packet_encoding":"packetaddr"`) ||
+		!strings.Contains(decodedText, `"add":"packet.vmess.example.test"`) {
+		t.Fatalf("unexpected clash vmess packet encoding document: %q", decodedText)
+	}
+}
+
 func TestNormalizeContentSIP008(t *testing.T) {
 	raw := `{
   "version": 1,
@@ -2838,6 +2865,52 @@ func TestNormalizeContentSingBoxJSONVMessGRPC(t *testing.T) {
 		!strings.Contains(decodedText, `"tls":"tls"`) ||
 		!strings.Contains(decodedText, `"sni":"grpc.vmess.singbox.example.test"`) {
 		t.Fatalf("unexpected sing-box vmess grpc document: %q", decodedText)
+	}
+}
+
+func TestNormalizeContentSingBoxJSONVLESSAndVMessPacketEncoding(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "vless",
+      "tag": "首尔 VLESS Packet Encoding",
+      "server": "packet.vless.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000097",
+      "packet_encoding": "xudp"
+    },
+    {
+      "type": "vmess",
+      "tag": "东京 VMess Packet Encoding",
+      "server": "packet.vmess.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000098",
+      "security": "auto",
+      "packetEncoding": "packetaddr"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000097@packet.vless.singbox.example.test:443?")
+	if !strings.Contains(lines[0], "packet_encoding=xudp") {
+		t.Fatalf("unexpected sing-box vless packet encoding URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "vmess://")
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[1], "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode sing-box vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	if !strings.Contains(decodedText, `"packet_encoding":"packetaddr"`) ||
+		!strings.Contains(decodedText, `"add":"packet.vmess.singbox.example.test"`) {
+		t.Fatalf("unexpected sing-box vmess packet encoding document: %q", decodedText)
 	}
 }
 

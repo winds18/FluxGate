@@ -194,6 +194,9 @@ func singBoxVLESSURI(outbound map[string]any) string {
 		"uuid":   singBoxString(outbound, "uuid"),
 		"flow":   singBoxString(outbound, "flow"),
 	}
+	if packetEncoding := firstNonEmptyString(singBoxString(outbound, "packet_encoding"), singBoxString(outbound, "packet-encoding"), singBoxString(outbound, "packetEncoding")); packetEncoding != "" {
+		proxy["packet-encoding"] = packetEncoding
+	}
 	if tlsMap(outbound) != nil {
 		proxy["tls"] = "true"
 	}
@@ -227,6 +230,9 @@ func singBoxVMessURI(outbound map[string]any) string {
 	}
 	if doc["aid"] == "" {
 		doc["aid"] = "0"
+	}
+	if packetEncoding := firstNonEmptyString(singBoxString(outbound, "packet_encoding"), singBoxString(outbound, "packet-encoding"), singBoxString(outbound, "packetEncoding")); packetEncoding != "" {
+		doc["packet_encoding"] = packetEncoding
 	}
 	if tlsMap(outbound) != nil {
 		doc["tls"] = "tls"

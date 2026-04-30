@@ -232,7 +232,7 @@ func clashVLESSURI(proxy map[string]string) string {
 	if flow := firstMapValue(proxy, "flow"); flow != "" {
 		values.Set("flow", flow)
 	}
-	if packetEncoding := firstMapValue(proxy, "packet-encoding", "packet_encoding", "packetEncoding"); packetEncoding != "" {
+	if packetEncoding := firstMapValue(proxy, "packet-encoding", "packet_encoding", "packetEncoding", "packetencoding"); packetEncoding != "" {
 		values.Set("packet_encoding", packetEncoding)
 	}
 	appendClashTransportQueryValues(proxy, values)
@@ -278,7 +278,7 @@ func clashVMessURI(proxy map[string]string) string {
 	if grpcMultiMode := firstMapValue(proxy, "grpc-opts.multi-mode", "grpc_opts.multi_mode", "grpc-opts.multi_mode", "grpc_opts.multi-mode", "grpc-multi-mode", "grpc_multi_mode", "multi-mode", "multi_mode"); grpcMultiMode != "" {
 		doc["multi_mode"] = grpcMultiMode
 	}
-	if packetEncoding := firstMapValue(proxy, "packet-encoding", "packet_encoding", "packetEncoding"); packetEncoding != "" {
+	if packetEncoding := firstMapValue(proxy, "packet-encoding", "packet_encoding", "packetEncoding", "packetencoding"); packetEncoding != "" {
 		doc["packet_encoding"] = packetEncoding
 	}
 	if tlsEnabled(proxy) {

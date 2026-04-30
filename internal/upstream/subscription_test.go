@@ -644,6 +644,9 @@ proxies:
     tls: true
     sni: http.clash.example.test
     skip-cert-verify: true
+    disable-sni: true
+    alpn: h2,http/1.1
+    client-fingerprint: chrome
     path: connect
   - { name: "首尔 SOCKS", type: socks5, server: socks.clash.example.test, port: 1080, username: qa-user, password: "socks-placeholder", udp-over-tcp: true, network: udp }
   - name: "香港 AnyTLS"
@@ -762,7 +765,12 @@ proxy-groups:
 		t.Fatalf("unexpected hysteria URI: %q", lines[5])
 	}
 	assertHasPrefix(t, lines[6], "https://qa-user:http-placeholder@http.clash.example.test:8080/connect?")
-	if !strings.Contains(lines[6], "sni=http.clash.example.test") || !strings.Contains(lines[6], "insecure=1") || !strings.HasSuffix(lines[6], "#%E4%B8%9C%E4%BA%AC%20HTTP") {
+	if !strings.Contains(lines[6], "sni=http.clash.example.test") ||
+		!strings.Contains(lines[6], "insecure=1") ||
+		!strings.Contains(lines[6], "disable_sni=1") ||
+		!strings.Contains(lines[6], "alpn=h2%2Chttp%2F1.1") ||
+		!strings.Contains(lines[6], "fp=chrome") ||
+		!strings.HasSuffix(lines[6], "#%E4%B8%9C%E4%BA%AC%20HTTP") {
 		t.Fatalf("unexpected clash http URI: %q", lines[6])
 	}
 	assertHasPrefix(t, lines[7], "socks5://qa-user:socks-placeholder@socks.clash.example.test:1080?")

@@ -452,9 +452,18 @@ func clashHTTPURI(proxy map[string]string) string {
 	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
 		values.Set("insecure", "1")
 	}
+	if boolMapValue(proxy, "disable-sni", "disable_sni") {
+		values.Set("disable_sni", "1")
+	}
+	if alpn := firstMapValue(proxy, "alpn"); alpn != "" {
+		values.Set("alpn", alpn)
+	}
+	if fingerprint := firstMapValue(proxy, "client-fingerprint", "client_fingerprint", "fingerprint", "fp"); fingerprint != "" {
+		values.Set("fp", fingerprint)
+	}
 
 	scheme := "http"
-	if proxyType == "https" || tlsEnabled(proxy) || sni != "" || values.Get("insecure") != "" {
+	if proxyType == "https" || tlsEnabled(proxy) || sni != "" || values.Get("insecure") != "" || values.Get("disable_sni") != "" || values.Get("alpn") != "" || values.Get("fp") != "" {
 		scheme = "https"
 	}
 

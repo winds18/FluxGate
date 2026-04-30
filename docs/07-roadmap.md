@@ -69,7 +69,7 @@
 - sing-box JSON 和 URI 导入链路会保留 AnyTLS `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound。
 - sing-box JSON 和 URI 导入链路会保留 ShadowTLS `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound。
 - sing-box JSON 和 URI 导入链路会保留 Naive/Naive+QUIC 跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound。
-- sing-box JSON 和 URI 导入链路会保留 HTTP/HTTPS 代理跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 HTTP/HTTPS 代理跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound。
 - SOCKS URI 支持 `udp`、`udp_relay` 和 `udp-relay` 标志并归一为 sing-box outbound 的 `network=udp`。
 - Clash YAML SOCKS 节点可保留 `udp`、`udp_relay` 和 `udp-relay` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
 - Surge SOCKS 节点可保留 `udp=true` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。

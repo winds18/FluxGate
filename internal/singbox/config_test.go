@@ -1176,10 +1176,71 @@ func TestBuildConfigSupportsHysteriaTokenAuth(t *testing.T) {
 	}
 }
 
-func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
+func TestBuildConfigSupportsVLESSTrojanQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         82,
+			URI:        "vless://query-vless.example:443?uuid=00000000-0000-0000-0000-000000000094&security=tls&sni=query-vless.example&type=grpc&service_name=query-vless#vless-query",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         83,
+			URI:        "trojan://query-trojan.example:443?password=trojan-query-placeholder&security=tls&sni=query-trojan.example&type=ws&path=%2Ftrojan&host=ws.query-trojan.example#trojan-query",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	vlessOutbound := findOutbound(config.Outbounds, "up_82")
+	if vlessOutbound == nil {
+		t.Fatalf("expected vless outbound up_82, got %+v", config.Outbounds)
+	}
+	if vlessOutbound["type"] != "vless" || vlessOutbound["server"] != "query-vless.example" || vlessOutbound["server_port"] != 443 {
+		t.Fatalf("unexpected vless query credential server fields: %+v", vlessOutbound)
+	}
+	if vlessOutbound["uuid"] != "00000000-0000-0000-0000-000000000094" {
+		t.Fatalf("unexpected vless query credential uuid: %+v", vlessOutbound)
+	}
+	vlessTLS, ok := vlessOutbound["tls"].(map[string]any)
+	if !ok || vlessTLS["enabled"] != true || vlessTLS["server_name"] != "query-vless.example" {
+		t.Fatalf("unexpected vless query credential tls: %+v", vlessOutbound["tls"])
+	}
+	vlessTransport, ok := vlessOutbound["transport"].(map[string]any)
+	if !ok || vlessTransport["type"] != "grpc" || vlessTransport["service_name"] != "query-vless" {
+		t.Fatalf("unexpected vless query credential transport: %+v", vlessOutbound["transport"])
+	}
+
+	trojanOutbound := findOutbound(config.Outbounds, "up_83")
+	if trojanOutbound == nil {
+		t.Fatalf("expected trojan outbound up_83, got %+v", config.Outbounds)
+	}
+	if trojanOutbound["type"] != "trojan" || trojanOutbound["server"] != "query-trojan.example" || trojanOutbound["server_port"] != 443 {
+		t.Fatalf("unexpected trojan query credential server fields: %+v", trojanOutbound)
+	}
+	if trojanOutbound["password"] != "trojan-query-placeholder" {
+		t.Fatalf("unexpected trojan query credential password: %+v", trojanOutbound)
+	}
+	trojanTLS, ok := trojanOutbound["tls"].(map[string]any)
+	if !ok || trojanTLS["enabled"] != true || trojanTLS["server_name"] != "query-trojan.example" {
+		t.Fatalf("unexpected trojan query credential tls: %+v", trojanOutbound["tls"])
+	}
+	trojanTransport, ok := trojanOutbound["transport"].(map[string]any)
+	if !ok || trojanTransport["type"] != "ws" || trojanTransport["path"] != "/trojan" {
+		t.Fatalf("unexpected trojan query credential transport: %+v", trojanOutbound["transport"])
+	}
+	headers, ok := trojanTransport["headers"].(map[string]any)
+	if !ok || headers["Host"] != "ws.query-trojan.example" {
+		t.Fatalf("unexpected trojan query credential headers: %+v", trojanTransport["headers"])
+	}
+}
+
+func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         84,
 			URI:        "naive+quic://query-naive.example:443?username=qa-user&password=naive-query-placeholder&sni=query-naive.example&quic=1&insecure=1#naive-query",
 			Protocol:   "naive+quic",
 			ServerPort: 443,
@@ -1187,9 +1248,9 @@ func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
 		},
 	})
 
-	outbound := findOutbound(config.Outbounds, "up_82")
+	outbound := findOutbound(config.Outbounds, "up_84")
 	if outbound == nil {
-		t.Fatalf("expected naive outbound up_82, got %+v", config.Outbounds)
+		t.Fatalf("expected naive outbound up_84, got %+v", config.Outbounds)
 	}
 	if outbound["type"] != "naive" || outbound["server"] != "query-naive.example" || outbound["server_port"] != 443 {
 		t.Fatalf("unexpected naive query credential server fields: %+v", outbound)
@@ -1206,14 +1267,14 @@ func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
 func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
-			ID:         83,
+			ID:         85,
 			URI:        "https://http-query.example:8443/connect?username=qa-user&password=http-query-placeholder&sni=http-query.example&insecure=1#http-query",
 			Protocol:   "https",
 			ServerPort: 8443,
 			Status:     "active",
 		},
 		{
-			ID:         84,
+			ID:         86,
 			URI:        "socks5://socks-query.example:1080?user=qa-user&pass=socks-query-placeholder&udp=1#socks-query",
 			Protocol:   "socks5",
 			ServerPort: 1080,
@@ -1221,9 +1282,9 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 		},
 	})
 
-	httpOutbound := findOutbound(config.Outbounds, "up_83")
+	httpOutbound := findOutbound(config.Outbounds, "up_85")
 	if httpOutbound == nil {
-		t.Fatalf("expected http outbound up_83, got %+v", config.Outbounds)
+		t.Fatalf("expected http outbound up_85, got %+v", config.Outbounds)
 	}
 	if httpOutbound["type"] != "http" || httpOutbound["server"] != "http-query.example" || httpOutbound["server_port"] != 8443 {
 		t.Fatalf("unexpected http query credential server fields: %+v", httpOutbound)
@@ -1236,9 +1297,9 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 		t.Fatalf("unexpected http query credential tls: %+v", httpOutbound["tls"])
 	}
 
-	socksOutbound := findOutbound(config.Outbounds, "up_84")
+	socksOutbound := findOutbound(config.Outbounds, "up_86")
 	if socksOutbound == nil {
-		t.Fatalf("expected socks outbound up_84, got %+v", config.Outbounds)
+		t.Fatalf("expected socks outbound up_86, got %+v", config.Outbounds)
 	}
 	if socksOutbound["type"] != "socks" || socksOutbound["server"] != "socks-query.example" || socksOutbound["server_port"] != 1080 || socksOutbound["version"] != "5" {
 		t.Fatalf("unexpected socks query credential server fields: %+v", socksOutbound)

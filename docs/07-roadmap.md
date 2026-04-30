@@ -57,6 +57,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan QUIC transport 并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTP transport 参数并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTPUpgrade transport 参数并同步为 sing-box outbound transport。
+- VLESS URI 可从 `uuid`/`id`/`user_id`/`user-id` 查询参数读取认证信息，Trojan URI 可从 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS REALITY 的 public key、short id 和 uTLS fingerprint 参数并同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan REALITY 的 public key、short id 和 uTLS fingerprint 参数并同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan WebSocket/gRPC 传输参数并同步为 sing-box outbound transport。

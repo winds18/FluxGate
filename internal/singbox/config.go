@@ -297,7 +297,8 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 	if err != nil || parsed.Scheme != "vless" || parsed.Hostname() == "" {
 		return nil, false
 	}
-	uuid := parsed.User.Username()
+	query := parsed.Query()
+	uuid := firstNonEmpty(userinfoUsername(parsed.User), query.Get("uuid"), query.Get("id"), query.Get("user_id"), query.Get("user-id"))
 	if uuid == "" {
 		return nil, false
 	}
@@ -306,7 +307,6 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 		port = 443
 	}
 
-	query := parsed.Query()
 	outbound := map[string]any{
 		"type":        "vless",
 		"tag":         upstreamTag(node),
@@ -373,7 +373,8 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 	if err != nil || parsed.Scheme != "trojan" || parsed.Hostname() == "" {
 		return nil, false
 	}
-	password := parsed.User.Username()
+	query := parsed.Query()
+	password := firstNonEmpty(userinfoUsername(parsed.User), query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token"))
 	if password == "" {
 		return nil, false
 	}
@@ -382,7 +383,6 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 		port = 443
 	}
 
-	query := parsed.Query()
 	outbound := map[string]any{
 		"type":        "trojan",
 		"tag":         upstreamTag(node),
@@ -1626,6 +1626,13 @@ func userPassword(user *url.Userinfo) (string, string) {
 		return username, ""
 	}
 	return username, password
+}
+
+func userinfoUsername(user *url.Userinfo) string {
+	if user == nil {
+		return ""
+	}
+	return strings.TrimSpace(user.Username())
 }
 
 func userPasswordWithQuery(user *url.Userinfo, queryUsername string, queryPassword string) (string, string) {

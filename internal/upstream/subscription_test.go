@@ -1523,6 +1523,24 @@ func TestNormalizeContentJSONWrappedSurgeProxyList(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyListSOCKSUDPFlag(t *testing.T) {
+	raw := `
+[Proxy]
+首尔 Surge SOCKS UDP = socks5, socks-udp.surge.example.test, 1080, username=qa-user, password=socks-placeholder, udp=true
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "socks5://qa-user:socks-placeholder@socks-udp.surge.example.test:1080?")
+	if !strings.Contains(got, "udp=1") || strings.Contains(got, "network=udp") {
+		t.Fatalf("unexpected Surge SOCKS UDP URI: %q", got)
+	}
+	if !strings.HasSuffix(got, "#%E9%A6%96%E5%B0%94%20Surge%20SOCKS%20UDP") {
+		t.Fatalf("unexpected Surge SOCKS UDP fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentSurgeProxyListVLESSAndVMess(t *testing.T) {
 	raw := `
 [Proxy]

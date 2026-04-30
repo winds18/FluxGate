@@ -205,6 +205,9 @@ func surgeProxyURI(line string) string {
 		if protocol == "socks" {
 			proxy["type"] = "socks5"
 		}
+		if surgeBoolOption(options, "udp", "udp-relay", "udp_relay") && proxy["network"] == "" {
+			proxy["udp"] = "true"
+		}
 		return clashSOCKSURI(proxy)
 	default:
 		return ""

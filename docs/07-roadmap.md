@@ -72,6 +72,7 @@
 - sing-box JSON 和 URI 导入链路会保留 HTTP/HTTPS 代理跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound。
 - SOCKS URI 支持 `udp`、`udp_relay` 和 `udp-relay` 标志并归一为 sing-box outbound 的 `network=udp`。
 - Clash YAML SOCKS 节点可保留 `udp`、`udp_relay` 和 `udp-relay` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
+- Surge SOCKS 节点可保留 `udp=true` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
 - Hysteria2/Hy2 URI 可从查询参数读取 `password`、`auth`、`auth_str` 或 `token` 认证密码。
 - Hysteria v1 URI 可从查询参数读取 `token` 认证字符串。
 - sing-box 服务端配置生成会过滤不可用 Token，避免已撤销、已过期或已超额用户继续进入网关配置。

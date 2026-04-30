@@ -3372,6 +3372,43 @@ func TestNormalizeContentV2RayJSONSOCKSUDPFlag(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONSOCKSUDPOverTCPFlag(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "首尔 V2Ray SOCKS UDP over TCP",
+      "protocol": "socks",
+      "settings": {
+        "servers": [
+          {
+            "address": "socks-uot.v2ray.example.test",
+            "port": 1080,
+            "udpOverTcp": true,
+            "users": [
+              {
+                "user": "qa-user",
+                "pass": "socks-placeholder"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "socks5://qa-user:socks-placeholder@socks-uot.v2ray.example.test:1080?")
+	if !strings.Contains(got, "udp_over_tcp=1") {
+		t.Fatalf("expected v2ray socks udp over tcp to be preserved: %q", got)
+	}
+	if !strings.HasSuffix(got, "#%E9%A6%96%E5%B0%94%20V2Ray%20SOCKS%20UDP%20over%20TCP") {
+		t.Fatalf("unexpected v2ray socks udp over tcp fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentVMessJSON(t *testing.T) {
 	raw := `{
   "v": "2",

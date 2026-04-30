@@ -157,6 +157,9 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 			if proxyType == "socks5" && v2raySOCKSUDPEnabled(settings, server) {
 				proxy["udp"] = "true"
 			}
+			if proxyType == "socks5" && v2raySOCKSUDPOverTCPEnabled(settings, server) {
+				proxy["udp_over_tcp"] = "true"
+			}
 			if uri := build(proxy); uri != "" {
 				uris = append(uris, uri)
 			}
@@ -172,6 +175,18 @@ func v2raySOCKSUDPEnabled(settings, server map[string]any) bool {
 			boolFromAnyValue(values["udp_enabled"]) ||
 			boolFromAnyValue(values["udp-relay"]) ||
 			boolFromAnyValue(values["udp_relay"]) {
+			return true
+		}
+	}
+	return false
+}
+
+func v2raySOCKSUDPOverTCPEnabled(settings, server map[string]any) bool {
+	for _, values := range []map[string]any{settings, server} {
+		if boolFromAnyValue(values["udp_over_tcp"]) ||
+			boolFromAnyValue(values["udpOverTcp"]) ||
+			boolFromAnyValue(values["udp-over-tcp"]) ||
+			boolFromAnyValue(values["uot"]) {
 			return true
 		}
 	}

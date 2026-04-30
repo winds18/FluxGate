@@ -624,6 +624,41 @@ func TestNormalizeContentJSONCommonWrapperFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONCommonCollectionFields(t *testing.T) {
+	raw := `{
+  "data": {
+    "list": [
+      "vless://00000000-0000-0000-0000-000000000089@list.example.test:443"
+    ],
+    "records": [
+      "trojan://trojan-placeholder@records.example.test:443?security=tls"
+    ],
+    "rows": [
+      "ss://aes-128-gcm:qa-placeholder@rows.example.test:8388"
+    ],
+    "entries": [
+      {
+        "name": "香港 entries",
+        "uri": "hysteria2://hy2-placeholder@entries.example.test:443"
+      }
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"vless://00000000-0000-0000-0000-000000000089@list.example.test:443",
+		"trojan://trojan-placeholder@records.example.test:443?security=tls",
+		"ss://aes-128-gcm:qa-placeholder@rows.example.test:8388",
+		"hysteria2://hy2-placeholder@entries.example.test:443#%E9%A6%99%E6%B8%AF%20entries",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON common collection fields: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONWrappedStructuredSubscription(t *testing.T) {
 	raw := `{
   "data": {

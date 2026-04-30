@@ -298,7 +298,7 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 				collectJSONURIs("", item, uris)
 			}
 		}
-		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data", "results", "payloads"} {
+		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data", "results", "payloads", "list", "records", "rows", "entries"} {
 			handled[key] = true
 			if item, ok := typed[key]; ok {
 				collectJSONURIs("", item, uris)

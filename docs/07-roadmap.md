@@ -96,6 +96,7 @@
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
 - subscription 来源可解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段中的内嵌 Clash YAML、SIP008、sing-box JSON 和 base64 订阅内容也会归一化。
 - JSON 包装订阅可解析 `payload`、`result`、`response`、`body`、`text`、`sub` 等常见接口外层字段。
+- JSON 包装订阅可解析 `list`、`records`、`rows` 和 `entries` 等常见集合字段，容器名不会污染缺少 fragment 的节点 URI 展示名。
 - JSON 包装订阅可解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象。
 - JSON 结构化节点可识别 `protocol`、`host`、`address`、`server_port`、`method`、`pass` 和 `remarks` 等常见别名字段。
 - subscription 来源可解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点。

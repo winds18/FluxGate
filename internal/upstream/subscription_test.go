@@ -46,6 +46,9 @@ func TestNormalizeContentCanonicalizesSpecialOutboundURIList(t *testing.T) {
 		"freedom://default#Freedom",
 		"blackhole://default#Blackhole",
 		"reject://default#Reject",
+		"reject-drop://default#RejectDrop",
+		"reject-no-drop://default#RejectNoDrop",
+		"reject-tinygif://default#RejectTinygif",
 	}, "\n")
 	got, err := NormalizeContent(raw)
 	if err != nil {
@@ -55,6 +58,9 @@ func TestNormalizeContentCanonicalizesSpecialOutboundURIList(t *testing.T) {
 		"direct://default#Freedom",
 		"block://default#Blackhole",
 		"block://default#Reject",
+		"block://default#RejectDrop",
+		"block://default#RejectNoDrop",
+		"block://default#RejectTinygif",
 	}, "\n")
 	if got != want {
 		t.Fatalf("unexpected normalized content: %q", got)

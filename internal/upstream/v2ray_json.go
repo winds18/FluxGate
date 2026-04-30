@@ -254,6 +254,9 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		if boolFromAnyValue(grpc["permitWithoutStream"]) || boolFromAnyValue(grpc["permit_without_stream"]) {
 			proxy["permit-without-stream"] = "1"
 		}
+		if boolFromAnyValue(grpc["multiMode"]) || boolFromAnyValue(grpc["multi_mode"]) {
+			proxy["grpc-multi-mode"] = "1"
+		}
 	}
 	if http := firstNonNilMap(v2rayMap(stream["httpSettings"]), v2rayMap(stream["http_settings"]), v2rayMap(stream["h2Settings"])); http != nil {
 		if hosts := stringListFromAnyValue(http["host"]); len(hosts) > 0 {

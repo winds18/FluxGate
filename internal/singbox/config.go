@@ -464,6 +464,9 @@ func transportFromQuery(query url.Values) map[string]any {
 		if boolQuery(firstNonEmpty(query.Get("permit_without_stream"), query.Get("permit-without-stream"))) {
 			transport["permit_without_stream"] = true
 		}
+		if boolQuery(firstNonEmpty(query.Get("multi_mode"), query.Get("multi-mode"), query.Get("grpc_multi_mode"), query.Get("grpc-multi-mode"))) {
+			transport["multi_mode"] = true
+		}
 		return transport
 	case "quic":
 		return map[string]any{"type": "quic"}
@@ -619,6 +622,9 @@ func vmessTransportFromDoc(doc map[string]any) map[string]any {
 			stringFromAny(doc["grpc-service-name"]),
 		); serviceName != "" {
 			transport["service_name"] = serviceName
+		}
+		if boolFromAny(doc["multi_mode"]) || boolFromAny(doc["multi-mode"]) || boolFromAny(doc["grpc_multi_mode"]) || boolFromAny(doc["grpc-multi-mode"]) {
+			transport["multi_mode"] = true
 		}
 		return transport
 	case "http", "h2":
@@ -1317,6 +1323,9 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 		"path": query.Get("path"),
 		"sni":  firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name")),
 		"alpn": query.Get("alpn"),
+	}
+	if multiMode := firstNonEmpty(query.Get("multi_mode"), query.Get("multi-mode"), query.Get("grpc_multi_mode"), query.Get("grpc-multi-mode")); multiMode != "" {
+		doc["multi_mode"] = multiMode
 	}
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("tls"), "tls") ||

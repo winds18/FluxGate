@@ -1247,6 +1247,7 @@ proxies:
     network: grpc
     grpc-opts:
       grpc-service-name: fluxgate-vmess
+      multi-mode: true
     sni: grpc.vmess.example.test
 `
 	got, err := NormalizeContent(raw)
@@ -1261,6 +1262,7 @@ proxies:
 	decodedText := string(decoded)
 	if !strings.Contains(decodedText, `"net":"grpc"`) ||
 		!strings.Contains(decodedText, `"path":"fluxgate-vmess"`) ||
+		!strings.Contains(decodedText, `"multi_mode":"true"`) ||
 		!strings.Contains(decodedText, `"tls":"tls"`) ||
 		!strings.Contains(decodedText, `"sni":"grpc.vmess.example.test"`) {
 		t.Fatalf("unexpected clash vmess grpc document: %q", decodedText)
@@ -2802,7 +2804,8 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
           "serviceName": "fluxgate-v2ray",
           "idle_timeout": "30s",
           "health_check_timeout": "10s",
-          "permit_without_stream": true
+          "permit_without_stream": true,
+          "multiMode": true
         }
       }
     },
@@ -2860,7 +2863,8 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
 		!strings.Contains(lines[2], "service_name=fluxgate-v2ray") ||
 		!strings.Contains(lines[2], "idle_timeout=30s") ||
 		!strings.Contains(lines[2], "ping_timeout=10s") ||
-		!strings.Contains(lines[2], "permit_without_stream=1") {
+		!strings.Contains(lines[2], "permit_without_stream=1") ||
+		!strings.Contains(lines[2], "multi_mode=1") {
 		t.Fatalf("unexpected v2ray trojan URI: %q", lines[2])
 	}
 	if lines[3] != "ss://aes-128-gcm:qa-placeholder@ss.v2ray.example.test:8388#%E9%A6%96%E5%B0%94%20V2Ray%20SS" {

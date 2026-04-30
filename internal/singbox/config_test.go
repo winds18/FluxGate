@@ -795,7 +795,7 @@ func TestBuildConfigPreservesVLESSGRPCKeepaliveOptions(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         77,
-			URI:        "vless://00000000-0000-0000-0000-000000000077@example.grpc:443?security=tls&type=grpc&service_name=fluxgate&idle_timeout=30s&ping_timeout=10s&permit_without_stream=1#grpc-keepalive",
+			URI:        "vless://00000000-0000-0000-0000-000000000077@example.grpc:443?security=tls&type=grpc&service_name=fluxgate&idle_timeout=30s&ping_timeout=10s&permit_without_stream=1&multi_mode=1#grpc-keepalive",
 			Protocol:   "vless",
 			ServerPort: 443,
 			Status:     "active",
@@ -807,7 +807,7 @@ func TestBuildConfigPreservesVLESSGRPCKeepaliveOptions(t *testing.T) {
 		t.Fatalf("expected vless outbound up_77, got %+v", config.Outbounds)
 	}
 	transport, ok := outbound["transport"].(map[string]any)
-	if !ok || transport["type"] != "grpc" || transport["service_name"] != "fluxgate" || transport["idle_timeout"] != "30s" || transport["ping_timeout"] != "10s" || transport["permit_without_stream"] != true {
+	if !ok || transport["type"] != "grpc" || transport["service_name"] != "fluxgate" || transport["idle_timeout"] != "30s" || transport["ping_timeout"] != "10s" || transport["permit_without_stream"] != true || transport["multi_mode"] != true {
 		t.Fatalf("unexpected vless grpc keepalive config: %+v", outbound["transport"])
 	}
 }
@@ -970,16 +970,17 @@ func TestBuildConfigPreservesVMessGRPCTransport(t *testing.T) {
 		{
 			ID: 71,
 			URI: vmessURI(t, map[string]any{
-				"add":  "vmess.grpc.example",
-				"port": "443",
-				"id":   "00000000-0000-0000-0000-000000000071",
-				"aid":  "0",
-				"scy":  "auto",
-				"net":  "grpc",
-				"path": "fluxgate-vmess",
-				"tls":  "tls",
-				"sni":  "vmess.grpc.example",
-				"ps":   "vmess-grpc",
+				"add":        "vmess.grpc.example",
+				"port":       "443",
+				"id":         "00000000-0000-0000-0000-000000000071",
+				"aid":        "0",
+				"scy":        "auto",
+				"net":        "grpc",
+				"path":       "fluxgate-vmess",
+				"multi_mode": "1",
+				"tls":        "tls",
+				"sni":        "vmess.grpc.example",
+				"ps":         "vmess-grpc",
 			}),
 			Protocol:   "vmess",
 			ServerPort: 443,
@@ -992,7 +993,7 @@ func TestBuildConfigPreservesVMessGRPCTransport(t *testing.T) {
 		t.Fatalf("expected vmess outbound up_71, got %+v", config.Outbounds)
 	}
 	transport, ok := outbound["transport"].(map[string]any)
-	if !ok || transport["type"] != "grpc" || transport["service_name"] != "fluxgate-vmess" {
+	if !ok || transport["type"] != "grpc" || transport["service_name"] != "fluxgate-vmess" || transport["multi_mode"] != true {
 		t.Fatalf("unexpected vmess grpc transport config: %+v", outbound["transport"])
 	}
 }

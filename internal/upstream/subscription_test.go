@@ -3545,6 +3545,50 @@ func TestNormalizeContentV2RayJSONWebSocketEarlyDataAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONHTTPPathArray(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "东京 V2Ray HTTP Path Array",
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "address": "h2-path-array.v2ray.example.test",
+            "port": 443,
+            "password": "trojan-placeholder"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "http",
+        "security": "tls",
+        "httpSettings": {
+          "path": ["/front", "/backup"],
+          "host": ["h2-path-a.v2ray.example.test", "h2-path-b.v2ray.example.test"]
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@h2-path-array.v2ray.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"type=http",
+		"path=%2Ffront%2C%2Fbackup",
+		"host=h2-path-a.v2ray.example.test%2Ch2-path-b.v2ray.example.test",
+		"#%E4%B8%9C%E4%BA%AC%20V2Ray%20HTTP%20Path%20Array",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected v2ray HTTP path array URI to contain %q: %q", want, got)
+		}
+	}
+}
+
 func TestNormalizeContentV2RayJSONGRPCHyphenAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

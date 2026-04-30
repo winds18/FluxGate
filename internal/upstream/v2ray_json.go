@@ -419,8 +419,8 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		if hosts := v2rayHeaderHosts(http); len(hosts) > 0 {
 			proxy["http-opts.host"] = strings.Join(hosts, ",")
 		}
-		if path := v2rayString(http, "path"); path != "" {
-			proxy["http-opts.path"] = path
+		if paths := stringListFromAnyValue(http["path"]); len(paths) > 0 {
+			proxy["http-opts.path"] = strings.Join(paths, ",")
 		}
 		if method := v2rayString(http, "method"); method != "" {
 			proxy["http-opts.method"] = method

@@ -2005,7 +2005,11 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
       "tls": {
         "enabled": true,
         "server_name": "http.singbox.example.test",
-        "insecure": true
+        "insecure": true,
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
       }
     },
     {
@@ -2123,7 +2127,7 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		t.Fatalf("unexpected sing-box hysteria URI: %q", lines[8])
 	}
 	assertHasPrefix(t, lines[9], "https://qa-user:http-placeholder@http.singbox.example.test:8443/connect?")
-	if !strings.Contains(lines[9], "sni=http.singbox.example.test") || !strings.Contains(lines[9], "insecure=1") {
+	if !strings.Contains(lines[9], "sni=http.singbox.example.test") || !strings.Contains(lines[9], "insecure=1") || !strings.Contains(lines[9], "fp=chrome") {
 		t.Fatalf("unexpected sing-box http URI: %q", lines[9])
 	}
 	assertHasPrefix(t, lines[10], "socks5://qa-user:socks-placeholder@socks.singbox.example.test:1080?")

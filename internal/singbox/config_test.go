@@ -150,7 +150,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         53,
-			URI:        "https://qa-user:qa-placeholder@example.proxy:8443/connect?sni=http-proxy.example.proxy&skip-cert-verify=1&disable_sni=1&alpn=h2,http%2F1.1#http",
+			URI:        "https://qa-user:qa-placeholder@example.proxy:8443/connect?sni=http-proxy.example.proxy&skip-cert-verify=1&disable_sni=1&alpn=h2,http%2F1.1&fp=chrome#http",
 			Protocol:   "https",
 			ServerPort: 8443,
 			Status:     "active",
@@ -461,6 +461,10 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	httpALPN, ok := httpTLS["alpn"].([]string)
 	if !ok || len(httpALPN) != 2 || httpALPN[0] != "h2" || httpALPN[1] != "http/1.1" {
 		t.Fatalf("unexpected http alpn config: %+v", httpTLS["alpn"])
+	}
+	httpUTLS, ok := httpTLS["utls"].(map[string]any)
+	if !ok || httpUTLS["enabled"] != true || httpUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected http utls config: %+v", httpTLS["utls"])
 	}
 	socks := findOutbound(config.Outbounds, "up_54")
 	if socks == nil {

@@ -1095,7 +1095,8 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name")) != "" ||
 		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"))) ||
 		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) ||
-		strings.TrimSpace(query.Get("alpn")) != "" {
+		strings.TrimSpace(query.Get("alpn")) != "" ||
+		firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")) != "" {
 		tls := map[string]any{"enabled": true}
 		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
@@ -1108,6 +1109,12 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 		}
 		if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
 			tls["alpn"] = alpn
+		}
+		if fingerprint := firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")); fingerprint != "" {
+			tls["utls"] = map[string]any{
+				"enabled":     true,
+				"fingerprint": fingerprint,
+			}
 		}
 		outbound["tls"] = tls
 	}

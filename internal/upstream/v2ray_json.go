@@ -146,12 +146,28 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 				"password": firstNonEmptyString(v2rayString(user, "pass"), v2rayString(user, "password")),
 			}
 			appendV2RayStreamProxyValues(outbound, proxy)
+			if proxyType == "socks5" && v2raySOCKSUDPEnabled(settings, server) {
+				proxy["udp"] = "true"
+			}
 			if uri := build(proxy); uri != "" {
 				uris = append(uris, uri)
 			}
 		}
 	}
 	return uris
+}
+
+func v2raySOCKSUDPEnabled(settings, server map[string]any) bool {
+	for _, values := range []map[string]any{settings, server} {
+		if boolFromAnyValue(values["udp"]) ||
+			boolFromAnyValue(values["udpEnabled"]) ||
+			boolFromAnyValue(values["udp_enabled"]) ||
+			boolFromAnyValue(values["udp-relay"]) ||
+			boolFromAnyValue(values["udp_relay"]) {
+			return true
+		}
+	}
+	return false
 }
 
 func appendV2RayStreamProxyValues(outbound map[string]any, proxy map[string]string) {

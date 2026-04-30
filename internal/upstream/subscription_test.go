@@ -1871,7 +1871,7 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
         "type": "ws",
         "path": "/vless",
         "headers": {
-          "Host": "ws.vless.singbox.example.test"
+          "Host": ["ws.vless.singbox.example.test", "ws-backup.vless.singbox.example.test"]
         }
       }
     },
@@ -2072,7 +2072,7 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		!strings.Contains(lines[2], "alpn=h3") ||
 		!strings.Contains(lines[2], "type=ws") ||
 		!strings.Contains(lines[2], "path=%2Fvless") ||
-		!strings.Contains(lines[2], "host=ws.vless.singbox.example.test") {
+		!strings.Contains(lines[2], "host=ws.vless.singbox.example.test%2Cws-backup.vless.singbox.example.test") {
 		t.Fatalf("unexpected sing-box vless URI: %q", lines[2])
 	}
 	assertHasPrefix(t, lines[3], "vmess://")
@@ -2538,8 +2538,10 @@ func TestNormalizeContentSingBoxJSONTrojanHTTPUpgradeTransport(t *testing.T) {
       },
       "transport": {
         "type": "httpupgrade",
-        "host": "upgrade.singbox.example.test",
-        "path": "/upgrade"
+        "path": "/upgrade",
+        "headers": {
+          "Host": ["upgrade.singbox.example.test", "upgrade-backup.singbox.example.test"]
+        }
       }
     }
   ]
@@ -2552,7 +2554,7 @@ func TestNormalizeContentSingBoxJSONTrojanHTTPUpgradeTransport(t *testing.T) {
 	if !strings.Contains(got, "security=tls") ||
 		!strings.Contains(got, "sni=upgrade.trojan.singbox.example.test") ||
 		!strings.Contains(got, "type=httpupgrade") ||
-		!strings.Contains(got, "host=upgrade.singbox.example.test") ||
+		!strings.Contains(got, "host=upgrade.singbox.example.test%2Cupgrade-backup.singbox.example.test") ||
 		!strings.Contains(got, "path=%2Fupgrade") {
 		t.Fatalf("unexpected sing-box trojan httpupgrade URI: %q", got)
 	}

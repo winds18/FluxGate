@@ -49,6 +49,7 @@
 - subscription 来源支持解析 sing-box JSON `outbounds` 中的常见 Shadowsocks/Trojan/VLESS/VMess/Hysteria2/TUIC/AnyTLS/ShadowTLS/Hysteria/HTTP/SOCKS/SSH/WireGuard/Tor 节点。
 - subscription 来源支持解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
 - sing-box JSON `outbounds` 和 `endpoints` 支持数组、单个对象、按名称分组的对象映射和分组数组映射；映射对象缺少 `tag`/`name` 时会使用映射键或分组序号作为节点名。
+- sing-box JSON transport 的 `headers.Host` 支持字符串或数组写法，WebSocket 和 HTTPUpgrade 会保留为逗号分隔 Host。
 - subscription 来源支持解析 V2Ray/Xray JSON `outbounds` 中的 VMess、VLESS、Trojan、Shadowsocks、HTTP、SOCKS、freedom、blackhole 和 DNS 出站，并保留常见 TLS、REALITY、WebSocket、gRPC、HTTP/H2 和 HTTPUpgrade 传输参数。
 - V2Ray/Xray JSON `wsSettings.headers.Host` 支持字符串或数组写法，数组会保留为逗号分隔的 WebSocket Host。
 - V2Ray/Xray JSON `tcpSettings.header.type=http` 的 HTTP 伪装 Host、path 和 method 会保留为 HTTP transport 参数。

@@ -840,8 +840,8 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 		}
 	}
 	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "httpupgrade") {
-		if host := strings.TrimSpace(stringFromAnyValue(transport["host"])); host != "" {
-			proxy["host"] = host
+		if hosts := stringListFromAnyValue(transport["host"]); len(hosts) > 0 {
+			proxy["host"] = strings.Join(hosts, ",")
 		}
 	}
 	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "grpc") {
@@ -859,12 +859,8 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 		proxy["service_name"] = serviceName
 	}
 	if headers, ok := transport["headers"].(map[string]any); ok {
-		host := strings.TrimSpace(stringFromAnyValue(headers["Host"]))
-		if host == "" {
-			host = strings.TrimSpace(stringFromAnyValue(headers["host"]))
-		}
-		if host != "" {
-			proxy["host"] = host
+		if hosts := firstNonEmptyStringList(stringListFromAnyValue(headers["Host"]), stringListFromAnyValue(headers["host"])); len(hosts) > 0 {
+			proxy["host"] = strings.Join(hosts, ",")
 		}
 	}
 }

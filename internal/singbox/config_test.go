@@ -150,7 +150,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         53,
-			URI:        "https://qa-user:qa-placeholder@example.proxy:8443/connect?sni=http-proxy.example.proxy&insecure=1#http",
+			URI:        "https://qa-user:qa-placeholder@example.proxy:8443/connect?sni=http-proxy.example.proxy&skip-cert-verify=1&disable_sni=1&alpn=h2,http%2F1.1#http",
 			Protocol:   "https",
 			ServerPort: 8443,
 			Status:     "active",
@@ -431,8 +431,12 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("unexpected http auth or path fields: %+v", httpProxy)
 	}
 	httpTLS, ok := httpProxy["tls"].(map[string]any)
-	if !ok || httpTLS["enabled"] != true || httpTLS["server_name"] != "http-proxy.example.proxy" || httpTLS["insecure"] != true {
+	if !ok || httpTLS["enabled"] != true || httpTLS["server_name"] != "http-proxy.example.proxy" || httpTLS["insecure"] != true || httpTLS["disable_sni"] != true {
 		t.Fatalf("unexpected http tls config: %+v", httpProxy["tls"])
+	}
+	httpALPN, ok := httpTLS["alpn"].([]string)
+	if !ok || len(httpALPN) != 2 || httpALPN[0] != "h2" || httpALPN[1] != "http/1.1" {
+		t.Fatalf("unexpected http alpn config: %+v", httpTLS["alpn"])
 	}
 	socks := findOutbound(config.Outbounds, "up_54")
 	if socks == nil {

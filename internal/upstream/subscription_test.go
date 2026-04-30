@@ -3453,6 +3453,48 @@ func TestNormalizeContentV2RayJSONVLESSPacketEncoding(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONVMessPacketEncoding(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray VMess Packet Encoding",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "vmess-packet-encoding.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000095",
+                "security": "auto",
+                "packetEncoding": "packetaddr"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	if !strings.HasPrefix(got, "vmess://") {
+		t.Fatalf("expected vmess URI, got %q", got)
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(got, "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode v2ray vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	if !strings.Contains(decodedText, `"packet_encoding":"packetaddr"`) ||
+		!strings.Contains(decodedText, `"add":"vmess-packet-encoding.v2ray.example.test"`) {
+		t.Fatalf("unexpected v2ray vmess packet encoding document: %q", decodedText)
+	}
+}
+
 func TestNormalizeContentV2RayJSONTransportHostAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

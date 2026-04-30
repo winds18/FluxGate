@@ -221,10 +221,8 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		if path := v2rayString(ws, "path"); path != "" {
 			proxy["ws-path"] = path
 		}
-		if headers := v2rayMap(ws["headers"]); headers != nil {
-			if hosts := firstNonEmptyStringList(stringListFromAnyValue(headers["Host"]), stringListFromAnyValue(headers["host"])); len(hosts) > 0 {
-				proxy["ws-headers.host"] = strings.Join(hosts, ",")
-			}
+		if hosts := v2rayHeaderHosts(ws); len(hosts) > 0 {
+			proxy["ws-headers.host"] = strings.Join(hosts, ",")
 		}
 		if maxEarlyData := intFromAnyValue(ws["maxEarlyData"]); maxEarlyData > 0 {
 			proxy["max-early-data"] = strconv.Itoa(maxEarlyData)
@@ -270,8 +268,8 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		}
 	}
 	if upgrade := firstNonNilMap(v2rayMap(stream["httpupgradeSettings"]), v2rayMap(stream["httpupgrade_settings"]), v2rayMap(stream["httpUpgradeSettings"])); upgrade != nil {
-		if host := v2rayString(upgrade, "host"); host != "" {
-			proxy["httpupgrade-opts.host"] = host
+		if hosts := firstNonEmptyStringList(stringListFromAnyValue(upgrade["host"]), v2rayHeaderHosts(upgrade)); len(hosts) > 0 {
+			proxy["httpupgrade-opts.host"] = strings.Join(hosts, ",")
 		}
 		if path := v2rayString(upgrade, "path"); path != "" {
 			proxy["httpupgrade-opts.path"] = path
@@ -295,11 +293,17 @@ func appendV2RayTCPHeaderValues(tcp map[string]any, proxy map[string]string) {
 	if paths := stringListFromAnyValue(request["path"]); len(paths) > 0 {
 		proxy["http-opts.path"] = strings.Join(paths, ",")
 	}
-	if headers := v2rayMap(request["headers"]); headers != nil {
-		if hosts := firstNonEmptyStringList(stringListFromAnyValue(headers["Host"]), stringListFromAnyValue(headers["host"])); len(hosts) > 0 {
-			proxy["http-opts.host"] = strings.Join(hosts, ",")
-		}
+	if hosts := v2rayHeaderHosts(request); len(hosts) > 0 {
+		proxy["http-opts.host"] = strings.Join(hosts, ",")
 	}
+}
+
+func v2rayHeaderHosts(values map[string]any) []string {
+	headers := v2rayMap(values["headers"])
+	if headers == nil {
+		return nil
+	}
+	return firstNonEmptyStringList(stringListFromAnyValue(headers["Host"]), stringListFromAnyValue(headers["host"]))
 }
 
 func v2rayObjectList(value any) []map[string]any {

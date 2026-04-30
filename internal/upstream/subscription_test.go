@@ -2935,6 +2935,91 @@ func TestNormalizeContentV2RayJSONTCPHTTPHeader(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONHTTPUpgradeHosts(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray HTTPUpgrade Host 数组",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "upgrade-array.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000091"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "httpupgrade",
+        "security": "tls",
+        "httpupgradeSettings": {
+          "host": ["upgrade.v2ray.example.test", "upgrade-backup.v2ray.example.test"],
+          "path": "/upgrade-array"
+        }
+      }
+    },
+    {
+      "tag": "东京 V2Ray HTTPUpgrade Header",
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "address": "upgrade-header.v2ray.example.test",
+            "port": 443,
+            "password": "trojan-placeholder"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "httpupgrade",
+        "security": "tls",
+        "httpUpgradeSettings": {
+          "path": "/upgrade-header",
+          "headers": {
+            "Host": ["header.v2ray.example.test", "header-backup.v2ray.example.test"]
+          }
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000091@upgrade-array.v2ray.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"type=httpupgrade",
+		"host=upgrade.v2ray.example.test%2Cupgrade-backup.v2ray.example.test",
+		"path=%2Fupgrade-array",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected v2ray HTTPUpgrade URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@upgrade-header.v2ray.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"type=httpupgrade",
+		"host=header.v2ray.example.test%2Cheader-backup.v2ray.example.test",
+		"path=%2Fupgrade-header",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected v2ray HTTPUpgrade header URI to contain %q: %q", want, lines[1])
+		}
+	}
+}
+
 func TestNormalizeContentJSONWrappedV2RayJSON(t *testing.T) {
 	raw := `{
   "data": {

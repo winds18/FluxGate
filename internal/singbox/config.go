@@ -570,6 +570,13 @@ func buildVMessOutbound(node store.Node) (map[string]any, bool) {
 	if alterID := intFromAny(doc["aid"]); alterID > 0 {
 		outbound["alter_id"] = alterID
 	}
+	if packetEncoding := firstNonEmpty(
+		stringFromAny(doc["packet_encoding"]),
+		stringFromAny(doc["packet-encoding"]),
+		stringFromAny(doc["packetEncoding"]),
+	); packetEncoding != "" {
+		outbound["packet_encoding"] = packetEncoding
+	}
 	vmessInsecure := boolFromAny(doc["allowInsecure"]) ||
 		boolFromAny(doc["allowinsecure"]) ||
 		boolFromAny(doc["insecure"]) ||
@@ -1409,6 +1416,9 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 	}
 	if multiMode := firstNonEmpty(query.Get("multi_mode"), query.Get("multi-mode"), query.Get("grpc_multi_mode"), query.Get("grpc-multi-mode")); multiMode != "" {
 		doc["multi_mode"] = multiMode
+	}
+	if packetEncoding := firstNonEmpty(query.Get("packet_encoding"), query.Get("packet-encoding"), query.Get("packetEncoding")); packetEncoding != "" {
+		doc["packet_encoding"] = packetEncoding
 	}
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("tls"), "tls") ||

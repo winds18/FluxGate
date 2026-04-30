@@ -1079,7 +1079,7 @@ func TestBuildConfigSupportsVMessUserinfoURI(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         72,
-			URI:        "vmess://00000000-0000-0000-0000-000000000072@userinfo.vmess.example:443?encryption=auto&security=tls&type=ws&path=%2Fvmess&host=ws.vmess.example&sni=sni.vmess.example&alpn=h2,http%2F1.1&insecure=1&disable_sni=1&fp=chrome#VMess%20Userinfo",
+			URI:        "vmess://00000000-0000-0000-0000-000000000072@userinfo.vmess.example:443?encryption=auto&security=tls&type=ws&path=%2Fvmess&host=ws.vmess.example&sni=sni.vmess.example&alpn=h2,http%2F1.1&insecure=1&disable_sni=1&fp=chrome&packet_encoding=packetaddr#VMess%20Userinfo",
 			Protocol:   "vmess",
 			ServerPort: 443,
 			Status:     "active",
@@ -1095,6 +1095,9 @@ func TestBuildConfigSupportsVMessUserinfoURI(t *testing.T) {
 	}
 	if outbound["uuid"] != "00000000-0000-0000-0000-000000000072" || outbound["security"] != "auto" {
 		t.Fatalf("unexpected vmess userinfo auth fields: %+v", outbound)
+	}
+	if outbound["packet_encoding"] != "packetaddr" {
+		t.Fatalf("unexpected vmess userinfo packet encoding: %+v", outbound)
 	}
 	tls, ok := outbound["tls"].(map[string]any)
 	if !ok || tls["enabled"] != true || tls["server_name"] != "sni.vmess.example" || tls["insecure"] != true || tls["disable_sni"] != true {

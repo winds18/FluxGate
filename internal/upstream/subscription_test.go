@@ -3962,6 +3962,91 @@ func TestNormalizeContentV2RayJSONSOCKSUDPOverTCPFlag(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONServerFieldAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray Trojan Alias",
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "host": "trojan-alias.v2ray.example.test",
+            "server-port": 443,
+            "pass": "trojan-placeholder"
+          }
+        ]
+      }
+    },
+    {
+      "tag": "首尔 V2Ray SS Alias",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "add": "ss-alias.v2ray.example.test",
+            "serverPort": 8388,
+            "security": "aes-256-gcm",
+            "pass": "ss-placeholder"
+          }
+        ]
+      }
+    },
+    {
+      "tag": "东京 V2Ray HTTP Alias",
+      "protocol": "http",
+      "settings": {
+        "servers": [
+          {
+            "host": "http-alias.v2ray.example.test",
+            "server-port": 8080,
+            "username": "qa-user",
+            "password": "http-placeholder"
+          }
+        ]
+      }
+    },
+    {
+      "tag": "大阪 V2Ray SOCKS Alias",
+      "protocol": "socks",
+      "settings": {
+        "servers": [
+          {
+            "add": "socks-alias.v2ray.example.test",
+            "serverPort": 1080,
+            "users": [
+              {
+                "user": "qa-user",
+                "pass": "socks-placeholder"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 URIs, got %d: %q", len(lines), got)
+	}
+	expectations := []string{
+		"trojan://trojan-placeholder@trojan-alias.v2ray.example.test:443#%E9%A6%99%E6%B8%AF%20V2Ray%20Trojan%20Alias",
+		"ss://aes-256-gcm:ss-placeholder@ss-alias.v2ray.example.test:8388#%E9%A6%96%E5%B0%94%20V2Ray%20SS%20Alias",
+		"http://qa-user:http-placeholder@http-alias.v2ray.example.test:8080#%E4%B8%9C%E4%BA%AC%20V2Ray%20HTTP%20Alias",
+		"socks5://qa-user:socks-placeholder@socks-alias.v2ray.example.test:1080#%E5%A4%A7%E9%98%AA%20V2Ray%20SOCKS%20Alias",
+	}
+	for index, want := range expectations {
+		if lines[index] != want {
+			t.Fatalf("line %d mismatch\nwant: %q\n got: %q", index, want, lines[index])
+		}
+	}
+}
+
 func TestNormalizeContentVMessJSON(t *testing.T) {
 	raw := `{
   "v": "2",

@@ -72,10 +72,10 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 			proxy := map[string]string{
 				"name":    v2rayName(outbound, vnext, user, server, sequence, total),
 				"server":  server,
-				"port":    v2rayPort(vnext, "port", "server_port", "serverPort"),
+				"port":    v2rayPort(vnext),
 				"uuid":    firstNonEmptyString(v2rayString(user, "id"), v2rayString(user, "uuid")),
-				"alterid": firstNonEmptyString(v2rayString(user, "alterId"), v2rayString(user, "alter_id")),
-				"cipher":  firstNonEmptyString(v2rayString(user, "security"), v2rayString(user, "encryption")),
+				"alterid": firstNonEmptyString(v2rayString(user, "alterId"), v2rayString(user, "alter_id"), v2rayString(user, "alter-id"), v2rayString(user, "aid")),
+				"cipher":  firstNonEmptyString(v2rayString(user, "security"), v2rayString(user, "encryption"), v2rayString(user, "cipher")),
 				"flow":    v2rayString(user, "flow"),
 			}
 			appendV2RayStreamProxyValues(outbound, proxy)
@@ -88,11 +88,15 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 }
 
 func v2rayVNextServer(vnext map[string]any) string {
+	return v2rayEndpointAddress(vnext)
+}
+
+func v2rayEndpointAddress(values map[string]any) string {
 	return firstNonEmptyString(
-		v2rayString(vnext, "address"),
-		v2rayString(vnext, "server"),
-		v2rayString(vnext, "host"),
-		v2rayString(vnext, "add"),
+		v2rayString(values, "address"),
+		v2rayString(values, "server"),
+		v2rayString(values, "host"),
+		v2rayString(values, "add"),
 	)
 }
 
@@ -102,14 +106,15 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 	total := len(servers)
 	var uris []string
 	for index, server := range servers {
+		address := v2rayEndpointAddress(server)
 		proxy := map[string]string{
-			"name":     v2rayName(outbound, server, nil, firstNonEmptyString(v2rayString(server, "address"), v2rayString(server, "server")), index+1, total),
-			"server":   firstNonEmptyString(v2rayString(server, "address"), v2rayString(server, "server")),
-			"port":     v2rayPort(server, "port", "server_port"),
-			"password": v2rayString(server, "password"),
+			"name":     v2rayName(outbound, server, nil, address, index+1, total),
+			"server":   address,
+			"port":     v2rayPort(server),
+			"password": firstNonEmptyString(v2rayString(server, "password"), v2rayString(server, "pass")),
 		}
 		if protocol == "shadowsocks" {
-			proxy["method"] = firstNonEmptyString(v2rayString(server, "method"), v2rayString(server, "cipher"))
+			proxy["method"] = firstNonEmptyString(v2rayString(server, "method"), v2rayString(server, "cipher"), v2rayString(server, "security"), v2rayString(server, "encryption"))
 			if plugin := firstNonEmptyString(v2rayString(server, "plugin"), v2rayString(settings, "plugin")); plugin != "" {
 				proxy["plugin"] = plugin
 			}
@@ -162,13 +167,14 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 		if len(users) == 0 {
 			users = []map[string]any{{}}
 		}
+		address := v2rayEndpointAddress(server)
 		for _, user := range users {
 			sequence++
 			proxy := map[string]string{
-				"name":     v2rayName(outbound, server, user, firstNonEmptyString(v2rayString(server, "address"), v2rayString(server, "server")), sequence, total),
+				"name":     v2rayName(outbound, server, user, address, sequence, total),
 				"type":     proxyType,
-				"server":   firstNonEmptyString(v2rayString(server, "address"), v2rayString(server, "server")),
-				"port":     v2rayPort(server, "port", "server_port"),
+				"server":   address,
+				"port":     v2rayPort(server),
 				"username": firstNonEmptyString(v2rayString(user, "user"), v2rayString(user, "username"), v2rayString(user, "account")),
 				"password": firstNonEmptyString(v2rayString(user, "pass"), v2rayString(user, "password")),
 			}
@@ -624,6 +630,9 @@ func v2rayString(values map[string]any, key string) string {
 }
 
 func v2rayPort(values map[string]any, keys ...string) string {
+	if len(keys) == 0 {
+		keys = []string{"port", "server_port", "serverPort", "server-port"}
+	}
 	for _, key := range keys {
 		if port := intFromAnyValue(values[key]); port > 0 {
 			return strconv.Itoa(port)

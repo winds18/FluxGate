@@ -1912,6 +1912,10 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
         "insecure": true,
         "disable_sni": true,
         "alpn": ["h3"],
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
         "certificate_public_key_sha256": ["singbox-hy2-pin"]
       }
     },
@@ -2082,6 +2086,7 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		!strings.Contains(lines[4], "up_mbps=40") ||
 		!strings.Contains(lines[4], "down_mbps=160") ||
 		!strings.Contains(lines[4], "disable_sni=1") ||
+		!strings.Contains(lines[4], "fp=chrome") ||
 		!strings.Contains(lines[4], "pinSHA256=singbox-hy2-pin") {
 		t.Fatalf("unexpected sing-box hysteria2 URI: %q", lines[4])
 	}

@@ -882,6 +882,11 @@ func appendTLSQueryValues(outbound map[string]any, values url.Values) {
 	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
 		values.Set("alpn", strings.Join(alpn, ","))
 	}
+	if utls, ok := tls["utls"].(map[string]any); ok && boolFromAnyValue(utls["enabled"]) {
+		if fingerprint := strings.TrimSpace(stringFromAnyValue(utls["fingerprint"])); fingerprint != "" {
+			values.Set("fp", fingerprint)
+		}
+	}
 }
 
 func appendCertificatePinQueryValue(outbound map[string]any, values url.Values) {

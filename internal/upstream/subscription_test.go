@@ -117,6 +117,18 @@ func TestNormalizeContentCanonicalizesCommonShortSchemeAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentCanonicalizesSOCKS5HSchemeAlias(t *testing.T) {
+	raw := "socks5h://qa-user:socks-placeholder@socks5h-alias.example.test:1080?udp=1#SOCKS5H%20Alias"
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "socks5://qa-user:socks-placeholder@socks5h-alias.example.test:1080?udp=1#SOCKS5H%20Alias"
+	if got != want {
+		t.Fatalf("unexpected canonical SOCKS5H URI: %q", got)
+	}
+}
+
 func TestNormalizeContentBase64URIList(t *testing.T) {
 	raw := "vless://uuid@example.com:443#HK\nss://example#SG"
 	encoded := base64.StdEncoding.EncodeToString([]byte(raw))

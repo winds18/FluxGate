@@ -122,7 +122,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         49,
-			URI:        "anytls://qa-placeholder@example.chat:443?sni=anytls.example.chat&alpn=h2,http/1.1&idle_session_check_interval=20s&idle_session_timeout=45s&min_idle_session=2&insecure=1#anytls",
+			URI:        "anytls://qa-placeholder@example.chat:443?sni=anytls.example.chat&alpn=h2,http/1.1&idle_session_check_interval=20s&idle_session_timeout=45s&min_idle_session=2&insecure=1&fp=chrome#anytls",
 			Protocol:   "anytls",
 			ServerPort: 443,
 			Status:     "active",
@@ -364,6 +364,10 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	anytlsALPN, ok := anytlsTLS["alpn"].([]string)
 	if !ok || len(anytlsALPN) != 2 || anytlsALPN[0] != "h2" || anytlsALPN[1] != "http/1.1" {
 		t.Fatalf("unexpected anytls alpn config: %+v", anytlsTLS["alpn"])
+	}
+	anytlsUTLS, ok := anytlsTLS["utls"].(map[string]any)
+	if !ok || anytlsUTLS["enabled"] != true || anytlsUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected anytls utls config: %+v", anytlsTLS["utls"])
 	}
 	shadowtls := findOutbound(config.Outbounds, "up_50")
 	if shadowtls == nil {

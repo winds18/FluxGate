@@ -1949,7 +1949,11 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
       "min_idle_session": 2,
       "tls": {
         "enabled": true,
-        "server_name": "anytls.singbox.example.test"
+        "server_name": "anytls.singbox.example.test",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
       }
     },
     {
@@ -2103,7 +2107,7 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		t.Fatalf("unexpected sing-box tuic URI: %q", lines[5])
 	}
 	assertHasPrefix(t, lines[6], "anytls://anytls-placeholder@anytls.singbox.example.test:443?")
-	if !strings.Contains(lines[6], "idle_session_check_interval=20s") || !strings.Contains(lines[6], "min_idle_session=2") {
+	if !strings.Contains(lines[6], "idle_session_check_interval=20s") || !strings.Contains(lines[6], "min_idle_session=2") || !strings.Contains(lines[6], "fp=chrome") {
 		t.Fatalf("unexpected sing-box anytls URI: %q", lines[6])
 	}
 	assertHasPrefix(t, lines[7], "shadowtls://shadow-placeholder@shadow.singbox.example.test:443?")

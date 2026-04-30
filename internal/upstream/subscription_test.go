@@ -3494,6 +3494,57 @@ func TestNormalizeContentV2RayJSONTransportHostAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONWebSocketEarlyDataAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray WS Early",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "ws-early.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000093",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/early",
+          "max-early-data": 2048,
+          "early_data_header_name": "Sec-WebSocket-Protocol"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000093@ws-early.v2ray.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"type=ws",
+		"path=%2Fearly",
+		"max_early_data=2048",
+		"early_data_header_name=Sec-WebSocket-Protocol",
+		"#%E9%A6%99%E6%B8%AF%20V2Ray%20WS%20Early",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected v2ray websocket early data alias URI to contain %q: %q", want, got)
+		}
+	}
+}
+
 func TestNormalizeContentV2RayJSONGRPCHyphenAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

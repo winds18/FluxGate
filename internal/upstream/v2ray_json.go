@@ -376,10 +376,15 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		if hosts := v2rayHeaderHosts(ws); len(hosts) > 0 {
 			proxy["ws-headers.host"] = strings.Join(hosts, ",")
 		}
-		if maxEarlyData := intFromAnyValue(ws["maxEarlyData"]); maxEarlyData > 0 {
+		maxEarlyData := firstPositiveIntFromAnyValue(ws["maxEarlyData"], ws["max_early_data"], ws["max-early-data"])
+		if maxEarlyData > 0 {
 			proxy["max-early-data"] = strconv.Itoa(maxEarlyData)
 		}
-		if earlyHeader := firstNonEmptyString(v2rayString(ws, "earlyDataHeaderName"), v2rayString(ws, "early_data_header_name")); earlyHeader != "" {
+		if earlyHeader := firstNonEmptyString(
+			v2rayString(ws, "earlyDataHeaderName"),
+			v2rayString(ws, "early_data_header_name"),
+			v2rayString(ws, "early-data-header-name"),
+		); earlyHeader != "" {
 			proxy["early-data-header-name"] = earlyHeader
 		}
 	}
@@ -607,6 +612,15 @@ func v2rayPort(values map[string]any, keys ...string) string {
 		}
 	}
 	return ""
+}
+
+func firstPositiveIntFromAnyValue(values ...any) int {
+	for _, value := range values {
+		if converted := intFromAnyValue(value); converted > 0 {
+			return converted
+		}
+	}
+	return 0
 }
 
 func firstNonNilMap(values ...map[string]any) map[string]any {

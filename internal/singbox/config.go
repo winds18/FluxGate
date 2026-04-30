@@ -721,6 +721,12 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 	if fingerprint := firstNonEmpty(query.Get("pinSHA256"), query.Get("pin-sha256"), query.Get("fingerprint")); fingerprint != "" {
 		tls["certificate_public_key_sha256"] = []string{fingerprint}
 	}
+	if fingerprint := firstNonEmpty(query.Get("fp"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")); fingerprint != "" {
+		tls["utls"] = map[string]any{
+			"enabled":     true,
+			"fingerprint": fingerprint,
+		}
+	}
 	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
 		tls["alpn"] = alpn
 	}

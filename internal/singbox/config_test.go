@@ -108,7 +108,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         47,
-			URI:        "hysteria2://qa-placeholder@example.dev:443?obfs=salamander&obfs-password=obfs-placeholder&up_mbps=40&down_mbps=160&sni=hy2.example.dev&skip-cert-verify=1&disable-sni=1&pinSHA256=hy2-pin-placeholder#hy2",
+			URI:        "hysteria2://qa-placeholder@example.dev:443?obfs=salamander&obfs-password=obfs-placeholder&up_mbps=40&down_mbps=160&sni=hy2.example.dev&skip-cert-verify=1&disable-sni=1&pinSHA256=hy2-pin-placeholder&fp=chrome#hy2",
 			Protocol:   "hysteria2",
 			ServerPort: 443,
 			Status:     "active",
@@ -310,6 +310,10 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	certificatePins, ok := hysteria2TLS["certificate_public_key_sha256"].([]string)
 	if !ok || len(certificatePins) != 1 || certificatePins[0] != "hy2-pin-placeholder" {
 		t.Fatalf("unexpected hysteria2 certificate pin config: %+v", hysteria2TLS["certificate_public_key_sha256"])
+	}
+	hysteria2UTLS, ok := hysteria2TLS["utls"].(map[string]any)
+	if !ok || hysteria2UTLS["enabled"] != true || hysteria2UTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected hysteria2 utls config: %+v", hysteria2TLS["utls"])
 	}
 	obfs, ok := hysteria2["obfs"].(map[string]any)
 	if !ok || obfs["type"] != "salamander" || obfs["password"] != "obfs-placeholder" {

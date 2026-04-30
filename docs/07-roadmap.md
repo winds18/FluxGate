@@ -99,7 +99,7 @@
 - JSON 包装订阅可解析 `list`、`records`、`rows`、`entries`、`nodeList`、`proxyList`、`serverList`、`subscriptionList`、`urlList`、`linkList` 及其 snake_case 变体等常见集合字段，容器名不会污染缺少 fragment 的节点 URI 展示名。
 - JSON 包装订阅可解析 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case 变体，分享链接缺少 fragment 时会优先使用对象内名称。
 - JSON 包装订阅可解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象。
-- JSON 结构化节点可识别 `protocol`、`host`、`address`、`server_port`、`method`、`pass` 和 `remarks` 等常见别名字段。
+- JSON 结构化节点可识别 `protocol`/`proto`、`host`/`address`/`add`、`server_port`/`server-port`、`method`/`encrypt-method`、`pass`/`passwd`、`id`/`user-id` 和 `remarks` 等常见别名字段。
 - subscription 来源可解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点。
 - Quantumult X 和 Surge 结构化 VLESS/Trojan 节点可保留 gRPC transport 和 service name。
 - Quantumult X HTTP/SOCKS 节点可兼容键值和位置参数两种认证写法。

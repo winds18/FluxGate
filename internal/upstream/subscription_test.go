@@ -314,6 +314,53 @@ func TestNormalizeContentJSONStructuredProxyAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredProxyHyphenAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "remarks": "JSON hyphen SS",
+      "protocol": "shadowsocks",
+      "host": "json-hyphen-ss.example.test",
+      "server-port": 8388,
+      "encrypt-method": "aes-128-gcm",
+      "passwd": "qa-placeholder"
+    },
+    {
+      "name": "JSON short VLESS",
+      "proto": "vless",
+      "add": "json-short-vless.example.test",
+      "server-port": "443",
+      "user-id": "00000000-0000-0000-0000-000000000093",
+      "tls": true,
+      "servername": "json-short-vless.example.test"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON hyphen alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "ss://aes-128-gcm:qa-placeholder@json-hyphen-ss.example.test:8388#JSON%20hyphen%20SS" {
+		t.Fatalf("unexpected structured JSON hyphen alias SS URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "vless://00000000-0000-0000-0000-000000000093@json-short-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-short-vless.example.test",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON hyphen alias VLESS URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#JSON%20short%20VLESS") {
+		t.Fatalf("unexpected structured JSON hyphen alias VLESS fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentQuantumultXServerLocal(t *testing.T) {
 	raw := `[server_local]
 shadowsocks=qx-ss.example.test:8388, method=aes-128-gcm, password=qa-placeholder, obfs=wss, obfs-uri=/ss, obfs-host=ws.qx-ss.example.test, tag=香港 QuantumultX SS

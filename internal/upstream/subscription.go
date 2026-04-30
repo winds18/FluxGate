@@ -359,11 +359,11 @@ func applyClashJSONProxyAliases(proxy map[string]string) {
 		aliases   []string
 	}{
 		{canonical: "type", aliases: []string{"protocol", "proto"}},
-		{canonical: "server", aliases: []string{"host", "address", "addr"}},
-		{canonical: "port", aliases: []string{"server_port", "serverport"}},
-		{canonical: "uuid", aliases: []string{"id", "user_id", "userid"}},
-		{canonical: "cipher", aliases: []string{"method", "encryption"}},
-		{canonical: "password", aliases: []string{"pass"}},
+		{canonical: "server", aliases: []string{"host", "address", "addr", "add"}},
+		{canonical: "port", aliases: []string{"server_port", "serverport", "server-port"}},
+		{canonical: "uuid", aliases: []string{"id", "user_id", "userid", "user-id"}},
+		{canonical: "cipher", aliases: []string{"method", "encryption", "encrypt-method", "encrypt_method"}},
+		{canonical: "password", aliases: []string{"pass", "passwd", "psk", "token"}},
 	} {
 		if firstMapValue(proxy, item.canonical) != "" {
 			continue

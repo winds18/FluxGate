@@ -900,6 +900,12 @@ func buildShadowTLSOutbound(node store.Node) (map[string]any, bool) {
 	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
 		tls["alpn"] = alpn
 	}
+	if fingerprint := firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")); fingerprint != "" {
+		tls["utls"] = map[string]any{
+			"enabled":     true,
+			"fingerprint": fingerprint,
+		}
+	}
 	outbound["tls"] = tls
 
 	return outbound, true

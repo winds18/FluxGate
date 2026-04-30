@@ -1966,7 +1966,11 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
       "tls": {
         "enabled": true,
         "server_name": "shadow.singbox.example.test",
-        "insecure": true
+        "insecure": true,
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
       }
     },
     {
@@ -2111,7 +2115,7 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		t.Fatalf("unexpected sing-box anytls URI: %q", lines[6])
 	}
 	assertHasPrefix(t, lines[7], "shadowtls://shadow-placeholder@shadow.singbox.example.test:443?")
-	if !strings.Contains(lines[7], "version=3") || !strings.Contains(lines[7], "sni=shadow.singbox.example.test") {
+	if !strings.Contains(lines[7], "version=3") || !strings.Contains(lines[7], "sni=shadow.singbox.example.test") || !strings.Contains(lines[7], "fp=chrome") {
 		t.Fatalf("unexpected sing-box shadowtls URI: %q", lines[7])
 	}
 	assertHasPrefix(t, lines[8], "hysteria://hysteria-auth@hysteria.singbox.example.test:443?")

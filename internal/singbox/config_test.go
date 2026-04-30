@@ -129,7 +129,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         50,
-			URI:        "shadowtls://qa-placeholder@example.help:443?version=3&sni=shadow.example.help&alpn=h2&insecure=1#shadowtls",
+			URI:        "shadowtls://qa-placeholder@example.help:443?version=3&sni=shadow.example.help&alpn=h2&insecure=1&fp=chrome#shadowtls",
 			Protocol:   "shadowtls",
 			ServerPort: 443,
 			Status:     "active",
@@ -386,6 +386,10 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	shadowtlsALPN, ok := shadowtlsTLS["alpn"].([]string)
 	if !ok || len(shadowtlsALPN) != 1 || shadowtlsALPN[0] != "h2" {
 		t.Fatalf("unexpected shadowtls alpn config: %+v", shadowtlsTLS["alpn"])
+	}
+	shadowtlsUTLS, ok := shadowtlsTLS["utls"].(map[string]any)
+	if !ok || shadowtlsUTLS["enabled"] != true || shadowtlsUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected shadowtls utls config: %+v", shadowtlsTLS["utls"])
 	}
 	naive := findOutbound(config.Outbounds, "up_51")
 	if naive == nil {

@@ -425,6 +425,9 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 			proxy["grpc-multi-mode"] = "1"
 		}
 	}
+	if quic := firstNonNilMap(v2rayMap(stream["quicSettings"]), v2rayMap(stream["quic_settings"]), v2rayMap(stream["quic-settings"])); quic != nil && proxy["network"] == "" {
+		proxy["network"] = "quic"
+	}
 	if http := firstNonNilMap(
 		v2rayMap(stream["httpSettings"]),
 		v2rayMap(stream["http_settings"]),

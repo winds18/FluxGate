@@ -3644,6 +3644,54 @@ func TestNormalizeContentV2RayJSONHTTPPathArray(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONQUICSettings(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray QUIC Settings",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "quic-settings.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000093"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "quic-settings.v2ray.example.test"
+        },
+        "quicSettings": {
+          "security": "none"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000093@quic-settings.v2ray.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=quic-settings.v2ray.example.test",
+		"type=quic",
+		"#%E9%A6%99%E6%B8%AF%20V2Ray%20QUIC%20Settings",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected V2Ray quicSettings URI to contain %q: %q", want, got)
+		}
+	}
+}
+
 func TestNormalizeContentV2RayJSONGRPCHyphenAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

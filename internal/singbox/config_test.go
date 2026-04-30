@@ -1152,6 +1152,40 @@ func TestBuildConfigSupportsVMessQueryCredentials(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         89,
+			URI:        "tuic://query-tuic.example:443?id=00000000-0000-0000-0000-000000000089&pass=tuic-query-placeholder&congestion_control=bbr&udp_over_stream=1&sni=query-tuic.example&fp=chrome#tuic-query",
+			Protocol:   "tuic",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_89")
+	if outbound == nil {
+		t.Fatalf("expected tuic outbound up_89, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "tuic" || outbound["server"] != "query-tuic.example" || outbound["server_port"] != 443 {
+		t.Fatalf("unexpected tuic query credential server fields: %+v", outbound)
+	}
+	if outbound["uuid"] != "00000000-0000-0000-0000-000000000089" || outbound["password"] != "tuic-query-placeholder" {
+		t.Fatalf("unexpected tuic query credential auth fields: %+v", outbound)
+	}
+	if outbound["congestion_control"] != "bbr" || outbound["udp_over_stream"] != true {
+		t.Fatalf("unexpected tuic query credential relay fields: %+v", outbound)
+	}
+	tls, ok := outbound["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "query-tuic.example" {
+		t.Fatalf("unexpected tuic query credential tls: %+v", outbound["tls"])
+	}
+	utls, ok := tls["utls"].(map[string]any)
+	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected tuic query credential utls: %+v", tls["utls"])
+	}
+}
+
 func TestBuildConfigSupportsHysteria2QueryPassword(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

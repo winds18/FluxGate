@@ -755,7 +755,11 @@ func buildTUICOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	query := parsed.Query()
-	uuid, password := tuicCredentials(parsed.User, query.Get("uuid"), query.Get("password"))
+	uuid, password := tuicCredentials(
+		parsed.User,
+		firstNonEmpty(query.Get("uuid"), query.Get("id"), query.Get("user_id"), query.Get("user-id")),
+		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")),
+	)
 	if uuid == "" || password == "" {
 		return nil, false
 	}

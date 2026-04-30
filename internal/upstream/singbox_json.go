@@ -234,8 +234,16 @@ func singBoxVMessURI(outbound map[string]any) string {
 	if packetEncoding := firstNonEmptyString(singBoxString(outbound, "packet_encoding"), singBoxString(outbound, "packet-encoding"), singBoxString(outbound, "packetEncoding")); packetEncoding != "" {
 		doc["packet_encoding"] = packetEncoding
 	}
-	if tlsMap(outbound) != nil {
+	if tls := tlsMap(outbound); tls != nil {
 		doc["tls"] = "tls"
+		if boolFromAnyValue(tls["disable_sni"]) {
+			doc["disable_sni"] = "1"
+		}
+		if utls, ok := tls["utls"].(map[string]any); ok && boolFromAnyValue(utls["enabled"]) {
+			if fingerprint := strings.TrimSpace(stringFromAnyValue(utls["fingerprint"])); fingerprint != "" {
+				doc["fp"] = fingerprint
+			}
+		}
 	}
 	if transport, ok := outbound["transport"].(map[string]any); ok {
 		if transportType := strings.TrimSpace(stringFromAnyValue(transport["type"])); transportType != "" {

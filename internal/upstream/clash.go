@@ -281,6 +281,12 @@ func clashVMessURI(proxy map[string]string) string {
 	if packetEncoding := firstMapValue(proxy, "packet-encoding", "packet_encoding", "packetEncoding", "packetencoding"); packetEncoding != "" {
 		doc["packet_encoding"] = packetEncoding
 	}
+	if boolMapValue(proxy, "disable-sni", "disable_sni") {
+		doc["disable_sni"] = "1"
+	}
+	if fingerprint := firstMapValue(proxy, "fp", "fingerprint", "client-fingerprint", "client_fingerprint", "clientFingerprint", "clientfingerprint"); fingerprint != "" {
+		doc["fp"] = fingerprint
+	}
 	if tlsEnabled(proxy) {
 		doc["tls"] = "tls"
 	}

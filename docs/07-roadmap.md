@@ -48,7 +48,7 @@
 - Direct URI 和 sing-box JSON `direct` outbound 可进入默认上游 selector 和 outbound stats 列表。
 - Block URI、Clash `reject`/`reject-drop` 和 sing-box JSON `block` outbound 可进入 sing-box 配置，但不会进入普通上游 selector 或 outbound stats 列表。
 - DNS URI 和 sing-box JSON `dns` outbound 可进入 sing-box 配置，但不会进入普通上游 selector 或 outbound stats 列表。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan/VMess TLS 参数并同步进入 sing-box outbound。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan/VMess 的跳过证书校验、禁用 SNI、ALPN 和 uTLS fingerprint TLS 参数并同步进入 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS WebSocket 传输参数并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan WebSocket early data 参数并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS gRPC 传输参数并同步为 sing-box outbound transport。
@@ -100,7 +100,7 @@
 - Quantumult X 和 Surge 结构化 VLESS/Trojan 节点可保留 gRPC transport 和 service name。
 - Quantumult X HTTP/SOCKS 节点可兼容键值和位置参数两种认证写法。
 - subscription 来源可解析以节点名称为 key 的 JSON URI 对象映射。
-- subscription 来源可解析裸 VMess JSON 单对象、数组、包装字符串和按名称映射对象，并转换为标准 `vmess://` URI；裸 VMess JSON 会保留 `packetEncoding`/`packet_encoding`/`packet-encoding` 参数。
+- subscription 来源可解析裸 VMess JSON 单对象、数组、包装字符串和按名称映射对象，并转换为标准 `vmess://` URI；裸 VMess JSON 会保留 `packetEncoding`/`packet_encoding`/`packet-encoding`、`disable_sni` 和 `fp`/`fingerprint`/`clientFingerprint` 参数。
 - subscription 来源可解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI。
 - subscription 来源可解析 Surge `[Proxy]` 代理段中的 SS、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并转换为标准 URI。
 - subscription 来源支持按刷新间隔自动同步到期订阅。

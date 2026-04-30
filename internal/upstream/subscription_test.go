@@ -1319,6 +1319,8 @@ proxies:
     uuid: 00000000-0000-0000-0000-000000000096
     cipher: auto
     packetEncoding: packetaddr
+    disable-sni: true
+    client-fingerprint: chrome
 `
 	got, err := NormalizeContent(raw)
 	if err != nil {
@@ -1331,6 +1333,8 @@ proxies:
 	}
 	decodedText := string(decoded)
 	if !strings.Contains(decodedText, `"packet_encoding":"packetaddr"`) ||
+		!strings.Contains(decodedText, `"disable_sni":"1"`) ||
+		!strings.Contains(decodedText, `"fp":"chrome"`) ||
 		!strings.Contains(decodedText, `"add":"packet.vmess.example.test"`) {
 		t.Fatalf("unexpected clash vmess packet encoding document: %q", decodedText)
 	}
@@ -2886,7 +2890,16 @@ func TestNormalizeContentSingBoxJSONVLESSAndVMessPacketEncoding(t *testing.T) {
       "server_port": 443,
       "uuid": "00000000-0000-0000-0000-000000000098",
       "security": "auto",
-      "packetEncoding": "packetaddr"
+      "packetEncoding": "packetaddr",
+      "tls": {
+        "enabled": true,
+        "server_name": "packet.vmess.singbox.example.test",
+        "disable_sni": true,
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      }
     }
   ]
 }`
@@ -2909,6 +2922,9 @@ func TestNormalizeContentSingBoxJSONVLESSAndVMessPacketEncoding(t *testing.T) {
 	}
 	decodedText := string(decoded)
 	if !strings.Contains(decodedText, `"packet_encoding":"packetaddr"`) ||
+		!strings.Contains(decodedText, `"tls":"tls"`) ||
+		!strings.Contains(decodedText, `"disable_sni":"1"`) ||
+		!strings.Contains(decodedText, `"fp":"chrome"`) ||
 		!strings.Contains(decodedText, `"add":"packet.vmess.singbox.example.test"`) {
 		t.Fatalf("unexpected sing-box vmess packet encoding document: %q", decodedText)
 	}
@@ -2982,6 +2998,8 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
         "tlsSettings": {
           "serverName": "vmess.v2ray.example.test",
           "allowInsecure": true,
+          "disable_sni": true,
+          "clientFingerprint": "chrome",
           "alpn": ["h2", "http/1.1"]
         },
         "wsSettings": {
@@ -3085,6 +3103,8 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
 		!strings.Contains(decodedText, `"host":"ws.v2ray.example.test,ws-backup.v2ray.example.test"`) ||
 		!strings.Contains(decodedText, `"tls":"tls"`) ||
 		!strings.Contains(decodedText, `"allowInsecure":"1"`) ||
+		!strings.Contains(decodedText, `"disable_sni":"1"`) ||
+		!strings.Contains(decodedText, `"fp":"chrome"`) ||
 		!strings.Contains(decodedText, `"sni":"vmess.v2ray.example.test"`) ||
 		!strings.Contains(decodedText, `"alpn":"h2,http/1.1"`) {
 		t.Fatalf("unexpected v2ray vmess document: %q", decodedText)
@@ -4262,6 +4282,8 @@ func TestNormalizeContentVMessJSON(t *testing.T) {
   "sni": "vmess.raw.example.test",
   "alpn": ["h2", "http/1.1"],
   "packetEncoding": "packetaddr",
+  "disable_sni": "1",
+  "fp": "chrome",
   "allowInsecure": "1"
 }`
 	got, err := NormalizeContent(raw)
@@ -4283,6 +4305,8 @@ func TestNormalizeContentVMessJSON(t *testing.T) {
 		`"sni":"vmess.raw.example.test"`,
 		`"alpn":"h2,http/1.1"`,
 		`"packet_encoding":"packetaddr"`,
+		`"disable_sni":"1"`,
+		`"fp":"chrome"`,
 		`"allowInsecure":"1"`,
 	} {
 		if !strings.Contains(decoded, want) {

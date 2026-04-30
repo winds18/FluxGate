@@ -74,6 +74,18 @@ func vmessJSONURI(item map[string]any, fallbackName string) string {
 	if packetEncoding := firstNonEmptyString(vmessJSONString(item, "packetEncoding"), vmessJSONString(item, "packet_encoding"), vmessJSONString(item, "packet-encoding")); packetEncoding != "" {
 		proxy["packet-encoding"] = packetEncoding
 	}
+	if boolFromAnyValue(item["disable_sni"]) || boolFromAnyValue(item["disable-sni"]) || boolFromAnyValue(item["disableSNI"]) || boolFromAnyValue(item["disableSni"]) {
+		proxy["disable_sni"] = "true"
+	}
+	if fingerprint := firstNonEmptyString(
+		vmessJSONString(item, "fp"),
+		vmessJSONString(item, "fingerprint"),
+		vmessJSONString(item, "clientFingerprint"),
+		vmessJSONString(item, "client_fingerprint"),
+		vmessJSONString(item, "client-fingerprint"),
+	); fingerprint != "" {
+		proxy["fp"] = fingerprint
+	}
 	if vmessJSONTLSEnabled(item["tls"]) || strings.EqualFold(vmessJSONString(item, "security"), "tls") {
 		proxy["tls"] = "true"
 	}

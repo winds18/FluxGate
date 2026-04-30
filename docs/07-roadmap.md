@@ -113,6 +113,7 @@
 - Clash YAML 解析支持行内和块状数组标量，可保留 ALPN、WireGuard 地址、允许 IP 和 reserved 字节列表。
 - subscription 来源可解析 SIP008 Shadowsocks 订阅，`servers` 支持数组和按名称分组的对象映射。
 - SIP008、Clash YAML 和 sing-box JSON 的 Shadowsocks 节点会保留 SIP003 插件参数并同步进入 sing-box outbound。
+- `shadowsocks://` URI 会归一化为标准 `ss://` URI，避免长 scheme 导入后无法进入 Shadowsocks outbound 转换链路。
 - subscription 来源可解析 sing-box JSON `outbounds` 中的 Naive/Naive+QUIC 节点，并保留 QUIC、UDP over TCP、并发、TLS 和 uTLS fingerprint 参数。
 - subscription 来源可解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
 - sing-box JSON `outbounds` 和 `endpoints` 支持数组、单个对象、按名称分组的对象映射和分组数组映射。

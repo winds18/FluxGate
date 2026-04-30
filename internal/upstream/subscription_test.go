@@ -61,6 +61,18 @@ func TestNormalizeContentCanonicalizesSpecialOutboundURIList(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentCanonicalizesShadowsocksSchemeAlias(t *testing.T) {
+	raw := "shadowsocks://aes-128-gcm:qa-placeholder@ss-alias.example.test:8388#SS%20Alias"
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "ss://aes-128-gcm:qa-placeholder@ss-alias.example.test:8388#SS%20Alias"
+	if got != want {
+		t.Fatalf("unexpected canonical Shadowsocks URI: %q", got)
+	}
+}
+
 func TestNormalizeContentBase64URIList(t *testing.T) {
 	raw := "vless://uuid@example.com:443#HK\nss://example#SG"
 	encoded := base64.StdEncoding.EncodeToString([]byte(raw))

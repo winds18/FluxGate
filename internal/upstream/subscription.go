@@ -33,6 +33,7 @@ var supportedURIPrefixes = []string{
 	"naive+quic://",
 	"reject://",
 	"shadowtls://",
+	"shadowsocks://",
 	"socks://",
 	"socks4://",
 	"socks4a://",
@@ -201,6 +202,8 @@ func canonicalSpecialURI(rawURI string) string {
 		return rewriteURIScheme(rawURI, "direct")
 	case strings.HasPrefix(lower, "blackhole://"), strings.HasPrefix(lower, "reject://"):
 		return rewriteURIScheme(rawURI, "block")
+	case strings.HasPrefix(lower, "shadowsocks://"):
+		return rewriteURIScheme(rawURI, "ss")
 	default:
 		return rawURI
 	}

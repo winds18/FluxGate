@@ -290,8 +290,15 @@ func appendV2RayTLSValues(tls map[string]any, proxy map[string]string) {
 	if tls == nil {
 		return
 	}
-	if serverName := firstNonEmptyString(v2rayString(tls, "serverName"), v2rayString(tls, "server_name")); serverName != "" {
-		proxy["sni"] = serverName
+	if serverNames := firstNonEmptyStringList(
+		stringListFromAnyValue(tls["serverName"]),
+		stringListFromAnyValue(tls["server_name"]),
+		stringListFromAnyValue(tls["server-name"]),
+		stringListFromAnyValue(tls["serverNames"]),
+		stringListFromAnyValue(tls["server_names"]),
+		stringListFromAnyValue(tls["server-names"]),
+	); len(serverNames) > 0 {
+		proxy["sni"] = serverNames[0]
 	}
 	if boolFromAnyValue(tls["allowInsecure"]) ||
 		boolFromAnyValue(tls["allow_insecure"]) ||

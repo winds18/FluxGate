@@ -3544,6 +3544,77 @@ func TestNormalizeContentV2RayJSONRealityArrayAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONTLSNameAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray TLS Names",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "tls-names.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000090",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "tls",
+        "tlsSettings": {
+          "serverNames": ["tls-a.v2ray.example.test", "tls-b.v2ray.example.test"]
+        }
+      }
+    },
+    {
+      "tag": "东京 V2Ray TLS Hyphen",
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "address": "tls-hyphen.v2ray.example.test",
+            "port": 443,
+            "password": "trojan-placeholder"
+          }
+        ]
+      },
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "server-name": "tls-hyphen-sni.v2ray.example.test"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000090@tls-names.v2ray.example.test:443?")
+	if !strings.Contains(lines[0], "security=tls") ||
+		!strings.Contains(lines[0], "sni=tls-a.v2ray.example.test") ||
+		!strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%20V2Ray%20TLS%20Names") {
+		t.Fatalf("unexpected v2ray tls serverNames URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@tls-hyphen.v2ray.example.test:443?")
+	if !strings.Contains(lines[1], "security=tls") ||
+		!strings.Contains(lines[1], "sni=tls-hyphen-sni.v2ray.example.test") ||
+		!strings.HasSuffix(lines[1], "#%E4%B8%9C%E4%BA%AC%20V2Ray%20TLS%20Hyphen") {
+		t.Fatalf("unexpected v2ray tls server-name URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONShadowsocksNetwork(t *testing.T) {
 	raw := `{
   "outbounds": [

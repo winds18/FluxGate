@@ -2799,7 +2799,10 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
           "serverName": "trojan.v2ray.example.test"
         },
         "grpcSettings": {
-          "serviceName": "fluxgate-v2ray"
+          "serviceName": "fluxgate-v2ray",
+          "idle_timeout": "30s",
+          "health_check_timeout": "10s",
+          "permit_without_stream": true
         }
       }
     },
@@ -2854,7 +2857,10 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
 	assertHasPrefix(t, lines[2], "trojan://trojan-placeholder@trojan.v2ray.example.test:443?")
 	if !strings.Contains(lines[2], "security=tls") ||
 		!strings.Contains(lines[2], "type=grpc") ||
-		!strings.Contains(lines[2], "service_name=fluxgate-v2ray") {
+		!strings.Contains(lines[2], "service_name=fluxgate-v2ray") ||
+		!strings.Contains(lines[2], "idle_timeout=30s") ||
+		!strings.Contains(lines[2], "ping_timeout=10s") ||
+		!strings.Contains(lines[2], "permit_without_stream=1") {
 		t.Fatalf("unexpected v2ray trojan URI: %q", lines[2])
 	}
 	if lines[3] != "ss://aes-128-gcm:qa-placeholder@ss.v2ray.example.test:8388#%E9%A6%96%E5%B0%94%20V2Ray%20SS" {

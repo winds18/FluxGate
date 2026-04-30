@@ -240,6 +240,20 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		if serviceName := firstNonEmptyString(v2rayString(grpc, "serviceName"), v2rayString(grpc, "service_name")); serviceName != "" {
 			proxy["grpc-service-name"] = serviceName
 		}
+		if idleTimeout := firstNonEmptyString(v2rayString(grpc, "idleTimeout"), v2rayString(grpc, "idle_timeout")); idleTimeout != "" {
+			proxy["grpc-idle-timeout"] = idleTimeout
+		}
+		if pingTimeout := firstNonEmptyString(
+			v2rayString(grpc, "pingTimeout"),
+			v2rayString(grpc, "ping_timeout"),
+			v2rayString(grpc, "healthCheckTimeout"),
+			v2rayString(grpc, "health_check_timeout"),
+		); pingTimeout != "" {
+			proxy["grpc-ping-timeout"] = pingTimeout
+		}
+		if boolFromAnyValue(grpc["permitWithoutStream"]) || boolFromAnyValue(grpc["permit_without_stream"]) {
+			proxy["permit-without-stream"] = "1"
+		}
 	}
 	if http := firstNonNilMap(v2rayMap(stream["httpSettings"]), v2rayMap(stream["http_settings"]), v2rayMap(stream["h2Settings"])); http != nil {
 		if hosts := stringListFromAnyValue(http["host"]); len(hosts) > 0 {

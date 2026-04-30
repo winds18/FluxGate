@@ -476,6 +476,8 @@ func clashSOCKSURI(proxy map[string]string) string {
 	values := url.Values{}
 	if network := firstMapValue(proxy, "network", "protocol"); network != "" {
 		values.Set("network", network)
+	} else if boolMapValue(proxy, "udp", "udp-relay", "udp_relay") {
+		values.Set("udp", "1")
 	}
 	if boolMapValue(proxy, "udp-over-tcp", "udp_over_tcp", "uot") {
 		values.Set("udp_over_tcp", "1")

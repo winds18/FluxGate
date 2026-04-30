@@ -814,6 +814,30 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLSOCKSUDPFlag(t *testing.T) {
+	raw := `
+proxies:
+  - name: "SOCKS UDP"
+    type: socks5
+    server: socks-udp.example.test
+    port: 1080
+    username: qa-user
+    password: "socks-placeholder"
+    udp: true
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "socks5://qa-user:socks-placeholder@socks-udp.example.test:1080?")
+	if !strings.Contains(got, "udp=1") || strings.Contains(got, "network=udp") {
+		t.Fatalf("unexpected Clash SOCKS UDP URI: %q", got)
+	}
+	if !strings.HasSuffix(got, "#SOCKS%20UDP") {
+		t.Fatalf("unexpected Clash SOCKS UDP fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLInlineProxyLists(t *testing.T) {
 	raw := `
 proxy-providers:

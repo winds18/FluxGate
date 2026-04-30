@@ -1454,12 +1454,19 @@ func parseShadowsocksURI(rawURI string, fallbackPort int) (string, string, strin
 	if err != nil || parsed.Scheme != "ss" {
 		return "", "", "", 0, false
 	}
-	if parsed.User != nil && parsed.Hostname() != "" {
-		method, password, ok := shadowsocksUserInfo(parsed.User)
-		if !ok {
-			return "", "", "", 0, false
+	if parsed.Hostname() != "" {
+		if parsed.User != nil {
+			method, password, ok := shadowsocksUserInfo(parsed.User)
+			if ok {
+				return method, password, parsed.Hostname(), portWithFallback(parsed.Port(), fallbackPort, 8388), true
+			}
 		}
-		return method, password, parsed.Hostname(), portWithFallback(parsed.Port(), fallbackPort, 8388), true
+		query := parsed.Query()
+		method := firstNonEmpty(query.Get("method"), query.Get("cipher"), query.Get("encrypt-method"), query.Get("encrypt_method"), query.Get("encryption"), query.Get("security"))
+		password := firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token"))
+		if method != "" && password != "" {
+			return method, password, parsed.Hostname(), portWithFallback(parsed.Port(), fallbackPort, 8388), true
+		}
 	}
 
 	encoded := strings.TrimPrefix(strings.TrimSpace(rawURI), "ss://")

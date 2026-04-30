@@ -1237,6 +1237,32 @@ func TestBuildConfigSupportsVLESSTrojanQueryCredentials(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsShadowsocksQueryCredentials(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         87,
+			URI:        "ss://query-ss.example:8388?method=aes-128-gcm&password=ss-query-placeholder&plugin=v2ray-plugin&plugin_opts=mode%3Dwebsocket%3Bhost%3Dss.query.example&network=tcp#ss-query",
+			Protocol:   "ss",
+			ServerPort: 8388,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_87")
+	if outbound == nil {
+		t.Fatalf("expected shadowsocks outbound up_87, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "shadowsocks" || outbound["server"] != "query-ss.example" || outbound["server_port"] != 8388 {
+		t.Fatalf("unexpected shadowsocks query credential server fields: %+v", outbound)
+	}
+	if outbound["method"] != "aes-128-gcm" || outbound["password"] != "ss-query-placeholder" {
+		t.Fatalf("unexpected shadowsocks query credential auth fields: %+v", outbound)
+	}
+	if outbound["plugin"] != "v2ray-plugin" || outbound["plugin_opts"] != "mode=websocket;host=ss.query.example" || outbound["network"] != "tcp" {
+		t.Fatalf("unexpected shadowsocks query credential plugin fields: %+v", outbound)
+	}
+}
+
 func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

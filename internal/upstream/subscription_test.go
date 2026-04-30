@@ -2749,7 +2749,7 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
         "wsSettings": {
           "path": "/ws",
           "headers": {
-            "Host": "ws.v2ray.example.test"
+            "Host": ["ws.v2ray.example.test", "ws-backup.v2ray.example.test"]
           }
         }
       }
@@ -2841,7 +2841,7 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
 	decodedText := string(decoded)
 	if !strings.Contains(decodedText, `"net":"ws"`) ||
 		!strings.Contains(decodedText, `"path":"/ws"`) ||
-		!strings.Contains(decodedText, `"host":"ws.v2ray.example.test"`) ||
+		!strings.Contains(decodedText, `"host":"ws.v2ray.example.test,ws-backup.v2ray.example.test"`) ||
 		!strings.Contains(decodedText, `"tls":"tls"`) ||
 		!strings.Contains(decodedText, `"allowInsecure":"1"`) ||
 		!strings.Contains(decodedText, `"sni":"vmess.v2ray.example.test"`) ||

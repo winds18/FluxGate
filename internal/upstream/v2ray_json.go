@@ -222,8 +222,8 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 			proxy["ws-path"] = path
 		}
 		if headers := v2rayMap(ws["headers"]); headers != nil {
-			if host := firstNonEmptyString(v2rayString(headers, "Host"), v2rayString(headers, "host")); host != "" {
-				proxy["ws-headers.host"] = host
+			if hosts := firstNonEmptyStringList(stringListFromAnyValue(headers["Host"]), stringListFromAnyValue(headers["host"])); len(hosts) > 0 {
+				proxy["ws-headers.host"] = strings.Join(hosts, ",")
 			}
 		}
 		if maxEarlyData := intFromAnyValue(ws["maxEarlyData"]); maxEarlyData > 0 {

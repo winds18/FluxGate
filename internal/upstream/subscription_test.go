@@ -129,6 +129,18 @@ func TestNormalizeContentCanonicalizesSOCKS5HSchemeAlias(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentCanonicalizesTrojanGoSchemeAlias(t *testing.T) {
+	raw := "trojan-go://trojan-placeholder@trojan-go-alias.example.test:443?security=tls&type=ws&path=%2Fws&host=ws.trojan-go-alias.example.test#TrojanGo%20Alias"
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "trojan://trojan-placeholder@trojan-go-alias.example.test:443?security=tls&type=ws&path=%2Fws&host=ws.trojan-go-alias.example.test#TrojanGo%20Alias"
+	if got != want {
+		t.Fatalf("unexpected canonical Trojan-Go URI: %q", got)
+	}
+}
+
 func TestNormalizeContentBase64URIList(t *testing.T) {
 	raw := "vless://uuid@example.com:443#HK\nss://example#SG"
 	encoded := base64.StdEncoding.EncodeToString([]byte(raw))

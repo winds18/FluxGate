@@ -136,7 +136,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         51,
-			URI:        "naive://qa-user:qa-placeholder@example.news:443?sni=naive.example.news&quic=1&quic_congestion_control=bbr&udp_over_tcp=1&insecure_concurrency=2#naive",
+			URI:        "naive://qa-user:qa-placeholder@example.news:443?sni=naive.example.news&quic=1&quic_congestion_control=bbr&udp_over_tcp=1&insecure_concurrency=2&alpn=h3&insecure=1&disable_sni=1#naive",
 			Protocol:   "naive",
 			ServerPort: 443,
 			Status:     "active",
@@ -389,8 +389,12 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		t.Fatalf("unexpected naive transport fields: %+v", naive)
 	}
 	naiveTLS, ok := naive["tls"].(map[string]any)
-	if !ok || naiveTLS["enabled"] != true || naiveTLS["server_name"] != "naive.example.news" {
+	if !ok || naiveTLS["enabled"] != true || naiveTLS["server_name"] != "naive.example.news" || naiveTLS["insecure"] != true || naiveTLS["disable_sni"] != true {
 		t.Fatalf("unexpected naive tls config: %+v", naive["tls"])
+	}
+	naiveALPN, ok := naiveTLS["alpn"].([]string)
+	if !ok || len(naiveALPN) != 1 || naiveALPN[0] != "h3" {
+		t.Fatalf("unexpected naive alpn config: %+v", naiveTLS["alpn"])
 	}
 	hysteria := findOutbound(config.Outbounds, "up_52")
 	if hysteria == nil {

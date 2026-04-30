@@ -65,6 +65,7 @@
 - VMess 可兼容 `vmess://uuid@host:port?...` userinfo 直连 URI，并保留 TLS、WebSocket、SNI、ALPN、跳过证书校验和 uTLS fingerprint 参数同步为 sing-box outbound。
 - Clash YAML 和 URI 导入链路会保留 Hysteria 窗口和 MTU 发现参数并同步为 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 上下行带宽、TLS 标志和证书 pin 参数并同步为 sing-box outbound。
+- Naive/Naive+QUIC URI 会保留跳过证书校验、禁用 SNI 和 ALPN TLS 参数并同步为 sing-box outbound。
 - Hysteria2/Hy2 URI 可从查询参数读取 `password`、`auth`、`auth_str` 或 `token` 认证密码。
 - Hysteria v1 URI 可从查询参数读取 `token` 认证字符串。
 - sing-box 服务端配置生成会过滤不可用 Token，避免已撤销、已过期或已超额用户继续进入网关配置。

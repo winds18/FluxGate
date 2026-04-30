@@ -932,6 +932,15 @@ func buildNaiveOutbound(node store.Node) (map[string]any, bool) {
 	if certificatePath := firstNonEmpty(query.Get("certificate_path"), query.Get("certificate-path"), query.Get("cert_path"), query.Get("cert-path")); certificatePath != "" {
 		tls["certificate_path"] = certificatePath
 	}
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+		tls["insecure"] = true
+	}
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+		tls["disable_sni"] = true
+	}
+	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
+		tls["alpn"] = alpn
+	}
 	outbound["tls"] = tls
 
 	return outbound, true

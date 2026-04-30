@@ -148,7 +148,7 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 	sequence := 0
 	var uris []string
 	for _, server := range servers {
-		users := v2rayObjectList(server["users"])
+		users := v2rayProxyServerUsers(server)
 		if len(users) == 0 {
 			users = []map[string]any{{}}
 		}
@@ -159,7 +159,7 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 				"type":     proxyType,
 				"server":   firstNonEmptyString(v2rayString(server, "address"), v2rayString(server, "server")),
 				"port":     v2rayPort(server, "port", "server_port"),
-				"username": firstNonEmptyString(v2rayString(user, "user"), v2rayString(user, "username")),
+				"username": firstNonEmptyString(v2rayString(user, "user"), v2rayString(user, "username"), v2rayString(user, "account")),
 				"password": firstNonEmptyString(v2rayString(user, "pass"), v2rayString(user, "password")),
 			}
 			appendV2RayStreamProxyValues(outbound, proxy)
@@ -175,6 +175,54 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 		}
 	}
 	return uris
+}
+
+func v2rayProxyServerUsers(server map[string]any) []map[string]any {
+	for _, key := range []string{"users", "accounts"} {
+		if users := v2rayObjectList(server[key]); len(users) > 0 {
+			return users
+		}
+		if key == "accounts" {
+			if users := v2rayScalarAccountUsers(server[key]); len(users) > 0 {
+				return users
+			}
+		}
+	}
+	if user := firstNonEmptyString(v2rayString(server, "user"), v2rayString(server, "username"), v2rayString(server, "account")); user != "" {
+		return []map[string]any{{
+			"user": user,
+			"pass": firstNonEmptyString(v2rayString(server, "pass"), v2rayString(server, "password")),
+		}}
+	}
+	if password := firstNonEmptyString(v2rayString(server, "pass"), v2rayString(server, "password")); password != "" {
+		return []map[string]any{{"pass": password}}
+	}
+	return nil
+}
+
+func v2rayScalarAccountUsers(value any) []map[string]any {
+	accounts, ok := value.(map[string]any)
+	if !ok || v2rayLooksLikeObject(accounts) {
+		return nil
+	}
+	keys := make([]string, 0, len(accounts))
+	for key := range accounts {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	users := make([]map[string]any, 0, len(keys))
+	for _, key := range keys {
+		password := strings.TrimSpace(stringFromAnyValue(accounts[key]))
+		if key == "" || password == "" {
+			continue
+		}
+		users = append(users, map[string]any{
+			"name": key,
+			"user": key,
+			"pass": password,
+		})
+	}
+	return users
 }
 
 func v2raySOCKSUDPEnabled(settings, server map[string]any) bool {
@@ -450,7 +498,7 @@ func appendV2RayMappedObjects(result *[]map[string]any, key string, value any) {
 func v2rayLooksLikeObject(value map[string]any) bool {
 	for _, key := range []string{
 		"protocol", "settings", "streamSettings", "stream_settings", "address", "server", "port",
-		"id", "uuid", "password", "method", "cipher", "users", "vnext", "servers",
+		"id", "uuid", "user", "username", "pass", "password", "method", "cipher", "users", "accounts", "vnext", "servers",
 	} {
 		if _, ok := value[key]; ok {
 			return true
@@ -475,7 +523,7 @@ func v2rayVNextUserCount(vnexts []map[string]any) int {
 func v2rayProxyServerUserCount(servers []map[string]any) int {
 	total := 0
 	for _, server := range servers {
-		users := v2rayObjectList(server["users"])
+		users := v2rayProxyServerUsers(server)
 		if len(users) == 0 {
 			total++
 			continue

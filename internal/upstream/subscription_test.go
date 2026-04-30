@@ -3302,6 +3302,59 @@ func TestNormalizeContentV2RayJSONHTTPAndSOCKS(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONProxyAccountAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "东京 V2Ray HTTP Accounts",
+      "protocol": "http",
+      "settings": {
+        "servers": [
+          {
+            "address": "http-accounts.v2ray.example.test",
+            "port": 8080,
+            "accounts": {
+              "qa-http": "http-placeholder"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "首尔 V2Ray SOCKS Direct Account",
+      "protocol": "socks",
+      "settings": {
+        "servers": [
+          {
+            "address": "socks-direct.v2ray.example.test",
+            "port": 1080,
+            "username": "qa-socks",
+            "password": "socks-placeholder",
+            "udpEnabled": true
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "http://qa-http:http-placeholder@http-accounts.v2ray.example.test:8080#qa-http" {
+		t.Fatalf("unexpected v2ray http accounts URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "socks5://qa-socks:socks-placeholder@socks-direct.v2ray.example.test:1080?")
+	if !strings.Contains(lines[1], "udp=1") ||
+		!strings.HasSuffix(lines[1], "#%E9%A6%96%E5%B0%94%20V2Ray%20SOCKS%20Direct%20Account") {
+		t.Fatalf("unexpected v2ray socks direct account URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONRealityArrayAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

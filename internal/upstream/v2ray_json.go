@@ -387,24 +387,26 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		appendV2RayTCPHeaderValues(tcp, proxy)
 	}
 	if grpc := firstNonNilMap(v2rayMap(stream["grpcSettings"]), v2rayMap(stream["grpc_settings"])); grpc != nil {
-		if serviceName := firstNonEmptyString(v2rayString(grpc, "serviceName"), v2rayString(grpc, "service_name")); serviceName != "" {
+		if serviceName := firstNonEmptyString(v2rayString(grpc, "serviceName"), v2rayString(grpc, "service_name"), v2rayString(grpc, "service-name")); serviceName != "" {
 			proxy["grpc-service-name"] = serviceName
 		}
-		if idleTimeout := firstNonEmptyString(v2rayString(grpc, "idleTimeout"), v2rayString(grpc, "idle_timeout")); idleTimeout != "" {
+		if idleTimeout := firstNonEmptyString(v2rayString(grpc, "idleTimeout"), v2rayString(grpc, "idle_timeout"), v2rayString(grpc, "idle-timeout")); idleTimeout != "" {
 			proxy["grpc-idle-timeout"] = idleTimeout
 		}
 		if pingTimeout := firstNonEmptyString(
 			v2rayString(grpc, "pingTimeout"),
 			v2rayString(grpc, "ping_timeout"),
+			v2rayString(grpc, "ping-timeout"),
 			v2rayString(grpc, "healthCheckTimeout"),
 			v2rayString(grpc, "health_check_timeout"),
+			v2rayString(grpc, "health-check-timeout"),
 		); pingTimeout != "" {
 			proxy["grpc-ping-timeout"] = pingTimeout
 		}
-		if boolFromAnyValue(grpc["permitWithoutStream"]) || boolFromAnyValue(grpc["permit_without_stream"]) {
+		if boolFromAnyValue(grpc["permitWithoutStream"]) || boolFromAnyValue(grpc["permit_without_stream"]) || boolFromAnyValue(grpc["permit-without-stream"]) {
 			proxy["permit-without-stream"] = "1"
 		}
-		if boolFromAnyValue(grpc["multiMode"]) || boolFromAnyValue(grpc["multi_mode"]) {
+		if boolFromAnyValue(grpc["multiMode"]) || boolFromAnyValue(grpc["multi_mode"]) || boolFromAnyValue(grpc["multi-mode"]) {
 			proxy["grpc-multi-mode"] = "1"
 		}
 	}

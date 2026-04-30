@@ -3494,6 +3494,61 @@ func TestNormalizeContentV2RayJSONTransportHostAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONGRPCHyphenAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray gRPC Hyphen",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "grpc-hyphen.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000092",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "grpc",
+        "security": "tls",
+        "grpcSettings": {
+          "service-name": "fluxgate-hyphen",
+          "idle-timeout": "30s",
+          "health-check-timeout": "10s",
+          "permit-without-stream": true,
+          "multi-mode": true
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000092@grpc-hyphen.v2ray.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"type=grpc",
+		"service_name=fluxgate-hyphen",
+		"idle_timeout=30s",
+		"ping_timeout=10s",
+		"permit_without_stream=1",
+		"multi_mode=1",
+		"#%E9%A6%99%E6%B8%AF%20V2Ray%20gRPC%20Hyphen",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected v2ray gRPC hyphen alias URI to contain %q: %q", want, got)
+		}
+	}
+}
+
 func TestNormalizeContentV2RayJSONRealityArrayAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

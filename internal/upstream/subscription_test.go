@@ -1979,7 +1979,11 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
         "enabled": true,
         "server_name": "hysteria.singbox.example.test",
         "insecure": true,
-        "alpn": ["h3"]
+        "alpn": ["h3"],
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
       }
     },
     {
@@ -2107,7 +2111,7 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		t.Fatalf("unexpected sing-box shadowtls URI: %q", lines[7])
 	}
 	assertHasPrefix(t, lines[8], "hysteria://hysteria-auth@hysteria.singbox.example.test:443?")
-	if !strings.Contains(lines[8], "up_mbps=20") || !strings.Contains(lines[8], "down_mbps=80") || !strings.Contains(lines[8], "network=udp") {
+	if !strings.Contains(lines[8], "up_mbps=20") || !strings.Contains(lines[8], "down_mbps=80") || !strings.Contains(lines[8], "network=udp") || !strings.Contains(lines[8], "fp=chrome") {
 		t.Fatalf("unexpected sing-box hysteria URI: %q", lines[8])
 	}
 	assertHasPrefix(t, lines[9], "https://qa-user:http-placeholder@http.singbox.example.test:8443/connect?")

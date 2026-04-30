@@ -143,7 +143,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         52,
-			URI:        "hysteria://qa-placeholder@example.zone:443?auth_str=qa-auth&up_mbps=20&down_mbps=80&obfs=obfs-placeholder&recv_window_conn=1048576&recv_window=2097152&disable_mtu_discovery=1&protocol=udp&sni=hysteria.example.zone&alpn=h3&insecure=1#hysteria",
+			URI:        "hysteria://qa-placeholder@example.zone:443?auth_str=qa-auth&up_mbps=20&down_mbps=80&obfs=obfs-placeholder&recv_window_conn=1048576&recv_window=2097152&disable_mtu_discovery=1&protocol=udp&sni=hysteria.example.zone&alpn=h3&insecure=1&fp=chrome#hysteria",
 			Protocol:   "hysteria",
 			ServerPort: 443,
 			Status:     "active",
@@ -427,6 +427,10 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	hysteriaALPN, ok := hysteriaTLS["alpn"].([]string)
 	if !ok || len(hysteriaALPN) != 1 || hysteriaALPN[0] != "h3" {
 		t.Fatalf("unexpected hysteria alpn config: %+v", hysteriaTLS["alpn"])
+	}
+	hysteriaUTLS, ok := hysteriaTLS["utls"].(map[string]any)
+	if !ok || hysteriaUTLS["enabled"] != true || hysteriaUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected hysteria utls config: %+v", hysteriaTLS["utls"])
 	}
 	httpProxy := findOutbound(config.Outbounds, "up_53")
 	if httpProxy == nil {

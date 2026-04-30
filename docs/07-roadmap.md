@@ -63,7 +63,7 @@
 - VMess TCP HTTP 伪装和 HTTP/H2 传输参数会同步为 sing-box HTTP transport。
 - sing-box JSON VMess 节点的 HTTP transport 会保留 host 数组和 path，避免导入后丢失 HTTP 伪装参数。
 - VMess 可兼容 `vmess://uuid@host:port?...` userinfo 直连 URI，并保留 TLS、WebSocket、SNI、ALPN、跳过证书校验和 uTLS fingerprint 参数同步为 sing-box outbound。
-- Clash YAML 和 URI 导入链路会保留 Hysteria 窗口和 MTU 发现参数并同步为 sing-box outbound。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria 窗口、MTU 发现和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 上下行带宽、TLS 标志、证书 pin、URI 客户端指纹和 sing-box `tls.utls.fingerprint` 参数并同步为 sing-box outbound。
 - sing-box JSON 和 URI 导入链路会保留 TUIC `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound。
 - Naive/Naive+QUIC URI 会保留跳过证书校验、禁用 SNI 和 ALPN TLS 参数并同步为 sing-box outbound。

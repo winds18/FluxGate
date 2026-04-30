@@ -825,7 +825,7 @@ func buildAnyTLSOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	query := parsed.Query()
-	password := anyTLSPassword(parsed.User, query.Get("password"))
+	password := anyTLSPassword(parsed.User, firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")))
 	if password == "" {
 		return nil, false
 	}
@@ -885,7 +885,7 @@ func buildShadowTLSOutbound(node store.Node) (map[string]any, bool) {
 	if version <= 0 {
 		version = 1
 	}
-	password := anyTLSPassword(parsed.User, query.Get("password"))
+	password := anyTLSPassword(parsed.User, firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")))
 	if version >= 2 && password == "" {
 		return nil, false
 	}

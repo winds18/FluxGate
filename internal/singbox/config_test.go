@@ -1186,6 +1186,57 @@ func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsAnyTLSShadowTLSQueryCredentialAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         90,
+			URI:        "anytls://query-anytls.example:443?pass=anytls-query-placeholder&sni=query-anytls.example&idle_session_timeout=30s&fp=chrome#anytls-query",
+			Protocol:   "anytls",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         91,
+			URI:        "shadowtls://query-shadowtls.example:443?version=3&token=shadowtls-query-placeholder&sni=query-shadowtls.example&fp=chrome#shadowtls-query",
+			Protocol:   "shadowtls",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	anytlsOutbound := findOutbound(config.Outbounds, "up_90")
+	if anytlsOutbound == nil {
+		t.Fatalf("expected anytls outbound up_90, got %+v", config.Outbounds)
+	}
+	if anytlsOutbound["type"] != "anytls" || anytlsOutbound["server"] != "query-anytls.example" || anytlsOutbound["password"] != "anytls-query-placeholder" || anytlsOutbound["idle_session_timeout"] != "30s" {
+		t.Fatalf("unexpected anytls query credential fields: %+v", anytlsOutbound)
+	}
+	anytlsTLS, ok := anytlsOutbound["tls"].(map[string]any)
+	if !ok || anytlsTLS["enabled"] != true || anytlsTLS["server_name"] != "query-anytls.example" {
+		t.Fatalf("unexpected anytls query credential tls: %+v", anytlsOutbound["tls"])
+	}
+	anytlsUTLS, ok := anytlsTLS["utls"].(map[string]any)
+	if !ok || anytlsUTLS["enabled"] != true || anytlsUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected anytls query credential utls: %+v", anytlsTLS["utls"])
+	}
+
+	shadowtlsOutbound := findOutbound(config.Outbounds, "up_91")
+	if shadowtlsOutbound == nil {
+		t.Fatalf("expected shadowtls outbound up_91, got %+v", config.Outbounds)
+	}
+	if shadowtlsOutbound["type"] != "shadowtls" || shadowtlsOutbound["server"] != "query-shadowtls.example" || shadowtlsOutbound["version"] != 3 || shadowtlsOutbound["password"] != "shadowtls-query-placeholder" {
+		t.Fatalf("unexpected shadowtls query credential fields: %+v", shadowtlsOutbound)
+	}
+	shadowtlsTLS, ok := shadowtlsOutbound["tls"].(map[string]any)
+	if !ok || shadowtlsTLS["enabled"] != true || shadowtlsTLS["server_name"] != "query-shadowtls.example" {
+		t.Fatalf("unexpected shadowtls query credential tls: %+v", shadowtlsOutbound["tls"])
+	}
+	shadowtlsUTLS, ok := shadowtlsTLS["utls"].(map[string]any)
+	if !ok || shadowtlsUTLS["enabled"] != true || shadowtlsUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected shadowtls query credential utls: %+v", shadowtlsTLS["utls"])
+	}
+}
+
 func TestBuildConfigSupportsHysteria2QueryPassword(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

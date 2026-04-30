@@ -122,6 +122,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 `up_mbps`、`down_mbps`、`insecure`、`disable_sni`、`alpn`、证书 pin、`fp`/`client-fingerprint` 和 `tls.utls.fingerprint` 参数，并同步为 sing-box outbound。
 - TUIC URI 支持从 `uuid`/`id`/`user_id`/`user-id` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
 - sing-box JSON 和 URI 导入链路会保留 TUIC `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound。
+- AnyTLS 和 ShadowTLS URI 支持从 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
 - sing-box JSON 和 URI 导入链路会保留 AnyTLS `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound。
 - sing-box JSON 和 URI 导入链路会保留 ShadowTLS `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound。
 - sing-box JSON 和 URI 导入链路会保留 Naive/Naive+QUIC `insecure`/`skip-cert-verify`、`disable_sni`、`alpn` 和 `tls.utls.fingerprint`/`fp` 参数，并同步为 sing-box outbound。

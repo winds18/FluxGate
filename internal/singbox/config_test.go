@@ -115,7 +115,7 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 		},
 		{
 			ID:         48,
-			URI:        "tuic://00000000-0000-0000-0000-000000000048:qa-placeholder@example.io:443?congestion_control=bbr&udp_relay_mode=native&sni=tuic.example.io&alpn=h3&insecure=1#tuic",
+			URI:        "tuic://00000000-0000-0000-0000-000000000048:qa-placeholder@example.io:443?congestion_control=bbr&udp_relay_mode=native&sni=tuic.example.io&alpn=h3&insecure=1&fp=chrome#tuic",
 			Protocol:   "tuic",
 			ServerPort: 443,
 			Status:     "active",
@@ -339,6 +339,10 @@ func TestBuildConfigAddsSupportedUpstreamOutbounds(t *testing.T) {
 	alpn, ok := tuicTLS["alpn"].([]string)
 	if !ok || len(alpn) != 1 || alpn[0] != "h3" {
 		t.Fatalf("unexpected tuic alpn config: %+v", tuicTLS["alpn"])
+	}
+	tuicUTLS, ok := tuicTLS["utls"].(map[string]any)
+	if !ok || tuicUTLS["enabled"] != true || tuicUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected tuic utls config: %+v", tuicTLS["utls"])
 	}
 	anytls := findOutbound(config.Outbounds, "up_49")
 	if anytls == nil {

@@ -1931,7 +1931,11 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
       "tls": {
         "enabled": true,
         "server_name": "tuic.singbox.example.test",
-        "alpn": ["h3"]
+        "alpn": ["h3"],
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
       }
     },
     {
@@ -2091,7 +2095,7 @@ func TestNormalizeContentSingBoxJSON(t *testing.T) {
 		t.Fatalf("unexpected sing-box hysteria2 URI: %q", lines[4])
 	}
 	assertHasPrefix(t, lines[5], "tuic://00000000-0000-0000-0000-000000000054:tuic-placeholder@tuic.singbox.example.test:443?")
-	if !strings.Contains(lines[5], "congestion_control=bbr") || !strings.Contains(lines[5], "udp_relay_mode=native") {
+	if !strings.Contains(lines[5], "congestion_control=bbr") || !strings.Contains(lines[5], "udp_relay_mode=native") || !strings.Contains(lines[5], "fp=chrome") {
 		t.Fatalf("unexpected sing-box tuic URI: %q", lines[5])
 	}
 	assertHasPrefix(t, lines[6], "anytls://anytls-placeholder@anytls.singbox.example.test:443?")

@@ -114,6 +114,7 @@
 - subscription 来源可解析 SIP008 Shadowsocks 订阅，`servers` 支持数组和按名称分组的对象映射。
 - SIP008、Clash YAML 和 sing-box JSON 的 Shadowsocks 节点会保留 SIP003 插件参数并同步进入 sing-box outbound。
 - `shadowsocks://` URI 会归一化为标准 `ss://` URI，避免长 scheme 导入后无法进入 Shadowsocks outbound 转换链路。
+- `any-tls://`、`shadow-tls://` 和 `naive-quic://` 裸 URI 会归一化为标准 `anytls://`、`shadowtls://` 和 `naive+quic://`，和结构化订阅解析保持一致。
 - subscription 来源可解析 sing-box JSON `outbounds` 中的 Naive/Naive+QUIC 节点，并保留 QUIC、UDP over TCP、并发、TLS 和 uTLS fingerprint 参数。
 - subscription 来源可解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
 - sing-box JSON `outbounds` 和 `endpoints` 支持数组、单个对象、按名称分组的对象映射和分组数组映射。

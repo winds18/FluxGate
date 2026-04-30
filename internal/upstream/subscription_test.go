@@ -73,6 +73,26 @@ func TestNormalizeContentCanonicalizesShadowsocksSchemeAlias(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentCanonicalizesCommonDashedSchemeAliases(t *testing.T) {
+	raw := strings.Join([]string{
+		"any-tls://anytls-placeholder@anytls-alias.example.test:443#AnyTLS%20Alias",
+		"shadow-tls://shadow-placeholder@shadowtls-alias.example.test:443?version=3#ShadowTLS%20Alias",
+		"naive-quic://qa-user:naive-placeholder@naive-alias.example.test:443#Naive%20QUIC%20Alias",
+	}, "\n")
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"anytls://anytls-placeholder@anytls-alias.example.test:443#AnyTLS%20Alias",
+		"shadowtls://shadow-placeholder@shadowtls-alias.example.test:443?version=3#ShadowTLS%20Alias",
+		"naive+quic://qa-user:naive-placeholder@naive-alias.example.test:443#Naive%20QUIC%20Alias",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected canonical dashed scheme aliases: %q", got)
+	}
+}
+
 func TestNormalizeContentBase64URIList(t *testing.T) {
 	raw := "vless://uuid@example.com:443#HK\nss://example#SG"
 	encoded := base64.StdEncoding.EncodeToString([]byte(raw))

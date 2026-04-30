@@ -3302,6 +3302,39 @@ func TestNormalizeContentV2RayJSONHTTPAndSOCKS(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONShadowsocksNetwork(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "首尔 V2Ray SS UDP",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "address": "ss-udp.v2ray.example.test",
+            "port": 8388,
+            "method": "aes-128-gcm",
+            "password": "qa-placeholder",
+            "network": "udp"
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "ss://aes-128-gcm:qa-placeholder@ss-udp.v2ray.example.test:8388?")
+	if !strings.Contains(got, "network=udp") {
+		t.Fatalf("expected v2ray shadowsocks network to be preserved: %q", got)
+	}
+	if !strings.HasSuffix(got, "#%E9%A6%96%E5%B0%94%20V2Ray%20SS%20UDP") {
+		t.Fatalf("unexpected v2ray shadowsocks fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentV2RayJSONSOCKSUDPFlag(t *testing.T) {
 	raw := `{
   "outbounds": [

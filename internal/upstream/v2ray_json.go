@@ -106,6 +106,14 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 			if pluginOpts := firstNonEmptyString(v2rayString(server, "plugin_opts"), v2rayString(server, "plugin-opts")); pluginOpts != "" {
 				proxy["plugin_opts"] = pluginOpts
 			}
+			if network := firstNonEmptyString(
+				v2rayString(server, "network"),
+				v2rayString(server, "protocol"),
+				v2rayString(settings, "network"),
+				v2rayString(settings, "protocol"),
+			); network != "" {
+				proxy["network"] = network
+			}
 		} else {
 			appendV2RayStreamProxyValues(outbound, proxy)
 		}

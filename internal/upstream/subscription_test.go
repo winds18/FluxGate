@@ -93,6 +93,24 @@ func TestNormalizeContentCanonicalizesCommonDashedSchemeAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentCanonicalizesCommonShortSchemeAliases(t *testing.T) {
+	raw := strings.Join([]string{
+		"hy2://hy2-placeholder@hy2-alias.example.test:443#Hy2%20Alias",
+		"wg://wg-alias.example.test:51820?private_key=qa-private&peer_public_key=qa-peer&local_address=10.66.0.2/32#WG%20Alias",
+	}, "\n")
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"hysteria2://hy2-placeholder@hy2-alias.example.test:443#Hy2%20Alias",
+		"wireguard://wg-alias.example.test:51820?private_key=qa-private&peer_public_key=qa-peer&local_address=10.66.0.2/32#WG%20Alias",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected canonical short scheme aliases: %q", got)
+	}
+}
+
 func TestNormalizeContentBase64URIList(t *testing.T) {
 	raw := "vless://uuid@example.com:443#HK\nss://example#SG"
 	encoded := base64.StdEncoding.EncodeToString([]byte(raw))

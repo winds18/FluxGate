@@ -207,12 +207,16 @@ func canonicalSpecialURI(rawURI string) string {
 		return rewriteURIScheme(rawURI, "block")
 	case strings.HasPrefix(lower, "shadowsocks://"):
 		return rewriteURIScheme(rawURI, "ss")
+	case strings.HasPrefix(lower, "hy2://"):
+		return rewriteURIScheme(rawURI, "hysteria2")
 	case strings.HasPrefix(lower, "any-tls://"):
 		return rewriteURIScheme(rawURI, "anytls")
 	case strings.HasPrefix(lower, "shadow-tls://"):
 		return rewriteURIScheme(rawURI, "shadowtls")
 	case strings.HasPrefix(lower, "naive-quic://"):
 		return rewriteURIScheme(rawURI, "naive+quic")
+	case strings.HasPrefix(lower, "wg://"):
+		return rewriteURIScheme(rawURI, "wireguard")
 	default:
 		return rawURI
 	}

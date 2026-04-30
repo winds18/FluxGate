@@ -2800,7 +2800,8 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
         "network": "grpc",
         "security": "tls",
         "tlsSettings": {
-          "serverName": "trojan.v2ray.example.test"
+          "serverName": "trojan.v2ray.example.test",
+          "clientFingerprint": "chrome"
         },
         "grpcSettings": {
           "serviceName": "fluxgate-v2ray",
@@ -2866,6 +2867,7 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
 		!strings.Contains(lines[2], "idle_timeout=30s") ||
 		!strings.Contains(lines[2], "ping_timeout=10s") ||
 		!strings.Contains(lines[2], "permit_without_stream=1") ||
+		!strings.Contains(lines[2], "fp=chrome") ||
 		!strings.Contains(lines[2], "multi_mode=1") {
 		t.Fatalf("unexpected v2ray trojan URI: %q", lines[2])
 	}

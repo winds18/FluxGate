@@ -193,6 +193,16 @@ func appendV2RayTLSValues(tls map[string]any, proxy map[string]string) {
 	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
 		proxy["alpn"] = strings.Join(alpn, ",")
 	}
+	if fingerprint := firstNonEmptyString(
+		v2rayString(tls, "fingerprint"),
+		v2rayString(tls, "fp"),
+		v2rayString(tls, "clientFingerprint"),
+		v2rayString(tls, "client_fingerprint"),
+		v2rayString(tls, "client-fingerprint"),
+		v2rayUTLSFingerprint(tls),
+	); fingerprint != "" {
+		proxy["fp"] = fingerprint
+	}
 }
 
 func appendV2RayRealityValues(reality map[string]any, proxy map[string]string) {
@@ -214,6 +224,14 @@ func appendV2RayRealityValues(reality map[string]any, proxy map[string]string) {
 	if spiderX := firstNonEmptyString(v2rayString(reality, "spiderX"), v2rayString(reality, "spider_x")); spiderX != "" {
 		proxy["spx"] = spiderX
 	}
+}
+
+func v2rayUTLSFingerprint(tls map[string]any) string {
+	utls := firstNonNilMap(v2rayMap(tls["utls"]), v2rayMap(tls["uTLS"]))
+	if utls == nil {
+		return ""
+	}
+	return firstNonEmptyString(v2rayString(utls, "fingerprint"), v2rayString(utls, "fp"))
 }
 
 func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) {

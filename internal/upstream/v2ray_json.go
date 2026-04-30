@@ -187,8 +187,15 @@ func appendV2RayTLSValues(tls map[string]any, proxy map[string]string) {
 	if serverName := firstNonEmptyString(v2rayString(tls, "serverName"), v2rayString(tls, "server_name")); serverName != "" {
 		proxy["sni"] = serverName
 	}
-	if boolFromAnyValue(tls["allowInsecure"]) || boolFromAnyValue(tls["allow_insecure"]) {
+	if boolFromAnyValue(tls["allowInsecure"]) ||
+		boolFromAnyValue(tls["allow_insecure"]) ||
+		boolFromAnyValue(tls["skip-cert-verify"]) ||
+		boolFromAnyValue(tls["skip_cert_verify"]) ||
+		boolFromAnyValue(tls["insecure"]) {
 		proxy["insecure"] = "true"
+	}
+	if boolFromAnyValue(tls["disable_sni"]) || boolFromAnyValue(tls["disable-sni"]) {
+		proxy["disable_sni"] = "true"
 	}
 	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
 		proxy["alpn"] = strings.Join(alpn, ",")

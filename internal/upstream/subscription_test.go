@@ -3302,6 +3302,56 @@ func TestNormalizeContentV2RayJSONHTTPAndSOCKS(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONRealityArrayAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "台湾 V2Ray Reality Alias",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "reality-alias.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000086",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "tcp",
+        "security": "reality",
+        "realitySettings": {
+          "serverNames": ["www.alias.example.test", "backup.alias.example.test"],
+          "public-key": "alias-public-key",
+          "shortIds": ["abcd1234", "ef56"],
+          "fingerprint": "chrome",
+          "spider-x": "cdn"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000086@reality-alias.v2ray.example.test:443?")
+	if !strings.Contains(got, "security=reality") ||
+		!strings.Contains(got, "sni=www.alias.example.test") ||
+		!strings.Contains(got, "pbk=alias-public-key") ||
+		!strings.Contains(got, "sid=abcd1234") ||
+		!strings.Contains(got, "fp=chrome") ||
+		!strings.Contains(got, "spx=cdn") ||
+		!strings.HasSuffix(got, "#%E5%8F%B0%E6%B9%BE%20V2Ray%20Reality%20Alias") {
+		t.Fatalf("unexpected v2ray reality aliases URI: %q", got)
+	}
+}
+
 func TestNormalizeContentV2RayJSONShadowsocksNetwork(t *testing.T) {
 	raw := `{
   "outbounds": [

@@ -264,19 +264,33 @@ func appendV2RayRealityValues(reality map[string]any, proxy map[string]string) {
 	if reality == nil {
 		return
 	}
-	if serverName := firstNonEmptyString(v2rayString(reality, "serverName"), v2rayString(reality, "server_name")); serverName != "" {
-		proxy["sni"] = serverName
+	if serverNames := firstNonEmptyStringList(
+		stringListFromAnyValue(reality["serverName"]),
+		stringListFromAnyValue(reality["server_name"]),
+		stringListFromAnyValue(reality["server-name"]),
+		stringListFromAnyValue(reality["serverNames"]),
+		stringListFromAnyValue(reality["server_names"]),
+		stringListFromAnyValue(reality["server-names"]),
+	); len(serverNames) > 0 {
+		proxy["sni"] = serverNames[0]
 	}
-	if publicKey := firstNonEmptyString(v2rayString(reality, "publicKey"), v2rayString(reality, "public_key")); publicKey != "" {
+	if publicKey := firstNonEmptyString(v2rayString(reality, "publicKey"), v2rayString(reality, "public_key"), v2rayString(reality, "public-key")); publicKey != "" {
 		proxy["pbk"] = publicKey
 	}
-	if shortID := firstNonEmptyString(v2rayString(reality, "shortId"), v2rayString(reality, "short_id")); shortID != "" {
-		proxy["sid"] = shortID
+	if shortIDs := firstNonEmptyStringList(
+		stringListFromAnyValue(reality["shortId"]),
+		stringListFromAnyValue(reality["short_id"]),
+		stringListFromAnyValue(reality["short-id"]),
+		stringListFromAnyValue(reality["shortIds"]),
+		stringListFromAnyValue(reality["short_ids"]),
+		stringListFromAnyValue(reality["short-ids"]),
+	); len(shortIDs) > 0 {
+		proxy["sid"] = shortIDs[0]
 	}
 	if fingerprint := firstNonEmptyString(v2rayString(reality, "fingerprint"), v2rayString(reality, "fp")); fingerprint != "" {
 		proxy["fp"] = fingerprint
 	}
-	if spiderX := firstNonEmptyString(v2rayString(reality, "spiderX"), v2rayString(reality, "spider_x")); spiderX != "" {
+	if spiderX := firstNonEmptyString(v2rayString(reality, "spiderX"), v2rayString(reality, "spider_x"), v2rayString(reality, "spider-x")); spiderX != "" {
 		proxy["spx"] = spiderX
 	}
 }

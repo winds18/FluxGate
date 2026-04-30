@@ -3355,6 +3355,69 @@ func TestNormalizeContentV2RayJSONProxyAccountAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray VMess Host Alias",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "host": "vmess-alias.v2ray.example.test",
+            "serverPort": 443,
+            "users": [
+              {
+                "uuid": "00000000-0000-0000-0000-000000000087",
+                "security": "auto"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "新加坡 V2Ray VLESS Server Alias",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "server": "vless-alias.v2ray.example.test",
+            "server_port": 8443,
+            "users": [
+              {
+                "uuid": "00000000-0000-0000-0000-000000000088",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 URIs, got %d: %q", len(lines), got)
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[0], "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode v2ray vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	if !strings.Contains(decodedText, `"add":"vmess-alias.v2ray.example.test"`) ||
+		!strings.Contains(decodedText, `"port":"443"`) {
+		t.Fatalf("unexpected v2ray vmess alias document: %q", decodedText)
+	}
+	if lines[1] != "vless://00000000-0000-0000-0000-000000000088@vless-alias.v2ray.example.test:8443#%E6%96%B0%E5%8A%A0%E5%9D%A1%20V2Ray%20VLESS%20Server%20Alias" {
+		t.Fatalf("unexpected v2ray vless alias URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONRealityArrayAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

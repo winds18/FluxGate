@@ -66,12 +66,13 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 		if len(users) == 0 {
 			users = []map[string]any{{}}
 		}
+		server := v2rayVNextServer(vnext)
 		for _, user := range users {
 			sequence++
 			proxy := map[string]string{
-				"name":    v2rayName(outbound, vnext, user, v2rayString(vnext, "address"), sequence, total),
-				"server":  v2rayString(vnext, "address"),
-				"port":    v2rayPort(vnext, "port"),
+				"name":    v2rayName(outbound, vnext, user, server, sequence, total),
+				"server":  server,
+				"port":    v2rayPort(vnext, "port", "server_port", "serverPort"),
 				"uuid":    firstNonEmptyString(v2rayString(user, "id"), v2rayString(user, "uuid")),
 				"alterid": firstNonEmptyString(v2rayString(user, "alterId"), v2rayString(user, "alter_id")),
 				"cipher":  firstNonEmptyString(v2rayString(user, "security"), v2rayString(user, "encryption")),
@@ -84,6 +85,15 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 		}
 	}
 	return uris
+}
+
+func v2rayVNextServer(vnext map[string]any) string {
+	return firstNonEmptyString(
+		v2rayString(vnext, "address"),
+		v2rayString(vnext, "server"),
+		v2rayString(vnext, "host"),
+		v2rayString(vnext, "add"),
+	)
 }
 
 func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[string]string) string) []string {

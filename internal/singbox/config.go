@@ -929,12 +929,16 @@ func buildNaiveOutbound(node store.Node) (map[string]any, bool) {
 	if err != nil || !strings.HasPrefix(parsed.Scheme, "naive") || parsed.Hostname() == "" {
 		return nil, false
 	}
-	username, password := userPassword(parsed.User)
+	query := parsed.Query()
+	username, password := userPasswordWithQuery(
+		parsed.User,
+		firstNonEmpty(query.Get("username"), query.Get("user")),
+		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd")),
+	)
 	if username == "" || password == "" {
 		return nil, false
 	}
 
-	query := parsed.Query()
 	outbound := map[string]any{
 		"type":        "naive",
 		"tag":         upstreamTag(node),
@@ -1086,7 +1090,12 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 		"server_port": portWithFallback(parsed.Port(), node.ServerPort, defaultPort),
 	}
 
-	username, password := userPassword(parsed.User)
+	query := parsed.Query()
+	username, password := userPasswordWithQuery(
+		parsed.User,
+		firstNonEmpty(query.Get("username"), query.Get("user")),
+		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd")),
+	)
 	if username != "" {
 		outbound["username"] = username
 	}
@@ -1094,7 +1103,6 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 		outbound["password"] = password
 	}
 
-	query := parsed.Query()
 	if path := firstNonEmpty(query.Get("path"), parsed.EscapedPath()); path != "" && path != "/" {
 		outbound["path"] = path
 	}
@@ -1151,7 +1159,11 @@ func buildSOCKSOutbound(node store.Node) (map[string]any, bool) {
 	if version := socksVersion(parsed.Scheme, query.Get("version")); version != "" {
 		outbound["version"] = version
 	}
-	username, password := userPassword(parsed.User)
+	username, password := userPasswordWithQuery(
+		parsed.User,
+		firstNonEmpty(query.Get("username"), query.Get("user")),
+		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd")),
+	)
 	if username != "" {
 		outbound["username"] = username
 	}
@@ -1612,6 +1624,17 @@ func userPassword(user *url.Userinfo) (string, string) {
 	password = strings.TrimSpace(password)
 	if !ok {
 		return username, ""
+	}
+	return username, password
+}
+
+func userPasswordWithQuery(user *url.Userinfo, queryUsername string, queryPassword string) (string, string) {
+	username, password := userPassword(user)
+	if username == "" {
+		username = strings.TrimSpace(queryUsername)
+	}
+	if password == "" {
+		password = strings.TrimSpace(queryPassword)
 	}
 	return username, password
 }

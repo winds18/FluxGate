@@ -1176,6 +1176,78 @@ func TestBuildConfigSupportsHysteriaTokenAuth(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         82,
+			URI:        "naive+quic://query-naive.example:443?username=qa-user&password=naive-query-placeholder&sni=query-naive.example&quic=1&insecure=1#naive-query",
+			Protocol:   "naive+quic",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_82")
+	if outbound == nil {
+		t.Fatalf("expected naive outbound up_82, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "naive" || outbound["server"] != "query-naive.example" || outbound["server_port"] != 443 {
+		t.Fatalf("unexpected naive query credential server fields: %+v", outbound)
+	}
+	if outbound["username"] != "qa-user" || outbound["password"] != "naive-query-placeholder" || outbound["quic"] != true {
+		t.Fatalf("unexpected naive query credential auth fields: %+v", outbound)
+	}
+	tls, ok := outbound["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "query-naive.example" || tls["insecure"] != true {
+		t.Fatalf("unexpected naive query credential tls: %+v", outbound["tls"])
+	}
+}
+
+func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         83,
+			URI:        "https://http-query.example:8443/connect?username=qa-user&password=http-query-placeholder&sni=http-query.example&insecure=1#http-query",
+			Protocol:   "https",
+			ServerPort: 8443,
+			Status:     "active",
+		},
+		{
+			ID:         84,
+			URI:        "socks5://socks-query.example:1080?user=qa-user&pass=socks-query-placeholder&udp=1#socks-query",
+			Protocol:   "socks5",
+			ServerPort: 1080,
+			Status:     "active",
+		},
+	})
+
+	httpOutbound := findOutbound(config.Outbounds, "up_83")
+	if httpOutbound == nil {
+		t.Fatalf("expected http outbound up_83, got %+v", config.Outbounds)
+	}
+	if httpOutbound["type"] != "http" || httpOutbound["server"] != "http-query.example" || httpOutbound["server_port"] != 8443 {
+		t.Fatalf("unexpected http query credential server fields: %+v", httpOutbound)
+	}
+	if httpOutbound["username"] != "qa-user" || httpOutbound["password"] != "http-query-placeholder" || httpOutbound["path"] != "/connect" {
+		t.Fatalf("unexpected http query credential auth fields: %+v", httpOutbound)
+	}
+	httpTLS, ok := httpOutbound["tls"].(map[string]any)
+	if !ok || httpTLS["enabled"] != true || httpTLS["server_name"] != "http-query.example" || httpTLS["insecure"] != true {
+		t.Fatalf("unexpected http query credential tls: %+v", httpOutbound["tls"])
+	}
+
+	socksOutbound := findOutbound(config.Outbounds, "up_84")
+	if socksOutbound == nil {
+		t.Fatalf("expected socks outbound up_84, got %+v", config.Outbounds)
+	}
+	if socksOutbound["type"] != "socks" || socksOutbound["server"] != "socks-query.example" || socksOutbound["server_port"] != 1080 || socksOutbound["version"] != "5" {
+		t.Fatalf("unexpected socks query credential server fields: %+v", socksOutbound)
+	}
+	if socksOutbound["username"] != "qa-user" || socksOutbound["password"] != "socks-query-placeholder" || socksOutbound["network"] != "udp" {
+		t.Fatalf("unexpected socks query credential auth fields: %+v", socksOutbound)
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

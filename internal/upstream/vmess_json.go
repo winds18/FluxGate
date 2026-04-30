@@ -71,6 +71,9 @@ func vmessJSONURI(item map[string]any, fallbackName string) string {
 		"sni":         firstNonEmptyString(vmessJSONString(item, "sni"), vmessJSONString(item, "serverName"), vmessJSONString(item, "server_name")),
 		"alpn":        strings.Join(stringListFromAnyValue(item["alpn"]), ","),
 	}
+	if packetEncoding := firstNonEmptyString(vmessJSONString(item, "packetEncoding"), vmessJSONString(item, "packet_encoding"), vmessJSONString(item, "packet-encoding")); packetEncoding != "" {
+		proxy["packet-encoding"] = packetEncoding
+	}
 	if vmessJSONTLSEnabled(item["tls"]) || strings.EqualFold(vmessJSONString(item, "security"), "tls") {
 		proxy["tls"] = "true"
 	}

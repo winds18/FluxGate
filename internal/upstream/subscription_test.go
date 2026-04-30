@@ -4261,6 +4261,7 @@ func TestNormalizeContentVMessJSON(t *testing.T) {
   "tls": "tls",
   "sni": "vmess.raw.example.test",
   "alpn": ["h2", "http/1.1"],
+  "packetEncoding": "packetaddr",
   "allowInsecure": "1"
 }`
 	got, err := NormalizeContent(raw)
@@ -4281,6 +4282,7 @@ func TestNormalizeContentVMessJSON(t *testing.T) {
 		`"tls":"tls"`,
 		`"sni":"vmess.raw.example.test"`,
 		`"alpn":"h2,http/1.1"`,
+		`"packet_encoding":"packetaddr"`,
 		`"allowInsecure":"1"`,
 	} {
 		if !strings.Contains(decoded, want) {

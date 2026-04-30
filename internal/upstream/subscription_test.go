@@ -3418,6 +3418,82 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONTransportHostAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray WS Host Alias",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "ws-host-alias.v2ray.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000089",
+                "encryption": "none"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "wsSettings": {
+          "path": "/edge",
+          "host": "ws-direct.v2ray.example.test"
+        }
+      }
+    },
+    {
+      "tag": "东京 V2Ray HTTP Header Host",
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "address": "h2-header.v2ray.example.test",
+            "port": 443,
+            "password": "trojan-placeholder"
+          }
+        ]
+      },
+      "streamSettings": {
+        "network": "http",
+        "security": "tls",
+        "httpSettings": {
+          "path": "/h2",
+          "headers": {
+            "Host": ["h2-a.v2ray.example.test", "h2-b.v2ray.example.test"]
+          }
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000089@ws-host-alias.v2ray.example.test:443?")
+	if !strings.Contains(lines[0], "type=ws") ||
+		!strings.Contains(lines[0], "path=%2Fedge") ||
+		!strings.Contains(lines[0], "host=ws-direct.v2ray.example.test") {
+		t.Fatalf("unexpected v2ray websocket host alias URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@h2-header.v2ray.example.test:443?")
+	if !strings.Contains(lines[1], "type=http") ||
+		!strings.Contains(lines[1], "path=%2Fh2") ||
+		!strings.Contains(lines[1], "host=h2-a.v2ray.example.test%2Ch2-b.v2ray.example.test") {
+		t.Fatalf("unexpected v2ray http host alias URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONRealityArrayAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

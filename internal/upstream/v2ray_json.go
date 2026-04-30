@@ -402,7 +402,7 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		}
 	}
 	if http := firstNonNilMap(v2rayMap(stream["httpSettings"]), v2rayMap(stream["http_settings"]), v2rayMap(stream["h2Settings"])); http != nil {
-		if hosts := stringListFromAnyValue(http["host"]); len(hosts) > 0 {
+		if hosts := v2rayHeaderHosts(http); len(hosts) > 0 {
 			proxy["http-opts.host"] = strings.Join(hosts, ",")
 		}
 		if path := v2rayString(http, "path"); path != "" {
@@ -444,11 +444,25 @@ func appendV2RayTCPHeaderValues(tcp map[string]any, proxy map[string]string) {
 }
 
 func v2rayHeaderHosts(values map[string]any) []string {
+	directHosts := firstNonEmptyStringList(
+		stringListFromAnyValue(values["host"]),
+		stringListFromAnyValue(values["Host"]),
+		stringListFromAnyValue(values["authority"]),
+		stringListFromAnyValue(values[":authority"]),
+	)
+	if len(directHosts) > 0 {
+		return directHosts
+	}
 	headers := v2rayMap(values["headers"])
 	if headers == nil {
 		return nil
 	}
-	return firstNonEmptyStringList(stringListFromAnyValue(headers["Host"]), stringListFromAnyValue(headers["host"]))
+	return firstNonEmptyStringList(
+		stringListFromAnyValue(headers["Host"]),
+		stringListFromAnyValue(headers["host"]),
+		stringListFromAnyValue(headers["authority"]),
+		stringListFromAnyValue(headers[":authority"]),
+	)
 }
 
 func v2rayObjectList(value any) []map[string]any {

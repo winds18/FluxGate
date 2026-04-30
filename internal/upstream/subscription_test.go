@@ -141,6 +141,18 @@ func TestNormalizeContentCanonicalizesTrojanGoSchemeAlias(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentCanonicalizesVMessAEADSchemeAlias(t *testing.T) {
+	raw := "vmess-aead://00000000-0000-0000-0000-000000000088@vmess-aead-alias.example.test:443?encryption=auto&security=tls&type=ws&path=%2Fvmess&host=ws.vmess-aead-alias.example.test#VMess%20AEAD%20Alias"
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "vmess://00000000-0000-0000-0000-000000000088@vmess-aead-alias.example.test:443?encryption=auto&security=tls&type=ws&path=%2Fvmess&host=ws.vmess-aead-alias.example.test#VMess%20AEAD%20Alias"
+	if got != want {
+		t.Fatalf("unexpected canonical VMess AEAD URI: %q", got)
+	}
+}
+
 func TestNormalizeContentBase64URIList(t *testing.T) {
 	raw := "vless://uuid@example.com:443#HK\nss://example#SG"
 	encoded := base64.StdEncoding.EncodeToString([]byte(raw))

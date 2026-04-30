@@ -1040,7 +1040,7 @@ func TestBuildConfigSupportsVMessUserinfoURI(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         72,
-			URI:        "vmess://00000000-0000-0000-0000-000000000072@userinfo.vmess.example:443?encryption=auto&security=tls&type=ws&path=%2Fvmess&host=ws.vmess.example&sni=sni.vmess.example&alpn=h2,http%2F1.1&insecure=1&disable_sni=1#VMess%20Userinfo",
+			URI:        "vmess://00000000-0000-0000-0000-000000000072@userinfo.vmess.example:443?encryption=auto&security=tls&type=ws&path=%2Fvmess&host=ws.vmess.example&sni=sni.vmess.example&alpn=h2,http%2F1.1&insecure=1&disable_sni=1&fp=chrome#VMess%20Userinfo",
 			Protocol:   "vmess",
 			ServerPort: 443,
 			Status:     "active",
@@ -1064,6 +1064,10 @@ func TestBuildConfigSupportsVMessUserinfoURI(t *testing.T) {
 	alpn, ok := tls["alpn"].([]string)
 	if !ok || len(alpn) != 2 || alpn[0] != "h2" || alpn[1] != "http/1.1" {
 		t.Fatalf("unexpected vmess userinfo alpn config: %+v", tls["alpn"])
+	}
+	utls, ok := tls["utls"].(map[string]any)
+	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected vmess userinfo utls config: %+v", tls["utls"])
 	}
 	transport, ok := outbound["transport"].(map[string]any)
 	if !ok || transport["type"] != "ws" || transport["path"] != "/vmess" {

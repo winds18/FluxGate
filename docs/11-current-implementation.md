@@ -98,7 +98,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VMess gRPC 传输参数，并同步为 sing-box outbound transport。
 - VMess TCP HTTP 伪装和 HTTP/H2 传输参数会同步为 sing-box HTTP transport。
 - sing-box JSON VMess 节点的 HTTP transport 会保留 host 数组和 path，避免导入后丢失 HTTP 伪装参数。
-- VMess 可兼容 `vmess://uuid@host:port?...` userinfo 直连 URI，并保留 TLS、WebSocket、SNI、ALPN 和跳过证书校验参数。
+- VMess 可兼容 `vmess://uuid@host:port?...` userinfo 直连 URI，并保留 TLS、WebSocket、SNI、ALPN、跳过证书校验和 uTLS fingerprint 参数。
 - Clash YAML 和 URI 导入链路会保留 Hysteria `recv_window_conn`、`recv_window` 和 `disable_mtu_discovery` 参数，并同步为 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 `up_mbps`、`down_mbps`、`insecure`、`disable_sni`、`alpn` 和证书 pin 参数，并同步为 sing-box outbound。
 - Hysteria2/Hy2 URI 支持从 `password`、`auth`、`auth_str` 或 `token` 查询参数读取认证密码，兼容缺少 userinfo 的订阅写法。

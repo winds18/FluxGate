@@ -574,11 +574,19 @@ func buildVMessOutbound(node store.Node) (map[string]any, bool) {
 		boolFromAny(doc["skip_cert_verify"])
 	vmessDisableSNI := boolFromAny(doc["disable_sni"]) || boolFromAny(doc["disable-sni"])
 	vmessALPN := splitCSV(stringFromAny(doc["alpn"]))
+	vmessFingerprint := firstNonEmpty(
+		stringFromAny(doc["fp"]),
+		stringFromAny(doc["fingerprint"]),
+		stringFromAny(doc["client-fingerprint"]),
+		stringFromAny(doc["client_fingerprint"]),
+		stringFromAny(doc["clientFingerprint"]),
+	)
 	if strings.EqualFold(stringFromAny(doc["tls"]), "tls") ||
 		strings.TrimSpace(stringFromAny(doc["sni"])) != "" ||
 		vmessInsecure ||
 		vmessDisableSNI ||
-		len(vmessALPN) > 0 {
+		len(vmessALPN) > 0 ||
+		vmessFingerprint != "" {
 		tls := map[string]any{"enabled": true}
 		if serverName := firstNonEmpty(stringFromAny(doc["sni"]), stringFromAny(doc["host"]), server); serverName != "" {
 			tls["server_name"] = serverName
@@ -591,6 +599,12 @@ func buildVMessOutbound(node store.Node) (map[string]any, bool) {
 		}
 		if len(vmessALPN) > 0 {
 			tls["alpn"] = vmessALPN
+		}
+		if vmessFingerprint != "" {
+			tls["utls"] = map[string]any{
+				"enabled":     true,
+				"fingerprint": vmessFingerprint,
+			}
 		}
 		outbound["tls"] = tls
 	}
@@ -1337,6 +1351,9 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 	}
 	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
 		doc["disable_sni"] = "1"
+	}
+	if fingerprint := firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")); fingerprint != "" {
+		doc["fp"] = fingerprint
 	}
 	return doc, true
 }

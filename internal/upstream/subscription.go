@@ -286,7 +286,7 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			return
 		}
 		handled := map[string]bool{}
-		for _, key := range []string{"uri", "url", "link", "share", "share_link"} {
+		for _, key := range []string{"uri", "url", "link", "share", "share_link", "shareLink", "share_url", "shareUrl", "shareURL", "subscription_url", "subscriptionUrl", "subscriptionURL", "node_url", "nodeUrl", "nodeURL"} {
 			handled[key] = true
 			if item, ok := typed[key]; ok {
 				collectJSONURIs(nodeName, item, uris)

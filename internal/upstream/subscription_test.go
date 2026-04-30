@@ -659,6 +659,41 @@ func TestNormalizeContentJSONCommonCollectionFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONCommonShareLinkFields(t *testing.T) {
+	raw := `{
+  "items": [
+    {
+      "name": "香港 shareUrl",
+      "shareUrl": "vless://00000000-0000-0000-0000-000000000091@share-url.example.test:443"
+    },
+    {
+      "remarks": "东京 subscriptionUrl",
+      "subscriptionUrl": "trojan://trojan-placeholder@subscription-url.example.test:443?security=tls"
+    },
+    {
+      "tag": "首尔 nodeUrl",
+      "node_url": "ss://aes-128-gcm:qa-placeholder@node-url.example.test:8388"
+    }
+  ],
+  "data": {
+    "shareLink": "hysteria2://hy2-placeholder@share-link.example.test:443"
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"vless://00000000-0000-0000-0000-000000000091@share-url.example.test:443#%E9%A6%99%E6%B8%AF%20shareUrl",
+		"trojan://trojan-placeholder@subscription-url.example.test:443?security=tls#%E4%B8%9C%E4%BA%AC%20subscriptionUrl",
+		"ss://aes-128-gcm:qa-placeholder@node-url.example.test:8388#%E9%A6%96%E5%B0%94%20nodeUrl",
+		"hysteria2://hy2-placeholder@share-link.example.test:443",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON common share link fields: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONWrappedStructuredSubscription(t *testing.T) {
 	raw := `{
   "data": {

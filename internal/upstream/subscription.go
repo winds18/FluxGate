@@ -18,9 +18,11 @@ const maxSubscriptionBytes = 5 << 20
 
 var supportedURIPrefixes = []string{
 	"anytls://",
+	"blackhole://",
 	"block://",
 	"dns://",
 	"direct://",
+	"freedom://",
 	"http://",
 	"https://",
 	"hy2://",
@@ -29,6 +31,7 @@ var supportedURIPrefixes = []string{
 	"naive://",
 	"naive+https://",
 	"naive+quic://",
+	"reject://",
 	"shadowtls://",
 	"socks://",
 	"socks4://",
@@ -183,12 +186,31 @@ func URIList(content string) string {
 		lower := strings.ToLower(line)
 		for _, prefix := range supportedURIPrefixes {
 			if strings.HasPrefix(lower, prefix) {
-				lines = append(lines, line)
+				lines = append(lines, canonicalSpecialURI(line))
 				break
 			}
 		}
 	}
 	return strings.Join(lines, "\n")
+}
+
+func canonicalSpecialURI(rawURI string) string {
+	lower := strings.ToLower(strings.TrimSpace(rawURI))
+	switch {
+	case strings.HasPrefix(lower, "freedom://"):
+		return rewriteURIScheme(rawURI, "direct")
+	case strings.HasPrefix(lower, "blackhole://"), strings.HasPrefix(lower, "reject://"):
+		return rewriteURIScheme(rawURI, "block")
+	default:
+		return rawURI
+	}
+}
+
+func rewriteURIScheme(rawURI, scheme string) string {
+	if index := strings.Index(rawURI, "://"); index >= 0 {
+		return scheme + rawURI[index:]
+	}
+	return rawURI
 }
 
 func JSONURIList(content string) string {

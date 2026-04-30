@@ -41,6 +41,26 @@ func TestNormalizeContentSupportsCurrentOutboundURIList(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentCanonicalizesSpecialOutboundURIList(t *testing.T) {
+	raw := strings.Join([]string{
+		"freedom://default#Freedom",
+		"blackhole://default#Blackhole",
+		"reject://default#Reject",
+	}, "\n")
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"direct://default#Freedom",
+		"block://default#Blackhole",
+		"block://default#Reject",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected normalized content: %q", got)
+	}
+}
+
 func TestNormalizeContentBase64URIList(t *testing.T) {
 	raw := "vless://uuid@example.com:443#HK\nss://example#SG"
 	encoded := base64.StdEncoding.EncodeToString([]byte(raw))

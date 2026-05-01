@@ -364,9 +364,9 @@ func applyClashJSONProxyAliases(proxy map[string]string) {
 		aliases   []string
 	}{
 		{canonical: "name", aliases: []string{"displayname", "display_name", "display-name", "nodename", "node_name", "node-name", "label", "title", "remarks", "remark", "tag", "ps"}},
-		{canonical: "type", aliases: []string{"protocol", "proto", "scheme", "nodetype", "node_type", "node-type", "proxytype", "proxy_type", "proxy-type", "proxyprotocol", "proxy_protocol", "proxy-protocol"}},
-		{canonical: "server", aliases: []string{"host", "hostname", "address", "addr", "add", "serveraddress", "server_address", "server-address", "serverhost", "server_host", "server-host", "remotehost", "remote_host", "remote-host"}},
-		{canonical: "port", aliases: []string{"server_port", "serverport", "server-port", "remoteport", "remote_port", "remote-port"}},
+		{canonical: "type", aliases: []string{"protocol", "proto", "scheme", "nodetype", "node_type", "node-type", "servertype", "server_type", "server-type", "protocoltype", "protocol_type", "protocol-type", "proxytype", "proxy_type", "proxy-type", "proxyprotocol", "proxy_protocol", "proxy-protocol"}},
+		{canonical: "server", aliases: []string{"host", "hostname", "address", "addr", "add", "serveraddress", "server_address", "server-address", "serverhost", "server_host", "server-host", "remotehost", "remote_host", "remote-host", "nodehost", "node_host", "node-host", "endpoint", "endpointaddress", "endpoint_address", "endpoint-address"}},
+		{canonical: "port", aliases: []string{"server_port", "serverport", "server-port", "remoteport", "remote_port", "remote-port", "nodeport", "node_port", "node-port", "portnumber", "port_number", "port-number"}},
 		{canonical: "uuid", aliases: []string{"id", "user_id", "userid", "user-id"}},
 		{canonical: "cipher", aliases: []string{"method", "encryption", "encryptmethod", "encrypt-method", "encrypt_method"}},
 		{canonical: "password", aliases: []string{"pass", "passwd", "pwd", "psk", "token"}},

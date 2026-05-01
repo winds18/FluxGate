@@ -419,6 +419,47 @@ func TestNormalizeContentJSONStructuredNameAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredEndpointAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON ProtocolType Trojan",
+      "protocolType": "trojan",
+      "nodeHost": "json-protocoltype-trojan.example.test",
+      "nodePort": 443,
+      "password": "trojan-placeholder",
+      "tls": true,
+      "sni": "json-protocoltype-trojan.example.test"
+    },
+    {
+      "name": "JSON ServerType SS",
+      "serverType": "shadowsocks",
+      "endpoint": "json-servertype-ss.example.test",
+      "portNumber": 8388,
+      "encryption": "aes-128-gcm",
+      "pass": "qa-placeholder"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON endpoint alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@json-protocoltype-trojan.example.test:443?")
+	if !strings.Contains(lines[0], "security=tls") ||
+		!strings.Contains(lines[0], "sni=json-protocoltype-trojan.example.test") ||
+		!strings.HasSuffix(lines[0], "#JSON%20ProtocolType%20Trojan") {
+		t.Fatalf("unexpected structured JSON protocolType Trojan URI: %q", lines[0])
+	}
+	if lines[1] != "ss://aes-128-gcm:qa-placeholder@json-servertype-ss.example.test:8388#JSON%20ServerType%20SS" {
+		t.Fatalf("unexpected structured JSON serverType SS URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONStructuredGenericTransport(t *testing.T) {
 	raw := `{
   "nodes": [

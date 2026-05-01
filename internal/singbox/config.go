@@ -1254,9 +1254,9 @@ func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	query := parsed.Query()
-	privateKey := firstNonEmpty(query.Get("private_key"), query.Get("private-key"), parsed.User.Username())
-	peerPublicKey := firstNonEmpty(query.Get("peer_public_key"), query.Get("peer-public-key"), query.Get("public_key"), query.Get("public-key"))
-	localAddress := splitCSV(firstNonEmpty(query.Get("local_address"), query.Get("local-address"), query.Get("address")))
+	privateKey := firstNonEmpty(query.Get("private_key"), query.Get("private-key"), query.Get("privateKey"), query.Get("secret_key"), query.Get("secret-key"), query.Get("secretKey"), parsed.User.Username())
+	peerPublicKey := firstNonEmpty(query.Get("peer_public_key"), query.Get("peer-public-key"), query.Get("peerPublicKey"), query.Get("public_key"), query.Get("public-key"), query.Get("publicKey"))
+	localAddress := wireGuardLocalAddress(query)
 	if privateKey == "" || peerPublicKey == "" || len(localAddress) == 0 {
 		return nil, false
 	}
@@ -1277,7 +1277,7 @@ func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
 	if interfaceName := firstNonEmpty(query.Get("interface_name"), query.Get("interface-name"), query.Get("name")); interfaceName != "" {
 		outbound["interface_name"] = interfaceName
 	}
-	preSharedKey := firstNonEmpty(query.Get("pre_shared_key"), query.Get("pre-shared-key"), query.Get("preshared_key"), query.Get("psk"))
+	preSharedKey := firstNonEmpty(query.Get("pre_shared_key"), query.Get("pre-shared-key"), query.Get("preSharedKey"), query.Get("preshared_key"), query.Get("preshared-key"), query.Get("presharedKey"), query.Get("psk"))
 	if preSharedKey != "" {
 		outbound["pre_shared_key"] = preSharedKey
 	}
@@ -1294,7 +1294,7 @@ func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
 		outbound["network"] = network
 	}
 
-	if allowedIPs := splitCSV(firstNonEmpty(query.Get("allowed_ips"), query.Get("allowed-ips"), query.Get("peer_allowed_ips"), query.Get("peer-allowed-ips"))); len(allowedIPs) > 0 {
+	if allowedIPs := splitCSV(firstNonEmpty(query.Get("allowed_ips"), query.Get("allowed-ips"), query.Get("allowedIPs"), query.Get("peer_allowed_ips"), query.Get("peer-allowed-ips"), query.Get("peerAllowedIPs"))); len(allowedIPs) > 0 {
 		peer := map[string]any{
 			"server":      parsed.Hostname(),
 			"server_port": serverPort,
@@ -1311,6 +1311,21 @@ func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	return outbound, true
+}
+
+func wireGuardLocalAddress(query url.Values) []string {
+	values := []string{
+		firstNonEmpty(query.Get("local_address"), query.Get("local-address"), query.Get("localAddress"), query.Get("local_addresses"), query.Get("local-addresses"), query.Get("address"), query.Get("addresses")),
+		query.Get("ip"),
+		query.Get("ipv6"),
+		query.Get("ip6"),
+	}
+
+	addresses := make([]string, 0, len(values))
+	for _, value := range values {
+		addresses = append(addresses, splitCSV(value)...)
+	}
+	return addresses
 }
 
 func buildTorOutbound(node store.Node) (map[string]any, bool) {

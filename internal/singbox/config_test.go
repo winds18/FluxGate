@@ -1485,6 +1485,44 @@ func TestBuildConfigSupportsSSHQueryCredentialAliases(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsWireGuardQueryAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         89,
+			URI:        "wg://wg-query.example:51820?privateKey=wireguard-private-placeholder&publicKey=wireguard-public-placeholder&ip=10.77.0.2%2F32&ipv6=fd77%3A%3A2%2F128&preSharedKey=wireguard-psk-placeholder&allowedIPs=0.0.0.0%2F0,%3A%3A%2F0&reserved=4,5,6&mtu=1280&system=1&interface-name=wg-query#wireguard-query",
+			Protocol:   "wg",
+			ServerPort: 51820,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_89")
+	if outbound == nil {
+		t.Fatalf("expected wireguard outbound up_89, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "wireguard" || outbound["server"] != "wg-query.example" || outbound["server_port"] != 51820 {
+		t.Fatalf("unexpected wireguard query alias server fields: %+v", outbound)
+	}
+	if outbound["private_key"] != "wireguard-private-placeholder" || outbound["peer_public_key"] != "wireguard-public-placeholder" || outbound["pre_shared_key"] != "wireguard-psk-placeholder" {
+		t.Fatalf("unexpected wireguard query alias key fields: %+v", outbound)
+	}
+	localAddress, ok := outbound["local_address"].([]string)
+	if !ok || len(localAddress) != 2 || localAddress[0] != "10.77.0.2/32" || localAddress[1] != "fd77::2/128" {
+		t.Fatalf("unexpected wireguard query alias local addresses: %+v", outbound["local_address"])
+	}
+	if outbound["system_interface"] != true || outbound["interface_name"] != "wg-query" || outbound["mtu"] != 1280 {
+		t.Fatalf("unexpected wireguard query alias interface fields: %+v", outbound)
+	}
+	peers, ok := outbound["peers"].([]map[string]any)
+	if !ok || len(peers) != 1 {
+		t.Fatalf("unexpected wireguard query alias peers: %+v", outbound["peers"])
+	}
+	allowedIPs, ok := peers[0]["allowed_ips"].([]string)
+	if !ok || len(allowedIPs) != 2 || allowedIPs[0] != "0.0.0.0/0" || allowedIPs[1] != "::/0" {
+		t.Fatalf("unexpected wireguard query alias allowed ips: %+v", peers[0]["allowed_ips"])
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

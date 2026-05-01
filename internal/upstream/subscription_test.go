@@ -2420,6 +2420,32 @@ func TestNormalizeContentSIP008FieldAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSIP008FieldCaseAliases(t *testing.T) {
+	raw := `{
+  "Version": 1,
+  "Servers": [
+    {
+      "Display_Name": "香港 SIP008 大小写别名",
+      "Address": "sip008-case.example.test",
+      "Server-Port": 8388,
+      "Encrypt_Method": "aes-128-gcm",
+      "Password": "case-placeholder",
+      "Plugin": "v2ray-plugin",
+      "PluginOpts": "mode=websocket;host=sip008-case.example.test",
+      "Network": "udp"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "ss://aes-128-gcm:case-placeholder@sip008-case.example.test:8388?network=udp&plugin=v2ray-plugin&plugin_opts=mode%3Dwebsocket%3Bhost%3Dsip008-case.example.test#%E9%A6%99%E6%B8%AF%20SIP008%20%E5%A4%A7%E5%B0%8F%E5%86%99%E5%88%AB%E5%90%8D"
+	if got != want {
+		t.Fatalf("unexpected SIP008 case alias URI: %q", got)
+	}
+}
+
 func TestNormalizeContentSIP008ServerObjectMap(t *testing.T) {
 	raw := `{
   "version": 1,
@@ -2483,6 +2509,31 @@ func TestNormalizeContentSSDServerObjectMapAndAliases(t *testing.T) {
 	}, "\n")
 	if got != want {
 		t.Fatalf("unexpected SSD object map alias URIs: %q", got)
+	}
+}
+
+func TestNormalizeContentSSDFieldCaseAliases(t *testing.T) {
+	raw := `{
+  "Airport": "SSD QA",
+  "PortNumber": 8388,
+  "Encrypt-Method": "aes-128-gcm",
+  "Password": "doc-placeholder",
+  "Servers": [
+    {
+      "Display_Name": "首尔 SSD 大小写别名",
+      "NodeHost": "ssd-case.example.test",
+      "PluginOptions": "mode=websocket;host=ssd-case.example.test",
+      "Network": "tcp"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "ss://aes-128-gcm:doc-placeholder@ssd-case.example.test:8388?network=tcp&plugin_opts=mode%3Dwebsocket%3Bhost%3Dssd-case.example.test#%E9%A6%96%E5%B0%94%20SSD%20%E5%A4%A7%E5%B0%8F%E5%86%99%E5%88%AB%E5%90%8D"
+	if got != want {
+		t.Fatalf("unexpected SSD case alias URI: %q", got)
 	}
 }
 

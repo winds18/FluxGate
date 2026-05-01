@@ -43,7 +43,7 @@ func SSDJSONURIList(content string) string {
 	if !explicitSSD && !isSSDJSONDocument(doc) {
 		return ""
 	}
-	servers := ssdServerList(doc["servers"])
+	servers := ssdServerList(jsonFieldValue(doc, "servers"))
 	if len(servers) == 0 {
 		return ""
 	}

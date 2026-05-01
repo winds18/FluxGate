@@ -10,15 +10,14 @@ import (
 )
 
 func SIP008URIList(content string) string {
-	var doc struct {
-		Version int             `json:"version"`
-		Servers json.RawMessage `json:"servers"`
-	}
-	if err := json.Unmarshal([]byte(strings.TrimSpace(content)), &doc); err != nil {
+	decoder := json.NewDecoder(strings.NewReader(strings.TrimSpace(content)))
+	decoder.UseNumber()
+	var doc map[string]any
+	if err := decoder.Decode(&doc); err != nil {
 		return ""
 	}
-	servers := sip008ServerList(doc.Servers)
-	if doc.Version != 1 || len(servers) == 0 {
+	servers := sip008ServerList(jsonFieldValue(doc, "servers"))
+	if jsonFieldString(doc, "version") != "1" || len(servers) == 0 {
 		return ""
 	}
 
@@ -31,36 +30,38 @@ func SIP008URIList(content string) string {
 	return strings.Join(uris, "\n")
 }
 
-func sip008ServerList(raw json.RawMessage) []map[string]any {
-	if len(strings.TrimSpace(string(raw))) == 0 {
-		return nil
-	}
-	var servers []map[string]any
-	if err := json.Unmarshal(raw, &servers); err == nil {
+func sip008ServerList(value any) []map[string]any {
+	switch typed := value.(type) {
+	case []any:
+		servers := make([]map[string]any, 0, len(typed))
+		for _, item := range typed {
+			if server, ok := item.(map[string]any); ok {
+				servers = append(servers, server)
+			}
+		}
 		return servers
-	}
-	var serverMap map[string]map[string]any
-	if err := json.Unmarshal(raw, &serverMap); err != nil {
+	case map[string]any:
+		keys := make([]string, 0, len(typed))
+		for key := range typed {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+
+		servers := make([]map[string]any, 0, len(keys))
+		for _, key := range keys {
+			server, ok := typed[key].(map[string]any)
+			if !ok || len(server) == 0 {
+				continue
+			}
+			if shadowsocksJSONName(server) == "" {
+				server["remarks"] = key
+			}
+			servers = append(servers, server)
+		}
+		return servers
+	default:
 		return nil
 	}
-	keys := make([]string, 0, len(serverMap))
-	for key := range serverMap {
-		keys = append(keys, key)
-	}
-	sort.Strings(keys)
-
-	servers = make([]map[string]any, 0, len(keys))
-	for _, key := range keys {
-		server := serverMap[key]
-		if len(server) == 0 {
-			continue
-		}
-		if shadowsocksJSONName(server) == "" {
-			server["remarks"] = key
-		}
-		servers = append(servers, server)
-	}
-	return servers
 }
 
 func sip008ServerURI(server map[string]any) string {
@@ -114,24 +115,74 @@ func shadowsocksJSONPassword(fields map[string]any) string {
 }
 
 func jsonFieldString(fields map[string]any, keys ...string) string {
+	if fields == nil {
+		return ""
+	}
 	for _, key := range keys {
 		value, ok := fields[key]
 		if !ok {
 			continue
 		}
-		switch typed := value.(type) {
-		case string:
-			if strings.TrimSpace(typed) != "" {
-				return strings.TrimSpace(typed)
+		if formatted := formatJSONFieldString(value); formatted != "" {
+			return formatted
+		}
+	}
+	actualKeys := make([]string, 0, len(fields))
+	for key := range fields {
+		actualKeys = append(actualKeys, key)
+	}
+	sort.Strings(actualKeys)
+	for _, key := range keys {
+		normalizedKey := normalizedJSONURIKey(key)
+		for _, actualKey := range actualKeys {
+			if normalizedJSONURIKey(actualKey) != normalizedKey {
+				continue
 			}
-		case float64:
-			if typed == float64(int64(typed)) {
-				return strconv.FormatInt(int64(typed), 10)
+			if formatted := formatJSONFieldString(fields[actualKey]); formatted != "" {
+				return formatted
 			}
-			return strconv.FormatFloat(typed, 'f', -1, 64)
-		case json.Number:
-			return typed.String()
 		}
 	}
 	return ""
+}
+
+func formatJSONFieldString(value any) string {
+	switch typed := value.(type) {
+	case string:
+		return strings.TrimSpace(typed)
+	case float64:
+		if typed == float64(int64(typed)) {
+			return strconv.FormatInt(int64(typed), 10)
+		}
+		return strconv.FormatFloat(typed, 'f', -1, 64)
+	case json.Number:
+		return typed.String()
+	default:
+		return ""
+	}
+}
+
+func jsonFieldValue(fields map[string]any, keys ...string) any {
+	if fields == nil {
+		return nil
+	}
+	for _, key := range keys {
+		if value, ok := fields[key]; ok {
+			return value
+		}
+	}
+	actualKeys := make([]string, 0, len(fields))
+	for key := range fields {
+		actualKeys = append(actualKeys, key)
+	}
+	sort.Strings(actualKeys)
+	for _, key := range keys {
+		normalizedKey := normalizedJSONURIKey(key)
+		for _, actualKey := range actualKeys {
+			if normalizedJSONURIKey(actualKey) == normalizedKey {
+				return fields[actualKey]
+			}
+		}
+	}
+	return nil
 }

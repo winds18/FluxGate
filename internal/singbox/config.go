@@ -1294,7 +1294,7 @@ func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
 		outbound["network"] = network
 	}
 
-	if allowedIPs := splitCSV(firstNonEmpty(query.Get("allowed_ips"), query.Get("allowed-ips"), query.Get("allowedIPs"), query.Get("peer_allowed_ips"), query.Get("peer-allowed-ips"), query.Get("peerAllowedIPs"))); len(allowedIPs) > 0 {
+	if allowedIPs := splitCSV(firstNonEmpty(query.Get("allowed_ips"), query.Get("allowed-ips"), query.Get("allowedIPs"), query.Get("allowedIps"), query.Get("peer_allowed_ips"), query.Get("peer-allowed-ips"), query.Get("peerAllowedIPs"), query.Get("peerAllowedIps"))); len(allowedIPs) > 0 {
 		peer := map[string]any{
 			"server":      parsed.Hostname(),
 			"server_port": serverPort,
@@ -1315,7 +1315,7 @@ func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
 
 func wireGuardLocalAddress(query url.Values) []string {
 	values := []string{
-		firstNonEmpty(query.Get("local_address"), query.Get("local-address"), query.Get("localAddress"), query.Get("local_addresses"), query.Get("local-addresses"), query.Get("address"), query.Get("addresses")),
+		firstNonEmpty(query.Get("local_address"), query.Get("local-address"), query.Get("localAddress"), query.Get("local_addresses"), query.Get("local-addresses"), query.Get("localAddresses"), query.Get("address"), query.Get("addresses")),
 		query.Get("ip"),
 		query.Get("ipv6"),
 		query.Get("ip6"),

@@ -387,7 +387,7 @@ func collectJSONProxyFields(target map[string]string, scopes []string, values ma
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		normalizedKey := strings.ToLower(strings.TrimSpace(key))
+		normalizedKey := normalizedJSONProxyKey(strings.ToLower(strings.TrimSpace(key)))
 		if normalizedKey == "" {
 			continue
 		}
@@ -407,12 +407,64 @@ func collectJSONProxyFields(target map[string]string, scopes []string, values ma
 	}
 }
 
+func normalizedJSONProxyKey(key string) string {
+	switch key {
+	case "allowinsecure":
+		return "insecure"
+	case "clientfingerprint":
+		return "client-fingerprint"
+	case "disablesni":
+		return "disable-sni"
+	case "earlydataheadername":
+		return "early-data-header-name"
+	case "grpcopts":
+		return "grpc-opts"
+	case "grpcservicename":
+		return "grpc-service-name"
+	case "httpopts":
+		return "http-opts"
+	case "httpupgradeopts":
+		return "httpupgrade-opts"
+	case "maxearlydata":
+		return "max-early-data"
+	case "pluginoptions":
+		return "plugin-options"
+	case "pluginopts":
+		return "plugin-opts"
+	case "privatekey":
+		return "private-key"
+	case "privatekeypassphrase":
+		return "private-key-passphrase"
+	case "privatekeypath":
+		return "private-key-path"
+	case "publickey":
+		return "public-key"
+	case "realityopts":
+		return "reality-opts"
+	case "skipcertverify":
+		return "skip-cert-verify"
+	case "wshost":
+		return "ws-host"
+	case "wsheaders":
+		return "ws-headers"
+	case "wsopts":
+		return "ws-opts"
+	case "wspath":
+		return "ws-path"
+	default:
+		return key
+	}
+}
+
 func storeJSONProxyField(target map[string]string, scopes []string, key, value string) {
 	if len(scopes) > 0 {
 		parts := make([]string, 0, len(scopes)+1)
 		parts = append(parts, scopes...)
 		parts = append(parts, key)
 		target[strings.Join(parts, ".")] = value
+	}
+	if len(scopes) > 0 && strings.TrimSpace(target[key]) != "" {
+		return
 	}
 	target[key] = value
 }

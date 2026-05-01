@@ -774,7 +774,7 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 		transportType = "http"
 	}
 	wsPath := firstMapValue(proxy, "ws-path", "ws_path")
-	wsHost := firstMapValue(proxy, "ws-headers.host", "ws_headers.host", "ws-host", "ws_host")
+	wsHost := firstMapValue(proxy, "ws-headers.host", "ws_headers.host", "ws-opts.headers.host", "ws_opts.headers.host", "ws-host", "ws_host")
 	wsMaxEarlyData := firstMapValue(proxy, "ws-opts.max-early-data", "ws_opts.max_early_data", "ws-opts.max_early_data", "ws_opts.max-early-data", "max-early-data", "max_early_data")
 	wsEarlyDataHeaderName := firstMapValue(proxy, "ws-opts.early-data-header-name", "ws_opts.early_data_header_name", "ws-opts.early_data_header_name", "ws_opts.early-data-header-name", "early-data-header-name", "early_data_header_name")
 	httpPath := firstMapValue(proxy, "http-opts.path", "http_opts.path")

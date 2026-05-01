@@ -821,6 +821,27 @@ func TestNormalizeContentJSONStructuredAliasFields(t *testing.T) {
         "userName": "qa-user",
         "pass": "socks-placeholder",
         "version": "4a"
+      },
+      {
+        "title": "香港 JSON Camel Trojan",
+        "protocol": "trojan",
+        "server": "json-camel-trojan.example.test",
+        "port": 443,
+        "password": "trojan-placeholder",
+        "tls": true,
+        "serverName": "json-camel-trojan.example.test",
+        "skipCertVerify": true,
+        "disableSNI": true,
+        "clientFingerprint": "chrome",
+        "network": "ws",
+        "wsOpts": {
+          "path": "/trojan",
+          "headers": {
+            "Host": "ws.json-camel-trojan.example.test"
+          },
+          "maxEarlyData": 2048,
+          "earlyDataHeaderName": "Sec-WebSocket-Protocol"
+        }
       }
     ]
   }
@@ -832,6 +853,7 @@ func TestNormalizeContentJSONStructuredAliasFields(t *testing.T) {
 	want := strings.Join([]string{
 		"ss://aes-128-gcm:qa-placeholder@json-alias-ss.example.test:8388#%E4%B8%9C%E4%BA%AC%20JSON%20Scheme%20SS",
 		"socks4a://qa-user:socks-placeholder@json-alias-socks.example.test:1080#%E9%A6%96%E5%B0%94%20JSON%20ProxyType%20SOCKS",
+		"trojan://trojan-placeholder@json-camel-trojan.example.test:443?disable_sni=1&early_data_header_name=Sec-WebSocket-Protocol&fp=chrome&host=ws.json-camel-trojan.example.test&insecure=1&max_early_data=2048&path=%2Ftrojan&security=tls&sni=json-camel-trojan.example.test&type=ws#%E9%A6%99%E6%B8%AF%20JSON%20Camel%20Trojan",
 	}, "\n")
 	if got != want {
 		t.Fatalf("unexpected JSON structured alias fields: %q", got)

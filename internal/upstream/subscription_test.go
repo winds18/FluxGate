@@ -314,6 +314,53 @@ func TestNormalizeContentJSONStructuredProxyAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredProviderAliases(t *testing.T) {
+	raw := `{
+  "servers": [
+    {
+      "displayName": "JSON Provider VLESS",
+      "nodeType": "vless",
+      "serverHost": "json-provider-vless.example.test",
+      "remotePort": 443,
+      "userId": "00000000-0000-0000-0000-000000000096",
+      "tls": true,
+      "serverName": "json-provider-vless.example.test"
+    },
+    {
+      "label": "JSON Provider SS",
+      "proxyProtocol": "shadowsocks",
+      "remoteHost": "json-provider-ss.example.test",
+      "remote_port": 8388,
+      "encryptMethod": "aes-128-gcm",
+      "passwd": "qa-placeholder"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON provider alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000096@json-provider-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-provider-vless.example.test",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON provider VLESS URI to contain %q: %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#JSON%20Provider%20VLESS") {
+		t.Fatalf("unexpected structured JSON provider VLESS fragment: %q", lines[0])
+	}
+	if lines[1] != "ss://aes-128-gcm:qa-placeholder@json-provider-ss.example.test:8388#JSON%20Provider%20SS" {
+		t.Fatalf("unexpected structured JSON provider SS URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONStructuredGenericTransport(t *testing.T) {
 	raw := `{
   "nodes": [

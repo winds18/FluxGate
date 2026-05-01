@@ -314,6 +314,87 @@ func TestNormalizeContentJSONStructuredProxyAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredGenericTransport(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON Transport VLESS",
+      "protocol": "vless",
+      "address": "json-transport-vless.example.test",
+      "serverPort": 443,
+      "id": "00000000-0000-0000-0000-000000000095",
+      "tls": true,
+      "serverName": "json-transport-vless.example.test",
+      "transport": {
+        "type": "ws",
+        "path": "/nested",
+        "headers": {
+          "Host": "ws.json-transport-vless.example.test"
+        },
+        "maxEarlyData": 512,
+        "earlyDataHeaderName": "Sec-WebSocket-Protocol"
+      }
+    },
+    {
+      "name": "JSON Transport Trojan",
+      "protocol": "trojan",
+      "server": "json-transport-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "security": "tls",
+      "sni": "json-transport-trojan.example.test",
+      "transport": {
+        "type": "grpc",
+        "serviceName": "fluxgate-json",
+        "idleTimeout": "30s",
+        "pingTimeout": "10s",
+        "permitWithoutStream": true,
+        "multiMode": true
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON generic transport URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000095@json-transport-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-transport-vless.example.test",
+		"type=ws",
+		"path=%2Fnested",
+		"host=ws.json-transport-vless.example.test",
+		"max_early_data=512",
+		"early_data_header_name=Sec-WebSocket-Protocol",
+		"#JSON%20Transport%20VLESS",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON generic WS URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@json-transport-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-transport-trojan.example.test",
+		"type=grpc",
+		"service_name=fluxgate-json",
+		"idle_timeout=30s",
+		"ping_timeout=10s",
+		"permit_without_stream=true",
+		"multi_mode=true",
+		"#JSON%20Transport%20Trojan",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON generic gRPC URI to contain %q: %q", want, lines[1])
+		}
+	}
+}
+
 func TestNormalizeContentJSONStructuredProxyHyphenAliases(t *testing.T) {
 	raw := `{
   "nodes": [

@@ -427,6 +427,14 @@ func normalizedStructuredProxyKey(key string) string {
 		return "httpupgrade-opts"
 	case "maxearlydata":
 		return "max-early-data"
+	case "idletimeout":
+		return "idle-timeout"
+	case "pingtimeout":
+		return "ping-timeout"
+	case "permitwithoutstream":
+		return "permit-without-stream"
+	case "multimode":
+		return "multi-mode"
 	case "pluginoptions":
 		return "plugin-options"
 	case "pluginopts":
@@ -443,6 +451,8 @@ func normalizedStructuredProxyKey(key string) string {
 		return "reality-opts"
 	case "skipcertverify":
 		return "skip-cert-verify"
+	case "servicename":
+		return "service-name"
 	case "wshost":
 		return "ws-host"
 	case "wsheaders":
@@ -463,10 +473,17 @@ func storeJSONProxyField(target map[string]string, scopes []string, key, value s
 		parts = append(parts, key)
 		target[strings.Join(parts, ".")] = value
 	}
+	if !shouldPromoteStructuredProxyField(scopes) {
+		return
+	}
 	if len(scopes) > 0 && strings.TrimSpace(target[key]) != "" {
 		return
 	}
 	target[key] = value
+}
+
+func shouldPromoteStructuredProxyField(scopes []string) bool {
+	return len(scopes) == 0 || scopes[0] != "transport"
 }
 
 func firstJSONString(values map[string]any, keys ...string) string {

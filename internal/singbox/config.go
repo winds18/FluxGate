@@ -250,21 +250,21 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 	switch node.Protocol {
 	case "vless":
 		return buildVLESSOutbound(node)
-	case "trojan":
+	case "trojan", "trojan-go":
 		return buildTrojanOutbound(node)
-	case "ss":
+	case "ss", "shadowsocks":
 		return buildShadowsocksOutbound(node)
-	case "vmess":
+	case "vmess", "vmess-aead":
 		return buildVMessOutbound(node)
 	case "hysteria2", "hy2":
 		return buildHysteria2Outbound(node)
 	case "tuic":
 		return buildTUICOutbound(node)
-	case "anytls":
+	case "anytls", "any-tls":
 		return buildAnyTLSOutbound(node)
-	case "shadowtls":
+	case "shadowtls", "shadow-tls":
 		return buildShadowTLSOutbound(node)
-	case "naive", "naive+https", "naive+quic":
+	case "naive", "naive+https", "naive+quic", "naive-quic":
 		return buildNaiveOutbound(node)
 	case "hysteria":
 		return buildHysteriaOutbound(node)
@@ -366,11 +366,11 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 }
 
 func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || node.Protocol != "trojan" {
+	if node.Status != "active" || !isTrojanProtocol(node.Protocol) {
 		return nil, false
 	}
 	parsed, err := url.Parse(strings.TrimSpace(node.URI))
-	if err != nil || parsed.Scheme != "trojan" || parsed.Hostname() == "" {
+	if err != nil || !isTrojanProtocol(parsed.Scheme) || parsed.Hostname() == "" {
 		return nil, false
 	}
 	query := parsed.Query()
@@ -506,7 +506,7 @@ func transportFromQuery(query url.Values) map[string]any {
 }
 
 func buildShadowsocksOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || node.Protocol != "ss" {
+	if node.Status != "active" || !isShadowsocksProtocol(node.Protocol) {
 		return nil, false
 	}
 	method, password, server, port, ok := parseShadowsocksURI(node.URI, node.ServerPort)
@@ -537,7 +537,7 @@ func buildShadowsocksOutbound(node store.Node) (map[string]any, bool) {
 }
 
 func buildVMessOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || node.Protocol != "vmess" {
+	if node.Status != "active" || !isVMessProtocol(node.Protocol) {
 		return nil, false
 	}
 	doc, ok := parseVMessURI(node.URI)
@@ -816,11 +816,11 @@ func buildTUICOutbound(node store.Node) (map[string]any, bool) {
 }
 
 func buildAnyTLSOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || node.Protocol != "anytls" {
+	if node.Status != "active" || !isAnyTLSProtocol(node.Protocol) {
 		return nil, false
 	}
 	parsed, err := url.Parse(strings.TrimSpace(node.URI))
-	if err != nil || parsed.Scheme != "anytls" || parsed.Hostname() == "" {
+	if err != nil || !isAnyTLSProtocol(parsed.Scheme) || parsed.Hostname() == "" {
 		return nil, false
 	}
 
@@ -872,11 +872,11 @@ func buildAnyTLSOutbound(node store.Node) (map[string]any, bool) {
 }
 
 func buildShadowTLSOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || node.Protocol != "shadowtls" {
+	if node.Status != "active" || !isShadowTLSProtocol(node.Protocol) {
 		return nil, false
 	}
 	parsed, err := url.Parse(strings.TrimSpace(node.URI))
-	if err != nil || parsed.Scheme != "shadowtls" || parsed.Hostname() == "" {
+	if err != nil || !isShadowTLSProtocol(parsed.Scheme) || parsed.Hostname() == "" {
 		return nil, false
 	}
 
@@ -926,11 +926,11 @@ func buildShadowTLSOutbound(node store.Node) (map[string]any, bool) {
 }
 
 func buildNaiveOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || !strings.HasPrefix(node.Protocol, "naive") {
+	if node.Status != "active" || !isNaiveProtocol(node.Protocol) {
 		return nil, false
 	}
 	parsed, err := url.Parse(strings.TrimSpace(node.URI))
-	if err != nil || !strings.HasPrefix(parsed.Scheme, "naive") || parsed.Hostname() == "" {
+	if err != nil || !isNaiveProtocol(parsed.Scheme) || parsed.Hostname() == "" {
 		return nil, false
 	}
 	query := parsed.Query()
@@ -957,7 +957,7 @@ func buildNaiveOutbound(node store.Node) (map[string]any, bool) {
 	if boolQuery(firstNonEmpty(query.Get("udp_over_tcp"), query.Get("udp-over-tcp"), query.Get("udpOverTcp"))) {
 		outbound["udp_over_tcp"] = true
 	}
-	if parsed.Scheme == "naive+quic" || boolQuery(query.Get("quic")) {
+	if isNaiveQUICProtocol(parsed.Scheme) || boolQuery(query.Get("quic")) {
 		outbound["quic"] = true
 	}
 	if congestionControl := firstNonEmpty(query.Get("quic_congestion_control"), query.Get("quic-congestion-control"), query.Get("quicCongestionControl")); congestionControl != "" {
@@ -1401,7 +1401,7 @@ func buildBlockOutbound(node store.Node) (map[string]any, bool) {
 }
 
 func isDirectProtocol(protocol string) bool {
-	switch protocol {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
 	case "direct", "freedom":
 		return true
 	default:
@@ -1410,8 +1410,71 @@ func isDirectProtocol(protocol string) bool {
 }
 
 func isBlockProtocol(protocol string) bool {
-	switch protocol {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
 	case "block", "blackhole", "reject", "reject-drop", "reject-no-drop", "reject-tinygif":
+		return true
+	default:
+		return false
+	}
+}
+
+func isTrojanProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "trojan", "trojan-go":
+		return true
+	default:
+		return false
+	}
+}
+
+func isShadowsocksProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "ss", "shadowsocks":
+		return true
+	default:
+		return false
+	}
+}
+
+func isVMessProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "vmess", "vmess-aead":
+		return true
+	default:
+		return false
+	}
+}
+
+func isAnyTLSProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "anytls", "any-tls":
+		return true
+	default:
+		return false
+	}
+}
+
+func isShadowTLSProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "shadowtls", "shadow-tls":
+		return true
+	default:
+		return false
+	}
+}
+
+func isNaiveProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "naive", "naive+https", "naive+quic", "naive-quic":
+		return true
+	default:
+		return false
+	}
+}
+
+func isNaiveQUICProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "naive+quic", "naive-quic":
 		return true
 	default:
 		return false
@@ -1420,13 +1483,13 @@ func isBlockProtocol(protocol string) bool {
 
 func parseVMessURI(rawURI string) (map[string]any, bool) {
 	rawURI = strings.TrimSpace(rawURI)
-	if !strings.HasPrefix(rawURI, "vmess://") {
+	scheme, payload, ok := strings.Cut(rawURI, "://")
+	if !ok || !isVMessProtocol(scheme) {
 		return nil, false
 	}
 	if doc, ok := parseVMessUserinfoURI(rawURI); ok {
 		return doc, true
 	}
-	payload := strings.TrimPrefix(rawURI, "vmess://")
 	payload = strings.TrimSpace(payload)
 	if payload == "" {
 		return nil, false
@@ -1444,7 +1507,7 @@ func parseVMessURI(rawURI string) (map[string]any, bool) {
 
 func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 	parsed, err := url.Parse(rawURI)
-	if err != nil || parsed.Scheme != "vmess" || parsed.Hostname() == "" {
+	if err != nil || !isVMessProtocol(parsed.Scheme) || parsed.Hostname() == "" {
 		return nil, false
 	}
 	query := parsed.Query()
@@ -1494,8 +1557,9 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 }
 
 func parseShadowsocksURI(rawURI string, fallbackPort int) (string, string, string, int, bool) {
-	parsed, err := url.Parse(strings.TrimSpace(rawURI))
-	if err != nil || parsed.Scheme != "ss" {
+	rawURI = strings.TrimSpace(rawURI)
+	parsed, err := url.Parse(rawURI)
+	if err != nil || !isShadowsocksProtocol(parsed.Scheme) {
 		return "", "", "", 0, false
 	}
 	if parsed.Hostname() != "" {
@@ -1513,7 +1577,7 @@ func parseShadowsocksURI(rawURI string, fallbackPort int) (string, string, strin
 		}
 	}
 
-	encoded := strings.TrimPrefix(strings.TrimSpace(rawURI), "ss://")
+	_, encoded, _ := strings.Cut(rawURI, "://")
 	encoded = strings.SplitN(encoded, "#", 2)[0]
 	encoded = strings.SplitN(encoded, "?", 2)[0]
 	decoded, ok := decodeBase64URL(encoded)

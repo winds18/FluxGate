@@ -713,6 +713,82 @@ func TestBuildConfigAddsBlockOutboundWithoutSelectingIt(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsCanonicalProtocolAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         96,
+			URI:        "shadowsocks://alias-ss.example:8388?method=aes-128-gcm&password=ss-alias-placeholder#ss-alias",
+			Protocol:   "shadowsocks",
+			ServerPort: 8388,
+			Status:     "active",
+		},
+		{
+			ID:         97,
+			URI:        "trojan-go://trojan-go-placeholder@alias-trojan.example:443?security=tls&sni=alias-trojan.example#trojan-go-alias",
+			Protocol:   "trojan-go",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         98,
+			URI:        "vmess-aead://00000000-0000-0000-0000-000000000098@alias-vmess.example:443?tls=1&type=ws&path=%2Fws&host=ws.alias-vmess.example#vmess-aead-alias",
+			Protocol:   "vmess-aead",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         99,
+			URI:        "any-tls://anytls-alias-placeholder@alias-anytls.example:443?sni=alias-anytls.example#any-tls-alias",
+			Protocol:   "any-tls",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         100,
+			URI:        "shadow-tls://shadowtls-alias-placeholder@alias-shadowtls.example:443?version=3&sni=alias-shadowtls.example#shadow-tls-alias",
+			Protocol:   "shadow-tls",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         101,
+			URI:        "naive-quic://qa-user:naive-alias-placeholder@alias-naive.example:443?serverName=alias-naive.example#naive-quic-alias",
+			Protocol:   "naive-quic",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	shadowsocks := findOutbound(config.Outbounds, "up_96")
+	if shadowsocks == nil || shadowsocks["type"] != "shadowsocks" || shadowsocks["method"] != "aes-128-gcm" || shadowsocks["password"] != "ss-alias-placeholder" {
+		t.Fatalf("unexpected shadowsocks alias outbound: %+v", shadowsocks)
+	}
+	trojan := findOutbound(config.Outbounds, "up_97")
+	if trojan == nil || trojan["type"] != "trojan" || trojan["password"] != "trojan-go-placeholder" {
+		t.Fatalf("unexpected trojan-go alias outbound: %+v", trojan)
+	}
+	vmess := findOutbound(config.Outbounds, "up_98")
+	if vmess == nil || vmess["type"] != "vmess" || vmess["uuid"] != "00000000-0000-0000-0000-000000000098" {
+		t.Fatalf("unexpected vmess-aead alias outbound: %+v", vmess)
+	}
+	vmessTransport, ok := vmess["transport"].(map[string]any)
+	if !ok || vmessTransport["type"] != "ws" || vmessTransport["path"] != "/ws" {
+		t.Fatalf("unexpected vmess-aead alias transport: %+v", vmess["transport"])
+	}
+	anytls := findOutbound(config.Outbounds, "up_99")
+	if anytls == nil || anytls["type"] != "anytls" || anytls["password"] != "anytls-alias-placeholder" {
+		t.Fatalf("unexpected any-tls alias outbound: %+v", anytls)
+	}
+	shadowtls := findOutbound(config.Outbounds, "up_100")
+	if shadowtls == nil || shadowtls["type"] != "shadowtls" || shadowtls["version"] != 3 || shadowtls["password"] != "shadowtls-alias-placeholder" {
+		t.Fatalf("unexpected shadow-tls alias outbound: %+v", shadowtls)
+	}
+	naive := findOutbound(config.Outbounds, "up_101")
+	if naive == nil || naive["type"] != "naive" || naive["username"] != "qa-user" || naive["password"] != "naive-alias-placeholder" || naive["quic"] != true {
+		t.Fatalf("unexpected naive-quic alias outbound: %+v", naive)
+	}
+}
+
 func TestBuildConfigAppliesVirtualNodePolicyToUsers(t *testing.T) {
 	now := time.Date(2026, 4, 29, 5, 10, 0, 0, time.UTC)
 	teamID := int64(10)

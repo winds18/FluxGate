@@ -32,13 +32,13 @@
 - JSON 包装订阅支持 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case 变体，分享链接缺少 fragment 时会优先使用对象内名称而不是字段名。
 - JSON 包装订阅支持解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象，例如 `type`、`server`、`port`、`cipher`、`password` 和嵌套 `ws-opts`。
 - JSON 结构化节点支持常见字段别名，例如 `protocol`/`proto`、`host`/`address`/`add`、`server_port`/`server-port`、`method`/`encrypt-method`、`pass`/`passwd`、`id`/`user-id` 和 `remarks`。
-- subscription 来源支持解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点，并转换为标准 URI。
+- subscription 来源支持解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点，并兼容 `trojan-go` 和 `socks5h` 协议别名，转换为标准 URI。
 - Quantumult X 和 Surge 结构化 VLESS/Trojan 节点支持保留 gRPC transport 和 service name，并同步到 sing-box outbound。
 - Quantumult X HTTP/SOCKS 节点支持键值和位置参数两种认证写法。
 - subscription 来源支持解析以节点名称为 key 的 JSON URI 对象映射；当 URI 缺少 fragment 时会使用映射 key 或对象内 `name` 作为节点名。
 - subscription 来源支持解析裸 VMess JSON 单对象、数组、包装字符串和按名称映射对象，并转换为标准 `vmess://` URI；裸 VMess JSON 会保留 `packetEncoding`/`packet_encoding`/`packet-encoding`、`disable_sni` 和 `fp`/`fingerprint`/`clientFingerprint` 并同步为 sing-box `packet_encoding` 和 uTLS fingerprint。
 - subscription 来源支持解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI。
-- subscription 来源支持解析 Surge `[Proxy]` 代理段中的 SS、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并转换为标准 URI。
+- subscription 来源支持解析 Surge `[Proxy]` 代理段中的 SS、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并兼容 `trojan-go` 和 `socks5h` 协议别名，转换为标准 URI。
 - subscription 来源支持解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点，以及 Direct/Reject 变体/DNS 内置出站；Clash YAML 结构化 `type` 兼容 `trojan-go`、`vmess-aead`、`hy2`、`any-tls`、`shadow-tls`、`naive-quic` 和 `socks5h` 别名。
 - Clash YAML 解析支持嵌套 `proxies` 列表，可兼容带内嵌 provider 节点清单的订阅结构。
 - Clash YAML 解析支持 `proxies: [{ ... }]` 内联节点数组，可兼容 provider 或顶层节点的紧凑写法。

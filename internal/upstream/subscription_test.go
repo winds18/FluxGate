@@ -606,6 +606,31 @@ socks5=qx-socks-udp.example.test:1080, qa-user, socks-placeholder, udp=true, tag
 	}
 }
 
+func TestNormalizeContentQuantumultXProtocolAliases(t *testing.T) {
+	raw := `[server_local]
+trojan-go=qx-trojan-go-alias.example.test:443, password=trojan-placeholder, over-tls=true, tls-host=qx-trojan-go-alias.example.test, tag=东京 QuantumultX Trojan-Go Alias
+socks5h=qx-socks5h-alias.example.test:1080, qa-user, socks-placeholder, udp=true, tag=首尔 QuantumultX SOCKS5H Alias`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Quantumult X alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@qx-trojan-go-alias.example.test:443?")
+	if !strings.Contains(lines[0], "security=tls") ||
+		!strings.Contains(lines[0], "sni=qx-trojan-go-alias.example.test") ||
+		!strings.HasSuffix(lines[0], "#%E4%B8%9C%E4%BA%AC%20QuantumultX%20Trojan-Go%20Alias") {
+		t.Fatalf("unexpected Quantumult X Trojan-Go alias URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "socks5://qa-user:socks-placeholder@qx-socks5h-alias.example.test:1080?")
+	if !strings.Contains(lines[1], "udp=1") ||
+		!strings.HasSuffix(lines[1], "#%E9%A6%96%E5%B0%94%20QuantumultX%20SOCKS5H%20Alias") {
+		t.Fatalf("unexpected Quantumult X SOCKS5H alias URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONWrappedBase64URIList(t *testing.T) {
 	payload := strings.Join([]string{
 		"vless://00000000-0000-0000-0000-000000000081@example.com:443#香港 02",
@@ -1916,6 +1941,33 @@ func TestNormalizeContentSurgeProxyListSOCKSUDPFlag(t *testing.T) {
 	}
 	if !strings.HasSuffix(got, "#%E9%A6%96%E5%B0%94%20Surge%20SOCKS%20UDP") {
 		t.Fatalf("unexpected Surge SOCKS UDP fragment: %q", got)
+	}
+}
+
+func TestNormalizeContentSurgeProxyListProtocolAliases(t *testing.T) {
+	raw := `
+[Proxy]
+东京 Surge Trojan-Go Alias = trojan-go, trojan-go.surge-alias.example.test, 443, trojan-placeholder, sni=trojan-go.surge-alias.example.test
+首尔 Surge SOCKS5H Alias = socks5h, socks5h.surge-alias.example.test, 1080, qa-user, socks-placeholder, udp=true
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Surge alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan-go.surge-alias.example.test:443?")
+	if !strings.Contains(lines[0], "security=tls") ||
+		!strings.Contains(lines[0], "sni=trojan-go.surge-alias.example.test") ||
+		!strings.HasSuffix(lines[0], "#%E4%B8%9C%E4%BA%AC%20Surge%20Trojan-Go%20Alias") {
+		t.Fatalf("unexpected Surge Trojan-Go alias URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "socks5://qa-user:socks-placeholder@socks5h.surge-alias.example.test:1080?")
+	if !strings.Contains(lines[1], "udp=1") ||
+		!strings.HasSuffix(lines[1], "#%E9%A6%96%E5%B0%94%20Surge%20SOCKS5H%20Alias") {
+		t.Fatalf("unexpected Surge SOCKS5H alias URI: %q", lines[1])
 	}
 }
 

@@ -110,13 +110,13 @@
 - JSON 包装订阅可解析 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case 变体，分享链接缺少 fragment 时会优先使用对象内名称。
 - JSON 包装订阅可解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象。
 - JSON 结构化节点可识别 `protocol`/`proto`、`host`/`address`/`add`、`server_port`/`server-port`、`method`/`encrypt-method`、`pass`/`passwd`、`id`/`user-id` 和 `remarks` 等常见别名字段。
-- subscription 来源可解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点。
+- subscription 来源可解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点，并兼容 `trojan-go` 和 `socks5h` 协议别名。
 - Quantumult X 和 Surge 结构化 VLESS/Trojan 节点可保留 gRPC transport 和 service name。
 - Quantumult X HTTP/SOCKS 节点可兼容键值和位置参数两种认证写法。
 - subscription 来源可解析以节点名称为 key 的 JSON URI 对象映射。
 - subscription 来源可解析裸 VMess JSON 单对象、数组、包装字符串和按名称映射对象，并转换为标准 `vmess://` URI；裸 VMess JSON 会保留 `packetEncoding`/`packet_encoding`/`packet-encoding`、`disable_sni` 和 `fp`/`fingerprint`/`clientFingerprint` 参数。
 - subscription 来源可解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI。
-- subscription 来源可解析 Surge `[Proxy]` 代理段中的 SS、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并转换为标准 URI。
+- subscription 来源可解析 Surge `[Proxy]` 代理段中的 SS、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并兼容 `trojan-go` 和 `socks5h` 协议别名，转换为标准 URI。
 - subscription 来源支持按刷新间隔自动同步到期订阅。
 - subscription 来源可解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点，以及 Direct/Reject 变体/DNS 内置出站；Clash YAML 结构化 `type` 兼容 `trojan-go`、`vmess-aead`、`hy2`、`any-tls`、`shadow-tls`、`naive-quic` 和 `socks5h` 别名。
 - Clash YAML 解析支持嵌套 `proxies` 列表，可兼容带内嵌 provider 节点清单的订阅结构。

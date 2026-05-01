@@ -189,7 +189,8 @@ func surgeProxyURI(line string) string {
 		return clashInternalURI("block", proxy, "Block")
 	case "dns":
 		return clashInternalURI("dns", proxy, "DNS")
-	case "trojan":
+	case "trojan", "trojan-go":
+		proxy["type"] = "trojan"
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "psk")
 		if proxy["tls"] == "" {
 			proxy["tls"] = "true"
@@ -201,7 +202,7 @@ func surgeProxyURI(line string) string {
 			proxy["tls"] = "true"
 		}
 		return clashHTTPURI(proxy)
-	case "socks", "socks5", "socks4", "socks4a":
+	case "socks", "socks5", "socks5h", "socks4", "socks4a":
 		if protocol == "socks" {
 			proxy["type"] = "socks5"
 		}

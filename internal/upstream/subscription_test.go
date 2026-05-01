@@ -2568,6 +2568,120 @@ func TestNormalizeContentSingBoxJSONNaive(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONProtocolAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "trojan-go",
+      "tag": "sing-box Trojan-Go Alias",
+      "server": "trojan-go.singbox-alias.example.test",
+      "server_port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "trojan-go.singbox-alias.example.test"
+      }
+    },
+    {
+      "type": "vmess-aead",
+      "tag": "sing-box VMess AEAD Alias",
+      "server": "vmess-aead.singbox-alias.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000056",
+      "tls": {
+        "enabled": true,
+        "server_name": "vmess-aead.singbox-alias.example.test"
+      }
+    },
+    {
+      "type": "hy2",
+      "tag": "sing-box HY2 Alias",
+      "server": "hy2.singbox-alias.example.test",
+      "server_port": 443,
+      "password": "hy2-placeholder"
+    },
+    {
+      "type": "any-tls",
+      "tag": "sing-box AnyTLS Alias",
+      "server": "anytls.singbox-alias.example.test",
+      "server_port": 443,
+      "password": "anytls-placeholder"
+    },
+    {
+      "type": "shadow-tls",
+      "tag": "sing-box ShadowTLS Alias",
+      "server": "shadowtls.singbox-alias.example.test",
+      "server_port": 443,
+      "version": 3,
+      "password": "shadowtls-placeholder"
+    },
+    {
+      "type": "naive-quic",
+      "tag": "sing-box Naive QUIC Alias",
+      "server": "naive.singbox-alias.example.test",
+      "server_port": 443,
+      "username": "qa-user",
+      "password": "naive-placeholder"
+    },
+    {
+      "type": "socks5h",
+      "tag": "sing-box SOCKS5H Alias",
+      "server": "socks5h.singbox-alias.example.test",
+      "server_port": 1080,
+      "username": "qa-user",
+      "password": "socks-placeholder",
+      "network": "udp"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 7 {
+		t.Fatalf("expected 7 normalized sing-box alias nodes, got %d: %q", len(lines), got)
+	}
+
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan-go.singbox-alias.example.test:443?")
+	if !strings.Contains(lines[0], "sni=trojan-go.singbox-alias.example.test") ||
+		!strings.HasSuffix(lines[0], "#sing-box%20Trojan-Go%20Alias") {
+		t.Fatalf("unexpected sing-box Trojan-Go alias URI: %q", lines[0])
+	}
+
+	assertHasPrefix(t, lines[1], "vmess://")
+	decodedVMess := decodeVMessURIForTest(t, lines[1])
+	for _, want := range []string{
+		`"ps":"sing-box VMess AEAD Alias"`,
+		`"add":"vmess-aead.singbox-alias.example.test"`,
+		`"id":"00000000-0000-0000-0000-000000000056"`,
+		`"tls":"tls"`,
+		`"sni":"vmess-aead.singbox-alias.example.test"`,
+	} {
+		if !strings.Contains(decodedVMess, want) {
+			t.Fatalf("expected decoded VMess alias URI to contain %q: %q", want, decodedVMess)
+		}
+	}
+
+	assertHasPrefix(t, lines[2], "hysteria2://hy2-placeholder@hy2.singbox-alias.example.test:443#sing-box%20HY2%20Alias")
+	assertHasPrefix(t, lines[3], "anytls://anytls-placeholder@anytls.singbox-alias.example.test:443#sing-box%20AnyTLS%20Alias")
+	assertHasPrefix(t, lines[4], "shadowtls://shadowtls-placeholder@shadowtls.singbox-alias.example.test:443?")
+	if !strings.Contains(lines[4], "version=3") ||
+		!strings.HasSuffix(lines[4], "#sing-box%20ShadowTLS%20Alias") {
+		t.Fatalf("unexpected sing-box ShadowTLS alias URI: %q", lines[4])
+	}
+	assertHasPrefix(t, lines[5], "naive+quic://qa-user:naive-placeholder@naive.singbox-alias.example.test:443?")
+	if !strings.Contains(lines[5], "quic=1") ||
+		!strings.HasSuffix(lines[5], "#sing-box%20Naive%20QUIC%20Alias") {
+		t.Fatalf("unexpected sing-box Naive QUIC alias URI: %q", lines[5])
+	}
+	assertHasPrefix(t, lines[6], "socks5://qa-user:socks-placeholder@socks5h.singbox-alias.example.test:1080?")
+	if !strings.Contains(lines[6], "network=udp") ||
+		!strings.HasSuffix(lines[6], "#sing-box%20SOCKS5H%20Alias") {
+		t.Fatalf("unexpected sing-box SOCKS5H alias URI: %q", lines[6])
+	}
+}
+
 func TestNormalizeContentSingBoxJSONSOCKSUDPFlag(t *testing.T) {
 	raw := `{
   "outbounds": [

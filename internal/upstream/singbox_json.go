@@ -101,8 +101,29 @@ func appendSingBoxMappedObject(result *[]map[string]any, item map[string]any, fa
 	*result = append(*result, item)
 }
 
+func normalizedSingBoxOutboundType(outboundType string) string {
+	switch strings.ToLower(strings.TrimSpace(outboundType)) {
+	case "trojan-go":
+		return "trojan"
+	case "vmess-aead":
+		return "vmess"
+	case "hy2":
+		return "hysteria2"
+	case "any-tls":
+		return "anytls"
+	case "shadow-tls":
+		return "shadowtls"
+	case "naive-quic":
+		return "naive+quic"
+	case "socks5h":
+		return "socks5"
+	default:
+		return strings.ToLower(strings.TrimSpace(outboundType))
+	}
+}
+
 func singBoxOutboundURI(outbound map[string]any) string {
-	outboundType := strings.ToLower(singBoxString(outbound, "type"))
+	outboundType := normalizedSingBoxOutboundType(singBoxString(outbound, "type"))
 	switch outboundType {
 	case "shadowsocks":
 		return singBoxShadowsocksURI(outbound)
@@ -460,7 +481,7 @@ func singBoxNaiveURI(outbound map[string]any) string {
 
 	scheme := "naive"
 	values := url.Values{}
-	if strings.EqualFold(singBoxString(outbound, "type"), "naive+quic") || boolFromAnyValue(outbound["quic"]) {
+	if normalizedSingBoxOutboundType(singBoxString(outbound, "type")) == "naive+quic" || boolFromAnyValue(outbound["quic"]) {
 		scheme = "naive+quic"
 		values.Set("quic", "1")
 	}
@@ -520,7 +541,7 @@ func singBoxSOCKSURI(outbound map[string]any) string {
 	}
 
 	scheme := "socks5"
-	outboundType := strings.ToLower(singBoxString(outbound, "type"))
+	outboundType := normalizedSingBoxOutboundType(singBoxString(outbound, "type"))
 	switch outboundType {
 	case "socks4", "socks4a", "socks5":
 		scheme = outboundType

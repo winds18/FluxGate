@@ -137,7 +137,7 @@
 - sing-box JSON SOCKS outbound 支持保留 `udp`、`udp_relay` 和 `udp-relay` 标志，结构化导入后会继续进入 SOCKS UDP 转换链路。
 - V2Ray/Xray JSON SOCKS outbound 支持保留 `udp`、`udpEnabled`、`udp_enabled`、`udp_relay`、`udp-relay`、`udp_over_tcp`、`udpOverTcp`、`udp-over-tcp` 和 `uot` 标志，结构化导入后会继续进入 SOCKS UDP 转换链路。
 - WireGuard URI 支持 `privateKey`/`secretKey`、`publicKey`/`peerPublicKey`、`preSharedKey`、`ip`/`ipv6`/`localAddresses`、`allowedIPs`/`allowedIps`/`peerAllowedIps`、`systemInterface`、`interfaceName`、`reservedBytes` 和 `peerReserved` 查询参数别名，并同步为 sing-box outbound。
-- Tor URI 支持 `executablePath`、`dataDirectory`、`extraArgs` 和 `arguments` 查询参数别名，并同步为 sing-box outbound。
+- Tor URI 支持 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments`/重复 `arg` 和 `torrc[Option]` 查询参数别名，并同步为 sing-box outbound。
 - Shadowsocks URI 支持从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
 - Hysteria2/Hy2 URI 支持从 `password`、`auth`、`auth_str` 或 `token` 查询参数读取认证密码，兼容缺少 userinfo 的订阅写法。
 - Hysteria v1 URI 支持从 `token` 查询参数读取认证字符串，兼容部分上游订阅的 token 写法。

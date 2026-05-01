@@ -1345,10 +1345,10 @@ func buildTorOutbound(node store.Node) (map[string]any, bool) {
 	if executablePath := firstNonEmpty(query.Get("executable_path"), query.Get("executable-path"), query.Get("executablePath"), query.Get("path")); executablePath != "" {
 		outbound["executable_path"] = executablePath
 	}
-	if extraArgs := splitCSV(firstNonEmpty(query.Get("extra_args"), query.Get("extra-args"), query.Get("extraArgs"), query.Get("args"), query.Get("arguments"))); len(extraArgs) > 0 {
+	if extraArgs := torExtraArgsQuery(query); len(extraArgs) > 0 {
 		outbound["extra_args"] = extraArgs
 	}
-	if dataDirectory := firstNonEmpty(query.Get("data_directory"), query.Get("data-directory"), query.Get("dataDirectory"), query.Get("dir")); dataDirectory != "" {
+	if dataDirectory := firstNonEmpty(query.Get("data_directory"), query.Get("data-directory"), query.Get("dataDirectory"), query.Get("dataDir"), query.Get("dir")); dataDirectory != "" {
 		outbound["data_directory"] = dataDirectory
 	}
 	if torrc := torrcQuery(query); len(torrc) > 0 {
@@ -1711,6 +1711,23 @@ func byteListQuery(value string) ([]int, bool) {
 	return result, true
 }
 
+func torExtraArgsQuery(query url.Values) []string {
+	for _, key := range []string{"extra_args", "extra-args", "extraArgs", "extra_arg", "extra-arg", "extraArg", "args", "arg", "arguments"} {
+		values, ok := query[key]
+		if !ok {
+			continue
+		}
+		args := make([]string, 0, len(values))
+		for _, value := range values {
+			args = append(args, splitCSV(value)...)
+		}
+		if len(args) > 0 {
+			return args
+		}
+	}
+	return nil
+}
+
 func torrcQuery(query url.Values) map[string]any {
 	torrc := map[string]any{}
 	for key, values := range query {
@@ -1720,6 +1737,8 @@ func torrcQuery(query url.Values) map[string]any {
 			option = strings.TrimPrefix(key, "torrc.")
 		case strings.HasPrefix(key, "torrc_"):
 			option = strings.TrimPrefix(key, "torrc_")
+		case strings.HasPrefix(key, "torrc[") && strings.HasSuffix(key, "]"):
+			option = strings.TrimSuffix(strings.TrimPrefix(key, "torrc["), "]")
 		}
 		option = strings.TrimSpace(option)
 		if option == "" || len(values) == 0 {

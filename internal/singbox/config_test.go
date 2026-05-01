@@ -1606,7 +1606,7 @@ func TestBuildConfigSupportsTorQueryAliases(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         90,
-			URI:        "tor://default?executablePath=%2Fusr%2Fbin%2Ftor&dataDirectory=cache%2Ftor-query&extraArgs=--quiet,--SocksPort,auto&torrc_ClientOnly=1&torrc.SocksPort=auto#tor-query",
+			URI:        "tor://default?executablePath=%2Fusr%2Fbin%2Ftor&dataDir=cache%2Ftor-query&arg=--quiet&arg=--SocksPort&arg=auto&torrc%5BClientOnly%5D=1&torrc.SocksPort=auto#tor-query",
 			Protocol:   "tor",
 			ServerPort: 0,
 			Status:     "active",

@@ -1208,14 +1208,14 @@ func TestBuildConfigSupportsAnyTLSShadowTLSQueryCredentialAliases(t *testing.T) 
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         90,
-			URI:        "anytls://query-anytls.example:443?pass=anytls-query-placeholder&sni=query-anytls.example&idle_session_timeout=30s&fp=chrome#anytls-query",
+			URI:        "anytls://query-anytls.example:443?pass=anytls-query-placeholder&serverName=query-anytls.example&idleSessionCheckInterval=20s&idleSessionTimeout=30s&minIdleSession=2&allowInsecure=1&disableSNI=1&clientFingerprint=chrome#anytls-query",
 			Protocol:   "anytls",
 			ServerPort: 443,
 			Status:     "active",
 		},
 		{
 			ID:         91,
-			URI:        "shadowtls://query-shadowtls.example:443?version=3&token=shadowtls-query-placeholder&sni=query-shadowtls.example&fp=chrome#shadowtls-query",
+			URI:        "shadowtls://query-shadowtls.example:443?version=3&token=shadowtls-query-placeholder&serverName=query-shadowtls.example&allowInsecure=1&disableSNI=1&clientFingerprint=chrome#shadowtls-query",
 			Protocol:   "shadowtls",
 			ServerPort: 443,
 			Status:     "active",
@@ -1226,11 +1226,11 @@ func TestBuildConfigSupportsAnyTLSShadowTLSQueryCredentialAliases(t *testing.T) 
 	if anytlsOutbound == nil {
 		t.Fatalf("expected anytls outbound up_90, got %+v", config.Outbounds)
 	}
-	if anytlsOutbound["type"] != "anytls" || anytlsOutbound["server"] != "query-anytls.example" || anytlsOutbound["password"] != "anytls-query-placeholder" || anytlsOutbound["idle_session_timeout"] != "30s" {
+	if anytlsOutbound["type"] != "anytls" || anytlsOutbound["server"] != "query-anytls.example" || anytlsOutbound["password"] != "anytls-query-placeholder" || anytlsOutbound["idle_session_check_interval"] != "20s" || anytlsOutbound["idle_session_timeout"] != "30s" || anytlsOutbound["min_idle_session"] != 2 {
 		t.Fatalf("unexpected anytls query credential fields: %+v", anytlsOutbound)
 	}
 	anytlsTLS, ok := anytlsOutbound["tls"].(map[string]any)
-	if !ok || anytlsTLS["enabled"] != true || anytlsTLS["server_name"] != "query-anytls.example" {
+	if !ok || anytlsTLS["enabled"] != true || anytlsTLS["server_name"] != "query-anytls.example" || anytlsTLS["insecure"] != true || anytlsTLS["disable_sni"] != true {
 		t.Fatalf("unexpected anytls query credential tls: %+v", anytlsOutbound["tls"])
 	}
 	anytlsUTLS, ok := anytlsTLS["utls"].(map[string]any)
@@ -1246,7 +1246,7 @@ func TestBuildConfigSupportsAnyTLSShadowTLSQueryCredentialAliases(t *testing.T) 
 		t.Fatalf("unexpected shadowtls query credential fields: %+v", shadowtlsOutbound)
 	}
 	shadowtlsTLS, ok := shadowtlsOutbound["tls"].(map[string]any)
-	if !ok || shadowtlsTLS["enabled"] != true || shadowtlsTLS["server_name"] != "query-shadowtls.example" {
+	if !ok || shadowtlsTLS["enabled"] != true || shadowtlsTLS["server_name"] != "query-shadowtls.example" || shadowtlsTLS["insecure"] != true || shadowtlsTLS["disable_sni"] != true {
 		t.Fatalf("unexpected shadowtls query credential tls: %+v", shadowtlsOutbound["tls"])
 	}
 	shadowtlsUTLS, ok := shadowtlsTLS["utls"].(map[string]any)

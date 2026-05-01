@@ -837,24 +837,24 @@ func buildAnyTLSOutbound(node store.Node) (map[string]any, bool) {
 		"server_port": portWithFallback(parsed.Port(), node.ServerPort, 443),
 		"password":    password,
 	}
-	if checkInterval := firstNonEmpty(query.Get("idle_session_check_interval"), query.Get("idle-session-check-interval")); checkInterval != "" {
+	if checkInterval := firstNonEmpty(query.Get("idle_session_check_interval"), query.Get("idle-session-check-interval"), query.Get("idleSessionCheckInterval")); checkInterval != "" {
 		outbound["idle_session_check_interval"] = checkInterval
 	}
-	if timeout := firstNonEmpty(query.Get("idle_session_timeout"), query.Get("idle-session-timeout")); timeout != "" {
+	if timeout := firstNonEmpty(query.Get("idle_session_timeout"), query.Get("idle-session-timeout"), query.Get("idleSessionTimeout")); timeout != "" {
 		outbound["idle_session_timeout"] = timeout
 	}
-	if minIdleSession := intQuery(firstNonEmpty(query.Get("min_idle_session"), query.Get("min-idle-session"))); minIdleSession > 0 {
+	if minIdleSession := intQuery(firstNonEmpty(query.Get("min_idle_session"), query.Get("min-idle-session"), query.Get("minIdleSession"))); minIdleSession > 0 {
 		outbound["min_idle_session"] = minIdleSession
 	}
 
 	tls := map[string]any{"enabled": true}
-	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
 		tls["server_name"] = serverName
 	}
-	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"))) {
 		tls["insecure"] = true
 	}
-	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
 		tls["disable_sni"] = true
 	}
 	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
@@ -902,13 +902,13 @@ func buildShadowTLSOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	tls := map[string]any{"enabled": true}
-	if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+	if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
 		tls["server_name"] = serverName
 	}
-	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"))) {
 		tls["insecure"] = true
 	}
-	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
 		tls["disable_sni"] = true
 	}
 	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {

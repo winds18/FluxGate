@@ -475,28 +475,28 @@ func transportFromQuery(query url.Values) map[string]any {
 		return map[string]any{"type": "quic"}
 	case "http", "h2":
 		transport := map[string]any{"type": "http"}
-		if hosts := splitCSV(firstNonEmpty(query.Get("host"), query.Get("http_host"), query.Get("http-host"))); len(hosts) > 0 {
+		if hosts := splitCSV(firstNonEmpty(query.Get("host"), query.Get("http_host"), query.Get("http-host"), query.Get("httpHost"))); len(hosts) > 0 {
 			transport["host"] = hosts
 		}
-		if path := firstNonEmpty(query.Get("path"), query.Get("http_path"), query.Get("http-path")); path != "" {
+		if path := firstNonEmpty(query.Get("path"), query.Get("http_path"), query.Get("http-path"), query.Get("httpPath")); path != "" {
 			transport["path"] = path
 		}
-		if method := strings.TrimSpace(query.Get("method")); method != "" {
+		if method := firstNonEmpty(query.Get("method"), query.Get("http_method"), query.Get("http-method"), query.Get("httpMethod")); method != "" {
 			transport["method"] = method
 		}
-		if idleTimeout := firstNonEmpty(query.Get("idle_timeout"), query.Get("idle-timeout")); idleTimeout != "" {
+		if idleTimeout := firstNonEmpty(query.Get("idle_timeout"), query.Get("idle-timeout"), query.Get("idleTimeout"), query.Get("http_idle_timeout"), query.Get("http-idle-timeout"), query.Get("httpIdleTimeout")); idleTimeout != "" {
 			transport["idle_timeout"] = idleTimeout
 		}
-		if pingTimeout := firstNonEmpty(query.Get("ping_timeout"), query.Get("ping-timeout")); pingTimeout != "" {
+		if pingTimeout := firstNonEmpty(query.Get("ping_timeout"), query.Get("ping-timeout"), query.Get("pingTimeout"), query.Get("http_ping_timeout"), query.Get("http-ping-timeout"), query.Get("httpPingTimeout")); pingTimeout != "" {
 			transport["ping_timeout"] = pingTimeout
 		}
 		return transport
 	case "httpupgrade", "http-upgrade", "http_upgrade":
 		transport := map[string]any{"type": "httpupgrade"}
-		if host := firstNonEmpty(query.Get("host"), query.Get("httpupgrade_host"), query.Get("httpupgrade-host"), query.Get("http_upgrade_host"), query.Get("http-upgrade-host")); host != "" {
+		if host := firstNonEmpty(query.Get("host"), query.Get("httpupgrade_host"), query.Get("httpupgrade-host"), query.Get("httpUpgradeHost"), query.Get("http_upgrade_host"), query.Get("http-upgrade-host")); host != "" {
 			transport["host"] = host
 		}
-		if path := firstNonEmpty(query.Get("path"), query.Get("httpupgrade_path"), query.Get("httpupgrade-path"), query.Get("http_upgrade_path"), query.Get("http-upgrade-path")); path != "" {
+		if path := firstNonEmpty(query.Get("path"), query.Get("httpupgrade_path"), query.Get("httpupgrade-path"), query.Get("httpUpgradePath"), query.Get("http_upgrade_path"), query.Get("http-upgrade-path")); path != "" {
 			transport["path"] = path
 		}
 		return transport

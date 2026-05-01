@@ -108,8 +108,8 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS gRPC 的 `type=grpc` 和 `service_name` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `serviceName` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan gRPC 的 `idle_timeout`、`ping_timeout`、`permit_without_stream` 和 `multi_mode` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `grpcIdleTimeout`、`grpcPingTimeout`、`permitWithoutStream` 和 `multiMode` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan QUIC transport，并同步为 sing-box outbound transport。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTP transport 的 `host`、`path`、`method`、`idle_timeout` 和 `ping_timeout` 参数，并同步为 sing-box outbound transport。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTPUpgrade transport 的 `host` 和 `path` 参数，并同步为 sing-box outbound transport。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTP transport 的 `host`、`path`、`method`、`idle_timeout` 和 `ping_timeout` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `httpHost`、`httpPath`、`httpMethod`、`httpIdleTimeout` 和 `httpPingTimeout` 查询别名。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTPUpgrade transport 的 `host` 和 `path` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `httpUpgradeHost` 和 `httpUpgradePath` 查询别名。
 - VLESS URI 可从 `uuid`/`id`/`user_id`/`user-id` 查询参数读取认证信息，Trojan URI 可从 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure` 和 `disableSNI` 查询别名，同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure`、`skip_cert_verify` 和 `disableSNI` 查询别名，同步为 sing-box outbound TLS 配置。

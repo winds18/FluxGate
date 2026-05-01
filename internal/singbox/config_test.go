@@ -901,7 +901,7 @@ func TestBuildConfigPreservesVLESSHTTPTransport(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         74,
-			URI:        "vless://00000000-0000-0000-0000-000000000074@example.http:443?security=tls&type=http&host=h2.example.test,h2-backup.example.test&path=/h2&method=GET&idle_timeout=20s&ping_timeout=10s#http",
+			URI:        "vless://00000000-0000-0000-0000-000000000074@example.http:443?security=tls&type=http&httpHost=h2.example.test,h2-backup.example.test&httpPath=/h2&httpMethod=GET&httpIdleTimeout=20s&httpPingTimeout=10s#http",
 			Protocol:   "vless",
 			ServerPort: 443,
 			Status:     "active",
@@ -926,7 +926,7 @@ func TestBuildConfigPreservesTrojanHTTPUpgradeTransport(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         75,
-			URI:        "trojan://trojan-placeholder@example.upgrade:443?security=tls&type=httpupgrade&host=upgrade.example.test&path=/upgrade#upgrade",
+			URI:        "trojan://trojan-placeholder@example.upgrade:443?security=tls&type=httpupgrade&httpUpgradeHost=upgrade.example.test&httpUpgradePath=/upgrade#upgrade",
 			Protocol:   "trojan",
 			ServerPort: 443,
 			Status:     "active",

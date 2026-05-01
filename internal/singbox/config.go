@@ -440,16 +440,16 @@ func transportFromQuery(query url.Values) map[string]any {
 	switch transportType {
 	case "ws", "websocket":
 		transport := map[string]any{"type": "ws"}
-		if path := firstNonEmpty(query.Get("path"), query.Get("ws_path"), query.Get("ws-path")); path != "" {
+		if path := firstNonEmpty(query.Get("path"), query.Get("ws_path"), query.Get("ws-path"), query.Get("wsPath")); path != "" {
 			transport["path"] = path
 		}
-		if host := firstNonEmpty(query.Get("host"), query.Get("ws_host"), query.Get("ws-host")); host != "" {
+		if host := firstNonEmpty(query.Get("host"), query.Get("ws_host"), query.Get("ws-host"), query.Get("wsHost")); host != "" {
 			transport["headers"] = map[string]any{"Host": host}
 		}
-		if maxEarlyData := intQuery(firstNonEmpty(query.Get("max_early_data"), query.Get("max-early-data"))); maxEarlyData > 0 {
+		if maxEarlyData := intQuery(firstNonEmpty(query.Get("max_early_data"), query.Get("max-early-data"), query.Get("maxEarlyData"))); maxEarlyData > 0 {
 			transport["max_early_data"] = maxEarlyData
 		}
-		if earlyDataHeaderName := firstNonEmpty(query.Get("early_data_header_name"), query.Get("early-data-header-name")); earlyDataHeaderName != "" {
+		if earlyDataHeaderName := firstNonEmpty(query.Get("early_data_header_name"), query.Get("early-data-header-name"), query.Get("earlyDataHeaderName")); earlyDataHeaderName != "" {
 			transport["early_data_header_name"] = earlyDataHeaderName
 		}
 		return transport
@@ -458,16 +458,16 @@ func transportFromQuery(query url.Values) map[string]any {
 		if serviceName := firstNonEmpty(query.Get("service_name"), query.Get("serviceName"), query.Get("grpc_service_name"), query.Get("grpc-service-name")); serviceName != "" {
 			transport["service_name"] = serviceName
 		}
-		if idleTimeout := firstNonEmpty(query.Get("idle_timeout"), query.Get("idle-timeout"), query.Get("grpc_idle_timeout"), query.Get("grpc-idle-timeout")); idleTimeout != "" {
+		if idleTimeout := firstNonEmpty(query.Get("idle_timeout"), query.Get("idle-timeout"), query.Get("idleTimeout"), query.Get("grpc_idle_timeout"), query.Get("grpc-idle-timeout"), query.Get("grpcIdleTimeout")); idleTimeout != "" {
 			transport["idle_timeout"] = idleTimeout
 		}
-		if pingTimeout := firstNonEmpty(query.Get("ping_timeout"), query.Get("ping-timeout"), query.Get("grpc_ping_timeout"), query.Get("grpc-ping-timeout")); pingTimeout != "" {
+		if pingTimeout := firstNonEmpty(query.Get("ping_timeout"), query.Get("ping-timeout"), query.Get("pingTimeout"), query.Get("grpc_ping_timeout"), query.Get("grpc-ping-timeout"), query.Get("grpcPingTimeout")); pingTimeout != "" {
 			transport["ping_timeout"] = pingTimeout
 		}
-		if boolQuery(firstNonEmpty(query.Get("permit_without_stream"), query.Get("permit-without-stream"))) {
+		if boolQuery(firstNonEmpty(query.Get("permit_without_stream"), query.Get("permit-without-stream"), query.Get("permitWithoutStream"), query.Get("grpcPermitWithoutStream"))) {
 			transport["permit_without_stream"] = true
 		}
-		if boolQuery(firstNonEmpty(query.Get("multi_mode"), query.Get("multi-mode"), query.Get("grpc_multi_mode"), query.Get("grpc-multi-mode"))) {
+		if boolQuery(firstNonEmpty(query.Get("multi_mode"), query.Get("multi-mode"), query.Get("multiMode"), query.Get("grpc_multi_mode"), query.Get("grpc-multi-mode"), query.Get("grpcMultiMode"))) {
 			transport["multi_mode"] = true
 		}
 		return transport

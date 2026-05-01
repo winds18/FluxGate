@@ -1271,17 +1271,17 @@ func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
 		"private_key":     privateKey,
 		"peer_public_key": peerPublicKey,
 	}
-	if systemInterface := boolQuery(firstNonEmpty(query.Get("system_interface"), query.Get("system-interface"), query.Get("system"))); systemInterface {
+	if systemInterface := boolQuery(firstNonEmpty(query.Get("system_interface"), query.Get("system-interface"), query.Get("systemInterface"), query.Get("system"))); systemInterface {
 		outbound["system_interface"] = true
 	}
-	if interfaceName := firstNonEmpty(query.Get("interface_name"), query.Get("interface-name"), query.Get("name")); interfaceName != "" {
+	if interfaceName := firstNonEmpty(query.Get("interface_name"), query.Get("interface-name"), query.Get("interfaceName"), query.Get("name")); interfaceName != "" {
 		outbound["interface_name"] = interfaceName
 	}
 	preSharedKey := firstNonEmpty(query.Get("pre_shared_key"), query.Get("pre-shared-key"), query.Get("preSharedKey"), query.Get("preshared_key"), query.Get("preshared-key"), query.Get("presharedKey"), query.Get("psk"))
 	if preSharedKey != "" {
 		outbound["pre_shared_key"] = preSharedKey
 	}
-	if reserved, ok := byteListQuery(query.Get("reserved")); ok {
+	if reserved, ok := byteListQuery(firstNonEmpty(query.Get("reserved"), query.Get("reserved_bytes"), query.Get("reserved-bytes"), query.Get("reservedBytes"))); ok {
 		outbound["reserved"] = reserved
 	}
 	if workers := intQuery(query.Get("workers")); workers > 0 {
@@ -1304,7 +1304,7 @@ func buildWireGuardOutbound(node store.Node) (map[string]any, bool) {
 		if preSharedKey != "" {
 			peer["pre_shared_key"] = preSharedKey
 		}
-		if reserved, ok := byteListQuery(firstNonEmpty(query.Get("peer_reserved"), query.Get("peer-reserved"), query.Get("reserved"))); ok {
+		if reserved, ok := byteListQuery(firstNonEmpty(query.Get("peer_reserved"), query.Get("peer-reserved"), query.Get("peerReserved"), query.Get("peer_reserved_bytes"), query.Get("peer-reserved-bytes"), query.Get("peerReservedBytes"), query.Get("reserved"), query.Get("reserved_bytes"), query.Get("reserved-bytes"), query.Get("reservedBytes"))); ok {
 			peer["reserved"] = reserved
 		}
 		outbound["peers"] = []map[string]any{peer}

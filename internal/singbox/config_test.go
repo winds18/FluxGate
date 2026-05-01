@@ -1501,7 +1501,7 @@ func TestBuildConfigSupportsWireGuardQueryAliases(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         89,
-			URI:        "wg://wg-query.example:51820?privateKey=wireguard-private-placeholder&publicKey=wireguard-public-placeholder&ip=10.77.0.2%2F32&ipv6=fd77%3A%3A2%2F128&preSharedKey=wireguard-psk-placeholder&allowedIPs=0.0.0.0%2F0,%3A%3A%2F0&reserved=4,5,6&mtu=1280&system=1&interface-name=wg-query#wireguard-query",
+			URI:        "wg://wg-query.example:51820?privateKey=wireguard-private-placeholder&publicKey=wireguard-public-placeholder&ip=10.77.0.2%2F32&ipv6=fd77%3A%3A2%2F128&preSharedKey=wireguard-psk-placeholder&allowedIPs=0.0.0.0%2F0,%3A%3A%2F0&reservedBytes=4,5,6&peerReserved=7,8,9&mtu=1280&systemInterface=1&interfaceName=wg-query#wireguard-query",
 			Protocol:   "wg",
 			ServerPort: 51820,
 			Status:     "active",
@@ -1525,6 +1525,10 @@ func TestBuildConfigSupportsWireGuardQueryAliases(t *testing.T) {
 	if outbound["system_interface"] != true || outbound["interface_name"] != "wg-query" || outbound["mtu"] != 1280 {
 		t.Fatalf("unexpected wireguard query alias interface fields: %+v", outbound)
 	}
+	reserved, ok := outbound["reserved"].([]int)
+	if !ok || len(reserved) != 3 || reserved[0] != 4 || reserved[1] != 5 || reserved[2] != 6 {
+		t.Fatalf("unexpected wireguard query alias reserved bytes: %+v", outbound["reserved"])
+	}
 	peers, ok := outbound["peers"].([]map[string]any)
 	if !ok || len(peers) != 1 {
 		t.Fatalf("unexpected wireguard query alias peers: %+v", outbound["peers"])
@@ -1532,6 +1536,10 @@ func TestBuildConfigSupportsWireGuardQueryAliases(t *testing.T) {
 	allowedIPs, ok := peers[0]["allowed_ips"].([]string)
 	if !ok || len(allowedIPs) != 2 || allowedIPs[0] != "0.0.0.0/0" || allowedIPs[1] != "::/0" {
 		t.Fatalf("unexpected wireguard query alias allowed ips: %+v", peers[0]["allowed_ips"])
+	}
+	peerReserved, ok := peers[0]["reserved"].([]int)
+	if !ok || len(peerReserved) != 3 || peerReserved[0] != 7 || peerReserved[1] != 8 || peerReserved[2] != 9 {
+		t.Fatalf("unexpected wireguard query alias peer reserved bytes: %+v", peers[0]["reserved"])
 	}
 }
 

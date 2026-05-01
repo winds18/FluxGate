@@ -28,6 +28,7 @@
 - subscription 来源刷新可识别当前已支持 outbound 的 URI 协议列表。
 - subscription 来源支持解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段内的 URI 列表、Clash YAML、SIP008、sing-box JSON 和 base64 内嵌订阅内容也会归一化。
 - JSON 包装订阅支持 `payload`、`result`、`response`、`body`、`text`、`sub` 等常见接口外层字段，不会把这些包装字段误当成节点名称。
+- JSON 包装订阅会忽略 `meta`、`pagination`、`errors`、`message`、`traceId` 等常见接口元信息字段，避免把接口文档或分页 URL 误导入为 HTTP 节点。
 - JSON 包装订阅支持 `list`、`records`、`rows`、`entries`、`nodeList`、`proxyList`、`serverList`、`subscriptionList`、`urlList`、`linkList` 及其 snake_case/kebab-case 变体等常见集合字段；这些容器名不会污染缺少 fragment 的节点 URI 展示名。
 - JSON 包装订阅支持 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case/kebab-case 变体；对象内带名称的 `subscribeUrl`、`subUrl` 和 `downloadUrl` 分享字段也会按节点链接解析，分享链接缺少 fragment 时会优先使用对象内名称而不是字段名。
 - JSON 包装订阅支持解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象，例如 `type`、`server`、`port`、`cipher`、`password` 和嵌套 `ws-opts`。

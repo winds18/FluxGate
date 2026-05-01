@@ -509,7 +509,11 @@ func firstJSONString(values map[string]any, keys ...string) string {
 
 func isJSONURIMetadataKey(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(key)) {
-	case "name", "displayname", "display_name", "display-name", "nodename", "node_name", "node-name", "label", "title", "remarks", "remark", "tag", "ps", "id", "type", "protocol", "scheme":
+	case "name", "displayname", "display_name", "display-name", "nodename", "node_name", "node-name", "label", "title", "remarks", "remark", "tag", "ps", "id", "type", "protocol", "scheme",
+		"success", "ok", "status", "code", "message", "msg", "error", "errors", "reason",
+		"meta", "metadata", "pagination", "page", "page_size", "page-size", "pagesize", "pages",
+		"total", "count", "limit", "offset", "next", "previous", "prev",
+		"traceid", "trace_id", "trace-id", "requestid", "request_id", "request-id":
 		return true
 	default:
 		return false

@@ -923,6 +923,39 @@ func TestNormalizeContentJSONCommonWrapperFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONIgnoresMetadataURLs(t *testing.T) {
+	raw := `{
+  "success": true,
+  "message": "https://status.example.test/not-a-proxy",
+  "meta": {
+    "docs": "https://docs.example.test/subscription-api",
+    "trace_id": "trace-placeholder"
+  },
+  "pagination": {
+    "next": "https://api.example.test/subscriptions?page=2",
+    "total": 1
+  },
+  "errors": [
+    {
+      "message": "https://errors.example.test/help"
+    }
+  ],
+  "data": {
+    "links": [
+      "vless://00000000-0000-0000-0000-000000000098@metadata-filter.example.test:443"
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "vless://00000000-0000-0000-0000-000000000098@metadata-filter.example.test:443"
+	if got != want {
+		t.Fatalf("unexpected JSON metadata filtered URIs: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONCommonCollectionFields(t *testing.T) {
 	raw := `{
   "data": {

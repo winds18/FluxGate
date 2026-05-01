@@ -1604,6 +1604,65 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesSOCKSVersionVariants(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         90,
+			URI:        "socks4://socks4.example:1080?user=qa-user#socks4",
+			Protocol:   "socks4",
+			ServerPort: 1080,
+			Status:     "active",
+		},
+		{
+			ID:         91,
+			URI:        "socks4a://socks4a.example:1080?username=qa-user&password=socks4a-placeholder#socks4a",
+			Protocol:   "socks4a",
+			ServerPort: 1080,
+			Status:     "active",
+		},
+		{
+			ID:         92,
+			URI:        "socks://socks-version.example:1080?version=4a&user=qa-user&pass=socks-version-placeholder#socks-version",
+			Protocol:   "socks",
+			ServerPort: 1080,
+			Status:     "active",
+		},
+	})
+
+	socks4 := findOutbound(config.Outbounds, "up_90")
+	if socks4 == nil {
+		t.Fatalf("expected socks4 outbound up_90, got %+v", config.Outbounds)
+	}
+	if socks4["type"] != "socks" || socks4["server"] != "socks4.example" || socks4["server_port"] != 1080 || socks4["version"] != "4" {
+		t.Fatalf("unexpected socks4 outbound fields: %+v", socks4)
+	}
+	if socks4["username"] != "qa-user" {
+		t.Fatalf("unexpected socks4 credential fields: %+v", socks4)
+	}
+
+	socks4a := findOutbound(config.Outbounds, "up_91")
+	if socks4a == nil {
+		t.Fatalf("expected socks4a outbound up_91, got %+v", config.Outbounds)
+	}
+	if socks4a["type"] != "socks" || socks4a["server"] != "socks4a.example" || socks4a["server_port"] != 1080 || socks4a["version"] != "4a" {
+		t.Fatalf("unexpected socks4a outbound fields: %+v", socks4a)
+	}
+	if socks4a["username"] != "qa-user" || socks4a["password"] != "socks4a-placeholder" {
+		t.Fatalf("unexpected socks4a credential fields: %+v", socks4a)
+	}
+
+	socksVersion := findOutbound(config.Outbounds, "up_92")
+	if socksVersion == nil {
+		t.Fatalf("expected query-version socks outbound up_92, got %+v", config.Outbounds)
+	}
+	if socksVersion["type"] != "socks" || socksVersion["server"] != "socks-version.example" || socksVersion["server_port"] != 1080 || socksVersion["version"] != "4a" {
+		t.Fatalf("unexpected query-version socks outbound fields: %+v", socksVersion)
+	}
+	if socksVersion["username"] != "qa-user" || socksVersion["password"] != "socks-version-placeholder" {
+		t.Fatalf("unexpected query-version socks credential fields: %+v", socksVersion)
+	}
+}
+
 func TestBuildConfigSupportsSSHQueryCredentialAliases(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

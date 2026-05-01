@@ -164,6 +164,7 @@
 - 推送后远程部署脚本。
 - GitHub Actions Docker 镜像构建工作流，支持 PR 构建验证和分支/tag 推送 GHCR。
 - 自定义 sing-box Dockerfile 已落地，默认远程构建带 `with_v2ray_api` 的本地数据面镜像，避免官方镜像缺少 V2Ray API 导致统计采集不可用。
+- 自定义 sing-box Dockerfile 运行阶段使用 `scratch` 并从 builder 复制 CA 证书，减少远程构建对额外镜像仓库的依赖，降低 registry 元数据超时导致部署回退的概率。
 - Docker 构建上下文脱敏，默认排除 `.env`、数据库、日志、测试产物和本机部署配置。
 - 远程验收健康检查重试。
 - 首次远程部署最小 sing-box config bootstrap。

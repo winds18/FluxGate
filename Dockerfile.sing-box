@@ -8,8 +8,9 @@ ENV CGO_ENABLED=0
 
 RUN go install -trimpath -ldflags="-s -w" -tags "$SING_BOX_BUILD_TAGS" github.com/sagernet/sing-box/cmd/sing-box@"$SING_BOX_VERSION"
 
-FROM gcr.io/distroless/static-debian12
+FROM scratch
 
+COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
 COPY --from=builder /go/bin/sing-box /usr/local/bin/sing-box
 
 EXPOSE 8443 8444 8445 9090

@@ -31,7 +31,7 @@
 - JSON 包装订阅支持 `list`、`records`、`rows`、`entries`、`nodeList`、`proxyList`、`serverList`、`subscriptionList`、`urlList`、`linkList` 及其 snake_case 变体等常见集合字段；这些容器名不会污染缺少 fragment 的节点 URI 展示名。
 - JSON 包装订阅支持 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case 变体，分享链接缺少 fragment 时会优先使用对象内名称而不是字段名。
 - JSON 包装订阅支持解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象，例如 `type`、`server`、`port`、`cipher`、`password` 和嵌套 `ws-opts`。
-- JSON 结构化节点支持常见字段别名，例如 `protocol`/`proto`、`host`/`address`/`add`、`server_port`/`server-port`、`method`/`encrypt-method`、`pass`/`passwd`、`id`/`user-id` 和 `remarks`。
+- JSON 结构化节点支持常见字段别名，例如 `protocol`/`proto`/`scheme`/`proxyType`、`host`/`hostname`/`address`/`serverAddress`/`add`、`server_port`/`serverPort`/`server-port`、`method`/`encryptMethod`/`encrypt-method`、`pass`/`passwd`/`pwd`、`id`/`user-id` 和 `displayName`/`label`/`title`/`remarks`。
 - subscription 来源支持解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点，并兼容 `trojan-go` 和 `socks5h` 协议别名，转换为标准 URI。
 - Quantumult X 和 Surge 结构化 VLESS/Trojan 节点支持保留 gRPC transport 和 service name，并同步到 sing-box outbound。
 - Quantumult X HTTP/SOCKS 节点支持键值和位置参数两种认证写法。

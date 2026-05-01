@@ -268,7 +268,7 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			collectJSONURIs(name, item, uris)
 		}
 	case map[string]any:
-		nodeName := firstJSONString(typed, "name", "remarks", "tag", "ps", "id")
+		nodeName := firstJSONString(typed, "name", "displayName", "display_name", "label", "title", "remarks", "tag", "ps", "id")
 		if nodeName == "" {
 			nodeName = name
 		}
@@ -276,7 +276,7 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			*uris = append(*uris, normalized)
 			return
 		}
-		vmessName := firstNonEmptyString(firstJSONString(typed, "ps", "name", "remarks", "tag"), name)
+		vmessName := firstNonEmptyString(firstJSONString(typed, "ps", "name", "displayName", "display_name", "label", "title", "remarks", "tag"), name)
 		if uri := vmessJSONURI(typed, vmessName); uri != "" {
 			*uris = append(*uris, uri)
 			return
@@ -358,12 +358,12 @@ func applyClashJSONProxyAliases(proxy map[string]string) {
 		canonical string
 		aliases   []string
 	}{
-		{canonical: "type", aliases: []string{"protocol", "proto"}},
-		{canonical: "server", aliases: []string{"host", "address", "addr", "add"}},
+		{canonical: "type", aliases: []string{"protocol", "proto", "scheme", "proxytype", "proxy_type", "proxy-type"}},
+		{canonical: "server", aliases: []string{"host", "hostname", "address", "addr", "add", "serveraddress", "server_address", "server-address"}},
 		{canonical: "port", aliases: []string{"server_port", "serverport", "server-port"}},
 		{canonical: "uuid", aliases: []string{"id", "user_id", "userid", "user-id"}},
-		{canonical: "cipher", aliases: []string{"method", "encryption", "encrypt-method", "encrypt_method"}},
-		{canonical: "password", aliases: []string{"pass", "passwd", "psk", "token"}},
+		{canonical: "cipher", aliases: []string{"method", "encryption", "encryptmethod", "encrypt-method", "encrypt_method"}},
+		{canonical: "password", aliases: []string{"pass", "passwd", "pwd", "psk", "token"}},
 	} {
 		if firstMapValue(proxy, item.canonical) != "" {
 			continue
@@ -428,7 +428,7 @@ func firstJSONString(values map[string]any, keys ...string) string {
 
 func isJSONURIMetadataKey(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(key)) {
-	case "name", "remarks", "tag", "ps", "id", "type", "protocol":
+	case "name", "displayname", "display_name", "display-name", "label", "title", "remarks", "tag", "ps", "id", "type", "protocol", "scheme":
 		return true
 	default:
 		return false

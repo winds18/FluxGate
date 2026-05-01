@@ -801,6 +801,43 @@ func TestNormalizeContentJSONCommonShareLinkFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredAliasFields(t *testing.T) {
+	raw := `{
+  "data": {
+    "nodes": [
+      {
+        "displayName": "东京 JSON Scheme SS",
+        "scheme": "ss",
+        "serverAddress": "json-alias-ss.example.test",
+        "serverPort": 8388,
+        "encryptMethod": "aes-128-gcm",
+        "pwd": "qa-placeholder"
+      },
+      {
+        "label": "首尔 JSON ProxyType SOCKS",
+        "proxyType": "socks",
+        "hostname": "json-alias-socks.example.test",
+        "server_port": 1080,
+        "userName": "qa-user",
+        "pass": "socks-placeholder",
+        "version": "4a"
+      }
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@json-alias-ss.example.test:8388#%E4%B8%9C%E4%BA%AC%20JSON%20Scheme%20SS",
+		"socks4a://qa-user:socks-placeholder@json-alias-socks.example.test:1080#%E9%A6%96%E5%B0%94%20JSON%20ProxyType%20SOCKS",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON structured alias fields: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONWrappedStructuredSubscription(t *testing.T) {
 	raw := `{
   "data": {

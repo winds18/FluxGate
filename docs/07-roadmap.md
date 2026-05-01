@@ -110,7 +110,7 @@
 - JSON 包装订阅可解析 `list`、`records`、`rows`、`entries`、`nodeList`、`proxyList`、`serverList`、`subscriptionList`、`urlList`、`linkList` 及其 snake_case 变体等常见集合字段，容器名不会污染缺少 fragment 的节点 URI 展示名。
 - JSON 包装订阅可解析 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case 变体，分享链接缺少 fragment 时会优先使用对象内名称。
 - JSON 包装订阅可解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象。
-- JSON 结构化节点可识别 `protocol`/`proto`/`scheme`/`nodeType`/`proxyType`/`proxyProtocol`、`host`/`hostname`/`address`/`serverAddress`/`serverHost`/`remoteHost`/`add`、`server_port`/`serverPort`/`server-port`/`remotePort`、`method`/`encryptMethod`/`encrypt-method`、`pass`/`passwd`/`pwd`、`id`/`user-id` 和 `displayName`/`label`/`title`/`remarks` 等常见别名字段。
+- JSON 结构化节点可识别 `protocol`/`proto`/`scheme`/`nodeType`/`proxyType`/`proxyProtocol`、`host`/`hostname`/`address`/`serverAddress`/`serverHost`/`remoteHost`/`add`、`server_port`/`serverPort`/`server-port`/`remotePort`、`method`/`encryptMethod`/`encrypt-method`、`pass`/`passwd`/`pwd`、`id`/`user-id` 和 `displayName`/`nodeName`/`label`/`title`/`remarks`/`remark` 等常见别名字段。
 - JSON 结构化节点可归一化 `skipCertVerify`、`allowInsecure`、`disableSNI`、`clientFingerprint`、`pluginOpts`、`wsOpts`、`wsHeaders`、`grpcServiceName`、`privateKeyPath` 等常见 camelCase 参数，保留 TLS、插件和传输配置。
 - JSON 结构化节点可解析通用 `transport` 容器，保留 `transport.type`、`transport.path`、`transport.host`、`transport.headers.Host`、`transport.serviceName`、`transport.idleTimeout` 等 WebSocket、HTTP、HTTPUpgrade 或 gRPC 参数。
 - subscription 来源可解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点，并兼容 `trojan-go` 和 `socks5h` 协议别名。

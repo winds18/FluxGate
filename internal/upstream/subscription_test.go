@@ -379,6 +379,46 @@ func TestNormalizeContentJSONStructuredProviderAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredNameAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "nodeName": "JSON NodeName VLESS",
+      "protocol": "vless",
+      "host": "json-nodename-vless.example.test",
+      "server_port": 443,
+      "user_id": "00000000-0000-0000-0000-000000000097",
+      "tls": true,
+      "servername": "json-nodename-vless.example.test"
+    },
+    {
+      "remark": "JSON Remark SS",
+      "scheme": "shadowsocks",
+      "address": "json-remark-ss.example.test",
+      "server-port": 8388,
+      "method": "aes-128-gcm",
+      "pwd": "qa-placeholder"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON name alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000097@json-nodename-vless.example.test:443?")
+	if !strings.Contains(lines[0], "sni=json-nodename-vless.example.test") ||
+		!strings.HasSuffix(lines[0], "#JSON%20NodeName%20VLESS") {
+		t.Fatalf("unexpected structured JSON nodeName alias VLESS URI: %q", lines[0])
+	}
+	if lines[1] != "ss://aes-128-gcm:qa-placeholder@json-remark-ss.example.test:8388#JSON%20Remark%20SS" {
+		t.Fatalf("unexpected structured JSON remark alias SS URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONStructuredGenericTransport(t *testing.T) {
 	raw := `{
   "nodes": [

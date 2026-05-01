@@ -273,7 +273,7 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			collectJSONURIs(name, item, uris)
 		}
 	case map[string]any:
-		nodeName := firstJSONString(typed, "name", "displayName", "display_name", "label", "title", "remarks", "tag", "ps", "id")
+		nodeName := firstJSONString(typed, "name", "displayName", "display_name", "display-name", "nodeName", "node_name", "node-name", "label", "title", "remarks", "remark", "tag", "ps", "id")
 		if nodeName == "" {
 			nodeName = name
 		}
@@ -281,7 +281,7 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			*uris = append(*uris, normalized)
 			return
 		}
-		vmessName := firstNonEmptyString(firstJSONString(typed, "ps", "name", "displayName", "display_name", "label", "title", "remarks", "tag"), name)
+		vmessName := firstNonEmptyString(firstJSONString(typed, "ps", "name", "displayName", "display_name", "display-name", "nodeName", "node_name", "node-name", "label", "title", "remarks", "remark", "tag"), name)
 		if uri := vmessJSONURI(typed, vmessName); uri != "" {
 			*uris = append(*uris, uri)
 			return
@@ -363,6 +363,7 @@ func applyClashJSONProxyAliases(proxy map[string]string) {
 		canonical string
 		aliases   []string
 	}{
+		{canonical: "name", aliases: []string{"displayname", "display_name", "display-name", "nodename", "node_name", "node-name", "label", "title", "remarks", "remark", "tag", "ps"}},
 		{canonical: "type", aliases: []string{"protocol", "proto", "scheme", "nodetype", "node_type", "node-type", "proxytype", "proxy_type", "proxy-type", "proxyprotocol", "proxy_protocol", "proxy-protocol"}},
 		{canonical: "server", aliases: []string{"host", "hostname", "address", "addr", "add", "serveraddress", "server_address", "server-address", "serverhost", "server_host", "server-host", "remotehost", "remote_host", "remote-host"}},
 		{canonical: "port", aliases: []string{"server_port", "serverport", "server-port", "remoteport", "remote_port", "remote-port"}},
@@ -502,7 +503,7 @@ func firstJSONString(values map[string]any, keys ...string) string {
 
 func isJSONURIMetadataKey(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(key)) {
-	case "name", "displayname", "display_name", "display-name", "label", "title", "remarks", "tag", "ps", "id", "type", "protocol", "scheme":
+	case "name", "displayname", "display_name", "display-name", "nodename", "node_name", "node-name", "label", "title", "remarks", "remark", "tag", "ps", "id", "type", "protocol", "scheme":
 		return true
 	default:
 		return false

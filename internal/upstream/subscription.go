@@ -291,19 +291,19 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			return
 		}
 		handled := map[string]bool{}
-		for _, key := range []string{"uri", "url", "link", "share", "share_link", "shareLink", "share_url", "shareUrl", "shareURL", "subscription_url", "subscriptionUrl", "subscriptionURL", "node_url", "nodeUrl", "nodeURL"} {
+		for _, key := range []string{"uri", "url", "link", "share", "share_link", "shareLink", "share_url", "share-url", "shareUrl", "shareURL", "subscription_url", "subscription-url", "subscriptionUrl", "subscriptionURL", "node_url", "node-url", "nodeUrl", "nodeURL"} {
 			handled[key] = true
 			if item, ok := typed[key]; ok {
 				collectJSONURIs(nodeName, item, uris)
 			}
 		}
-		for _, key := range []string{"content", "raw", "raw_content", "rawContent", "subscription", "sub", "payload", "body", "text", "result", "response"} {
+		for _, key := range []string{"content", "raw", "raw_content", "raw-content", "rawContent", "subscription", "sub", "payload", "body", "text", "result", "response"} {
 			handled[key] = true
 			if item, ok := typed[key]; ok {
 				collectJSONURIs("", item, uris)
 			}
 		}
-		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data", "results", "payloads", "list", "nodeList", "node_list", "proxyList", "proxy_list", "serverList", "server_list", "subscriptionList", "subscription_list", "urlList", "url_list", "linkList", "link_list", "records", "rows", "entries"} {
+		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data", "results", "payloads", "list", "nodeList", "node_list", "node-list", "proxyList", "proxy_list", "proxy-list", "serverList", "server_list", "server-list", "subscriptionList", "subscription_list", "subscription-list", "urlList", "url_list", "url-list", "linkList", "link_list", "link-list", "records", "rows", "entries"} {
 			handled[key] = true
 			if item, ok := typed[key]; ok {
 				collectJSONURIs("", item, uris)

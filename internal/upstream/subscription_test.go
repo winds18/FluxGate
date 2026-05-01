@@ -1028,6 +1028,57 @@ func TestNormalizeContentJSONCommonShareLinkFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONCommonHyphenAliasFields(t *testing.T) {
+	raw := `{
+  "data": {
+    "raw-content": "ss://aes-128-gcm:qa-placeholder@raw-content.example.test:8388",
+    "items": [
+      {
+        "name": "香港 share-url",
+        "share-url": "vless://00000000-0000-0000-0000-000000000095@share-hyphen.example.test:443"
+      },
+      {
+        "remarks": "东京 subscription-url",
+        "subscription-url": "trojan://trojan-placeholder@subscription-hyphen.example.test:443?security=tls"
+      },
+      {
+        "tag": "首尔 node-url",
+        "node-url": "hysteria2://hy2-placeholder@node-hyphen.example.test:443"
+      }
+    ],
+    "node-list": [
+      "vless://00000000-0000-0000-0000-000000000096@node-hyphen-list.example.test:443"
+    ],
+    "proxy-list": [
+      "trojan://trojan-placeholder@proxy-hyphen-list.example.test:443?security=tls"
+    ],
+    "server-list": [
+      "ss://aes-128-gcm:qa-placeholder@server-hyphen-list.example.test:8388"
+    ],
+    "subscription-list": [
+      "hysteria2://hy2-placeholder@subscription-hyphen-list.example.test:443"
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@raw-content.example.test:8388",
+		"vless://00000000-0000-0000-0000-000000000095@share-hyphen.example.test:443#%E9%A6%99%E6%B8%AF%20share-url",
+		"trojan://trojan-placeholder@subscription-hyphen.example.test:443?security=tls#%E4%B8%9C%E4%BA%AC%20subscription-url",
+		"hysteria2://hy2-placeholder@node-hyphen.example.test:443#%E9%A6%96%E5%B0%94%20node-url",
+		"vless://00000000-0000-0000-0000-000000000096@node-hyphen-list.example.test:443",
+		"trojan://trojan-placeholder@proxy-hyphen-list.example.test:443?security=tls",
+		"ss://aes-128-gcm:qa-placeholder@server-hyphen-list.example.test:8388",
+		"hysteria2://hy2-placeholder@subscription-hyphen-list.example.test:443",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON common hyphen alias fields: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONStructuredAliasFields(t *testing.T) {
 	raw := `{
   "data": {

@@ -1557,6 +1557,33 @@ proxies: [{ name: "Inline 东京 01", type: trojan, server: inline-trojan.exampl
 	}
 }
 
+func TestNormalizeContentClashYAMLProxyListAliases(t *testing.T) {
+	raw := `
+proxy-providers:
+  alias-a:
+    type: inline
+    proxies-list:
+      - name: "Alias Provider 香港 01"
+        type: ss
+        server: alias-provider-ss.example.test
+        port: 8388
+        cipher: aes-128-gcm
+        password: "qa-placeholder"
+proxy-list: [{ name: "Alias Inline 东京 01", type: trojan, server: alias-inline-trojan.example.test, port: 443, password: "trojan-placeholder", tls: true, sni: alias-inline-trojan.example.test }]
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@alias-provider-ss.example.test:8388#Alias%20Provider%20%E9%A6%99%E6%B8%AF%2001",
+		"trojan://trojan-placeholder@alias-inline-trojan.example.test:443?security=tls&sni=alias-inline-trojan.example.test#Alias%20Inline%20%E4%B8%9C%E4%BA%AC%2001",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected proxy list alias URIs: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLAnchoredProxyList(t *testing.T) {
 	raw := `
 proxies: &airport_nodes

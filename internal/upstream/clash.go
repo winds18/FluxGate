@@ -103,7 +103,16 @@ type yamlFieldScope struct {
 
 func isClashYAMLProxiesField(line string) bool {
 	key, value, ok := parseYAMLField(line)
-	return ok && strings.EqualFold(strings.TrimSpace(key), "proxies") && isYAMLBlockListFieldValue(value)
+	return ok && isClashYAMLProxiesKey(key) && isYAMLBlockListFieldValue(value)
+}
+
+func isClashYAMLProxiesKey(key string) bool {
+	switch strings.ToLower(strings.TrimSpace(key)) {
+	case "proxies", "proxy-list", "proxy_list", "proxies-list", "proxies_list":
+		return true
+	default:
+		return false
+	}
 }
 
 func isYAMLBlockListFieldValue(value string) bool {
@@ -116,7 +125,7 @@ func isYAMLBlockListFieldValue(value string) bool {
 
 func clashYAMLInlineProxies(line string) []map[string]string {
 	key, value, ok := parseYAMLRawField(line)
-	if !ok || !strings.EqualFold(strings.TrimSpace(key), "proxies") {
+	if !ok || !isClashYAMLProxiesKey(key) {
 		return nil
 	}
 	value = strings.TrimSpace(value)

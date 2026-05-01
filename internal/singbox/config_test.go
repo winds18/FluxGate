@@ -1575,6 +1575,19 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 			ServerPort: 1080,
 			Status:     "active",
 		},
+		{
+			ID:         93,
+			URI:        "http+tls://http-plus-tls.example:443/connect?username=qa-user&password=http-plus-tls-placeholder&serverName=http-plus-tls.example#http-plus-tls",
+			Protocol:   "http+tls",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:       94,
+			URI:      "http-tls://http-dash-tls.example/connect?user=qa-user&pass=http-dash-tls-placeholder#http-dash-tls",
+			Protocol: "http-tls",
+			Status:   "active",
+		},
 	})
 
 	httpOutbound := findOutbound(config.Outbounds, "up_85")
@@ -1616,6 +1629,36 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	}
 	if socks5hOutbound["username"] != "qa-user" || socks5hOutbound["password"] != "socks5h-query-placeholder" {
 		t.Fatalf("unexpected socks5h query credential auth fields: %+v", socks5hOutbound)
+	}
+
+	httpPlusTLSOutbound := findOutbound(config.Outbounds, "up_93")
+	if httpPlusTLSOutbound == nil {
+		t.Fatalf("expected http+tls outbound up_93, got %+v", config.Outbounds)
+	}
+	if httpPlusTLSOutbound["type"] != "http" || httpPlusTLSOutbound["server"] != "http-plus-tls.example" || httpPlusTLSOutbound["server_port"] != 443 || httpPlusTLSOutbound["path"] != "/connect" {
+		t.Fatalf("unexpected http+tls outbound fields: %+v", httpPlusTLSOutbound)
+	}
+	if httpPlusTLSOutbound["username"] != "qa-user" || httpPlusTLSOutbound["password"] != "http-plus-tls-placeholder" {
+		t.Fatalf("unexpected http+tls credential fields: %+v", httpPlusTLSOutbound)
+	}
+	httpPlusTLSTLS, ok := httpPlusTLSOutbound["tls"].(map[string]any)
+	if !ok || httpPlusTLSTLS["enabled"] != true || httpPlusTLSTLS["server_name"] != "http-plus-tls.example" {
+		t.Fatalf("unexpected http+tls tls fields: %+v", httpPlusTLSOutbound["tls"])
+	}
+
+	httpDashTLSOutbound := findOutbound(config.Outbounds, "up_94")
+	if httpDashTLSOutbound == nil {
+		t.Fatalf("expected http-tls outbound up_94, got %+v", config.Outbounds)
+	}
+	if httpDashTLSOutbound["type"] != "http" || httpDashTLSOutbound["server"] != "http-dash-tls.example" || httpDashTLSOutbound["server_port"] != 443 {
+		t.Fatalf("unexpected http-tls outbound fields: %+v", httpDashTLSOutbound)
+	}
+	if httpDashTLSOutbound["username"] != "qa-user" || httpDashTLSOutbound["password"] != "http-dash-tls-placeholder" {
+		t.Fatalf("unexpected http-tls credential fields: %+v", httpDashTLSOutbound)
+	}
+	httpDashTLSTLS, ok := httpDashTLSOutbound["tls"].(map[string]any)
+	if !ok || httpDashTLSTLS["enabled"] != true || httpDashTLSTLS["server_name"] != "http-dash-tls.example" {
+		t.Fatalf("unexpected http-tls tls fields: %+v", httpDashTLSOutbound["tls"])
 	}
 }
 

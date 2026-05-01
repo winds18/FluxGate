@@ -268,7 +268,7 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildNaiveOutbound(node)
 	case "hysteria":
 		return buildHysteriaOutbound(node)
-	case "http", "https":
+	case "http", "https", "http+tls", "http-tls":
 		return buildHTTPOutbound(node)
 	case "socks", "socks4", "socks4a", "socks5", "socks5h":
 		return buildSOCKSOutbound(node)
@@ -1075,16 +1075,16 @@ func buildHysteriaOutbound(node store.Node) (map[string]any, bool) {
 }
 
 func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || (node.Protocol != "http" && node.Protocol != "https") {
+	if node.Status != "active" || !isHTTPProxyProtocol(node.Protocol) {
 		return nil, false
 	}
 	parsed, err := url.Parse(strings.TrimSpace(node.URI))
-	if err != nil || (parsed.Scheme != "http" && parsed.Scheme != "https") || parsed.Hostname() == "" {
+	if err != nil || !isHTTPProxyProtocol(parsed.Scheme) || parsed.Hostname() == "" {
 		return nil, false
 	}
 
 	defaultPort := 80
-	if parsed.Scheme == "https" {
+	if isHTTPProxyTLSProtocol(parsed.Scheme) {
 		defaultPort = 443
 	}
 	outbound := map[string]any{
@@ -1111,7 +1111,7 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 		outbound["path"] = path
 	}
 
-	if parsed.Scheme == "https" ||
+	if isHTTPProxyTLSProtocol(parsed.Scheme) ||
 		strings.EqualFold(query.Get("security"), "tls") ||
 		boolQuery(query.Get("tls")) ||
 		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName")) != "" ||
@@ -1142,6 +1142,24 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	return outbound, true
+}
+
+func isHTTPProxyProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "http", "https", "http+tls", "http-tls":
+		return true
+	default:
+		return false
+	}
+}
+
+func isHTTPProxyTLSProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "https", "http+tls", "http-tls":
+		return true
+	default:
+		return false
+	}
 }
 
 func buildSOCKSOutbound(node store.Node) (map[string]any, bool) {

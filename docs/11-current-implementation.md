@@ -110,7 +110,7 @@
 - sing-box config publish/rollback API 会返回 `restart_required`，管理后台会提示发布或回滚后需要重启 sing-box。
 - sing-box restart API 和管理后台重启入口已落地；发布/回滚可在 `SING_BOX_AUTO_RESTART=true` 时自动调用受配置保护的重启命令。
 - active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
-- 配置生成侧兼容导入层已支持的 URI 协议别名，包括 `shadowsocks`、`trojan-go`、`vmess-aead`、`any-tls`、`shadow-tls`、`naive-https` 和 `naive-quic`，手动保存这些协议名时也会归一为对应 sing-box outbound。
+- 配置生成侧兼容导入层已支持的 URI 协议别名，包括 `shadowsocks`、`trojan-go`、`vmess-aead`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https` 和 `naive-quic`，手动保存这些协议名时也会归一为对应 sing-box outbound。
 - Direct URI、`freedom://` URI 和 sing-box JSON `direct` outbound 可导入为直连上游 outbound，并进入默认上游 selector 和 V2Ray outbound stats 列表；配置生成侧也兼容手动保存的 `freedom` 协议节点。
 - Block URI、`blackhole://` URI、`reject://` URI、Clash `reject`/`reject-drop` 和 sing-box JSON `block` outbound 可导入为内部拦截 outbound；为避免误承接普通代理流量，Block outbound 不进入默认上游 selector 和 V2Ray outbound stats 列表；配置生成侧也兼容手动保存的 `blackhole`/`reject`/`reject-drop`/`reject-no-drop`/`reject-tinygif` 协议节点。
 - `reject-drop://`、`reject-no-drop://` 和 `reject-tinygif://` 裸 URI 会归一化为标准 `block://`，和 Clash 结构化 reject 变体保持一致。

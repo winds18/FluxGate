@@ -773,18 +773,18 @@ func buildTUICOutbound(node store.Node) (map[string]any, bool) {
 		"password":    password,
 	}
 
-	if congestionControl := firstNonEmpty(query.Get("congestion_control"), query.Get("congestion-controller")); congestionControl != "" {
+	if congestionControl := firstNonEmpty(query.Get("congestion_control"), query.Get("congestion-controller"), query.Get("congestionControl")); congestionControl != "" {
 		outbound["congestion_control"] = congestionControl
 	}
-	if boolQuery(firstNonEmpty(query.Get("udp_over_stream"), query.Get("udp-over-stream"))) {
+	if boolQuery(firstNonEmpty(query.Get("udp_over_stream"), query.Get("udp-over-stream"), query.Get("udpOverStream"))) {
 		outbound["udp_over_stream"] = true
-	} else if udpRelayMode := firstNonEmpty(query.Get("udp_relay_mode"), query.Get("udp-relay-mode")); udpRelayMode != "" {
+	} else if udpRelayMode := firstNonEmpty(query.Get("udp_relay_mode"), query.Get("udp-relay-mode"), query.Get("udpRelayMode")); udpRelayMode != "" {
 		outbound["udp_relay_mode"] = udpRelayMode
 	}
-	if boolQuery(firstNonEmpty(query.Get("zero_rtt_handshake"), query.Get("zero-rtt-handshake"), query.Get("reduce-rtt"))) {
+	if boolQuery(firstNonEmpty(query.Get("zero_rtt_handshake"), query.Get("zero-rtt-handshake"), query.Get("zeroRttHandshake"), query.Get("zeroRTTHandshake"), query.Get("reduce-rtt"))) {
 		outbound["zero_rtt_handshake"] = true
 	}
-	if heartbeat := firstNonEmpty(query.Get("heartbeat"), query.Get("heartbeat-interval")); heartbeat != "" {
+	if heartbeat := firstNonEmpty(query.Get("heartbeat"), query.Get("heartbeat-interval"), query.Get("heartbeatInterval")); heartbeat != "" {
 		outbound["heartbeat"] = heartbeat
 	}
 	if network := strings.TrimSpace(query.Get("network")); network != "" {

@@ -1156,7 +1156,14 @@ func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         89,
-			URI:        "tuic://query-tuic.example:443?id=00000000-0000-0000-0000-000000000089&pass=tuic-query-placeholder&congestion_control=bbr&udp_over_stream=1&sni=query-tuic.example&fp=chrome#tuic-query",
+			URI:        "tuic://query-tuic.example:443?id=00000000-0000-0000-0000-000000000089&pass=tuic-query-placeholder&congestionControl=bbr&udpOverStream=1&zeroRttHandshake=1&heartbeatInterval=10s&sni=query-tuic.example&fp=chrome#tuic-query",
+			Protocol:   "tuic",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         189,
+			URI:        "tuic://relay-tuic.example:443?id=00000000-0000-0000-0000-000000000189&token=tuic-relay-placeholder&udpRelayMode=native&sni=relay-tuic.example#tuic-query-relay",
 			Protocol:   "tuic",
 			ServerPort: 443,
 			Status:     "active",
@@ -1176,6 +1183,9 @@ func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 	if outbound["congestion_control"] != "bbr" || outbound["udp_over_stream"] != true {
 		t.Fatalf("unexpected tuic query credential relay fields: %+v", outbound)
 	}
+	if outbound["zero_rtt_handshake"] != true || outbound["heartbeat"] != "10s" {
+		t.Fatalf("unexpected tuic query credential timing fields: %+v", outbound)
+	}
 	tls, ok := outbound["tls"].(map[string]any)
 	if !ok || tls["enabled"] != true || tls["server_name"] != "query-tuic.example" {
 		t.Fatalf("unexpected tuic query credential tls: %+v", outbound["tls"])
@@ -1183,6 +1193,14 @@ func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 	utls, ok := tls["utls"].(map[string]any)
 	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
 		t.Fatalf("unexpected tuic query credential utls: %+v", tls["utls"])
+	}
+
+	relayOutbound := findOutbound(config.Outbounds, "up_189")
+	if relayOutbound == nil {
+		t.Fatalf("expected tuic relay outbound up_189, got %+v", config.Outbounds)
+	}
+	if relayOutbound["uuid"] != "00000000-0000-0000-0000-000000000189" || relayOutbound["password"] != "tuic-relay-placeholder" || relayOutbound["udp_relay_mode"] != "native" {
+		t.Fatalf("unexpected tuic query credential relay alias fields: %+v", relayOutbound)
 	}
 }
 

@@ -25,6 +25,8 @@ var supportedURIPrefixes = []string{
 	"direct://",
 	"freedom://",
 	"http://",
+	"http+tls://",
+	"http-tls://",
 	"https://",
 	"hy2://",
 	"hysteria://",
@@ -217,6 +219,9 @@ func canonicalSpecialURI(rawURI string) string {
 		return rewriteURIScheme(rawURI, "block")
 	case strings.HasPrefix(lower, "shadowsocks://"):
 		return rewriteURIScheme(rawURI, "ss")
+	case strings.HasPrefix(lower, "http+tls://"),
+		strings.HasPrefix(lower, "http-tls://"):
+		return rewriteURIScheme(rawURI, "https")
 	case strings.HasPrefix(lower, "hy2://"):
 		return rewriteURIScheme(rawURI, "hysteria2")
 	case strings.HasPrefix(lower, "any-tls://"):

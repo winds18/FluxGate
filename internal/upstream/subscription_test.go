@@ -99,6 +99,24 @@ func TestNormalizeContentCanonicalizesCommonDashedSchemeAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentCanonicalizesHTTPTLSSchemeAliases(t *testing.T) {
+	raw := strings.Join([]string{
+		"http+tls://qa-user:http-placeholder@http-tls-alias.example.test:443/connect?sni=http-tls-alias.example.test#HTTP%20TLS%20Plus",
+		"http-tls://qa-user:http-placeholder@http-tls-dash-alias.example.test:443/connect?sni=http-tls-dash-alias.example.test#HTTP%20TLS%20Dash",
+	}, "\n")
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"https://qa-user:http-placeholder@http-tls-alias.example.test:443/connect?sni=http-tls-alias.example.test#HTTP%20TLS%20Plus",
+		"https://qa-user:http-placeholder@http-tls-dash-alias.example.test:443/connect?sni=http-tls-dash-alias.example.test#HTTP%20TLS%20Dash",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected canonical HTTP TLS scheme aliases: %q", got)
+	}
+}
+
 func TestNormalizeContentCanonicalizesCommonShortSchemeAliases(t *testing.T) {
 	raw := strings.Join([]string{
 		"hy2://hy2-placeholder@hy2-alias.example.test:443#Hy2%20Alias",

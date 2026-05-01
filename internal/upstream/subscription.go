@@ -513,7 +513,11 @@ func isJSONURIMetadataKey(key string) bool {
 		"success", "ok", "status", "code", "message", "msg", "error", "errors", "reason",
 		"meta", "metadata", "pagination", "page", "page_size", "page-size", "pagesize", "pages",
 		"total", "count", "limit", "offset", "next", "previous", "prev",
-		"traceid", "trace_id", "trace-id", "requestid", "request_id", "request-id":
+		"traceid", "trace_id", "trace-id", "requestid", "request_id", "request-id",
+		"proxyprovider", "proxy_provider", "proxy-provider", "proxyproviders", "proxy_providers", "proxy-providers",
+		"ruleprovider", "rule_provider", "rule-provider", "ruleproviders", "rule_providers", "rule-providers",
+		"proxygroup", "proxy_group", "proxy-group", "proxygroups", "proxy_groups", "proxy-groups",
+		"healthcheck", "health_check", "health-check", "rule", "rules":
 		return true
 	default:
 		return false

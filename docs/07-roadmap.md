@@ -108,6 +108,7 @@
 - subscription 来源可解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段中的内嵌 Clash YAML、SIP008、sing-box JSON 和 base64 订阅内容也会归一化。
 - JSON 包装订阅可解析 `payload`、`result`、`response`、`body`、`text`、`sub` 等常见接口外层字段。
 - JSON 包装订阅会忽略 `meta`、`pagination`、`errors`、`message`、`traceId` 等常见接口元信息字段，避免把接口文档或分页 URL 误导入为 HTTP 节点。
+- JSON 包装订阅会忽略 Clash 风格 `proxy-providers`、`rule-providers`、`proxy-groups`、`health-check` 和 `rules` 配置块，避免把 provider 下载 URL、健康检查 URL 或规则源 URL 误导入为 HTTP 节点。
 - JSON 包装订阅可解析 `list`、`records`、`rows`、`entries`、`nodeList`、`proxyList`、`serverList`、`subscriptionList`、`urlList`、`linkList` 及其 snake_case/kebab-case 变体等常见集合字段，容器名不会污染缺少 fragment 的节点 URI 展示名。
 - JSON 包装订阅可解析 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case/kebab-case 变体；对象内带名称的 `subscribeUrl`、`subUrl` 和 `downloadUrl` 分享字段也会按节点链接解析，分享链接缺少 fragment 时会优先使用对象内名称。
 - JSON 包装订阅可解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象。

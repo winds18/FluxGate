@@ -956,6 +956,67 @@ func TestNormalizeContentJSONIgnoresMetadataURLs(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONIgnoresClashProviderMetadataURLs(t *testing.T) {
+	raw := `{
+  "proxies": [
+    {
+      "name": "JSON Provider Trojan",
+      "type": "trojan",
+      "server": "provider-node.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "tls": true,
+      "sni": "provider-node.example.test"
+    }
+  ],
+  "proxy-providers": {
+    "airport": {
+      "type": "http",
+      "url": "https://provider-download.example.test/clash.yaml",
+      "path": "./providers/airport.yaml",
+      "health-check": {
+        "enable": true,
+        "url": "http://www.gstatic.com/generate_204"
+      }
+    }
+  },
+  "proxy-groups": [
+    {
+      "name": "auto",
+      "type": "url-test",
+      "proxies": ["JSON Provider Trojan"],
+      "url": "http://www.gstatic.com/generate_204"
+    }
+  ],
+  "rule-providers": {
+    "reject-list": {
+      "type": "http",
+      "url": "https://rules.example.test/reject.yaml"
+    }
+  },
+  "rules": [
+    "DOMAIN-SUFFIX,example.test,DIRECT"
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "trojan://trojan-placeholder@provider-node.example.test:443?")
+	for _, unwanted := range []string{
+		"provider-download.example.test",
+		"gstatic.com",
+		"rules.example.test",
+	} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("unexpected provider metadata URL imported as node: %q", got)
+		}
+	}
+	if !strings.HasSuffix(got, "#JSON%20Provider%20Trojan") {
+		t.Fatalf("unexpected provider Trojan fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONCommonCollectionFields(t *testing.T) {
 	raw := `{
   "data": {

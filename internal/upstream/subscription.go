@@ -525,6 +525,22 @@ func firstJSONString(values map[string]any, keys ...string) string {
 			return strings.TrimSpace(value)
 		}
 	}
+	actualKeys := make([]string, 0, len(values))
+	for key := range values {
+		actualKeys = append(actualKeys, key)
+	}
+	sort.Strings(actualKeys)
+	for _, key := range keys {
+		normalizedKey := normalizedJSONURIKey(key)
+		for _, actualKey := range actualKeys {
+			if normalizedJSONURIKey(actualKey) != normalizedKey {
+				continue
+			}
+			if value, ok := values[actualKey].(string); ok && strings.TrimSpace(value) != "" {
+				return strings.TrimSpace(value)
+			}
+		}
+	}
 	return ""
 }
 

@@ -1124,6 +1124,37 @@ func TestNormalizeContentJSONWrapperFieldCaseAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONNameFieldCaseAliases(t *testing.T) {
+	raw := `{
+  "Items": [
+    {
+      "Name": "Case Name VLESS",
+      "URL": "vless://00000000-0000-0000-0000-000000000100@case-name.example.test:443"
+    },
+    {
+      "Display_Name": "Case Display SS",
+      "ShareURL": "ss://aes-128-gcm:qa-placeholder@case-display.example.test:8388"
+    },
+    {
+      "NodeName": "Case Node Trojan",
+      "Subscription_URL": "trojan://trojan-placeholder@case-node.example.test:443?security=tls"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"vless://00000000-0000-0000-0000-000000000100@case-name.example.test:443#Case%20Name%20VLESS",
+		"ss://aes-128-gcm:qa-placeholder@case-display.example.test:8388#Case%20Display%20SS",
+		"trojan://trojan-placeholder@case-node.example.test:443?security=tls#Case%20Node%20Trojan",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON name field case aliases: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONCommonShareLinkFields(t *testing.T) {
 	raw := `{
   "items": [

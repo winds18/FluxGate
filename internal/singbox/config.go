@@ -706,26 +706,26 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 
 	if obfsType := strings.TrimSpace(query.Get("obfs")); obfsType != "" {
 		obfs := map[string]any{"type": obfsType}
-		if obfsPassword := strings.TrimSpace(query.Get("obfs-password")); obfsPassword != "" {
+		if obfsPassword := strings.TrimSpace(firstNonEmpty(query.Get("obfs-password"), query.Get("obfs_password"), query.Get("obfsPassword"))); obfsPassword != "" {
 			obfs["password"] = obfsPassword
 		}
 		outbound["obfs"] = obfs
 	}
-	if upMbps := intQuery(firstNonEmpty(query.Get("up_mbps"), query.Get("up-mbps"), query.Get("upmbps"))); upMbps > 0 {
+	if upMbps := intQuery(firstNonEmpty(query.Get("up_mbps"), query.Get("up-mbps"), query.Get("upmbps"), query.Get("upMbps"))); upMbps > 0 {
 		outbound["up_mbps"] = upMbps
 	}
-	if downMbps := intQuery(firstNonEmpty(query.Get("down_mbps"), query.Get("down-mbps"), query.Get("downmbps"))); downMbps > 0 {
+	if downMbps := intQuery(firstNonEmpty(query.Get("down_mbps"), query.Get("down-mbps"), query.Get("downmbps"), query.Get("downMbps"))); downMbps > 0 {
 		outbound["down_mbps"] = downMbps
 	}
 
 	tls := map[string]any{"enabled": true}
-	if serverName := firstNonEmpty(query.Get("sni"), parsed.Hostname()); serverName != "" {
+	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
 		tls["server_name"] = serverName
 	}
-	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"))) {
 		tls["insecure"] = true
 	}
-	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
 		tls["disable_sni"] = true
 	}
 	if fingerprint := firstNonEmpty(query.Get("pinSHA256"), query.Get("pin-sha256"), query.Get("fingerprint")); fingerprint != "" {
@@ -1025,25 +1025,25 @@ func buildHysteriaOutbound(node store.Node) (map[string]any, bool) {
 	if up := firstNonEmpty(query.Get("up"), query.Get("up_speed"), query.Get("up-speed")); up != "" {
 		outbound["up"] = up
 	}
-	if upMbps := intQuery(firstNonEmpty(query.Get("up_mbps"), query.Get("up-mbps"), query.Get("upmbps"))); upMbps > 0 {
+	if upMbps := intQuery(firstNonEmpty(query.Get("up_mbps"), query.Get("up-mbps"), query.Get("upmbps"), query.Get("upMbps"))); upMbps > 0 {
 		outbound["up_mbps"] = upMbps
 	}
 	if down := firstNonEmpty(query.Get("down"), query.Get("down_speed"), query.Get("down-speed")); down != "" {
 		outbound["down"] = down
 	}
-	if downMbps := intQuery(firstNonEmpty(query.Get("down_mbps"), query.Get("down-mbps"), query.Get("downmbps"))); downMbps > 0 {
+	if downMbps := intQuery(firstNonEmpty(query.Get("down_mbps"), query.Get("down-mbps"), query.Get("downmbps"), query.Get("downMbps"))); downMbps > 0 {
 		outbound["down_mbps"] = downMbps
 	}
 	if obfs := strings.TrimSpace(query.Get("obfs")); obfs != "" {
 		outbound["obfs"] = obfs
 	}
-	if recvWindowConn := intQuery(firstNonEmpty(query.Get("recv_window_conn"), query.Get("recv-window-conn"))); recvWindowConn > 0 {
+	if recvWindowConn := intQuery(firstNonEmpty(query.Get("recv_window_conn"), query.Get("recv-window-conn"), query.Get("recvWindowConn"))); recvWindowConn > 0 {
 		outbound["recv_window_conn"] = recvWindowConn
 	}
-	if recvWindow := intQuery(firstNonEmpty(query.Get("recv_window"), query.Get("recv-window"))); recvWindow > 0 {
+	if recvWindow := intQuery(firstNonEmpty(query.Get("recv_window"), query.Get("recv-window"), query.Get("recvWindow"))); recvWindow > 0 {
 		outbound["recv_window"] = recvWindow
 	}
-	if boolQuery(firstNonEmpty(query.Get("disable_mtu_discovery"), query.Get("disable-mtu-discovery"))) {
+	if boolQuery(firstNonEmpty(query.Get("disable_mtu_discovery"), query.Get("disable-mtu-discovery"), query.Get("disableMTUDiscovery"), query.Get("disableMtuDiscovery"))) {
 		outbound["disable_mtu_discovery"] = true
 	}
 	if network := firstNonEmpty(query.Get("network"), query.Get("protocol")); network != "" {
@@ -1051,13 +1051,13 @@ func buildHysteriaOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	tls := map[string]any{"enabled": true}
-	if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+	if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
 		tls["server_name"] = serverName
 	}
-	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"))) {
 		tls["insecure"] = true
 	}
-	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
 		tls["disable_sni"] = true
 	}
 	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {

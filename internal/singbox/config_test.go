@@ -1259,7 +1259,7 @@ func TestBuildConfigSupportsHysteria2QueryPassword(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         80,
-			URI:        "hy2://query-password.hy2.example:443?password=hy2-query-placeholder&obfs=salamander&obfs-password=obfs-placeholder&sni=hy2-query.example&insecure=1#hy2-query",
+			URI:        "hy2://query-password.hy2.example:443?password=hy2-query-placeholder&obfs=salamander&obfsPassword=obfs-placeholder&upMbps=35&downMbps=95&serverName=hy2-query.example&allowInsecure=1&disableSNI=1&clientFingerprint=chrome#hy2-query",
 			Protocol:   "hy2",
 			ServerPort: 443,
 			Status:     "active",
@@ -1277,9 +1277,16 @@ func TestBuildConfigSupportsHysteria2QueryPassword(t *testing.T) {
 	if !ok || obfs["type"] != "salamander" || obfs["password"] != "obfs-placeholder" {
 		t.Fatalf("unexpected hysteria2 query password obfs: %+v", outbound["obfs"])
 	}
+	if outbound["up_mbps"] != 35 || outbound["down_mbps"] != 95 {
+		t.Fatalf("unexpected hysteria2 query bandwidth aliases: %+v", outbound)
+	}
 	tls, ok := outbound["tls"].(map[string]any)
-	if !ok || tls["enabled"] != true || tls["server_name"] != "hy2-query.example" || tls["insecure"] != true {
+	if !ok || tls["enabled"] != true || tls["server_name"] != "hy2-query.example" || tls["insecure"] != true || tls["disable_sni"] != true {
 		t.Fatalf("unexpected hysteria2 query password tls: %+v", outbound["tls"])
+	}
+	utls, ok := tls["utls"].(map[string]any)
+	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected hysteria2 query password utls: %+v", tls["utls"])
 	}
 }
 
@@ -1287,7 +1294,7 @@ func TestBuildConfigSupportsHysteriaTokenAuth(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         81,
-			URI:        "hysteria://token-auth.hysteria.example:443?token=hysteria-token-placeholder&up_mbps=30&down_mbps=90&obfs=obfs-placeholder&sni=hysteria-token.example&insecure=1#hysteria-token",
+			URI:        "hysteria://token-auth.hysteria.example:443?token=hysteria-token-placeholder&upMbps=30&downMbps=90&obfs=obfs-placeholder&recvWindowConn=1048576&recvWindow=2097152&disableMTUDiscovery=1&serverName=hysteria-token.example&allowInsecure=1&disableSNI=1&clientFingerprint=chrome#hysteria-token",
 			Protocol:   "hysteria",
 			ServerPort: 443,
 			Status:     "active",
@@ -1304,9 +1311,16 @@ func TestBuildConfigSupportsHysteriaTokenAuth(t *testing.T) {
 	if outbound["up_mbps"] != 30 || outbound["down_mbps"] != 90 || outbound["obfs"] != "obfs-placeholder" {
 		t.Fatalf("unexpected hysteria token auth options: %+v", outbound)
 	}
+	if outbound["recv_window_conn"] != 1048576 || outbound["recv_window"] != 2097152 || outbound["disable_mtu_discovery"] != true {
+		t.Fatalf("unexpected hysteria token auth window aliases: %+v", outbound)
+	}
 	tls, ok := outbound["tls"].(map[string]any)
-	if !ok || tls["enabled"] != true || tls["server_name"] != "hysteria-token.example" || tls["insecure"] != true {
+	if !ok || tls["enabled"] != true || tls["server_name"] != "hysteria-token.example" || tls["insecure"] != true || tls["disable_sni"] != true {
 		t.Fatalf("unexpected hysteria token auth tls: %+v", outbound["tls"])
+	}
+	utls, ok := tls["utls"].(map[string]any)
+	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected hysteria token auth utls: %+v", tls["utls"])
 	}
 }
 

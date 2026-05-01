@@ -118,8 +118,8 @@
 - VMess TCP HTTP 伪装和 HTTP/H2 传输参数会同步为 sing-box HTTP transport。
 - sing-box JSON VMess 节点的 HTTP transport 会保留 host 数组和 path，避免导入后丢失 HTTP 伪装参数。
 - VMess 可兼容 `vmess://uuid@host:port?...` userinfo 直连 URI，也可从 `uuid`/`id`/`user_id`/`user-id` 查询参数读取认证信息，并保留 TLS、WebSocket、SNI、ALPN、跳过证书校验、uTLS fingerprint 和 `packet_encoding`/`packet-encoding`/`packetEncoding` 参数。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria `recv_window_conn`、`recv_window`、`disable_mtu_discovery` 和 `tls.utls.fingerprint`/`fp` 参数，并同步为 sing-box outbound。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 `up_mbps`、`down_mbps`、`insecure`、`disable_sni`、`alpn`、证书 pin、`fp`/`client-fingerprint` 和 `tls.utls.fingerprint` 参数，并同步为 sing-box outbound。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria `recv_window_conn`、`recv_window`、`disable_mtu_discovery` 和 `tls.utls.fingerprint`/`fp` 参数，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`recvWindowConn`、`recvWindow`、`disableMTUDiscovery` 和 `clientFingerprint` 查询别名。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 `up_mbps`、`down_mbps`、`insecure`、`disable_sni`、`alpn`、证书 pin、`fp`/`client-fingerprint` 和 `tls.utls.fingerprint` 参数，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`obfsPassword` 和 `clientFingerprint` 查询别名。
 - TUIC URI 支持从 `uuid`/`id`/`user_id`/`user-id` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，并兼容 `congestionControl`、`udpOverStream`、`udpRelayMode`、`zeroRttHandshake` 和 `heartbeatInterval` 查询别名，兼容缺少 userinfo 的订阅写法。
 - sing-box JSON 和 URI 导入链路会保留 TUIC `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound。
 - AnyTLS 和 ShadowTLS URI 支持从 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。

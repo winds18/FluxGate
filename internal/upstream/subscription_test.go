@@ -2123,6 +2123,29 @@ func TestNormalizeContentSIP008(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSIP008FieldAliases(t *testing.T) {
+	raw := `{
+  "version": 1,
+  "servers": [
+    {
+      "displayName": "香港 SIP008 别名",
+      "address": "sip008-alias.example.test",
+      "portNumber": 8388,
+      "encryptMethod": "chacha20-ietf-poly1305",
+      "pass": "alias-placeholder"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "ss://chacha20-ietf-poly1305:alias-placeholder@sip008-alias.example.test:8388#%E9%A6%99%E6%B8%AF%20SIP008%20%E5%88%AB%E5%90%8D"
+	if got != want {
+		t.Fatalf("unexpected SIP008 alias URI: %q", got)
+	}
+}
+
 func TestNormalizeContentSIP008ServerObjectMap(t *testing.T) {
 	raw := `{
   "version": 1,
@@ -2155,6 +2178,37 @@ func TestNormalizeContentSIP008ServerObjectMap(t *testing.T) {
 	}, "\n")
 	if got != want {
 		t.Fatalf("unexpected SIP008 object map URI: %q", got)
+	}
+}
+
+func TestNormalizeContentSSDServerObjectMapAndAliases(t *testing.T) {
+	raw := `{
+  "portNumber": 8388,
+  "encryptMethod": "aes-128-gcm",
+  "pass": "doc-placeholder",
+  "servers": {
+    "SSD Map A": {
+      "nodeHost": "ssd-map-a.example.test"
+    },
+    "SSD Map B": {
+      "displayName": "首尔 SSD 别名",
+      "endpoint": "ssd-map-b.example.test",
+      "nodePort": 8389,
+      "security": "aes-256-gcm",
+      "passwd": "node-placeholder"
+    }
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:doc-placeholder@ssd-map-a.example.test:8388#SSD%20Map%20A",
+		"ss://aes-256-gcm:node-placeholder@ssd-map-b.example.test:8389#%E9%A6%96%E5%B0%94%20SSD%20%E5%88%AB%E5%90%8D",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected SSD object map alias URIs: %q", got)
 	}
 }
 

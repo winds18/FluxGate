@@ -55,7 +55,7 @@ func sip008ServerList(raw json.RawMessage) []map[string]any {
 		if len(server) == 0 {
 			continue
 		}
-		if jsonFieldString(server, "remarks", "name", "id") == "" {
+		if shadowsocksJSONName(server) == "" {
 			server["remarks"] = key
 		}
 		servers = append(servers, server)
@@ -64,10 +64,10 @@ func sip008ServerList(raw json.RawMessage) []map[string]any {
 }
 
 func sip008ServerURI(server map[string]any) string {
-	host := jsonFieldString(server, "server", "host")
-	port := jsonFieldString(server, "server_port", "serverPort", "port")
-	method := jsonFieldString(server, "method", "cipher")
-	password := jsonFieldString(server, "password")
+	host := shadowsocksJSONHost(server)
+	port := shadowsocksJSONPort(server)
+	method := shadowsocksJSONMethod(server)
+	password := shadowsocksJSONPassword(server)
 	if host == "" || port == "" || method == "" || password == "" {
 		return ""
 	}
@@ -85,12 +85,32 @@ func sip008ServerURI(server map[string]any) string {
 		Scheme:   "ss",
 		User:     url.UserPassword(method, password),
 		Host:     net.JoinHostPort(host, port),
-		Fragment: firstNonEmptyString(jsonFieldString(server, "remarks", "name", "id"), host),
+		Fragment: firstNonEmptyString(shadowsocksJSONName(server), host),
 	}
 	if len(values) > 0 {
 		result.RawQuery = values.Encode()
 	}
 	return result.String()
+}
+
+func shadowsocksJSONName(fields map[string]any) string {
+	return jsonFieldString(fields, "remarks", "remark", "name", "displayName", "display_name", "display-name", "nodeName", "node_name", "node-name", "label", "title", "tag", "id")
+}
+
+func shadowsocksJSONHost(fields map[string]any) string {
+	return jsonFieldString(fields, "server", "host", "hostname", "address", "addr", "serverAddress", "server_address", "server-address", "serverHost", "server_host", "server-host", "remoteHost", "remote_host", "remote-host", "nodeHost", "node_host", "node-host", "endpoint")
+}
+
+func shadowsocksJSONPort(fields map[string]any) string {
+	return jsonFieldString(fields, "server_port", "serverPort", "server-port", "port", "remotePort", "remote_port", "remote-port", "nodePort", "node_port", "node-port", "portNumber", "port_number", "port-number")
+}
+
+func shadowsocksJSONMethod(fields map[string]any) string {
+	return jsonFieldString(fields, "method", "cipher", "encryption", "security", "encryptMethod", "encrypt_method", "encrypt-method")
+}
+
+func shadowsocksJSONPassword(fields map[string]any) string {
+	return jsonFieldString(fields, "password", "pass", "passwd", "pwd", "psk", "token")
 }
 
 func jsonFieldString(fields map[string]any, keys ...string) string {

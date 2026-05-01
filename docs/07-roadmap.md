@@ -118,7 +118,7 @@
 - Quantumult X HTTP/SOCKS 节点可兼容键值和位置参数两种认证写法。
 - subscription 来源可解析以节点名称为 key 的 JSON URI 对象映射。
 - subscription 来源可解析裸 VMess JSON 单对象、数组、包装字符串和按名称映射对象，并转换为标准 `vmess://` URI；裸 VMess JSON 可识别 `address`/`server`/`serverHost`/`nodeHost`/`endpoint`、`serverPort`/`nodePort`/`portNumber`、`uuid`/`user_id` 等字段别名，并保留 `packetEncoding`/`packet_encoding`/`packet-encoding`、`disable_sni` 和 `fp`/`fingerprint`/`clientFingerprint` 参数。
-- subscription 来源可解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI。
+- subscription 来源可解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI；SSD `servers` 支持数组和按名称分组的对象映射，并兼容 SIP008 同款 Shadowsocks 字段别名。
 - subscription 来源可解析 Surge `[Proxy]` 代理段中的 SS、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并兼容 `trojan-go` 和 `socks5h` 协议别名，转换为标准 URI。
 - subscription 来源支持按刷新间隔自动同步到期订阅。
 - subscription 来源可解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点，以及 Direct/Reject 变体/DNS 内置出站；Clash YAML 结构化 `type` 兼容 `trojan-go`、`vmess-aead`、`hy2`、`any-tls`、`shadow-tls`、`naive-quic` 和 `socks5h` 别名。
@@ -129,7 +129,7 @@
 - Clash YAML 解析支持常见块状和内联 `ws-opts`、`grpc-opts` 嵌套写法，能保留 WebSocket path/host 和 gRPC service name。
 - Clash YAML 解析可归一化 `skipCertVerify`、`allowInsecure`、`disableSNI`、`clientFingerprint`、`wsPath`、`wsHost`、`wsOpts`、`maxEarlyData`、`earlyDataHeaderName`、`grpcServiceName` 等常见 camelCase 参数，块状和内联节点都会保留 TLS 与传输配置。
 - Clash YAML 解析支持行内和块状数组标量，可保留 ALPN、WireGuard 地址、允许 IP 和 reserved 字节列表。
-- subscription 来源可解析 SIP008 Shadowsocks 订阅，`servers` 支持数组和按名称分组的对象映射。
+- subscription 来源可解析 SIP008 Shadowsocks 订阅，`servers` 支持数组和按名称分组的对象映射；SIP008 Shadowsocks 节点可识别 `address`/`serverAddress`/`nodeHost`/`endpoint`、`portNumber`/`nodePort`、`encryptMethod`/`security` 和 `pass`/`passwd` 等字段别名。
 - SIP008、Clash YAML 和 sing-box JSON 的 Shadowsocks 节点会保留 SIP003 插件参数并同步进入 sing-box outbound。
 - `shadowsocks://` URI 会归一化为标准 `ss://` URI，避免长 scheme 导入后无法进入 Shadowsocks outbound 转换链路。
 - `http+tls://` 和 `http-tls://` 裸 URI 会归一化为标准 `https://`，复用现有 HTTP outbound TLS 配置生成链路。

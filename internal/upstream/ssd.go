@@ -3,6 +3,7 @@ package upstream
 import (
 	"encoding/base64"
 	"encoding/json"
+	"sort"
 	"strings"
 )
 
@@ -16,7 +17,7 @@ func SSDURIList(content string) string {
 		if !strings.HasPrefix(strings.ToLower(line), "ssd://") {
 			continue
 		}
-		if normalized := SSDJSONURIList(strings.TrimSpace(line[len("ssd://"):])); normalized != "" {
+		if normalized := SSDJSONURIList(line); normalized != "" {
 			uris = append(uris, normalized)
 		}
 	}
@@ -27,7 +28,9 @@ func SSDURIList(content string) string {
 }
 
 func SSDJSONURIList(content string) string {
-	decoded := decodeSSDContent(strings.TrimSpace(content))
+	trimmed := strings.TrimSpace(content)
+	explicitSSD := strings.HasPrefix(strings.ToLower(trimmed), "ssd://")
+	decoded := decodeSSDContent(trimmed)
 	if decoded == "" {
 		return ""
 	}
@@ -35,6 +38,9 @@ func SSDJSONURIList(content string) string {
 	decoder.UseNumber()
 	var doc map[string]any
 	if err := decoder.Decode(&doc); err != nil {
+		return ""
+	}
+	if !explicitSSD && !isSSDJSONDocument(doc) {
 		return ""
 	}
 	servers := ssdServerList(doc["servers"])
@@ -49,6 +55,15 @@ func SSDJSONURIList(content string) string {
 		}
 	}
 	return strings.Join(uris, "\n")
+}
+
+func isSSDJSONDocument(doc map[string]any) bool {
+	if jsonFieldString(doc, "airport") != "" {
+		return true
+	}
+	return shadowsocksJSONPort(doc) != "" &&
+		shadowsocksJSONMethod(doc) != "" &&
+		shadowsocksJSONPassword(doc) != ""
 }
 
 func decodeSSDContent(content string) string {
@@ -93,21 +108,39 @@ func ssdServerList(value any) []map[string]any {
 			}
 		}
 		return result
+	case map[string]any:
+		keys := make([]string, 0, len(typed))
+		for key := range typed {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		result := make([]map[string]any, 0, len(keys))
+		for _, key := range keys {
+			server, ok := typed[key].(map[string]any)
+			if !ok || len(server) == 0 {
+				continue
+			}
+			if shadowsocksJSONName(server) == "" {
+				server["remarks"] = key
+			}
+			result = append(result, server)
+		}
+		return result
 	default:
 		return nil
 	}
 }
 
 func ssdServerURI(doc, server map[string]any) string {
-	host := jsonFieldString(server, "server", "host")
-	port := firstNonEmptyString(jsonFieldString(server, "port", "server_port", "serverPort"), jsonFieldString(doc, "port", "server_port", "serverPort"))
-	method := firstNonEmptyString(jsonFieldString(server, "encryption", "method", "cipher"), jsonFieldString(doc, "encryption", "method", "cipher"))
-	password := firstNonEmptyString(jsonFieldString(server, "password"), jsonFieldString(doc, "password"))
+	host := shadowsocksJSONHost(server)
+	port := firstNonEmptyString(shadowsocksJSONPort(server), shadowsocksJSONPort(doc))
+	method := firstNonEmptyString(shadowsocksJSONMethod(server), shadowsocksJSONMethod(doc))
+	password := firstNonEmptyString(shadowsocksJSONPassword(server), shadowsocksJSONPassword(doc))
 	if host == "" || port == "" || method == "" || password == "" {
 		return ""
 	}
 	proxy := map[string]string{
-		"name":     firstNonEmptyString(jsonFieldString(server, "remarks", "remark", "name", "id"), host),
+		"name":     firstNonEmptyString(shadowsocksJSONName(server), host),
 		"server":   host,
 		"port":     port,
 		"method":   method,

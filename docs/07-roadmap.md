@@ -83,7 +83,7 @@
 - V2Ray/Xray JSON SOCKS outbound 可保留 `udp`、`udpEnabled`、`udp_enabled`、`udp_relay`、`udp-relay`、`udp_over_tcp`、`udpOverTcp`、`udp-over-tcp` 和 `uot` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
 - Shadowsocks URI 可从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息。
 - Naive、HTTP/HTTPS 和 SOCKS URI 可从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息。
-- SSH URI 可从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息，并兼容 `identity_file`/`key_path` 等私钥路径别名。
+- SSH URI 可从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息，并兼容 `identity_file`/`key_path`、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 等常见查询参数别名。
 - WireGuard URI 可兼容 `privateKey`/`publicKey`/`preSharedKey`、`ip`/`ipv6` 和 `allowedIPs` 等常见查询参数别名。
 - Tor URI 可兼容 `executablePath`、`dataDirectory` 和 `extraArgs` 等常见查询参数别名。
 - Hysteria2/Hy2 URI 可从查询参数读取 `password`、`auth`、`auth_str` 或 `token` 认证密码。

@@ -1222,13 +1222,13 @@ func buildSSHOutbound(node store.Node) (map[string]any, bool) {
 	if privateKeyPassphrase := firstNonEmpty(query.Get("private_key_passphrase"), query.Get("private-key-passphrase"), query.Get("passphrase"), query.Get("key_passphrase"), query.Get("key-passphrase")); privateKeyPassphrase != "" {
 		outbound["private_key_passphrase"] = privateKeyPassphrase
 	}
-	if hostKey := splitCSV(firstNonEmpty(query.Get("host_key"), query.Get("host-key"))); len(hostKey) > 0 {
+	if hostKey := splitCSV(firstNonEmpty(query.Get("host_key"), query.Get("host-key"), query.Get("hostKey"))); len(hostKey) > 0 {
 		outbound["host_key"] = hostKey
 	}
-	if hostKeyAlgorithms := splitCSV(firstNonEmpty(query.Get("host_key_algorithms"), query.Get("host-key-algorithms"))); len(hostKeyAlgorithms) > 0 {
+	if hostKeyAlgorithms := splitCSV(firstNonEmpty(query.Get("host_key_algorithms"), query.Get("host-key-algorithms"), query.Get("hostKeyAlgorithms"))); len(hostKeyAlgorithms) > 0 {
 		outbound["host_key_algorithms"] = hostKeyAlgorithms
 	}
-	if clientVersion := firstNonEmpty(query.Get("client_version"), query.Get("client-version")); clientVersion != "" {
+	if clientVersion := firstNonEmpty(query.Get("client_version"), query.Get("client-version"), query.Get("clientVersion")); clientVersion != "" {
 		outbound["client_version"] = clientVersion
 	}
 	if cipher := splitCSV(query.Get("cipher")); len(cipher) > 0 {
@@ -1237,7 +1237,7 @@ func buildSSHOutbound(node store.Node) (map[string]any, bool) {
 	if mac := splitCSV(query.Get("mac")); len(mac) > 0 {
 		outbound["mac"] = mac
 	}
-	if kexAlgorithm := splitCSV(firstNonEmpty(query.Get("kex_algorithm"), query.Get("kex-algorithm"))); len(kexAlgorithm) > 0 {
+	if kexAlgorithm := splitCSV(firstNonEmpty(query.Get("kex_algorithm"), query.Get("kex-algorithm"), query.Get("kexAlgorithm"))); len(kexAlgorithm) > 0 {
 		outbound["kex_algorithm"] = kexAlgorithm
 	}
 

@@ -1455,7 +1455,7 @@ func TestBuildConfigSupportsSSHQueryCredentialAliases(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         88,
-			URI:        "ssh://query-ssh.example:22?username=qa-user&pass=ssh-query-placeholder&key=inline-private-placeholder&identity_file=keys%2Fquery_id_ed25519&passphrase=query-passphrase&host_key=ssh-ed25519%20AAAAC3NzaC1lZDI1NTE5AAAAIplaceholder&host_key_algorithms=ssh-ed25519,rsa-sha2-512&client_version=SSH-2.0-FluxGateQuery&cipher=aes128-gcm@openssh.com&mac=hmac-sha2-256&kex_algorithm=curve25519-sha256#ssh-query",
+			URI:        "ssh://query-ssh.example:22?username=qa-user&pass=ssh-query-placeholder&key=inline-private-placeholder&identity_file=keys%2Fquery_id_ed25519&passphrase=query-passphrase&hostKey=ssh-ed25519%20AAAAC3NzaC1lZDI1NTE5AAAAIplaceholder&hostKeyAlgorithms=ssh-ed25519,rsa-sha2-512&clientVersion=SSH-2.0-FluxGateQuery&cipher=aes128-gcm@openssh.com,chacha20-poly1305@openssh.com&mac=hmac-sha2-256&kexAlgorithm=curve25519-sha256#ssh-query",
 			Protocol:   "ssh",
 			ServerPort: 22,
 			Status:     "active",
@@ -1482,6 +1482,18 @@ func TestBuildConfigSupportsSSHQueryCredentialAliases(t *testing.T) {
 	}
 	if outbound["client_version"] != "SSH-2.0-FluxGateQuery" {
 		t.Fatalf("unexpected ssh query credential client version: %+v", outbound)
+	}
+	cipher, ok := outbound["cipher"].([]string)
+	if !ok || len(cipher) != 2 || cipher[0] != "aes128-gcm@openssh.com" || cipher[1] != "chacha20-poly1305@openssh.com" {
+		t.Fatalf("unexpected ssh query credential cipher: %+v", outbound["cipher"])
+	}
+	mac, ok := outbound["mac"].([]string)
+	if !ok || len(mac) != 1 || mac[0] != "hmac-sha2-256" {
+		t.Fatalf("unexpected ssh query credential mac: %+v", outbound["mac"])
+	}
+	kexAlgorithm, ok := outbound["kex_algorithm"].([]string)
+	if !ok || len(kexAlgorithm) != 1 || kexAlgorithm[0] != "curve25519-sha256" {
+		t.Fatalf("unexpected ssh query credential kex algorithm: %+v", outbound["kex_algorithm"])
 	}
 }
 

@@ -280,9 +280,9 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildTorOutbound(node)
 	case "dns":
 		return buildDNSOutbound(node)
-	case "direct":
+	case "direct", "freedom":
 		return buildDirectOutbound(node)
-	case "block":
+	case "block", "blackhole", "reject", "reject-drop", "reject-no-drop", "reject-tinygif":
 		return buildBlockOutbound(node)
 	default:
 		return nil, false
@@ -1373,11 +1373,11 @@ func buildDNSOutbound(node store.Node) (map[string]any, bool) {
 }
 
 func buildDirectOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || node.Protocol != "direct" {
+	if node.Status != "active" || !isDirectProtocol(node.Protocol) {
 		return nil, false
 	}
 	parsed, err := url.Parse(strings.TrimSpace(node.URI))
-	if err != nil || parsed.Scheme != "direct" {
+	if err != nil || !isDirectProtocol(parsed.Scheme) {
 		return nil, false
 	}
 	return map[string]any{
@@ -1387,17 +1387,35 @@ func buildDirectOutbound(node store.Node) (map[string]any, bool) {
 }
 
 func buildBlockOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || node.Protocol != "block" {
+	if node.Status != "active" || !isBlockProtocol(node.Protocol) {
 		return nil, false
 	}
 	parsed, err := url.Parse(strings.TrimSpace(node.URI))
-	if err != nil || parsed.Scheme != "block" {
+	if err != nil || !isBlockProtocol(parsed.Scheme) {
 		return nil, false
 	}
 	return map[string]any{
 		"type": "block",
 		"tag":  upstreamTag(node),
 	}, true
+}
+
+func isDirectProtocol(protocol string) bool {
+	switch protocol {
+	case "direct", "freedom":
+		return true
+	default:
+		return false
+	}
+}
+
+func isBlockProtocol(protocol string) bool {
+	switch protocol {
+	case "block", "blackhole", "reject", "reject-drop", "reject-no-drop", "reject-tinygif":
+		return true
+	default:
+		return false
+	}
 }
 
 func parseVMessURI(rawURI string) (map[string]any, bool) {

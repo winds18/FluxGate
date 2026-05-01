@@ -632,8 +632,8 @@ func TestBuildConfigAddsDirectOutboundAndSelectsIt(t *testing.T) {
 	config := buildConfig(nil, nil, []store.Node{
 		{
 			ID:         63,
-			URI:        "direct://default#Direct",
-			Protocol:   "direct",
+			URI:        "freedom://default#Direct",
+			Protocol:   "freedom",
 			ServerPort: 0,
 			Status:     "active",
 		},
@@ -669,8 +669,8 @@ func TestBuildConfigAddsBlockOutboundWithoutSelectingIt(t *testing.T) {
 	}, []store.Node{
 		{
 			ID:         64,
-			URI:        "block://default#Block",
-			Protocol:   "block",
+			URI:        "reject-drop://default#Block",
+			Protocol:   "reject-drop",
 			ServerPort: 0,
 			Status:     "active",
 			Tags:       []string{"BLOCK"},

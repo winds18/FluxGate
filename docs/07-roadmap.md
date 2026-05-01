@@ -146,6 +146,7 @@
 - sing-box JSON `outbounds` 兼容 `trojan-go`、`vmess-aead`、`hy2`、`any-tls`、`shadow-tls`、`naive-quic` 和 `socks5h` 结构化 `type` 别名。
 - subscription 来源可解析 sing-box JSON `outbounds` 中的 Naive/Naive+QUIC 节点，并保留 QUIC、UDP over TCP、并发、TLS 和 uTLS fingerprint 参数。
 - subscription 来源可解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
+- sing-box JSON 顶层、outbound、endpoint、TLS、uTLS、REALITY、transport、headers 和 WireGuard peer 字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Outbounds`、`Server-Port`、`ServerPort`、`ServerName`、`Disable-SNI`、`ServiceName`、`PermitWithoutStream`、`PrivateKey`、`AllowedIPs`。
 - sing-box JSON `outbounds` 和 `endpoints` 支持数组、单个对象、按名称分组的对象映射和分组数组映射。
 - sing-box JSON transport 的 `headers.Host` 支持字符串或数组写法，WebSocket 和 HTTPUpgrade 会保留为逗号分隔 Host。
 - subscription 来源可解析 V2Ray/Xray JSON `outbounds` 中的 VMess、VLESS、Trojan、Shadowsocks、HTTP、SOCKS、freedom、blackhole 和 DNS 出站，并保留常见 TLS、REALITY、WebSocket、gRPC、QUIC、HTTP/H2 和 HTTPUpgrade 传输参数；REALITY 兼容 `serverName`/`serverNames`、`shortId`/`shortIds` 和 hyphen/snake-case 别名。

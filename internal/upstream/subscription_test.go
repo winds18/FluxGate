@@ -3559,6 +3559,144 @@ func TestNormalizeContentSingBoxJSONProtocolAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONFieldCaseAliases(t *testing.T) {
+	raw := `{
+  "Outbounds": [
+    {
+      "Type": "trojan",
+      "Tag": "sing-box Trojan Field Aliases",
+      "Server": "trojan-field.singbox-alias.example.test",
+      "Server-Port": 443,
+      "Password": "trojan-placeholder",
+      "TLS": {
+        "Enabled": true,
+        "ServerName": "trojan-field.singbox-alias.example.test",
+        "Insecure": true,
+        "Disable-SNI": true,
+        "ALPN": ["h2", "http/1.1"],
+        "UTLS": {
+          "Enabled": true,
+          "Fingerprint": "chrome"
+        }
+      },
+      "Transport": {
+        "Type": "grpc",
+        "ServiceName": "fluxgate",
+        "Idle-Timeout": "30s",
+        "PingTimeout": "10s",
+        "PermitWithoutStream": true
+      }
+    },
+    {
+      "Type": "vless",
+      "Name": "sing-box VLESS Field Aliases",
+      "Server": "vless-field.singbox-alias.example.test",
+      "ServerPort": "443",
+      "UUID": "00000000-0000-0000-0000-000000000057",
+      "PacketEncoding": "xudp",
+      "TLS": {
+        "Enabled": true,
+        "Server_Name": "vless-field.singbox-alias.example.test"
+      },
+      "Transport": {
+        "Type": "ws",
+        "Path": "/ws",
+        "MaxEarlyData": 2048,
+        "EarlyDataHeaderName": "Sec-WebSocket-Protocol",
+        "Headers": {
+          "Host": ["ws-field.singbox-alias.example.test", "ws-backup.singbox-alias.example.test"]
+        }
+      }
+    }
+  ],
+  "Endpoints": {
+    "Type": "wireguard",
+    "Tag": "sing-box WireGuard Endpoint Field Aliases",
+    "SystemInterface": true,
+    "InterfaceName": "wg-alias",
+    "Address": ["10.66.0.9/32", "fd00::9/128"],
+    "PrivateKey": "endpoint-private",
+    "Peers": [
+      {
+        "Address": "wg-field.singbox-alias.example.test",
+        "ServerPort": 51820,
+        "PublicKey": "endpoint-peer",
+        "PreSharedKey": "endpoint-psk",
+        "AllowedIPs": ["0.0.0.0/0", "::/0"],
+        "Reserved": [9, 8, 7]
+      }
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 normalized sing-box field alias nodes, got %d: %q", len(lines), got)
+	}
+
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan-field.singbox-alias.example.test:443?")
+	for _, want := range []string{
+		"sni=trojan-field.singbox-alias.example.test",
+		"insecure=1",
+		"disable_sni=1",
+		"alpn=h2%2Chttp%2F1.1",
+		"fp=chrome",
+		"type=grpc",
+		"service_name=fluxgate",
+		"idle_timeout=30s",
+		"ping_timeout=10s",
+		"permit_without_stream=1",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected sing-box Trojan field alias URI to contain %q: %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#sing-box%20Trojan%20Field%20Aliases") {
+		t.Fatalf("unexpected sing-box Trojan field alias fragment: %q", lines[0])
+	}
+
+	assertHasPrefix(t, lines[1], "vless://00000000-0000-0000-0000-000000000057@vless-field.singbox-alias.example.test:443?")
+	for _, want := range []string{
+		"packet_encoding=xudp",
+		"security=tls",
+		"sni=vless-field.singbox-alias.example.test",
+		"type=ws",
+		"path=%2Fws",
+		"max_early_data=2048",
+		"early_data_header_name=Sec-WebSocket-Protocol",
+		"host=ws-field.singbox-alias.example.test%2Cws-backup.singbox-alias.example.test",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected sing-box VLESS field alias URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#sing-box%20VLESS%20Field%20Aliases") {
+		t.Fatalf("unexpected sing-box VLESS field alias fragment: %q", lines[1])
+	}
+
+	assertHasPrefix(t, lines[2], "wireguard://wg-field.singbox-alias.example.test:51820?")
+	for _, want := range []string{
+		"private_key=endpoint-private",
+		"peer_public_key=endpoint-peer",
+		"pre_shared_key=endpoint-psk",
+		"local_address=10.66.0.9%2F32%2Cfd00%3A%3A9%2F128",
+		"allowed_ips=0.0.0.0%2F0%2C%3A%3A%2F0",
+		"reserved=9%2C8%2C7",
+		"system_interface=1",
+		"interface_name=wg-alias",
+	} {
+		if !strings.Contains(lines[2], want) {
+			t.Fatalf("expected sing-box WireGuard endpoint field alias URI to contain %q: %q", want, lines[2])
+		}
+	}
+	if !strings.HasSuffix(lines[2], "#sing-box%20WireGuard%20Endpoint%20Field%20Aliases") {
+		t.Fatalf("unexpected sing-box WireGuard endpoint field alias fragment: %q", lines[2])
+	}
+}
+
 func TestNormalizeContentSingBoxJSONSOCKSUDPFlag(t *testing.T) {
 	raw := `{
   "outbounds": [

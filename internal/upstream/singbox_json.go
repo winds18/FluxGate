@@ -10,18 +10,15 @@ import (
 	"strings"
 )
 
-type singBoxSubscription struct {
-	Outbounds json.RawMessage `json:"outbounds"`
-	Endpoints json.RawMessage `json:"endpoints"`
-}
-
 func SingBoxJSONURIList(content string) string {
-	var doc singBoxSubscription
-	if err := json.Unmarshal([]byte(strings.TrimSpace(content)), &doc); err != nil {
+	decoder := json.NewDecoder(strings.NewReader(strings.TrimSpace(content)))
+	decoder.UseNumber()
+	var doc map[string]any
+	if err := decoder.Decode(&doc); err != nil {
 		return ""
 	}
-	outbounds := singBoxObjectList(doc.Outbounds)
-	endpoints := singBoxObjectList(doc.Endpoints)
+	outbounds := singBoxObjectList(singBoxValue(doc, "outbounds"))
+	endpoints := singBoxObjectList(singBoxValue(doc, "endpoints"))
 	if len(outbounds)+len(endpoints) == 0 {
 		return ""
 	}
@@ -40,22 +37,32 @@ func SingBoxJSONURIList(content string) string {
 	return strings.Join(uris, "\n")
 }
 
-func singBoxObjectList(raw json.RawMessage) []map[string]any {
-	if len(strings.TrimSpace(string(raw))) == 0 {
+func singBoxObjectList(value any) []map[string]any {
+	if value == nil {
 		return nil
 	}
-	var items []map[string]any
-	if err := json.Unmarshal(raw, &items); err == nil {
-		return items
-	}
-	var item map[string]any
-	if err := json.Unmarshal(raw, &item); err == nil && len(item) > 0 {
-		if _, ok := item["type"]; !ok {
-			return singBoxObjectMap(item)
+	switch typed := value.(type) {
+	case []any:
+		items := make([]map[string]any, 0, len(typed))
+		for _, item := range typed {
+			if mapped, ok := item.(map[string]any); ok {
+				items = append(items, mapped)
+			}
 		}
-		return []map[string]any{item}
+		return items
+	case []map[string]any:
+		return typed
+	case map[string]any:
+		if len(typed) == 0 {
+			return nil
+		}
+		if singBoxString(typed, "type") == "" {
+			return singBoxObjectMap(typed)
+		}
+		return []map[string]any{typed}
+	default:
+		return nil
 	}
-	return nil
 }
 
 func singBoxObjectMap(items map[string]any) []map[string]any {
@@ -95,7 +102,7 @@ func appendSingBoxMappedObject(result *[]map[string]any, item map[string]any, fa
 	if len(item) == 0 {
 		return
 	}
-	if strings.TrimSpace(stringFromAnyValue(item["tag"])) == "" && strings.TrimSpace(stringFromAnyValue(item["name"])) == "" {
+	if singBoxName(item) == "" {
 		item["tag"] = fallbackName
 	}
 	*result = append(*result, item)
@@ -257,35 +264,32 @@ func singBoxVMessURI(outbound map[string]any) string {
 	}
 	if tls := tlsMap(outbound); tls != nil {
 		doc["tls"] = "tls"
-		if boolFromAnyValue(tls["disable_sni"]) {
+		if singBoxBool(tls, "disable_sni") {
 			doc["disable_sni"] = "1"
 		}
-		if utls, ok := tls["utls"].(map[string]any); ok && boolFromAnyValue(utls["enabled"]) {
-			if fingerprint := strings.TrimSpace(stringFromAnyValue(utls["fingerprint"])); fingerprint != "" {
+		if utls := singBoxMap(tls, "utls"); utls != nil && singBoxBool(utls, "enabled") {
+			if fingerprint := singBoxString(utls, "fingerprint"); fingerprint != "" {
 				doc["fp"] = fingerprint
 			}
 		}
 	}
-	if transport, ok := outbound["transport"].(map[string]any); ok {
-		if transportType := strings.TrimSpace(stringFromAnyValue(transport["type"])); transportType != "" {
+	if transport := singBoxMap(outbound, "transport"); transport != nil {
+		if transportType := singBoxString(transport, "type"); transportType != "" {
 			doc["net"] = transportType
 		}
-		doc["path"] = strings.TrimSpace(stringFromAnyValue(transport["path"]))
+		doc["path"] = singBoxString(transport, "path")
 		if strings.EqualFold(doc["net"], "grpc") {
-			if serviceName := strings.TrimSpace(stringFromAnyValue(transport["service_name"])); serviceName != "" {
+			if serviceName := singBoxString(transport, "service_name"); serviceName != "" {
 				doc["path"] = serviceName
 			}
 		}
 		if strings.EqualFold(doc["net"], "http") || strings.EqualFold(doc["net"], "h2") {
-			if hosts := stringListFromAnyValue(transport["host"]); len(hosts) > 0 {
+			if hosts := singBoxStringList(transport, "host"); len(hosts) > 0 {
 				doc["host"] = strings.Join(hosts, ",")
 			}
 		}
-		if headers, ok := transport["headers"].(map[string]any); ok {
-			host := strings.TrimSpace(stringFromAnyValue(headers["Host"]))
-			if host == "" {
-				host = strings.TrimSpace(stringFromAnyValue(headers["host"]))
-			}
+		if headers := singBoxMap(transport, "headers"); headers != nil {
+			host := singBoxString(headers, "Host")
 			if host != "" {
 				doc["host"] = host
 			}
@@ -309,10 +313,10 @@ func singBoxHysteria2URI(outbound map[string]any) string {
 
 	values := url.Values{}
 	if obfs := singBoxMap(outbound, "obfs"); obfs != nil {
-		if obfsType := strings.TrimSpace(stringFromAnyValue(obfs["type"])); obfsType != "" {
+		if obfsType := singBoxString(obfs, "type"); obfsType != "" {
 			values.Set("obfs", obfsType)
 		}
-		if obfsPassword := strings.TrimSpace(stringFromAnyValue(obfs["password"])); obfsPassword != "" {
+		if obfsPassword := singBoxString(obfs, "password"); obfsPassword != "" {
 			values.Set("obfs-password", obfsPassword)
 		}
 	}
@@ -355,10 +359,10 @@ func singBoxTUICURI(outbound map[string]any) string {
 			values.Set(item.key, value)
 		}
 	}
-	if boolFromAnyValue(outbound["udp_over_stream"]) {
+	if singBoxBool(outbound, "udp_over_stream") {
 		values.Set("udp_over_stream", "1")
 	}
-	if boolFromAnyValue(outbound["zero_rtt_handshake"]) {
+	if singBoxBool(outbound, "zero_rtt_handshake") {
 		values.Set("zero_rtt_handshake", "1")
 	}
 	appendTLSQueryValues(outbound, values)
@@ -403,7 +407,7 @@ func singBoxShadowTLSURI(outbound map[string]any) string {
 		return ""
 	}
 
-	version := intFromAnyValue(outbound["version"])
+	version := singBoxInt(outbound, "version")
 	if version <= 0 {
 		version = 1
 	}
@@ -459,7 +463,7 @@ func singBoxHysteriaURI(outbound map[string]any) string {
 			values.Set(item.key, value)
 		}
 	}
-	if boolFromAnyValue(outbound["disable_mtu_discovery"]) {
+	if singBoxBool(outbound, "disable_mtu_discovery") {
 		values.Set("disable_mtu_discovery", "1")
 	}
 	appendTLSQueryValues(outbound, values)
@@ -481,7 +485,7 @@ func singBoxNaiveURI(outbound map[string]any) string {
 
 	scheme := "naive"
 	values := url.Values{}
-	if normalizedSingBoxOutboundType(singBoxString(outbound, "type")) == "naive+quic" || boolFromAnyValue(outbound["quic"]) {
+	if normalizedSingBoxOutboundType(singBoxString(outbound, "type")) == "naive+quic" || singBoxBool(outbound, "quic") {
 		scheme = "naive+quic"
 		values.Set("quic", "1")
 	}
@@ -496,7 +500,7 @@ func singBoxNaiveURI(outbound map[string]any) string {
 			values.Set(item.key, value)
 		}
 	}
-	if boolFromAnyValue(outbound["udp_over_tcp"]) {
+	if singBoxBool(outbound, "udp_over_tcp") {
 		values.Set("udp_over_tcp", "1")
 	}
 	appendTLSQueryValues(outbound, values)
@@ -557,10 +561,10 @@ func singBoxSOCKSURI(outbound map[string]any) string {
 	values := url.Values{}
 	if network := singBoxString(outbound, "network"); network != "" {
 		values.Set("network", network)
-	} else if boolFromAnyValue(outbound["udp"]) || boolFromAnyValue(outbound["udp_relay"]) || boolFromAnyValue(outbound["udp-relay"]) {
+	} else if singBoxBool(outbound, "udp") || singBoxBool(outbound, "udp_relay") || singBoxBool(outbound, "udp-relay") {
 		values.Set("udp", "1")
 	}
-	if boolFromAnyValue(outbound["udp_over_tcp"]) {
+	if singBoxBool(outbound, "udp_over_tcp") {
 		values.Set("udp_over_tcp", "1")
 	}
 	var user *url.Userinfo
@@ -610,7 +614,7 @@ func singBoxSSHURI(outbound map[string]any) string {
 		{query: "mac", outbound: "mac"},
 		{query: "kex_algorithm", outbound: "kex_algorithm"},
 	} {
-		if list := stringListFromAnyValue(outbound[item.outbound]); len(list) > 0 {
+		if list := singBoxStringList(outbound, item.outbound); len(list) > 0 {
 			values.Set(item.query, strings.Join(list, ","))
 		}
 	}
@@ -636,9 +640,9 @@ func singBoxWireGuardURI(outbound map[string]any) string {
 		port = "51820"
 	}
 
-	localAddress := stringListFromAnyValue(outbound["local_address"])
+	localAddress := singBoxStringList(outbound, "local_address")
 	if len(localAddress) == 0 {
-		localAddress = stringListFromAnyValue(outbound["address"])
+		localAddress = singBoxStringList(outbound, "address")
 	}
 	privateKey := singBoxString(outbound, "private_key")
 	peerPublicKey := firstNonEmptyString(
@@ -666,7 +670,7 @@ func singBoxWireGuardURI(outbound map[string]any) string {
 			values.Set(item.query, value)
 		}
 	}
-	if boolFromAnyValue(outbound["system_interface"]) {
+	if singBoxBool(outbound, "system_interface") {
 		values.Set("system_interface", "1")
 	}
 	for _, item := range []struct {
@@ -676,7 +680,7 @@ func singBoxWireGuardURI(outbound map[string]any) string {
 		{query: "workers", key: "workers"},
 		{query: "mtu", key: "mtu"},
 	} {
-		if value := intFromAnyValue(outbound[item.key]); value > 0 {
+		if value := singBoxInt(outbound, item.key); value > 0 {
 			values.Set(item.query, strconv.Itoa(value))
 		}
 	}
@@ -684,13 +688,13 @@ func singBoxWireGuardURI(outbound map[string]any) string {
 		values.Set("pre_shared_key", preSharedKey)
 	}
 	if allowedIPs := firstNonEmptyStringList(
-		stringListFromAnyValue(outbound["allowed_ips"]),
+		singBoxStringList(outbound, "allowed_ips"),
 		stringListFromAnyValue(peerValue(peer, "allowed_ips")),
 	); len(allowedIPs) > 0 {
 		values.Set("allowed_ips", strings.Join(allowedIPs, ","))
 	}
 	if reserved := firstNonEmptyStringList(
-		stringListFromAnyValue(outbound["reserved"]),
+		singBoxStringList(outbound, "reserved"),
 		stringListFromAnyValue(peerValue(peer, "reserved")),
 	); len(reserved) > 0 {
 		values.Set("reserved", strings.Join(reserved, ","))
@@ -702,9 +706,9 @@ func singBoxWireGuardEndpointURI(endpoint map[string]any) string {
 	peer := singBoxFirstPeer(endpoint)
 	server := firstNonEmptyString(singBoxMapString(peer, "address"), singBoxMapString(peer, "server"))
 	port := firstNonEmptyString(singBoxMapPort(peer, "port", "server_port"), "51820")
-	localAddress := stringListFromAnyValue(endpoint["address"])
+	localAddress := singBoxStringList(endpoint, "address")
 	if len(localAddress) == 0 {
-		localAddress = stringListFromAnyValue(endpoint["local_address"])
+		localAddress = singBoxStringList(endpoint, "local_address")
 	}
 	privateKey := singBoxString(endpoint, "private_key")
 	peerPublicKey := firstNonEmptyString(
@@ -720,7 +724,7 @@ func singBoxWireGuardEndpointURI(endpoint map[string]any) string {
 	values.Set("private_key", privateKey)
 	values.Set("peer_public_key", peerPublicKey)
 	values.Set("local_address", strings.Join(localAddress, ","))
-	if boolFromAnyValue(endpoint["system"]) || boolFromAnyValue(endpoint["system_interface"]) {
+	if singBoxBool(endpoint, "system") || singBoxBool(endpoint, "system_interface") {
 		values.Set("system_interface", "1")
 	}
 	if interfaceName := firstNonEmptyString(singBoxString(endpoint, "name"), singBoxString(endpoint, "interface_name")); interfaceName != "" {
@@ -736,7 +740,7 @@ func singBoxWireGuardEndpointURI(endpoint map[string]any) string {
 		{query: "workers", key: "workers"},
 		{query: "mtu", key: "mtu"},
 	} {
-		if value := intFromAnyValue(endpoint[item.key]); value > 0 {
+		if value := singBoxInt(endpoint, item.key); value > 0 {
 			values.Set(item.query, strconv.Itoa(value))
 		}
 	}
@@ -765,7 +769,7 @@ func singBoxTorURI(outbound map[string]any) string {
 			values.Set(item.query, value)
 		}
 	}
-	if extraArgs := stringListFromAnyValue(outbound["extra_args"]); len(extraArgs) > 0 {
+	if extraArgs := singBoxStringList(outbound, "extra_args"); len(extraArgs) > 0 {
 		values.Set("extra_args", strings.Join(extraArgs, ","))
 	}
 	if torrc := singBoxMap(outbound, "torrc"); torrc != nil {
@@ -822,14 +826,18 @@ func singBoxName(outbound map[string]any) string {
 	return firstNonEmptyString(singBoxString(outbound, "tag"), singBoxString(outbound, "name"))
 }
 
+func singBoxValue(values map[string]any, keys ...string) any {
+	return jsonFieldValue(values, keys...)
+}
+
 func singBoxString(outbound map[string]any, key string) string {
-	return strings.TrimSpace(stringFromAnyValue(outbound[key]))
+	return jsonFieldString(outbound, key)
 }
 
 func singBoxPort(outbound map[string]any) string {
-	value := intFromAnyValue(outbound["server_port"])
+	value := singBoxInt(outbound, "server_port")
 	if value <= 0 {
-		value = intFromAnyValue(outbound["port"])
+		value = singBoxInt(outbound, "port")
 	}
 	if value <= 0 {
 		return ""
@@ -837,12 +845,24 @@ func singBoxPort(outbound map[string]any) string {
 	return strconv.Itoa(value)
 }
 
+func singBoxInt(values map[string]any, key string) int {
+	return intFromAnyValue(singBoxValue(values, key))
+}
+
+func singBoxBool(values map[string]any, key string) bool {
+	return boolFromAnyValue(singBoxValue(values, key))
+}
+
+func singBoxStringList(values map[string]any, key string) []string {
+	return stringListFromAnyValue(singBoxValue(values, key))
+}
+
 func singBoxTLSString(outbound map[string]any, key string) string {
 	tls := tlsMap(outbound)
 	if tls == nil {
 		return ""
 	}
-	return strings.TrimSpace(stringFromAnyValue(tls[key]))
+	return singBoxString(tls, key)
 }
 
 func appendSingBoxTLSProxyValues(outbound map[string]any, proxy map[string]string) {
@@ -850,29 +870,29 @@ func appendSingBoxTLSProxyValues(outbound map[string]any, proxy map[string]strin
 	if tls == nil {
 		return
 	}
-	if serverName := strings.TrimSpace(stringFromAnyValue(tls["server_name"])); serverName != "" {
+	if serverName := singBoxString(tls, "server_name"); serverName != "" {
 		proxy["sni"] = serverName
 	}
-	if boolFromAnyValue(tls["insecure"]) {
+	if singBoxBool(tls, "insecure") {
 		proxy["insecure"] = "true"
 	}
-	if boolFromAnyValue(tls["disable_sni"]) {
+	if singBoxBool(tls, "disable_sni") {
 		proxy["disable-sni"] = "true"
 	}
-	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
+	if alpn := singBoxStringList(tls, "alpn"); len(alpn) > 0 {
 		proxy["alpn"] = strings.Join(alpn, ",")
 	}
-	if reality, ok := tls["reality"].(map[string]any); ok && boolFromAnyValue(reality["enabled"]) {
+	if reality := singBoxMap(tls, "reality"); reality != nil && singBoxBool(reality, "enabled") {
 		proxy["security"] = "reality"
-		if publicKey := strings.TrimSpace(stringFromAnyValue(reality["public_key"])); publicKey != "" {
+		if publicKey := singBoxString(reality, "public_key"); publicKey != "" {
 			proxy["pbk"] = publicKey
 		}
-		if shortID := strings.TrimSpace(stringFromAnyValue(reality["short_id"])); shortID != "" {
+		if shortID := singBoxString(reality, "short_id"); shortID != "" {
 			proxy["sid"] = shortID
 		}
 	}
-	if utls, ok := tls["utls"].(map[string]any); ok && boolFromAnyValue(utls["enabled"]) {
-		if fingerprint := strings.TrimSpace(stringFromAnyValue(utls["fingerprint"])); fingerprint != "" {
+	if utls := singBoxMap(tls, "utls"); utls != nil && singBoxBool(utls, "enabled") {
+		if fingerprint := singBoxString(utls, "fingerprint"); fingerprint != "" {
 			proxy["fp"] = fingerprint
 		}
 	}
@@ -883,55 +903,55 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 	if transport == nil {
 		return
 	}
-	if transportType := strings.TrimSpace(stringFromAnyValue(transport["type"])); transportType != "" {
+	if transportType := singBoxString(transport, "type"); transportType != "" {
 		proxy["network"] = transportType
 	}
-	if path := strings.TrimSpace(stringFromAnyValue(transport["path"])); path != "" {
+	if path := singBoxString(transport, "path"); path != "" {
 		proxy["path"] = path
 	}
-	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "ws") {
-		if maxEarlyData := intFromAnyValue(transport["max_early_data"]); maxEarlyData > 0 {
+	if strings.EqualFold(singBoxString(transport, "type"), "ws") {
+		if maxEarlyData := singBoxInt(transport, "max_early_data"); maxEarlyData > 0 {
 			proxy["max_early_data"] = strconv.Itoa(maxEarlyData)
 		}
-		if earlyDataHeaderName := strings.TrimSpace(stringFromAnyValue(transport["early_data_header_name"])); earlyDataHeaderName != "" {
+		if earlyDataHeaderName := singBoxString(transport, "early_data_header_name"); earlyDataHeaderName != "" {
 			proxy["early_data_header_name"] = earlyDataHeaderName
 		}
 	}
-	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "http") {
-		if hosts := stringListFromAnyValue(transport["host"]); len(hosts) > 0 {
+	if strings.EqualFold(singBoxString(transport, "type"), "http") {
+		if hosts := singBoxStringList(transport, "host"); len(hosts) > 0 {
 			proxy["host"] = strings.Join(hosts, ",")
 		}
-		if method := strings.TrimSpace(stringFromAnyValue(transport["method"])); method != "" {
+		if method := singBoxString(transport, "method"); method != "" {
 			proxy["method"] = method
 		}
-		if idleTimeout := strings.TrimSpace(stringFromAnyValue(transport["idle_timeout"])); idleTimeout != "" {
+		if idleTimeout := singBoxString(transport, "idle_timeout"); idleTimeout != "" {
 			proxy["idle_timeout"] = idleTimeout
 		}
-		if pingTimeout := strings.TrimSpace(stringFromAnyValue(transport["ping_timeout"])); pingTimeout != "" {
+		if pingTimeout := singBoxString(transport, "ping_timeout"); pingTimeout != "" {
 			proxy["ping_timeout"] = pingTimeout
 		}
 	}
-	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "httpupgrade") {
-		if hosts := stringListFromAnyValue(transport["host"]); len(hosts) > 0 {
+	if strings.EqualFold(singBoxString(transport, "type"), "httpupgrade") {
+		if hosts := singBoxStringList(transport, "host"); len(hosts) > 0 {
 			proxy["host"] = strings.Join(hosts, ",")
 		}
 	}
-	if strings.EqualFold(strings.TrimSpace(stringFromAnyValue(transport["type"])), "grpc") {
-		if idleTimeout := strings.TrimSpace(stringFromAnyValue(transport["idle_timeout"])); idleTimeout != "" {
+	if strings.EqualFold(singBoxString(transport, "type"), "grpc") {
+		if idleTimeout := singBoxString(transport, "idle_timeout"); idleTimeout != "" {
 			proxy["idle_timeout"] = idleTimeout
 		}
-		if pingTimeout := strings.TrimSpace(stringFromAnyValue(transport["ping_timeout"])); pingTimeout != "" {
+		if pingTimeout := singBoxString(transport, "ping_timeout"); pingTimeout != "" {
 			proxy["ping_timeout"] = pingTimeout
 		}
-		if boolFromAnyValue(transport["permit_without_stream"]) {
+		if singBoxBool(transport, "permit_without_stream") {
 			proxy["permit_without_stream"] = "1"
 		}
 	}
-	if serviceName := strings.TrimSpace(stringFromAnyValue(transport["service_name"])); serviceName != "" {
+	if serviceName := singBoxString(transport, "service_name"); serviceName != "" {
 		proxy["service_name"] = serviceName
 	}
-	if headers, ok := transport["headers"].(map[string]any); ok {
-		if hosts := firstNonEmptyStringList(stringListFromAnyValue(headers["Host"]), stringListFromAnyValue(headers["host"])); len(hosts) > 0 {
+	if headers := singBoxMap(transport, "headers"); headers != nil {
+		if hosts := singBoxStringList(headers, "Host"); len(hosts) > 0 {
 			proxy["host"] = strings.Join(hosts, ",")
 		}
 	}
@@ -942,20 +962,20 @@ func appendTLSQueryValues(outbound map[string]any, values url.Values) {
 	if tls == nil {
 		return
 	}
-	if serverName := strings.TrimSpace(stringFromAnyValue(tls["server_name"])); serverName != "" {
+	if serverName := singBoxString(tls, "server_name"); serverName != "" {
 		values.Set("sni", serverName)
 	}
-	if boolFromAnyValue(tls["insecure"]) {
+	if singBoxBool(tls, "insecure") {
 		values.Set("insecure", "1")
 	}
-	if boolFromAnyValue(tls["disable_sni"]) {
+	if singBoxBool(tls, "disable_sni") {
 		values.Set("disable_sni", "1")
 	}
-	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
+	if alpn := singBoxStringList(tls, "alpn"); len(alpn) > 0 {
 		values.Set("alpn", strings.Join(alpn, ","))
 	}
-	if utls, ok := tls["utls"].(map[string]any); ok && boolFromAnyValue(utls["enabled"]) {
-		if fingerprint := strings.TrimSpace(stringFromAnyValue(utls["fingerprint"])); fingerprint != "" {
+	if utls := singBoxMap(tls, "utls"); utls != nil && singBoxBool(utls, "enabled") {
+		if fingerprint := singBoxString(utls, "fingerprint"); fingerprint != "" {
 			values.Set("fp", fingerprint)
 		}
 	}
@@ -967,8 +987,8 @@ func appendCertificatePinQueryValue(outbound map[string]any, values url.Values) 
 		return
 	}
 	pins := firstNonEmptyStringList(
-		stringListFromAnyValue(tls["certificate_public_key_sha256"]),
-		stringListFromAnyValue(tls["certificate-public-key-sha256"]),
+		singBoxStringList(tls, "certificate_public_key_sha256"),
+		singBoxStringList(tls, "certificate-public-key-sha256"),
 	)
 	if len(pins) > 0 {
 		values.Set("pinSHA256", strings.Join(pins, ","))
@@ -976,18 +996,18 @@ func appendCertificatePinQueryValue(outbound map[string]any, values url.Values) 
 }
 
 func tlsMap(outbound map[string]any) map[string]any {
-	tls, ok := outbound["tls"].(map[string]any)
-	if !ok {
+	tls := singBoxMap(outbound, "tls")
+	if tls == nil {
 		return nil
 	}
-	if enabled, ok := tls["enabled"]; ok && !boolFromAnyValue(enabled) {
+	if enabled := singBoxValue(tls, "enabled"); enabled != nil && !boolFromAnyValue(enabled) {
 		return nil
 	}
 	return tls
 }
 
 func singBoxMap(outbound map[string]any, key string) map[string]any {
-	value, ok := outbound[key].(map[string]any)
+	value, ok := singBoxValue(outbound, key).(map[string]any)
 	if !ok {
 		return nil
 	}
@@ -995,7 +1015,7 @@ func singBoxMap(outbound map[string]any, key string) map[string]any {
 }
 
 func singBoxFirstPeer(outbound map[string]any) map[string]any {
-	peers, ok := outbound["peers"].([]any)
+	peers, ok := singBoxValue(outbound, "peers").([]any)
 	if !ok || len(peers) == 0 {
 		return nil
 	}
@@ -1007,7 +1027,7 @@ func singBoxMapString(values map[string]any, key string) string {
 	if values == nil {
 		return ""
 	}
-	return strings.TrimSpace(stringFromAnyValue(values[key]))
+	return singBoxString(values, key)
 }
 
 func singBoxMapPort(values map[string]any, keys ...string) string {
@@ -1015,7 +1035,7 @@ func singBoxMapPort(values map[string]any, keys ...string) string {
 		return ""
 	}
 	for _, key := range keys {
-		if value := intFromAnyValue(values[key]); value > 0 {
+		if value := singBoxInt(values, key); value > 0 {
 			return strconv.Itoa(value)
 		}
 	}
@@ -1026,7 +1046,7 @@ func peerValue(values map[string]any, key string) any {
 	if values == nil {
 		return nil
 	}
-	return values[key]
+	return singBoxValue(values, key)
 }
 
 func firstNonEmptyStringList(values ...[]string) []string {

@@ -270,7 +270,7 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildHysteriaOutbound(node)
 	case "http", "https":
 		return buildHTTPOutbound(node)
-	case "socks", "socks4", "socks4a", "socks5":
+	case "socks", "socks4", "socks4a", "socks5", "socks5h":
 		return buildSOCKSOutbound(node)
 	case "ssh":
 		return buildSSHOutbound(node)
@@ -1772,6 +1772,8 @@ func socksVersion(scheme string, queryVersion string) string {
 	switch strings.ToLower(version) {
 	case "4", "4a", "5":
 		return strings.ToLower(version)
+	case "5h":
+		return "5"
 	default:
 		return ""
 	}

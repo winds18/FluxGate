@@ -1553,6 +1553,13 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 			ServerPort: 1080,
 			Status:     "active",
 		},
+		{
+			ID:         87,
+			URI:        "socks5h://socks5h-query.example:1080?username=qa-user&password=socks5h-query-placeholder#socks5h-query",
+			Protocol:   "socks5h",
+			ServerPort: 1080,
+			Status:     "active",
+		},
 	})
 
 	httpOutbound := findOutbound(config.Outbounds, "up_85")
@@ -1583,6 +1590,17 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	}
 	if socksOutbound["username"] != "qa-user" || socksOutbound["password"] != "socks-query-placeholder" || socksOutbound["network"] != "udp" || socksOutbound["udp_over_tcp"] != true {
 		t.Fatalf("unexpected socks query credential auth fields: %+v", socksOutbound)
+	}
+
+	socks5hOutbound := findOutbound(config.Outbounds, "up_87")
+	if socks5hOutbound == nil {
+		t.Fatalf("expected socks5h outbound up_87, got %+v", config.Outbounds)
+	}
+	if socks5hOutbound["type"] != "socks" || socks5hOutbound["server"] != "socks5h-query.example" || socks5hOutbound["server_port"] != 1080 || socks5hOutbound["version"] != "5" {
+		t.Fatalf("unexpected socks5h query credential server fields: %+v", socks5hOutbound)
+	}
+	if socks5hOutbound["username"] != "qa-user" || socks5hOutbound["password"] != "socks5h-query-placeholder" {
+		t.Fatalf("unexpected socks5h query credential auth fields: %+v", socks5hOutbound)
 	}
 }
 

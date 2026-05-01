@@ -45,7 +45,7 @@
 - Clash/Mihomo 与 sing-box 基础订阅生成。
 - sing-box config.json 生成骨架。
 - active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会进入 sing-box outbound，并由默认 selector 承接出口。
-- 配置生成侧兼容导入层已支持的 `shadowsocks`、`trojan-go`、`vmess-aead`、`any-tls`、`shadow-tls` 和 `naive-quic` 协议别名。
+- 配置生成侧兼容导入层已支持的 `shadowsocks`、`trojan-go`、`vmess-aead`、`any-tls`、`shadow-tls`、`naive-https` 和 `naive-quic` 协议别名。
 - Direct URI、`freedom://` URI 和 sing-box JSON `direct` outbound 可进入默认上游 selector 和 outbound stats 列表，配置生成侧兼容手动保存的 `freedom` 协议节点。
 - Block URI、`blackhole://` URI、`reject://` URI、Clash `reject`/`reject-drop` 和 sing-box JSON `block` outbound 可进入 sing-box 配置，但不会进入普通上游 selector 或 outbound stats 列表，配置生成侧兼容手动保存的 `blackhole`/`reject`/`reject-drop`/`reject-no-drop`/`reject-tinygif` 协议节点。
 - `reject-drop://`、`reject-no-drop://` 和 `reject-tinygif://` 裸 URI 会归一化为标准 `block://`，和 Clash 结构化 reject 变体保持一致。
@@ -139,7 +139,7 @@
 - SIP008、Clash YAML 和 sing-box JSON 的 Shadowsocks 节点会保留 SIP003 插件参数并同步进入 sing-box outbound。
 - `shadowsocks://` URI 会归一化为标准 `ss://` URI，避免长 scheme 导入后无法进入 Shadowsocks outbound 转换链路。
 - `http+tls://` 和 `http-tls://` 裸 URI 会归一化为标准 `https://`，复用现有 HTTP outbound TLS 配置生成链路。
-- `any-tls://`、`shadow-tls://` 和 `naive-quic://` 裸 URI 会归一化为标准 `anytls://`、`shadowtls://` 和 `naive+quic://`，和结构化订阅解析保持一致。
+- `any-tls://`、`shadow-tls://`、`naive-https://` 和 `naive-quic://` 裸 URI 会归一化为标准 `anytls://`、`shadowtls://`、`naive+https://` 和 `naive+quic://`，和结构化订阅解析保持一致。
 - `hy2://` 和 `wg://` 裸 URI 会归一化为标准 `hysteria2://` 和 `wireguard://`，让导入后的协议字段和配置生成链路保持一致。
 - `trojan-go://` 裸 URI 会归一化为标准 `trojan://`，复用现有 Trojan TLS、REALITY 和传输参数转换链路。
 - `vmess-aead://` 裸 URI 会归一化为标准 `vmess://`，复用现有 VMess TLS、WebSocket、gRPC、HTTP 和 packet encoding 转换链路。

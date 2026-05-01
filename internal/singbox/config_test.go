@@ -757,6 +757,13 @@ func TestBuildConfigSupportsCanonicalProtocolAliases(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         102,
+			URI:        "naive-https://qa-user:naive-https-placeholder@alias-naive-https.example:443?serverName=alias-naive-https.example#naive-https-alias",
+			Protocol:   "naive-https",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	shadowsocks := findOutbound(config.Outbounds, "up_96")
@@ -786,6 +793,14 @@ func TestBuildConfigSupportsCanonicalProtocolAliases(t *testing.T) {
 	naive := findOutbound(config.Outbounds, "up_101")
 	if naive == nil || naive["type"] != "naive" || naive["username"] != "qa-user" || naive["password"] != "naive-alias-placeholder" || naive["quic"] != true {
 		t.Fatalf("unexpected naive-quic alias outbound: %+v", naive)
+	}
+	naiveHTTPS := findOutbound(config.Outbounds, "up_102")
+	if naiveHTTPS == nil || naiveHTTPS["type"] != "naive" || naiveHTTPS["username"] != "qa-user" || naiveHTTPS["password"] != "naive-https-placeholder" || naiveHTTPS["quic"] == true {
+		t.Fatalf("unexpected naive-https alias outbound: %+v", naiveHTTPS)
+	}
+	naiveHTTPSTLS, ok := naiveHTTPS["tls"].(map[string]any)
+	if !ok || naiveHTTPSTLS["enabled"] != true || naiveHTTPSTLS["server_name"] != "alias-naive-https.example" {
+		t.Fatalf("unexpected naive-https alias tls: %+v", naiveHTTPS["tls"])
 	}
 }
 

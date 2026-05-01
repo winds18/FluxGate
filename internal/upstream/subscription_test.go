@@ -83,6 +83,7 @@ func TestNormalizeContentCanonicalizesCommonDashedSchemeAliases(t *testing.T) {
 	raw := strings.Join([]string{
 		"any-tls://anytls-placeholder@anytls-alias.example.test:443#AnyTLS%20Alias",
 		"shadow-tls://shadow-placeholder@shadowtls-alias.example.test:443?version=3#ShadowTLS%20Alias",
+		"naive-https://qa-user:naive-placeholder@naive-https-alias.example.test:443#Naive%20HTTPS%20Alias",
 		"naive-quic://qa-user:naive-placeholder@naive-alias.example.test:443#Naive%20QUIC%20Alias",
 	}, "\n")
 	got, err := NormalizeContent(raw)
@@ -92,6 +93,7 @@ func TestNormalizeContentCanonicalizesCommonDashedSchemeAliases(t *testing.T) {
 	want := strings.Join([]string{
 		"anytls://anytls-placeholder@anytls-alias.example.test:443#AnyTLS%20Alias",
 		"shadowtls://shadow-placeholder@shadowtls-alias.example.test:443?version=3#ShadowTLS%20Alias",
+		"naive+https://qa-user:naive-placeholder@naive-https-alias.example.test:443#Naive%20HTTPS%20Alias",
 		"naive+quic://qa-user:naive-placeholder@naive-alias.example.test:443#Naive%20QUIC%20Alias",
 	}, "\n")
 	if got != want {

@@ -264,7 +264,7 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildAnyTLSOutbound(node)
 	case "shadowtls", "shadow-tls":
 		return buildShadowTLSOutbound(node)
-	case "naive", "naive+https", "naive+quic", "naive-quic":
+	case "naive", "naive+https", "naive-https", "naive+quic", "naive-quic":
 		return buildNaiveOutbound(node)
 	case "hysteria":
 		return buildHysteriaOutbound(node)
@@ -1465,7 +1465,7 @@ func isShadowTLSProtocol(protocol string) bool {
 
 func isNaiveProtocol(protocol string) bool {
 	switch strings.ToLower(strings.TrimSpace(protocol)) {
-	case "naive", "naive+https", "naive+quic", "naive-quic":
+	case "naive", "naive+https", "naive-https", "naive+quic", "naive-quic":
 		return true
 	default:
 		return false

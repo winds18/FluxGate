@@ -1394,6 +1394,69 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLCamelCaseFields(t *testing.T) {
+	raw := `
+proxies:
+  - name: "香港 YAML Camel VLESS"
+    type: vless
+    server: yaml-camel-vless.example.test
+    port: 443
+    uuid: 00000000-0000-0000-0000-000000000094
+    tls: true
+    serverName: yaml-camel-vless.example.test
+    skipCertVerify: true
+    disableSNI: true
+    clientFingerprint: chrome
+    wsPath: /camel
+    wsHost: ws.yaml-camel-vless.example.test
+    maxEarlyData: 2048
+    earlyDataHeaderName: Sec-WebSocket-Protocol
+  - { name: "东京 YAML Camel Trojan", type: trojan, server: yaml-camel-trojan.example.test, port: 443, password: "trojan-placeholder", tls: true, serverName: yaml-camel-trojan.example.test, allowInsecure: true, wsOpts: { path: /trojan, headers: { Host: ws.yaml-camel-trojan.example.test }, maxEarlyData: 1024, earlyDataHeaderName: X-FluxGate-ED } }
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Clash YAML camelCase URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000094@yaml-camel-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=yaml-camel-vless.example.test",
+		"insecure=1",
+		"disable_sni=1",
+		"fp=chrome",
+		"type=ws",
+		"path=%2Fcamel",
+		"host=ws.yaml-camel-vless.example.test",
+		"max_early_data=2048",
+		"early_data_header_name=Sec-WebSocket-Protocol",
+		"#%E9%A6%99%E6%B8%AF%20YAML%20Camel%20VLESS",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Clash YAML camelCase VLESS URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@yaml-camel-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=yaml-camel-trojan.example.test",
+		"insecure=1",
+		"type=ws",
+		"path=%2Ftrojan",
+		"host=ws.yaml-camel-trojan.example.test",
+		"max_early_data=1024",
+		"early_data_header_name=X-FluxGate-ED",
+		"#%E4%B8%9C%E4%BA%AC%20YAML%20Camel%20Trojan",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Clash YAML inline camelCase Trojan URI to contain %q: %q", want, lines[1])
+		}
+	}
+}
+
 func TestNormalizeContentClashYAMLVLESSGRPCKeepaliveOptions(t *testing.T) {
 	raw := `
 proxies:

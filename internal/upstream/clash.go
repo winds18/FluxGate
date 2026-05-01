@@ -870,7 +870,7 @@ func parseInlineMapFields(result map[string]string, scopes []string, value strin
 		if !ok {
 			continue
 		}
-		key = strings.ToLower(strings.TrimSpace(key))
+		key = normalizedStructuredProxyKey(strings.ToLower(strings.TrimSpace(key)))
 		if key == "" {
 			continue
 		}
@@ -900,7 +900,7 @@ func trimYAMLFieldScopes(scopes []yamlFieldScope, indent int) []yamlFieldScope {
 }
 
 func storeYAMLProxyField(target map[string]string, scopes []yamlFieldScope, key, value string) {
-	key = strings.ToLower(strings.TrimSpace(key))
+	key = normalizedStructuredProxyKey(strings.ToLower(strings.TrimSpace(key)))
 	if key == "" {
 		return
 	}

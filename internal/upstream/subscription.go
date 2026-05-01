@@ -387,7 +387,7 @@ func collectJSONProxyFields(target map[string]string, scopes []string, values ma
 	}
 	sort.Strings(keys)
 	for _, key := range keys {
-		normalizedKey := normalizedJSONProxyKey(strings.ToLower(strings.TrimSpace(key)))
+		normalizedKey := normalizedStructuredProxyKey(strings.ToLower(strings.TrimSpace(key)))
 		if normalizedKey == "" {
 			continue
 		}
@@ -407,7 +407,7 @@ func collectJSONProxyFields(target map[string]string, scopes []string, values ma
 	}
 }
 
-func normalizedJSONProxyKey(key string) string {
+func normalizedStructuredProxyKey(key string) string {
 	switch key {
 	case "allowinsecure":
 		return "insecure"

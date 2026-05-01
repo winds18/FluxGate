@@ -297,6 +297,12 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 				collectJSONURIs(nodeName, item, uris)
 			}
 		}
+		for _, key := range []string{"subscribe_url", "subscribe-url", "subscribeUrl", "subscribeURL", "sub_url", "sub-url", "subUrl", "subURL", "download_url", "download-url", "downloadUrl", "downloadURL"} {
+			handled[key] = true
+			if item, ok := typed[key]; ok && nodeName != "" {
+				collectJSONURIs(nodeName, item, uris)
+			}
+		}
 		for _, key := range []string{"content", "raw", "raw_content", "raw-content", "rawContent", "subscription", "sub", "payload", "body", "text", "result", "response"} {
 			handled[key] = true
 			if item, ok := typed[key]; ok {

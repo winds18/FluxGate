@@ -1079,6 +1079,40 @@ func TestNormalizeContentJSONCommonHyphenAliasFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONNamedDownloadLinkFields(t *testing.T) {
+	raw := `{
+  "data": {
+    "download-url": "https://airport.example.test/subscription",
+    "items": [
+      {
+        "name": "香港 subscribeUrl",
+        "subscribeUrl": "vless://00000000-0000-0000-0000-000000000097@subscribe-url.example.test:443"
+      },
+      {
+        "remarks": "东京 sub-url",
+        "sub-url": "trojan://trojan-placeholder@sub-url.example.test:443?security=tls"
+      },
+      {
+        "tag": "首尔 download_url",
+        "download_url": "ss://aes-128-gcm:qa-placeholder@download-url.example.test:8388"
+      }
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"vless://00000000-0000-0000-0000-000000000097@subscribe-url.example.test:443#%E9%A6%99%E6%B8%AF%20subscribeUrl",
+		"trojan://trojan-placeholder@sub-url.example.test:443?security=tls#%E4%B8%9C%E4%BA%AC%20sub-url",
+		"ss://aes-128-gcm:qa-placeholder@download-url.example.test:8388#%E9%A6%96%E5%B0%94%20download_url",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON named download link fields: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONStructuredAliasFields(t *testing.T) {
 	raw := `{
   "data": {

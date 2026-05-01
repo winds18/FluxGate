@@ -108,7 +108,7 @@
 - subscription 来源可解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段中的内嵌 Clash YAML、SIP008、sing-box JSON 和 base64 订阅内容也会归一化。
 - JSON 包装订阅可解析 `payload`、`result`、`response`、`body`、`text`、`sub` 等常见接口外层字段。
 - JSON 包装订阅可解析 `list`、`records`、`rows`、`entries`、`nodeList`、`proxyList`、`serverList`、`subscriptionList`、`urlList`、`linkList` 及其 snake_case/kebab-case 变体等常见集合字段，容器名不会污染缺少 fragment 的节点 URI 展示名。
-- JSON 包装订阅可解析 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case/kebab-case 变体，分享链接缺少 fragment 时会优先使用对象内名称。
+- JSON 包装订阅可解析 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case/kebab-case 变体；对象内带名称的 `subscribeUrl`、`subUrl` 和 `downloadUrl` 分享字段也会按节点链接解析，分享链接缺少 fragment 时会优先使用对象内名称。
 - JSON 包装订阅可解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象。
 - JSON 结构化节点可识别 `protocol`/`proto`/`scheme`/`nodeType`/`serverType`/`protocolType`/`proxyType`/`proxyProtocol`、`host`/`hostname`/`address`/`serverAddress`/`serverHost`/`remoteHost`/`nodeHost`/`endpoint`/`add`、`server_port`/`serverPort`/`server-port`/`remotePort`/`nodePort`/`portNumber`、`method`/`encryptMethod`/`encrypt-method`、`pass`/`passwd`/`pwd`、`id`/`user-id` 和 `displayName`/`nodeName`/`label`/`title`/`remarks`/`remark` 等常见别名字段。
 - JSON 结构化节点可归一化 `skipCertVerify`、`allowInsecure`、`disableSNI`、`clientFingerprint`、`pluginOpts`、`wsOpts`、`wsHeaders`、`grpcServiceName`、`privateKeyPath` 等常见 camelCase 参数，保留 TLS、插件和传输配置。

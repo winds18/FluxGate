@@ -1314,14 +1314,14 @@ func TestBuildConfigSupportsVLESSTrojanQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         82,
-			URI:        "vless://query-vless.example:443?uuid=00000000-0000-0000-0000-000000000094&security=tls&sni=query-vless.example&type=grpc&service_name=query-vless#vless-query",
+			URI:        "vless://query-vless.example:443?uuid=00000000-0000-0000-0000-000000000094&security=reality&serverName=query-vless.example&publicKey=vless-public-placeholder&shortId=0123abcd&clientFingerprint=chrome&allowInsecure=1&disableSNI=1&type=grpc&service_name=query-vless#vless-query",
 			Protocol:   "vless",
 			ServerPort: 443,
 			Status:     "active",
 		},
 		{
 			ID:         83,
-			URI:        "trojan://query-trojan.example:443?password=trojan-query-placeholder&security=tls&sni=query-trojan.example&type=ws&path=%2Ftrojan&host=ws.query-trojan.example#trojan-query",
+			URI:        "trojan://query-trojan.example:443?password=trojan-query-placeholder&security=reality&serverName=query-trojan.example&publicKey=trojan-public-placeholder&shortId=4567abcd&clientFingerprint=firefox&skip_cert_verify=1&disableSNI=1&type=ws&path=%2Ftrojan&host=ws.query-trojan.example#trojan-query",
 			Protocol:   "trojan",
 			ServerPort: 443,
 			Status:     "active",
@@ -1339,8 +1339,16 @@ func TestBuildConfigSupportsVLESSTrojanQueryCredentials(t *testing.T) {
 		t.Fatalf("unexpected vless query credential uuid: %+v", vlessOutbound)
 	}
 	vlessTLS, ok := vlessOutbound["tls"].(map[string]any)
-	if !ok || vlessTLS["enabled"] != true || vlessTLS["server_name"] != "query-vless.example" {
+	if !ok || vlessTLS["enabled"] != true || vlessTLS["server_name"] != "query-vless.example" || vlessTLS["insecure"] != true || vlessTLS["disable_sni"] != true {
 		t.Fatalf("unexpected vless query credential tls: %+v", vlessOutbound["tls"])
+	}
+	vlessReality, ok := vlessTLS["reality"].(map[string]any)
+	if !ok || vlessReality["enabled"] != true || vlessReality["public_key"] != "vless-public-placeholder" || vlessReality["short_id"] != "0123abcd" {
+		t.Fatalf("unexpected vless query credential reality: %+v", vlessTLS["reality"])
+	}
+	vlessUTLS, ok := vlessTLS["utls"].(map[string]any)
+	if !ok || vlessUTLS["enabled"] != true || vlessUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected vless query credential utls: %+v", vlessTLS["utls"])
 	}
 	vlessTransport, ok := vlessOutbound["transport"].(map[string]any)
 	if !ok || vlessTransport["type"] != "grpc" || vlessTransport["service_name"] != "query-vless" {
@@ -1358,8 +1366,16 @@ func TestBuildConfigSupportsVLESSTrojanQueryCredentials(t *testing.T) {
 		t.Fatalf("unexpected trojan query credential password: %+v", trojanOutbound)
 	}
 	trojanTLS, ok := trojanOutbound["tls"].(map[string]any)
-	if !ok || trojanTLS["enabled"] != true || trojanTLS["server_name"] != "query-trojan.example" {
+	if !ok || trojanTLS["enabled"] != true || trojanTLS["server_name"] != "query-trojan.example" || trojanTLS["insecure"] != true || trojanTLS["disable_sni"] != true {
 		t.Fatalf("unexpected trojan query credential tls: %+v", trojanOutbound["tls"])
+	}
+	trojanReality, ok := trojanTLS["reality"].(map[string]any)
+	if !ok || trojanReality["enabled"] != true || trojanReality["public_key"] != "trojan-public-placeholder" || trojanReality["short_id"] != "4567abcd" {
+		t.Fatalf("unexpected trojan query credential reality: %+v", trojanTLS["reality"])
+	}
+	trojanUTLS, ok := trojanTLS["utls"].(map[string]any)
+	if !ok || trojanUTLS["enabled"] != true || trojanUTLS["fingerprint"] != "firefox" {
+		t.Fatalf("unexpected trojan query credential utls: %+v", trojanTLS["utls"])
 	}
 	trojanTransport, ok := trojanOutbound["transport"].(map[string]any)
 	if !ok || trojanTransport["type"] != "ws" || trojanTransport["path"] != "/trojan" {

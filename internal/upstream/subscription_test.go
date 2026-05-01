@@ -5616,6 +5616,54 @@ func TestNormalizeContentVMessJSONFieldAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentVMessJSONFieldCaseAliases(t *testing.T) {
+	raw := `{
+  "V": "2",
+  "Display_Name": "香港 VMess 大小写别名",
+  "Address": "vmess-case.raw.example.test",
+  "Server-Port": 443,
+  "User_ID": "00000000-0000-0000-0000-000000000090",
+  "Alter-ID": 0,
+  "Cipher": "auto",
+  "Network": "ws",
+  "Host": "ws.vmess-case.example.test",
+  "Path": "/case",
+  "Security": "tls",
+  "ServerName": "vmess-case.raw.example.test",
+  "ALPN": ["h2", "http/1.1"],
+  "Packet_Encoding": "packetaddr",
+  "Disable-SNI": true,
+  "Client-Fingerprint": "chrome",
+  "Allow_Insecure": true
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	decoded := decodeVMessURIForTest(t, got)
+	for _, want := range []string{
+		`"ps":"香港 VMess 大小写别名"`,
+		`"add":"vmess-case.raw.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000090"`,
+		`"aid":"0"`,
+		`"net":"ws"`,
+		`"host":"ws.vmess-case.example.test"`,
+		`"path":"/case"`,
+		`"tls":"tls"`,
+		`"sni":"vmess-case.raw.example.test"`,
+		`"alpn":"h2,http/1.1"`,
+		`"packet_encoding":"packetaddr"`,
+		`"disable_sni":"1"`,
+		`"fp":"chrome"`,
+		`"allowInsecure":"1"`,
+	} {
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected raw vmess case alias document to contain %s: %q", want, decoded)
+		}
+	}
+}
+
 func TestNormalizeContentJSONWrappedVMessJSON(t *testing.T) {
 	raw := `{
   "data": {

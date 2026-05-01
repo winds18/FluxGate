@@ -95,12 +95,12 @@ func vmessJSONURI(item map[string]any, fallbackName string) string {
 		"host":        vmessJSONString(item, "host"),
 		"path":        vmessJSONString(item, "path"),
 		"sni":         firstNonEmptyString(vmessJSONString(item, "sni"), vmessJSONString(item, "serverName"), vmessJSONString(item, "server_name"), vmessJSONString(item, "server-name")),
-		"alpn":        strings.Join(stringListFromAnyValue(item["alpn"]), ","),
+		"alpn":        strings.Join(stringListFromAnyValue(vmessJSONValue(item, "alpn")), ","),
 	}
 	if packetEncoding := firstNonEmptyString(vmessJSONString(item, "packetEncoding"), vmessJSONString(item, "packet_encoding"), vmessJSONString(item, "packet-encoding")); packetEncoding != "" {
 		proxy["packet-encoding"] = packetEncoding
 	}
-	if boolFromAnyValue(item["disable_sni"]) || boolFromAnyValue(item["disable-sni"]) || boolFromAnyValue(item["disableSNI"]) || boolFromAnyValue(item["disableSni"]) {
+	if vmessJSONBool(item, "disable_sni", "disable-sni", "disableSNI", "disableSni") {
 		proxy["disable_sni"] = "true"
 	}
 	if fingerprint := firstNonEmptyString(
@@ -112,13 +112,38 @@ func vmessJSONURI(item map[string]any, fallbackName string) string {
 	); fingerprint != "" {
 		proxy["fp"] = fingerprint
 	}
-	if vmessJSONTLSEnabled(item["tls"]) || strings.EqualFold(vmessJSONString(item, "security"), "tls") {
+	if vmessJSONTLSEnabled(vmessJSONValue(item, "tls")) || strings.EqualFold(vmessJSONString(item, "security"), "tls") {
 		proxy["tls"] = "true"
 	}
-	if boolFromAnyValue(item["allowInsecure"]) || boolFromAnyValue(item["allow_insecure"]) || boolFromAnyValue(item["skip-cert-verify"]) || boolFromAnyValue(item["skip_cert_verify"]) {
+	if vmessJSONBool(item, "allowInsecure", "allow_insecure", "skip-cert-verify", "skip_cert_verify") {
 		proxy["insecure"] = "true"
 	}
 	return clashVMessURI(proxy)
+}
+
+func vmessJSONValue(values map[string]any, keys ...string) any {
+	if values == nil {
+		return nil
+	}
+	for _, key := range keys {
+		if value, ok := values[key]; ok {
+			return value
+		}
+	}
+	actualKeys := make([]string, 0, len(values))
+	for key := range values {
+		actualKeys = append(actualKeys, key)
+	}
+	sort.Strings(actualKeys)
+	for _, key := range keys {
+		normalizedKey := normalizedJSONURIKey(key)
+		for _, actualKey := range actualKeys {
+			if normalizedJSONURIKey(actualKey) == normalizedKey {
+				return values[actualKey]
+			}
+		}
+	}
+	return nil
 }
 
 func vmessJSONString(values map[string]any, keys ...string) string {
@@ -126,7 +151,7 @@ func vmessJSONString(values map[string]any, keys ...string) string {
 		return ""
 	}
 	for _, key := range keys {
-		if value := strings.TrimSpace(stringFromAnyValue(values[key])); value != "" {
+		if value := strings.TrimSpace(stringFromAnyValue(vmessJSONValue(values, key))); value != "" {
 			return value
 		}
 	}
@@ -138,7 +163,7 @@ func vmessJSONPort(values map[string]any, keys ...string) string {
 		return ""
 	}
 	for _, key := range keys {
-		port := intFromAnyValue(values[key])
+		port := intFromAnyValue(vmessJSONValue(values, key))
 		if port > 0 {
 			return strconv.Itoa(port)
 		}
@@ -146,8 +171,20 @@ func vmessJSONPort(values map[string]any, keys ...string) string {
 	return ""
 }
 
+func vmessJSONBool(values map[string]any, keys ...string) bool {
+	if values == nil {
+		return false
+	}
+	for _, key := range keys {
+		if boolFromAnyValue(vmessJSONValue(values, key)) {
+			return true
+		}
+	}
+	return false
+}
+
 func vmessJSONAllowsAliasCore(values map[string]any) bool {
-	if strings.TrimSpace(stringFromAnyValue(values["v"])) != "" {
+	if strings.TrimSpace(stringFromAnyValue(vmessJSONValue(values, "v"))) != "" {
 		return true
 	}
 	return vmessJSONAliasProtocol(values) == "vmess"

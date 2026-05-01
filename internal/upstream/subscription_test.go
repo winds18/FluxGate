@@ -1060,6 +1060,65 @@ proxy-groups:
 	}
 }
 
+func TestNormalizeContentClashYAMLProtocolAliases(t *testing.T) {
+	raw := `
+proxies:
+  - { name: "Clash Trojan-Go Alias", type: trojan-go, server: trojan-go.clash-alias.example.test, port: 443, password: "trojan-placeholder", sni: trojan-go.clash-alias.example.test }
+  - { name: "Clash VMess AEAD Alias", type: vmess-aead, server: vmess-aead.clash-alias.example.test, port: 443, uuid: "00000000-0000-0000-0000-000000000057", tls: true, sni: vmess-aead.clash-alias.example.test }
+  - { name: "Clash HY2 Alias", type: hy2, server: hy2.clash-alias.example.test, port: 443, password: "hy2-placeholder" }
+  - { name: "Clash AnyTLS Alias", type: any-tls, server: anytls.clash-alias.example.test, port: 443, password: "anytls-placeholder" }
+  - { name: "Clash ShadowTLS Alias", type: shadow-tls, server: shadowtls.clash-alias.example.test, port: 443, version: 3, password: "shadowtls-placeholder" }
+  - { name: "Clash Naive QUIC Alias", type: naive-quic, server: naive.clash-alias.example.test, port: 443, username: qa-user, password: "naive-placeholder" }
+  - { name: "Clash SOCKS5H Alias", type: socks5h, server: socks5h.clash-alias.example.test, port: 1080, username: qa-user, password: "socks-placeholder", network: udp }
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 7 {
+		t.Fatalf("expected 7 normalized Clash alias nodes, got %d: %q", len(lines), got)
+	}
+
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan-go.clash-alias.example.test:443?")
+	if !strings.Contains(lines[0], "sni=trojan-go.clash-alias.example.test") ||
+		!strings.HasSuffix(lines[0], "#Clash%20Trojan-Go%20Alias") {
+		t.Fatalf("unexpected Clash Trojan-Go alias URI: %q", lines[0])
+	}
+
+	assertHasPrefix(t, lines[1], "vmess://")
+	decodedVMess := decodeVMessURIForTest(t, lines[1])
+	for _, want := range []string{
+		`"ps":"Clash VMess AEAD Alias"`,
+		`"add":"vmess-aead.clash-alias.example.test"`,
+		`"id":"00000000-0000-0000-0000-000000000057"`,
+		`"tls":"tls"`,
+		`"sni":"vmess-aead.clash-alias.example.test"`,
+	} {
+		if !strings.Contains(decodedVMess, want) {
+			t.Fatalf("expected decoded Clash VMess alias URI to contain %q: %q", want, decodedVMess)
+		}
+	}
+
+	assertHasPrefix(t, lines[2], "hysteria2://hy2-placeholder@hy2.clash-alias.example.test:443#Clash%20HY2%20Alias")
+	assertHasPrefix(t, lines[3], "anytls://anytls-placeholder@anytls.clash-alias.example.test:443#Clash%20AnyTLS%20Alias")
+	assertHasPrefix(t, lines[4], "shadowtls://shadowtls-placeholder@shadowtls.clash-alias.example.test:443?")
+	if !strings.Contains(lines[4], "version=3") ||
+		!strings.HasSuffix(lines[4], "#Clash%20ShadowTLS%20Alias") {
+		t.Fatalf("unexpected Clash ShadowTLS alias URI: %q", lines[4])
+	}
+	assertHasPrefix(t, lines[5], "naive+quic://qa-user:naive-placeholder@naive.clash-alias.example.test:443?")
+	if !strings.Contains(lines[5], "quic=1") ||
+		!strings.HasSuffix(lines[5], "#Clash%20Naive%20QUIC%20Alias") {
+		t.Fatalf("unexpected Clash Naive QUIC alias URI: %q", lines[5])
+	}
+	assertHasPrefix(t, lines[6], "socks5://qa-user:socks-placeholder@socks5h.clash-alias.example.test:1080?")
+	if !strings.Contains(lines[6], "network=udp") ||
+		!strings.HasSuffix(lines[6], "#Clash%20SOCKS5H%20Alias") {
+		t.Fatalf("unexpected Clash SOCKS5H alias URI: %q", lines[6])
+	}
+}
+
 func TestNormalizeContentClashYAMLNestedProviderProxies(t *testing.T) {
 	raw := `
 proxy-providers:

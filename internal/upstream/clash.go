@@ -126,8 +126,29 @@ func clashYAMLInlineProxies(line string) []map[string]string {
 	return parseYAMLInlineProxyList(value)
 }
 
+func normalizedClashProxyType(proxyType string) string {
+	switch strings.ToLower(strings.TrimSpace(proxyType)) {
+	case "trojan-go":
+		return "trojan"
+	case "vmess-aead":
+		return "vmess"
+	case "hy2":
+		return "hysteria2"
+	case "any-tls":
+		return "anytls"
+	case "shadow-tls":
+		return "shadowtls"
+	case "naive-quic":
+		return "naive+quic"
+	case "socks5h":
+		return "socks5"
+	default:
+		return strings.ToLower(strings.TrimSpace(proxyType))
+	}
+}
+
 func clashProxyURI(proxy map[string]string) string {
-	proxyType := strings.ToLower(firstMapValue(proxy, "type"))
+	proxyType := normalizedClashProxyType(firstMapValue(proxy, "type"))
 	switch proxyType {
 	case "ss", "shadowsocks":
 		return clashShadowsocksURI(proxy)
@@ -482,7 +503,7 @@ func clashSOCKSURI(proxy map[string]string) string {
 	}
 
 	scheme := "socks5"
-	switch proxyType := strings.ToLower(firstMapValue(proxy, "type")); proxyType {
+	switch proxyType := normalizedClashProxyType(firstMapValue(proxy, "type")); proxyType {
 	case "socks4", "socks4a", "socks5":
 		scheme = proxyType
 	default:
@@ -560,7 +581,7 @@ func clashNaiveURI(proxy map[string]string) string {
 		return ""
 	}
 
-	proxyType := strings.ToLower(firstMapValue(proxy, "type"))
+	proxyType := normalizedClashProxyType(firstMapValue(proxy, "type"))
 	scheme := "naive"
 	values := url.Values{}
 	if proxyType == "naive+quic" || boolMapValue(proxy, "quic") {

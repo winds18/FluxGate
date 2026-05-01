@@ -50,25 +50,51 @@ func collectVMessJSONURIs(name string, value any, uris *[]string) {
 }
 
 func vmessJSONURI(item map[string]any, fallbackName string) string {
+	if vmessJSONHasNonVMessProtocol(item) {
+		return ""
+	}
 	server := vmessJSONString(item, "add")
 	port := vmessJSONPort(item, "port")
 	uuid := vmessJSONString(item, "id")
+	if (server == "" || port == "" || uuid == "") && vmessJSONAllowsAliasCore(item) {
+		server = firstNonEmptyString(server, vmessJSONString(item,
+			"address",
+			"addr",
+			"server",
+			"serverAddress",
+			"server_address",
+			"server-address",
+			"serverHost",
+			"server_host",
+			"server-host",
+			"remoteHost",
+			"remote_host",
+			"remote-host",
+			"nodeHost",
+			"node_host",
+			"node-host",
+			"hostname",
+			"endpoint",
+		))
+		port = firstNonEmptyString(port, vmessJSONPort(item, "serverPort", "server_port", "server-port", "remotePort", "remote_port", "remote-port", "nodePort", "node_port", "node-port", "portNumber", "port_number", "port-number"))
+		uuid = firstNonEmptyString(uuid, vmessJSONString(item, "uuid", "user_id", "userId", "userid", "user-id"))
+	}
 	if server == "" || port == "" || uuid == "" {
 		return ""
 	}
 
 	proxy := map[string]string{
-		"name":        firstNonEmptyString(vmessJSONString(item, "ps"), fallbackName),
+		"name":        firstNonEmptyString(vmessJSONString(item, "ps", "name", "displayName", "display_name", "display-name", "nodeName", "node_name", "node-name", "label", "title", "remarks", "remark", "tag"), fallbackName),
 		"server":      server,
 		"port":        port,
 		"uuid":        uuid,
-		"alterid":     vmessJSONString(item, "aid"),
+		"alterid":     vmessJSONString(item, "aid", "alterId", "alter_id", "alter-id"),
 		"cipher":      firstNonEmptyString(vmessJSONString(item, "scy"), vmessJSONString(item, "cipher")),
-		"network":     firstNonEmptyString(vmessJSONString(item, "net"), vmessJSONString(item, "network")),
+		"network":     firstNonEmptyString(vmessJSONString(item, "net"), vmessJSONString(item, "network"), vmessJSONString(item, "transport")),
 		"header-type": vmessJSONString(item, "type"),
 		"host":        vmessJSONString(item, "host"),
 		"path":        vmessJSONString(item, "path"),
-		"sni":         firstNonEmptyString(vmessJSONString(item, "sni"), vmessJSONString(item, "serverName"), vmessJSONString(item, "server_name")),
+		"sni":         firstNonEmptyString(vmessJSONString(item, "sni"), vmessJSONString(item, "serverName"), vmessJSONString(item, "server_name"), vmessJSONString(item, "server-name")),
 		"alpn":        strings.Join(stringListFromAnyValue(item["alpn"]), ","),
 	}
 	if packetEncoding := firstNonEmptyString(vmessJSONString(item, "packetEncoding"), vmessJSONString(item, "packet_encoding"), vmessJSONString(item, "packet-encoding")); packetEncoding != "" {
@@ -95,19 +121,105 @@ func vmessJSONURI(item map[string]any, fallbackName string) string {
 	return clashVMessURI(proxy)
 }
 
-func vmessJSONString(values map[string]any, key string) string {
+func vmessJSONString(values map[string]any, keys ...string) string {
 	if values == nil {
 		return ""
 	}
-	return strings.TrimSpace(stringFromAnyValue(values[key]))
+	for _, key := range keys {
+		if value := strings.TrimSpace(stringFromAnyValue(values[key])); value != "" {
+			return value
+		}
+	}
+	return ""
 }
 
-func vmessJSONPort(values map[string]any, key string) string {
-	port := intFromAnyValue(values[key])
-	if port <= 0 {
+func vmessJSONPort(values map[string]any, keys ...string) string {
+	if values == nil {
 		return ""
 	}
-	return strconv.Itoa(port)
+	for _, key := range keys {
+		port := intFromAnyValue(values[key])
+		if port > 0 {
+			return strconv.Itoa(port)
+		}
+	}
+	return ""
+}
+
+func vmessJSONAllowsAliasCore(values map[string]any) bool {
+	if strings.TrimSpace(stringFromAnyValue(values["v"])) != "" {
+		return true
+	}
+	return vmessJSONAliasProtocol(values) == "vmess"
+}
+
+func vmessJSONHasNonVMessProtocol(values map[string]any) bool {
+	for _, key := range []string{
+		"protocol",
+		"proto",
+		"scheme",
+		"nodeType",
+		"node_type",
+		"node-type",
+		"serverType",
+		"server_type",
+		"server-type",
+		"protocolType",
+		"protocol_type",
+		"protocol-type",
+		"proxyType",
+		"proxy_type",
+		"proxy-type",
+		"proxyProtocol",
+		"proxy_protocol",
+		"proxy-protocol",
+	} {
+		if protocol := normalizedVMessJSONProtocol(vmessJSONString(values, key)); protocol != "" && protocol != "vmess" {
+			return true
+		}
+	}
+	switch normalizedVMessJSONProtocol(vmessJSONString(values, "type")) {
+	case "", "vmess", "none", "http":
+		return false
+	default:
+		return true
+	}
+}
+
+func vmessJSONAliasProtocol(values map[string]any) string {
+	for _, key := range []string{
+		"protocol",
+		"proto",
+		"scheme",
+		"nodeType",
+		"node_type",
+		"node-type",
+		"serverType",
+		"server_type",
+		"server-type",
+		"protocolType",
+		"protocol_type",
+		"protocol-type",
+		"proxyType",
+		"proxy_type",
+		"proxy-type",
+		"proxyProtocol",
+		"proxy_protocol",
+		"proxy-protocol",
+	} {
+		if protocol := normalizedVMessJSONProtocol(vmessJSONString(values, key)); protocol != "" {
+			return protocol
+		}
+	}
+	return ""
+}
+
+func normalizedVMessJSONProtocol(value string) string {
+	normalized := strings.NewReplacer("-", "", "_", "").Replace(strings.ToLower(strings.TrimSpace(value)))
+	if normalized == "vmessaead" {
+		return "vmess"
+	}
+	return normalized
 }
 
 func vmessJSONTLSEnabled(value any) bool {

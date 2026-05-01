@@ -1087,6 +1087,44 @@ func TestNormalizeContentJSONStructuredAliasFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredVMessTypeUsesProxyParser(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "东京 JSON VMess",
+      "type": "vmess",
+      "server": "json-vmess.example.test",
+      "serverPort": 443,
+      "uuid": "00000000-0000-0000-0000-000000000090",
+      "network": "ws",
+      "wsPath": "/json-vmess",
+      "tls": true,
+      "sni": "json-vmess.example.test"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	decoded := decodeVMessURIForTest(t, got)
+	for _, want := range []string{
+		`"ps":"东京 JSON VMess"`,
+		`"add":"json-vmess.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000090"`,
+		`"net":"ws"`,
+		`"path":"/json-vmess"`,
+		`"tls":"tls"`,
+		`"sni":"json-vmess.example.test"`,
+		`"type":""`,
+	} {
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected structured JSON VMess document to contain %s: %q", want, decoded)
+		}
+	}
+}
+
 func TestNormalizeContentJSONWrappedStructuredSubscription(t *testing.T) {
 	raw := `{
   "data": {
@@ -5201,6 +5239,52 @@ func TestNormalizeContentVMessJSONArrayAndObjectMap(t *testing.T) {
 		!strings.Contains(second, `"path":"fluxgate-grpc"`) ||
 		!strings.Contains(second, `"tls":"tls"`) {
 		t.Fatalf("unexpected vmess JSON object-map document: %q", second)
+	}
+}
+
+func TestNormalizeContentVMessJSONFieldAliases(t *testing.T) {
+	raw := `{
+  "v": "2",
+  "displayName": "香港 VMess 别名",
+  "address": "vmess-alias.raw.example.test",
+  "serverPort": 443,
+  "uuid": "00000000-0000-0000-0000-000000000089",
+  "alterId": 0,
+  "cipher": "auto",
+  "network": "ws",
+  "host": "ws.vmess-alias.example.test",
+  "path": "/alias",
+  "security": "tls",
+  "server-name": "vmess-alias.raw.example.test",
+  "packet-encoding": "packetaddr",
+  "disableSNI": true,
+  "clientFingerprint": "chrome",
+  "skip-cert-verify": true
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	decoded := decodeVMessURIForTest(t, got)
+	for _, want := range []string{
+		`"ps":"香港 VMess 别名"`,
+		`"add":"vmess-alias.raw.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000089"`,
+		`"aid":"0"`,
+		`"net":"ws"`,
+		`"host":"ws.vmess-alias.example.test"`,
+		`"path":"/alias"`,
+		`"tls":"tls"`,
+		`"sni":"vmess-alias.raw.example.test"`,
+		`"packet_encoding":"packetaddr"`,
+		`"disable_sni":"1"`,
+		`"fp":"chrome"`,
+		`"allowInsecure":"1"`,
+	} {
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected raw vmess alias document to contain %s: %q", want, decoded)
+		}
 	}
 }
 

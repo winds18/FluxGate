@@ -951,21 +951,21 @@ func buildNaiveOutbound(node store.Node) (map[string]any, bool) {
 		"username":    username,
 		"password":    password,
 	}
-	if concurrency := intQuery(firstNonEmpty(query.Get("insecure_concurrency"), query.Get("insecure-concurrency"))); concurrency > 0 {
+	if concurrency := intQuery(firstNonEmpty(query.Get("insecure_concurrency"), query.Get("insecure-concurrency"), query.Get("insecureConcurrency"))); concurrency > 0 {
 		outbound["insecure_concurrency"] = concurrency
 	}
-	if boolQuery(firstNonEmpty(query.Get("udp_over_tcp"), query.Get("udp-over-tcp"))) {
+	if boolQuery(firstNonEmpty(query.Get("udp_over_tcp"), query.Get("udp-over-tcp"), query.Get("udpOverTcp"))) {
 		outbound["udp_over_tcp"] = true
 	}
 	if parsed.Scheme == "naive+quic" || boolQuery(query.Get("quic")) {
 		outbound["quic"] = true
 	}
-	if congestionControl := firstNonEmpty(query.Get("quic_congestion_control"), query.Get("quic-congestion-control")); congestionControl != "" {
+	if congestionControl := firstNonEmpty(query.Get("quic_congestion_control"), query.Get("quic-congestion-control"), query.Get("quicCongestionControl")); congestionControl != "" {
 		outbound["quic_congestion_control"] = congestionControl
 	}
 
 	tls := map[string]any{"enabled": true}
-	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
 		tls["server_name"] = serverName
 	}
 	if certificate := firstNonEmpty(query.Get("certificate"), query.Get("cert")); certificate != "" {
@@ -974,10 +974,10 @@ func buildNaiveOutbound(node store.Node) (map[string]any, bool) {
 	if certificatePath := firstNonEmpty(query.Get("certificate_path"), query.Get("certificate-path"), query.Get("cert_path"), query.Get("cert-path")); certificatePath != "" {
 		tls["certificate_path"] = certificatePath
 	}
-	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"))) {
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"))) {
 		tls["insecure"] = true
 	}
-	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
 		tls["disable_sni"] = true
 	}
 	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {

@@ -1417,7 +1417,7 @@ func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         84,
-			URI:        "naive+quic://query-naive.example:443?username=qa-user&password=naive-query-placeholder&sni=query-naive.example&quic=1&insecure=1#naive-query",
+			URI:        "naive+quic://query-naive.example:443?user=qa-user&pass=naive-query-placeholder&serverName=query-naive.example&quic=1&insecureConcurrency=2&udpOverTcp=1&quicCongestionControl=bbr&allowInsecure=1&disableSNI=1&clientFingerprint=chrome#naive-query",
 			Protocol:   "naive+quic",
 			ServerPort: 443,
 			Status:     "active",
@@ -1434,9 +1434,16 @@ func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
 	if outbound["username"] != "qa-user" || outbound["password"] != "naive-query-placeholder" || outbound["quic"] != true {
 		t.Fatalf("unexpected naive query credential auth fields: %+v", outbound)
 	}
+	if outbound["insecure_concurrency"] != 2 || outbound["udp_over_tcp"] != true || outbound["quic_congestion_control"] != "bbr" {
+		t.Fatalf("unexpected naive query credential transport fields: %+v", outbound)
+	}
 	tls, ok := outbound["tls"].(map[string]any)
-	if !ok || tls["enabled"] != true || tls["server_name"] != "query-naive.example" || tls["insecure"] != true {
+	if !ok || tls["enabled"] != true || tls["server_name"] != "query-naive.example" || tls["insecure"] != true || tls["disable_sni"] != true {
 		t.Fatalf("unexpected naive query credential tls: %+v", outbound["tls"])
+	}
+	utls, ok := tls["utls"].(map[string]any)
+	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected naive query credential utls: %+v", tls["utls"])
 	}
 }
 

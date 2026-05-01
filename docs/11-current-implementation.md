@@ -128,7 +128,7 @@
 - sing-box JSON 和 URI 导入链路会保留 Naive/Naive+QUIC `insecure`/`skip-cert-verify`、`disable_sni`、`alpn`、QUIC 控制项和 `tls.utls.fingerprint`/`fp` 参数，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`insecureConcurrency`、`udpOverTcp`、`quicCongestionControl` 和 `clientFingerprint` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 HTTP/HTTPS 代理 `insecure`/`skip-cert-verify`、`disable_sni`、`alpn` 和 `tls.utls.fingerprint`/`fp` 参数，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 查询别名。
 - Naive、HTTP/HTTPS 和 SOCKS URI 支持从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
-- SSH URI 支持从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息，并兼容 `identity_file`、`key_path`、`key`、passphrase、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 查询别名，兼容缺少 userinfo 的订阅写法。
+- SSH URI 支持从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息，并兼容 `identity_file`、`key_path`、`key`、`privateKey`、`privateKeyPath`、`privateKeyPassphrase`、passphrase、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 查询别名，兼容缺少 userinfo 的订阅写法。
 - SOCKS URI 支持 `udp`、`udpEnabled`、`udp_relay` 和 `udp-relay` 标志，并会归一为 sing-box outbound 的 `network=udp`，同时兼容 `udpOverTcp` 查询别名。
 - `socks5h://` 裸 URI 会归一化为标准 `socks5://`，兼容 curl/requests 生态里常见的 SOCKS5H 订阅写法。
 - Clash YAML SOCKS 节点支持保留 `udp`、`udp_relay` 和 `udp-relay` 标志，结构化导入后会继续进入 SOCKS UDP 转换链路。

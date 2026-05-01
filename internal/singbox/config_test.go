@@ -1514,7 +1514,7 @@ func TestBuildConfigSupportsSSHQueryCredentialAliases(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         88,
-			URI:        "ssh://query-ssh.example:22?username=qa-user&pass=ssh-query-placeholder&key=inline-private-placeholder&identity_file=keys%2Fquery_id_ed25519&passphrase=query-passphrase&hostKey=ssh-ed25519%20AAAAC3NzaC1lZDI1NTE5AAAAIplaceholder&hostKeyAlgorithms=ssh-ed25519,rsa-sha2-512&clientVersion=SSH-2.0-FluxGateQuery&cipher=aes128-gcm@openssh.com,chacha20-poly1305@openssh.com&mac=hmac-sha2-256&kexAlgorithm=curve25519-sha256#ssh-query",
+			URI:        "ssh://query-ssh.example:22?username=qa-user&pass=ssh-query-placeholder&privateKey=inline-private-placeholder&privateKeyPath=keys%2Fquery_id_ed25519&privateKeyPassphrase=query-passphrase&hostKey=ssh-ed25519%20AAAAC3NzaC1lZDI1NTE5AAAAIplaceholder&hostKeyAlgorithms=ssh-ed25519,rsa-sha2-512&clientVersion=SSH-2.0-FluxGateQuery&cipher=aes128-gcm@openssh.com,chacha20-poly1305@openssh.com&mac=hmac-sha2-256&kexAlgorithm=curve25519-sha256#ssh-query",
 			Protocol:   "ssh",
 			ServerPort: 22,
 			Status:     "active",

@@ -1523,6 +1523,34 @@ func TestBuildConfigSupportsWireGuardQueryAliases(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsTorQueryAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         90,
+			URI:        "tor://default?executablePath=%2Fusr%2Fbin%2Ftor&dataDirectory=cache%2Ftor-query&extraArgs=--quiet,--SocksPort,auto&torrc_ClientOnly=1&torrc.SocksPort=auto#tor-query",
+			Protocol:   "tor",
+			ServerPort: 0,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_90")
+	if outbound == nil {
+		t.Fatalf("expected tor outbound up_90, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "tor" || outbound["executable_path"] != "/usr/bin/tor" || outbound["data_directory"] != "cache/tor-query" {
+		t.Fatalf("unexpected tor query alias path fields: %+v", outbound)
+	}
+	extraArgs, ok := outbound["extra_args"].([]string)
+	if !ok || len(extraArgs) != 3 || extraArgs[0] != "--quiet" || extraArgs[1] != "--SocksPort" || extraArgs[2] != "auto" {
+		t.Fatalf("unexpected tor query alias extra args: %+v", outbound["extra_args"])
+	}
+	torrc, ok := outbound["torrc"].(map[string]any)
+	if !ok || torrc["ClientOnly"] != 1 || torrc["SocksPort"] != "auto" {
+		t.Fatalf("unexpected tor query alias torrc: %+v", outbound["torrc"])
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

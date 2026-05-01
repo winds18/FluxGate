@@ -85,6 +85,7 @@
 - Naive、HTTP/HTTPS 和 SOCKS URI 可从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息。
 - SSH URI 可从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息，并兼容 `identity_file`/`key_path` 等私钥路径别名。
 - WireGuard URI 可兼容 `privateKey`/`publicKey`/`preSharedKey`、`ip`/`ipv6` 和 `allowedIPs` 等常见查询参数别名。
+- Tor URI 可兼容 `executablePath`、`dataDirectory` 和 `extraArgs` 等常见查询参数别名。
 - Hysteria2/Hy2 URI 可从查询参数读取 `password`、`auth`、`auth_str` 或 `token` 认证密码。
 - Hysteria v1 URI 可从查询参数读取 `token` 认证字符串。
 - sing-box 服务端配置生成会过滤不可用 Token，避免已撤销、已过期或已超额用户继续进入网关配置。

@@ -1342,13 +1342,13 @@ func buildTorOutbound(node store.Node) (map[string]any, bool) {
 		"type": "tor",
 		"tag":  upstreamTag(node),
 	}
-	if executablePath := firstNonEmpty(query.Get("executable_path"), query.Get("executable-path")); executablePath != "" {
+	if executablePath := firstNonEmpty(query.Get("executable_path"), query.Get("executable-path"), query.Get("executablePath"), query.Get("path")); executablePath != "" {
 		outbound["executable_path"] = executablePath
 	}
-	if extraArgs := splitCSV(firstNonEmpty(query.Get("extra_args"), query.Get("extra-args"), query.Get("args"))); len(extraArgs) > 0 {
+	if extraArgs := splitCSV(firstNonEmpty(query.Get("extra_args"), query.Get("extra-args"), query.Get("extraArgs"), query.Get("args"), query.Get("arguments"))); len(extraArgs) > 0 {
 		outbound["extra_args"] = extraArgs
 	}
-	if dataDirectory := firstNonEmpty(query.Get("data_directory"), query.Get("data-directory")); dataDirectory != "" {
+	if dataDirectory := firstNonEmpty(query.Get("data_directory"), query.Get("data-directory"), query.Get("dataDirectory"), query.Get("dir")); dataDirectory != "" {
 		outbound["data_directory"] = dataDirectory
 	}
 	if torrc := torrcQuery(query); len(torrc) > 0 {

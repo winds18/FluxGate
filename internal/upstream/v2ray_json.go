@@ -15,7 +15,7 @@ func V2RayJSONURIList(content string) string {
 		return ""
 	}
 
-	outbounds := v2rayObjectList(doc["outbounds"])
+	outbounds := v2rayObjectList(v2rayValue(doc, "outbounds"))
 	if len(outbounds) == 0 {
 		return ""
 	}
@@ -56,13 +56,13 @@ func v2rayOutboundURIs(outbound map[string]any) []string {
 }
 
 func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) string) []string {
-	settings := v2rayMap(outbound["settings"])
-	vnexts := v2rayObjectList(settings["vnext"])
+	settings := v2rayFieldMap(outbound, "settings")
+	vnexts := v2rayObjectList(v2rayValue(settings, "vnext"))
 	total := v2rayVNextUserCount(vnexts)
 	sequence := 0
 	var uris []string
 	for _, vnext := range vnexts {
-		users := v2rayObjectList(vnext["users"])
+		users := v2rayObjectList(v2rayValue(vnext, "users"))
 		if len(users) == 0 {
 			users = []map[string]any{{}}
 		}
@@ -108,8 +108,8 @@ func v2rayEndpointAddress(values map[string]any) string {
 }
 
 func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[string]string) string) []string {
-	settings := v2rayMap(outbound["settings"])
-	servers := v2rayObjectList(settings["servers"])
+	settings := v2rayFieldMap(outbound, "settings")
+	servers := v2rayObjectList(v2rayValue(settings, "servers"))
 	total := len(servers)
 	var uris []string
 	for index, server := range servers {
@@ -164,8 +164,8 @@ func v2raySOCKSServerURIs(outbound map[string]any) []string {
 }
 
 func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(map[string]string) string) []string {
-	settings := v2rayMap(outbound["settings"])
-	servers := v2rayObjectList(settings["servers"])
+	settings := v2rayFieldMap(outbound, "settings")
+	servers := v2rayObjectList(v2rayValue(settings, "servers"))
 	total := v2rayProxyServerUserCount(servers)
 	sequence := 0
 	var uris []string
@@ -202,11 +202,11 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 
 func v2rayProxyServerUsers(server map[string]any) []map[string]any {
 	for _, key := range []string{"users", "accounts"} {
-		if users := v2rayObjectList(server[key]); len(users) > 0 {
+		if users := v2rayObjectList(v2rayValue(server, key)); len(users) > 0 {
 			return users
 		}
 		if key == "accounts" {
-			if users := v2rayScalarAccountUsers(server[key]); len(users) > 0 {
+			if users := v2rayScalarAccountUsers(v2rayValue(server, key)); len(users) > 0 {
 				return users
 			}
 		}
@@ -250,11 +250,9 @@ func v2rayScalarAccountUsers(value any) []map[string]any {
 
 func v2raySOCKSUDPEnabled(settings, server map[string]any) bool {
 	for _, values := range []map[string]any{settings, server} {
-		if boolFromAnyValue(values["udp"]) ||
-			boolFromAnyValue(values["udpEnabled"]) ||
-			boolFromAnyValue(values["udp_enabled"]) ||
-			boolFromAnyValue(values["udp-relay"]) ||
-			boolFromAnyValue(values["udp_relay"]) {
+		if boolFromAnyValue(v2rayValue(values, "udp")) ||
+			boolFromAnyValue(v2rayValue(values, "udpEnabled")) ||
+			boolFromAnyValue(v2rayValue(values, "udp_relay")) {
 			return true
 		}
 	}
@@ -263,10 +261,9 @@ func v2raySOCKSUDPEnabled(settings, server map[string]any) bool {
 
 func v2raySOCKSUDPOverTCPEnabled(settings, server map[string]any) bool {
 	for _, values := range []map[string]any{settings, server} {
-		if boolFromAnyValue(values["udp_over_tcp"]) ||
-			boolFromAnyValue(values["udpOverTcp"]) ||
-			boolFromAnyValue(values["udp-over-tcp"]) ||
-			boolFromAnyValue(values["uot"]) {
+		if boolFromAnyValue(v2rayValue(values, "udp_over_tcp")) ||
+			boolFromAnyValue(v2rayValue(values, "udpOverTcp")) ||
+			boolFromAnyValue(v2rayValue(values, "uot")) {
 			return true
 		}
 	}
@@ -274,7 +271,7 @@ func v2raySOCKSUDPOverTCPEnabled(settings, server map[string]any) bool {
 }
 
 func appendV2RayStreamProxyValues(outbound map[string]any, proxy map[string]string) {
-	stream := firstNonNilMap(v2rayMap(outbound["streamSettings"]), v2rayMap(outbound["stream_settings"]), v2rayMap(outbound["stream-settings"]))
+	stream := v2rayFieldMap(outbound, "streamSettings")
 	if stream == nil {
 		return
 	}
@@ -283,15 +280,8 @@ func appendV2RayStreamProxyValues(outbound map[string]any, proxy map[string]stri
 		proxy["network"] = network
 	}
 	security := strings.ToLower(v2rayString(stream, "security"))
-	tlsSettings := firstNonNilMap(
-		v2rayMap(stream["tlsSettings"]),
-		v2rayMap(stream["tls_settings"]),
-		v2rayMap(stream["tls-settings"]),
-		v2rayMap(stream["xtlsSettings"]),
-		v2rayMap(stream["xtls_settings"]),
-		v2rayMap(stream["xtls-settings"]),
-	)
-	realitySettings := firstNonNilMap(v2rayMap(stream["realitySettings"]), v2rayMap(stream["reality_settings"]), v2rayMap(stream["reality-settings"]))
+	tlsSettings := firstNonNilMap(v2rayFieldMap(stream, "tlsSettings"), v2rayFieldMap(stream, "xtlsSettings"))
+	realitySettings := v2rayFieldMap(stream, "realitySettings")
 	if security == "tls" || security == "xtls" || tlsSettings != nil {
 		proxy["tls"] = "true"
 	}
@@ -308,26 +298,20 @@ func appendV2RayTLSValues(tls map[string]any, proxy map[string]string) {
 		return
 	}
 	if serverNames := firstNonEmptyStringList(
-		stringListFromAnyValue(tls["serverName"]),
-		stringListFromAnyValue(tls["server_name"]),
-		stringListFromAnyValue(tls["server-name"]),
-		stringListFromAnyValue(tls["serverNames"]),
-		stringListFromAnyValue(tls["server_names"]),
-		stringListFromAnyValue(tls["server-names"]),
+		stringListFromAnyValue(v2rayValue(tls, "serverName")),
+		stringListFromAnyValue(v2rayValue(tls, "serverNames")),
 	); len(serverNames) > 0 {
 		proxy["sni"] = serverNames[0]
 	}
-	if boolFromAnyValue(tls["allowInsecure"]) ||
-		boolFromAnyValue(tls["allow_insecure"]) ||
-		boolFromAnyValue(tls["skip-cert-verify"]) ||
-		boolFromAnyValue(tls["skip_cert_verify"]) ||
-		boolFromAnyValue(tls["insecure"]) {
+	if boolFromAnyValue(v2rayValue(tls, "allowInsecure")) ||
+		boolFromAnyValue(v2rayValue(tls, "skip_cert_verify")) ||
+		boolFromAnyValue(v2rayValue(tls, "insecure")) {
 		proxy["insecure"] = "true"
 	}
-	if boolFromAnyValue(tls["disable_sni"]) || boolFromAnyValue(tls["disable-sni"]) {
+	if boolFromAnyValue(v2rayValue(tls, "disable_sni")) {
 		proxy["disable_sni"] = "true"
 	}
-	if alpn := stringListFromAnyValue(tls["alpn"]); len(alpn) > 0 {
+	if alpn := stringListFromAnyValue(v2rayValue(tls, "alpn")); len(alpn) > 0 {
 		proxy["alpn"] = strings.Join(alpn, ",")
 	}
 	if fingerprint := firstNonEmptyString(
@@ -347,12 +331,8 @@ func appendV2RayRealityValues(reality map[string]any, proxy map[string]string) {
 		return
 	}
 	if serverNames := firstNonEmptyStringList(
-		stringListFromAnyValue(reality["serverName"]),
-		stringListFromAnyValue(reality["server_name"]),
-		stringListFromAnyValue(reality["server-name"]),
-		stringListFromAnyValue(reality["serverNames"]),
-		stringListFromAnyValue(reality["server_names"]),
-		stringListFromAnyValue(reality["server-names"]),
+		stringListFromAnyValue(v2rayValue(reality, "serverName")),
+		stringListFromAnyValue(v2rayValue(reality, "serverNames")),
 	); len(serverNames) > 0 {
 		proxy["sni"] = serverNames[0]
 	}
@@ -360,12 +340,8 @@ func appendV2RayRealityValues(reality map[string]any, proxy map[string]string) {
 		proxy["pbk"] = publicKey
 	}
 	if shortIDs := firstNonEmptyStringList(
-		stringListFromAnyValue(reality["shortId"]),
-		stringListFromAnyValue(reality["short_id"]),
-		stringListFromAnyValue(reality["short-id"]),
-		stringListFromAnyValue(reality["shortIds"]),
-		stringListFromAnyValue(reality["short_ids"]),
-		stringListFromAnyValue(reality["short-ids"]),
+		stringListFromAnyValue(v2rayValue(reality, "shortId")),
+		stringListFromAnyValue(v2rayValue(reality, "shortIds")),
 	); len(shortIDs) > 0 {
 		proxy["sid"] = shortIDs[0]
 	}
@@ -378,7 +354,7 @@ func appendV2RayRealityValues(reality map[string]any, proxy map[string]string) {
 }
 
 func v2rayUTLSFingerprint(tls map[string]any) string {
-	utls := firstNonNilMap(v2rayMap(tls["utls"]), v2rayMap(tls["uTLS"]))
+	utls := v2rayFieldMap(tls, "utls")
 	if utls == nil {
 		return ""
 	}
@@ -386,14 +362,14 @@ func v2rayUTLSFingerprint(tls map[string]any) string {
 }
 
 func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) {
-	if ws := firstNonNilMap(v2rayMap(stream["wsSettings"]), v2rayMap(stream["ws_settings"]), v2rayMap(stream["ws-settings"])); ws != nil {
+	if ws := v2rayFieldMap(stream, "wsSettings"); ws != nil {
 		if path := v2rayString(ws, "path"); path != "" {
 			proxy["ws-path"] = path
 		}
 		if hosts := v2rayHeaderHosts(ws); len(hosts) > 0 {
 			proxy["ws-headers.host"] = strings.Join(hosts, ",")
 		}
-		maxEarlyData := firstPositiveIntFromAnyValue(ws["maxEarlyData"], ws["max_early_data"], ws["max-early-data"])
+		maxEarlyData := firstPositiveIntFromAnyValue(v2rayValue(ws, "maxEarlyData"))
 		if maxEarlyData > 0 {
 			proxy["max-early-data"] = strconv.Itoa(maxEarlyData)
 		}
@@ -405,10 +381,10 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 			proxy["early-data-header-name"] = earlyHeader
 		}
 	}
-	if tcp := firstNonNilMap(v2rayMap(stream["tcpSettings"]), v2rayMap(stream["tcp_settings"]), v2rayMap(stream["tcp-settings"])); tcp != nil {
+	if tcp := v2rayFieldMap(stream, "tcpSettings"); tcp != nil {
 		appendV2RayTCPHeaderValues(tcp, proxy)
 	}
-	if grpc := firstNonNilMap(v2rayMap(stream["grpcSettings"]), v2rayMap(stream["grpc_settings"]), v2rayMap(stream["grpc-settings"])); grpc != nil {
+	if grpc := v2rayFieldMap(stream, "grpcSettings"); grpc != nil {
 		if serviceName := firstNonEmptyString(v2rayString(grpc, "serviceName"), v2rayString(grpc, "service_name"), v2rayString(grpc, "service-name")); serviceName != "" {
 			proxy["grpc-service-name"] = serviceName
 		}
@@ -425,28 +401,24 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		); pingTimeout != "" {
 			proxy["grpc-ping-timeout"] = pingTimeout
 		}
-		if boolFromAnyValue(grpc["permitWithoutStream"]) || boolFromAnyValue(grpc["permit_without_stream"]) || boolFromAnyValue(grpc["permit-without-stream"]) {
+		if boolFromAnyValue(v2rayValue(grpc, "permitWithoutStream")) {
 			proxy["permit-without-stream"] = "1"
 		}
-		if boolFromAnyValue(grpc["multiMode"]) || boolFromAnyValue(grpc["multi_mode"]) || boolFromAnyValue(grpc["multi-mode"]) {
+		if boolFromAnyValue(v2rayValue(grpc, "multiMode")) {
 			proxy["grpc-multi-mode"] = "1"
 		}
 	}
-	if quic := firstNonNilMap(v2rayMap(stream["quicSettings"]), v2rayMap(stream["quic_settings"]), v2rayMap(stream["quic-settings"])); quic != nil && proxy["network"] == "" {
+	if quic := v2rayFieldMap(stream, "quicSettings"); quic != nil && proxy["network"] == "" {
 		proxy["network"] = "quic"
 	}
 	if http := firstNonNilMap(
-		v2rayMap(stream["httpSettings"]),
-		v2rayMap(stream["http_settings"]),
-		v2rayMap(stream["http-settings"]),
-		v2rayMap(stream["h2Settings"]),
-		v2rayMap(stream["h2_settings"]),
-		v2rayMap(stream["h2-settings"]),
+		v2rayFieldMap(stream, "httpSettings"),
+		v2rayFieldMap(stream, "h2Settings"),
 	); http != nil {
 		if hosts := v2rayHeaderHosts(http); len(hosts) > 0 {
 			proxy["http-opts.host"] = strings.Join(hosts, ",")
 		}
-		if paths := stringListFromAnyValue(http["path"]); len(paths) > 0 {
+		if paths := stringListFromAnyValue(v2rayValue(http, "path")); len(paths) > 0 {
 			proxy["http-opts.path"] = strings.Join(paths, ",")
 		}
 		if method := v2rayString(http, "method"); method != "" {
@@ -454,14 +426,10 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 		}
 	}
 	if upgrade := firstNonNilMap(
-		v2rayMap(stream["httpupgradeSettings"]),
-		v2rayMap(stream["httpupgrade_settings"]),
-		v2rayMap(stream["httpupgrade-settings"]),
-		v2rayMap(stream["httpUpgradeSettings"]),
-		v2rayMap(stream["http_upgrade_settings"]),
-		v2rayMap(stream["http-upgrade-settings"]),
+		v2rayFieldMap(stream, "httpupgradeSettings"),
+		v2rayFieldMap(stream, "httpUpgradeSettings"),
 	); upgrade != nil {
-		if hosts := firstNonEmptyStringList(stringListFromAnyValue(upgrade["host"]), v2rayHeaderHosts(upgrade)); len(hosts) > 0 {
+		if hosts := firstNonEmptyStringList(stringListFromAnyValue(v2rayValue(upgrade, "host")), v2rayHeaderHosts(upgrade)); len(hosts) > 0 {
 			proxy["httpupgrade-opts.host"] = strings.Join(hosts, ",")
 		}
 		if path := v2rayString(upgrade, "path"); path != "" {
@@ -471,19 +439,19 @@ func appendV2RayTransportValues(stream map[string]any, proxy map[string]string) 
 }
 
 func appendV2RayTCPHeaderValues(tcp map[string]any, proxy map[string]string) {
-	header := firstNonNilMap(v2rayMap(tcp["header"]), v2rayMap(tcp["headers"]))
+	header := firstNonNilMap(v2rayFieldMap(tcp, "header"), v2rayFieldMap(tcp, "headers"))
 	if header == nil || !strings.EqualFold(v2rayString(header, "type"), "http") {
 		return
 	}
 	proxy["network"] = "http"
-	request := v2rayMap(header["request"])
+	request := v2rayFieldMap(header, "request")
 	if request == nil {
 		return
 	}
 	if method := v2rayString(request, "method"); method != "" {
 		proxy["http-opts.method"] = method
 	}
-	if paths := stringListFromAnyValue(request["path"]); len(paths) > 0 {
+	if paths := stringListFromAnyValue(v2rayValue(request, "path")); len(paths) > 0 {
 		proxy["http-opts.path"] = strings.Join(paths, ",")
 	}
 	if hosts := v2rayHeaderHosts(request); len(hosts) > 0 {
@@ -493,23 +461,21 @@ func appendV2RayTCPHeaderValues(tcp map[string]any, proxy map[string]string) {
 
 func v2rayHeaderHosts(values map[string]any) []string {
 	directHosts := firstNonEmptyStringList(
-		stringListFromAnyValue(values["host"]),
-		stringListFromAnyValue(values["Host"]),
-		stringListFromAnyValue(values["authority"]),
-		stringListFromAnyValue(values[":authority"]),
+		stringListFromAnyValue(v2rayValue(values, "host")),
+		stringListFromAnyValue(v2rayValue(values, "authority")),
+		stringListFromAnyValue(v2rayValue(values, ":authority")),
 	)
 	if len(directHosts) > 0 {
 		return directHosts
 	}
-	headers := v2rayMap(values["headers"])
+	headers := v2rayFieldMap(values, "headers")
 	if headers == nil {
 		return nil
 	}
 	return firstNonEmptyStringList(
-		stringListFromAnyValue(headers["Host"]),
-		stringListFromAnyValue(headers["host"]),
-		stringListFromAnyValue(headers["authority"]),
-		stringListFromAnyValue(headers[":authority"]),
+		stringListFromAnyValue(v2rayValue(headers, "Host")),
+		stringListFromAnyValue(v2rayValue(headers, "authority")),
+		stringListFromAnyValue(v2rayValue(headers, ":authority")),
 	)
 }
 
@@ -572,7 +538,7 @@ func v2rayLooksLikeObject(value map[string]any) bool {
 		"protocol", "settings", "streamSettings", "stream_settings", "address", "server", "port",
 		"id", "uuid", "user", "username", "pass", "password", "method", "cipher", "users", "accounts", "vnext", "servers",
 	} {
-		if _, ok := value[key]; ok {
+		if v2rayValue(value, key) != nil {
 			return true
 		}
 	}
@@ -582,7 +548,7 @@ func v2rayLooksLikeObject(value map[string]any) bool {
 func v2rayVNextUserCount(vnexts []map[string]any) int {
 	total := 0
 	for _, vnext := range vnexts {
-		users := v2rayObjectList(vnext["users"])
+		users := v2rayObjectList(v2rayValue(vnext, "users"))
 		if len(users) == 0 {
 			total++
 			continue
@@ -632,11 +598,19 @@ func v2rayMap(value any) map[string]any {
 	return mapped
 }
 
+func v2rayFieldMap(values map[string]any, key string) map[string]any {
+	return v2rayMap(v2rayValue(values, key))
+}
+
+func v2rayValue(values map[string]any, keys ...string) any {
+	return jsonFieldValue(values, keys...)
+}
+
 func v2rayString(values map[string]any, key string) string {
 	if values == nil {
 		return ""
 	}
-	return strings.TrimSpace(stringFromAnyValue(values[key]))
+	return jsonFieldString(values, key)
 }
 
 func v2rayPort(values map[string]any, keys ...string) string {
@@ -644,7 +618,7 @@ func v2rayPort(values map[string]any, keys ...string) string {
 		keys = []string{"port", "server_port", "serverPort", "server-port"}
 	}
 	for _, key := range keys {
-		if port := intFromAnyValue(values[key]); port > 0 {
+		if port := intFromAnyValue(v2rayValue(values, key)); port > 0 {
 			return strconv.Itoa(port)
 		}
 	}

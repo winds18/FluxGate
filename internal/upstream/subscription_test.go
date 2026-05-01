@@ -4537,6 +4537,131 @@ func TestNormalizeContentV2RayJSON(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONFieldCaseAliases(t *testing.T) {
+	raw := `{
+  "Outbounds": [
+    {
+      "Tag": "香港 V2Ray Field Aliases",
+      "Protocol": "vless",
+      "Settings": {
+        "VNext": [
+          {
+            "Address": "field-alias.v2ray.example.test",
+            "Server-Port": "443",
+            "Users": [
+              {
+                "ID": "00000000-0000-0000-0000-000000000095",
+                "Flow": "xtls-rprx-vision",
+                "PacketEncoding": "xudp"
+              }
+            ]
+          }
+        ]
+      },
+      "StreamSettings": {
+        "Network": "ws",
+        "Security": "TLS",
+        "TLSSettings": {
+          "ServerName": "field-alias.v2ray.example.test",
+          "AllowInsecure": true,
+          "Disable-SNI": true,
+          "ALPN": ["h2", "http/1.1"],
+          "UTLS": {
+            "Fingerprint": "chrome"
+          }
+        },
+        "WSSettings": {
+          "Path": "/ws",
+          "Headers": {
+            "Host": ["ws-field.v2ray.example.test", "ws-backup.v2ray.example.test"]
+          },
+          "MaxEarlyData": 2048,
+          "EarlyDataHeaderName": "Sec-WebSocket-Protocol"
+        }
+      }
+    },
+    {
+      "Tag": "东京 V2Ray gRPC Field Aliases",
+      "Protocol": "trojan",
+      "Settings": {
+        "Servers": [
+          {
+            "Address": "grpc-field.v2ray.example.test",
+            "Port": 443,
+            "Password": "trojan-placeholder"
+          }
+        ]
+      },
+      "StreamSettings": {
+        "Network": "grpc",
+        "Security": "TLS",
+        "TLSSettings": {
+          "Server-Name": "grpc-field.v2ray.example.test"
+        },
+        "GrpcSettings": {
+          "ServiceName": "fluxgate",
+          "Idle-Timeout": "30s",
+          "PingTimeout": "10s",
+          "PermitWithoutStream": true,
+          "MultiMode": true
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 V2Ray field alias URIs, got %d: %q", len(lines), got)
+	}
+
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000095@field-alias.v2ray.example.test:443?")
+	for _, want := range []string{
+		"flow=xtls-rprx-vision",
+		"packet_encoding=xudp",
+		"security=tls",
+		"sni=field-alias.v2ray.example.test",
+		"insecure=1",
+		"disable_sni=1",
+		"alpn=h2%2Chttp%2F1.1",
+		"fp=chrome",
+		"type=ws",
+		"path=%2Fws",
+		"host=ws-field.v2ray.example.test%2Cws-backup.v2ray.example.test",
+		"max_early_data=2048",
+		"early_data_header_name=Sec-WebSocket-Protocol",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected V2Ray field alias VLESS URI to contain %q: %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#%E9%A6%99%E6%B8%AF%20V2Ray%20Field%20Aliases") {
+		t.Fatalf("unexpected V2Ray field alias VLESS fragment: %q", lines[0])
+	}
+
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@grpc-field.v2ray.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=grpc-field.v2ray.example.test",
+		"type=grpc",
+		"service_name=fluxgate",
+		"idle_timeout=30s",
+		"ping_timeout=10s",
+		"permit_without_stream=1",
+		"multi_mode=1",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected V2Ray field alias Trojan URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#%E4%B8%9C%E4%BA%AC%20V2Ray%20gRPC%20Field%20Aliases") {
+		t.Fatalf("unexpected V2Ray field alias Trojan fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONTCPHTTPHeader(t *testing.T) {
 	raw := `{
   "outbounds": [

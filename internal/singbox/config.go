@@ -1114,19 +1114,19 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 	if parsed.Scheme == "https" ||
 		strings.EqualFold(query.Get("security"), "tls") ||
 		boolQuery(query.Get("tls")) ||
-		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name")) != "" ||
-		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"))) ||
-		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) ||
+		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName")) != "" ||
+		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"))) ||
+		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
 		strings.TrimSpace(query.Get("alpn")) != "" ||
 		firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")) != "" {
 		tls := map[string]any{"enabled": true}
-		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), parsed.Hostname()); serverName != "" {
+		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
 		}
-		if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"))) {
+		if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"))) {
 			tls["insecure"] = true
 		}
-		if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+		if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
 			tls["disable_sni"] = true
 		}
 		if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
@@ -1176,10 +1176,10 @@ func buildSOCKSOutbound(node store.Node) (map[string]any, bool) {
 	}
 	if network := firstNonEmpty(query.Get("network"), query.Get("protocol")); network != "" {
 		outbound["network"] = network
-	} else if boolQuery(firstNonEmpty(query.Get("udp"), query.Get("udp_relay"), query.Get("udp-relay"))) {
+	} else if boolQuery(firstNonEmpty(query.Get("udp"), query.Get("udpEnabled"), query.Get("udp_relay"), query.Get("udp-relay"))) {
 		outbound["network"] = "udp"
 	}
-	if boolQuery(firstNonEmpty(query.Get("udp_over_tcp"), query.Get("udp-over-tcp"), query.Get("uot"))) {
+	if boolQuery(firstNonEmpty(query.Get("udp_over_tcp"), query.Get("udp-over-tcp"), query.Get("udpOverTcp"), query.Get("uot"))) {
 		outbound["udp_over_tcp"] = true
 	}
 

@@ -1451,14 +1451,14 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         85,
-			URI:        "https://http-query.example:8443/connect?username=qa-user&password=http-query-placeholder&sni=http-query.example&insecure=1#http-query",
+			URI:        "https://http-query.example:8443/connect?username=qa-user&password=http-query-placeholder&serverName=http-query.example&allowInsecure=1&disableSNI=1&clientFingerprint=chrome#http-query",
 			Protocol:   "https",
 			ServerPort: 8443,
 			Status:     "active",
 		},
 		{
 			ID:         86,
-			URI:        "socks5://socks-query.example:1080?user=qa-user&pass=socks-query-placeholder&udp=1#socks-query",
+			URI:        "socks5://socks-query.example:1080?user=qa-user&pass=socks-query-placeholder&udpEnabled=1&udpOverTcp=1#socks-query",
 			Protocol:   "socks5",
 			ServerPort: 1080,
 			Status:     "active",
@@ -1476,8 +1476,12 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 		t.Fatalf("unexpected http query credential auth fields: %+v", httpOutbound)
 	}
 	httpTLS, ok := httpOutbound["tls"].(map[string]any)
-	if !ok || httpTLS["enabled"] != true || httpTLS["server_name"] != "http-query.example" || httpTLS["insecure"] != true {
+	if !ok || httpTLS["enabled"] != true || httpTLS["server_name"] != "http-query.example" || httpTLS["insecure"] != true || httpTLS["disable_sni"] != true {
 		t.Fatalf("unexpected http query credential tls: %+v", httpOutbound["tls"])
+	}
+	httpUTLS, ok := httpTLS["utls"].(map[string]any)
+	if !ok || httpUTLS["enabled"] != true || httpUTLS["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected http query credential utls: %+v", httpTLS["utls"])
 	}
 
 	socksOutbound := findOutbound(config.Outbounds, "up_86")
@@ -1487,7 +1491,7 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	if socksOutbound["type"] != "socks" || socksOutbound["server"] != "socks-query.example" || socksOutbound["server_port"] != 1080 || socksOutbound["version"] != "5" {
 		t.Fatalf("unexpected socks query credential server fields: %+v", socksOutbound)
 	}
-	if socksOutbound["username"] != "qa-user" || socksOutbound["password"] != "socks-query-placeholder" || socksOutbound["network"] != "udp" {
+	if socksOutbound["username"] != "qa-user" || socksOutbound["password"] != "socks-query-placeholder" || socksOutbound["network"] != "udp" || socksOutbound["udp_over_tcp"] != true {
 		t.Fatalf("unexpected socks query credential auth fields: %+v", socksOutbound)
 	}
 }

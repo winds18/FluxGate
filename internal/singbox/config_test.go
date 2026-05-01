@@ -1451,6 +1451,40 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsSSHQueryCredentialAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         88,
+			URI:        "ssh://query-ssh.example:22?username=qa-user&pass=ssh-query-placeholder&key=inline-private-placeholder&identity_file=keys%2Fquery_id_ed25519&passphrase=query-passphrase&host_key=ssh-ed25519%20AAAAC3NzaC1lZDI1NTE5AAAAIplaceholder&host_key_algorithms=ssh-ed25519,rsa-sha2-512&client_version=SSH-2.0-FluxGateQuery&cipher=aes128-gcm@openssh.com&mac=hmac-sha2-256&kex_algorithm=curve25519-sha256#ssh-query",
+			Protocol:   "ssh",
+			ServerPort: 22,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_88")
+	if outbound == nil {
+		t.Fatalf("expected ssh outbound up_88, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "ssh" || outbound["server"] != "query-ssh.example" || outbound["server_port"] != 22 {
+		t.Fatalf("unexpected ssh query credential server fields: %+v", outbound)
+	}
+	if outbound["user"] != "qa-user" || outbound["password"] != "ssh-query-placeholder" || outbound["private_key"] != "inline-private-placeholder" || outbound["private_key_path"] != "keys/query_id_ed25519" || outbound["private_key_passphrase"] != "query-passphrase" {
+		t.Fatalf("unexpected ssh query credential auth fields: %+v", outbound)
+	}
+	hostKey, ok := outbound["host_key"].([]string)
+	if !ok || len(hostKey) != 1 || hostKey[0] != "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIplaceholder" {
+		t.Fatalf("unexpected ssh query credential host key: %+v", outbound["host_key"])
+	}
+	hostKeyAlgorithms, ok := outbound["host_key_algorithms"].([]string)
+	if !ok || len(hostKeyAlgorithms) != 2 || hostKeyAlgorithms[0] != "ssh-ed25519" || hostKeyAlgorithms[1] != "rsa-sha2-512" {
+		t.Fatalf("unexpected ssh query credential host key algorithms: %+v", outbound["host_key_algorithms"])
+	}
+	if outbound["client_version"] != "SSH-2.0-FluxGateQuery" {
+		t.Fatalf("unexpected ssh query credential client version: %+v", outbound)
+	}
+}
+
 func gatewayToken(tokenStatus, accountStatus, protocol string, expireAt *time.Time, quotaBytes, usedUploadBytes, usedDownloadBytes int64, authUser string) store.TokenWithAccount {
 	return store.TokenWithAccount{
 		Token: store.Token{

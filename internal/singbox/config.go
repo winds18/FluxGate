@@ -1202,20 +1202,24 @@ func buildSSHOutbound(node store.Node) (map[string]any, bool) {
 		"server":      parsed.Hostname(),
 		"server_port": portWithFallback(parsed.Port(), node.ServerPort, 22),
 	}
-	if user := firstNonEmpty(parsed.User.Username(), query.Get("user"), query.Get("username")); user != "" {
+	user, password := userPasswordWithQuery(
+		parsed.User,
+		firstNonEmpty(query.Get("user"), query.Get("username")),
+		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd")),
+	)
+	if user != "" {
 		outbound["user"] = user
 	}
-	_, userPasswordValue := userPassword(parsed.User)
-	if password := firstNonEmpty(userPasswordValue, query.Get("password")); password != "" {
+	if password != "" {
 		outbound["password"] = password
 	}
-	if privateKey := firstNonEmpty(query.Get("private_key"), query.Get("private-key")); privateKey != "" {
+	if privateKey := firstNonEmpty(query.Get("private_key"), query.Get("private-key"), query.Get("key")); privateKey != "" {
 		outbound["private_key"] = privateKey
 	}
-	if privateKeyPath := firstNonEmpty(query.Get("private_key_path"), query.Get("private-key-path")); privateKeyPath != "" {
+	if privateKeyPath := firstNonEmpty(query.Get("private_key_path"), query.Get("private-key-path"), query.Get("key_path"), query.Get("key-path"), query.Get("identity_file"), query.Get("identity-file")); privateKeyPath != "" {
 		outbound["private_key_path"] = privateKeyPath
 	}
-	if privateKeyPassphrase := firstNonEmpty(query.Get("private_key_passphrase"), query.Get("private-key-passphrase")); privateKeyPassphrase != "" {
+	if privateKeyPassphrase := firstNonEmpty(query.Get("private_key_passphrase"), query.Get("private-key-passphrase"), query.Get("passphrase"), query.Get("key_passphrase"), query.Get("key-passphrase")); privateKeyPassphrase != "" {
 		outbound["private_key_passphrase"] = privateKeyPassphrase
 	}
 	if hostKey := splitCSV(firstNonEmpty(query.Get("host_key"), query.Get("host-key"))); len(hostKey) > 0 {

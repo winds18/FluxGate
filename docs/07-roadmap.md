@@ -110,6 +110,7 @@
 - JSON 包装订阅会忽略 `meta`、`pagination`、`errors`、`message`、`traceId` 等常见接口元信息字段，避免把接口文档或分页 URL 误导入为 HTTP 节点。
 - JSON 包装订阅会忽略 Clash 风格 `proxy-providers`、`rule-providers`、`proxy-groups`、`health-check` 和 `rules` 配置块，避免把 provider 下载 URL、健康检查 URL 或规则源 URL 误导入为 HTTP 节点。
 - JSON 包装订阅可解析 `list`、`records`、`rows`、`entries`、`nodeList`、`proxyList`、`serverList`、`subscriptionList`、`urlList`、`linkList` 及其 snake_case/kebab-case 变体等常见集合字段，容器名不会污染缺少 fragment 的节点 URI 展示名。
+- JSON 包装订阅字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Data.NodeList`、`Proxy_List` 和 `Payload.LinkList`。
 - JSON 包装订阅可解析 `shareUrl`、`shareLink`、`subscriptionUrl`、`nodeUrl` 及其 snake_case/kebab-case 变体；对象内带名称的 `subscribeUrl`、`subUrl` 和 `downloadUrl` 分享字段也会按节点链接解析，分享链接缺少 fragment 时会优先使用对象内名称。
 - JSON 包装订阅可解析 `nodes`/`proxies` 中的 Clash 风格结构化节点对象。
 - JSON 结构化节点可识别 `protocol`/`proto`/`scheme`/`nodeType`/`serverType`/`protocolType`/`proxyType`/`proxyProtocol`、`host`/`hostname`/`address`/`serverAddress`/`serverHost`/`remoteHost`/`nodeHost`/`endpoint`/`add`、`server_port`/`serverPort`/`server-port`/`remotePort`/`nodePort`/`portNumber`、`method`/`encryptMethod`/`encrypt-method`、`pass`/`passwd`/`pwd`、`id`/`user-id` 和 `displayName`/`nodeName`/`label`/`title`/`remarks`/`remark` 等常见别名字段。

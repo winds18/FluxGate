@@ -291,30 +291,14 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			return
 		}
 		handled := map[string]bool{}
-		for _, key := range []string{"uri", "url", "link", "share", "share_link", "shareLink", "share_url", "share-url", "shareUrl", "shareURL", "subscription_url", "subscription-url", "subscriptionUrl", "subscriptionURL", "node_url", "node-url", "nodeUrl", "nodeURL"} {
-			handled[key] = true
-			if item, ok := typed[key]; ok {
-				collectJSONURIs(nodeName, item, uris)
-			}
+		collectJSONURIKeyAliases(typed, handled, []string{"uri", "url", "link", "share", "share_link", "shareLink", "share_url", "share-url", "shareUrl", "shareURL", "subscription_url", "subscription-url", "subscriptionUrl", "subscriptionURL", "node_url", "node-url", "nodeUrl", "nodeURL"}, nodeName, uris)
+		if nodeName != "" {
+			collectJSONURIKeyAliases(typed, handled, []string{"subscribe_url", "subscribe-url", "subscribeUrl", "subscribeURL", "sub_url", "sub-url", "subUrl", "subURL", "download_url", "download-url", "downloadUrl", "downloadURL"}, nodeName, uris)
+		} else {
+			markJSONURIKeyAliases(typed, handled, []string{"subscribe_url", "subscribe-url", "subscribeUrl", "subscribeURL", "sub_url", "sub-url", "subUrl", "subURL", "download_url", "download-url", "downloadUrl", "downloadURL"})
 		}
-		for _, key := range []string{"subscribe_url", "subscribe-url", "subscribeUrl", "subscribeURL", "sub_url", "sub-url", "subUrl", "subURL", "download_url", "download-url", "downloadUrl", "downloadURL"} {
-			handled[key] = true
-			if item, ok := typed[key]; ok && nodeName != "" {
-				collectJSONURIs(nodeName, item, uris)
-			}
-		}
-		for _, key := range []string{"content", "raw", "raw_content", "raw-content", "rawContent", "subscription", "sub", "payload", "body", "text", "result", "response"} {
-			handled[key] = true
-			if item, ok := typed[key]; ok {
-				collectJSONURIs("", item, uris)
-			}
-		}
-		for _, key := range []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data", "results", "payloads", "list", "nodeList", "node_list", "node-list", "proxyList", "proxy_list", "proxy-list", "serverList", "server_list", "server-list", "subscriptionList", "subscription_list", "subscription-list", "urlList", "url_list", "url-list", "linkList", "link_list", "link-list", "records", "rows", "entries"} {
-			handled[key] = true
-			if item, ok := typed[key]; ok {
-				collectJSONURIs("", item, uris)
-			}
-		}
+		collectJSONURIKeyAliases(typed, handled, []string{"content", "raw", "raw_content", "raw-content", "rawContent", "subscription", "sub", "payload", "body", "text", "result", "response"}, "", uris)
+		collectJSONURIKeyAliases(typed, handled, []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data", "results", "payloads", "list", "nodeList", "node_list", "node-list", "proxyList", "proxy_list", "proxy-list", "serverList", "server_list", "server-list", "subscriptionList", "subscription_list", "subscription-list", "urlList", "url_list", "url-list", "linkList", "link_list", "link-list", "records", "rows", "entries"}, "", uris)
 		keys := make([]string, 0, len(typed))
 		for key := range typed {
 			keys = append(keys, key)
@@ -328,6 +312,43 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			collectJSONURIs(key, item, uris)
 		}
 	}
+}
+
+func collectJSONURIKeyAliases(values map[string]any, handled map[string]bool, aliases []string, name string, uris *[]string) {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, alias := range aliases {
+		normalizedAlias := normalizedJSONURIKey(alias)
+		for _, key := range keys {
+			if handled[key] || normalizedJSONURIKey(key) != normalizedAlias {
+				continue
+			}
+			handled[key] = true
+			collectJSONURIs(name, values[key], uris)
+		}
+	}
+}
+
+func markJSONURIKeyAliases(values map[string]any, handled map[string]bool, aliases []string) {
+	aliasSet := make(map[string]bool, len(aliases))
+	for _, alias := range aliases {
+		aliasSet[normalizedJSONURIKey(alias)] = true
+	}
+	for key := range values {
+		if aliasSet[normalizedJSONURIKey(key)] {
+			handled[key] = true
+		}
+	}
+}
+
+func normalizedJSONURIKey(key string) string {
+	key = strings.ToLower(strings.TrimSpace(key))
+	key = strings.ReplaceAll(key, "_", "")
+	key = strings.ReplaceAll(key, "-", "")
+	return key
 }
 
 func structuredJSONDocumentURI(values map[string]any) string {

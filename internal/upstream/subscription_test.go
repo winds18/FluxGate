@@ -1087,6 +1087,43 @@ func TestNormalizeContentJSONCommonCollectionAliasFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONWrapperFieldCaseAliases(t *testing.T) {
+	raw := `{
+  "Data": {
+    "NodeList": [
+      "vless://00000000-0000-0000-0000-000000000099@case-node-list.example.test:443"
+    ],
+    "Proxy_List": [
+      {
+        "Name": "Case Alias SS",
+        "Type": "ss",
+        "Server": "case-proxy-list.example.test",
+        "Port": 8388,
+        "Cipher": "aes-128-gcm",
+        "Password": "qa-placeholder"
+      }
+    ],
+    "Payload": {
+      "LinkList": [
+        "trojan://trojan-placeholder@case-link-list.example.test:443?security=tls"
+      ]
+    }
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"trojan://trojan-placeholder@case-link-list.example.test:443?security=tls",
+		"vless://00000000-0000-0000-0000-000000000099@case-node-list.example.test:443",
+		"ss://aes-128-gcm:qa-placeholder@case-proxy-list.example.test:8388#Case%20Alias%20SS",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected JSON wrapper field case aliases: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONCommonShareLinkFields(t *testing.T) {
 	raw := `{
   "items": [

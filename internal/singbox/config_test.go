@@ -1156,7 +1156,7 @@ func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         89,
-			URI:        "tuic://query-tuic.example:443?id=00000000-0000-0000-0000-000000000089&pass=tuic-query-placeholder&congestionControl=bbr&udpOverStream=1&zeroRttHandshake=1&heartbeatInterval=10s&sni=query-tuic.example&fp=chrome#tuic-query",
+			URI:        "tuic://query-tuic.example:443?id=00000000-0000-0000-0000-000000000089&pass=tuic-query-placeholder&congestionControl=bbr&udpOverStream=1&zeroRttHandshake=1&heartbeatInterval=10s&serverName=query-tuic.example&allowInsecure=1&disableSNI=1&clientFingerprint=chrome#tuic-query",
 			Protocol:   "tuic",
 			ServerPort: 443,
 			Status:     "active",
@@ -1187,7 +1187,7 @@ func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 		t.Fatalf("unexpected tuic query credential timing fields: %+v", outbound)
 	}
 	tls, ok := outbound["tls"].(map[string]any)
-	if !ok || tls["enabled"] != true || tls["server_name"] != "query-tuic.example" {
+	if !ok || tls["enabled"] != true || tls["server_name"] != "query-tuic.example" || tls["insecure"] != true || tls["disable_sni"] != true {
 		t.Fatalf("unexpected tuic query credential tls: %+v", outbound["tls"])
 	}
 	utls, ok := tls["utls"].(map[string]any)

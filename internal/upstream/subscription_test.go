@@ -1660,6 +1660,49 @@ func TestNormalizeContentJSONStructuredNestedTLSFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredRealityAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON Reality VLESS",
+      "protocol": "vless",
+      "server": "json-reality-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000092",
+      "reality": {
+        "publicKey": "reality-public-key-placeholder",
+        "shortId": "abc123",
+        "spiderX": "/"
+      },
+      "tls": {
+        "serverName": "www.example.test",
+        "clientFingerprint": "chrome"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000092@json-reality-vless.example.test:443?")
+	for _, want := range []string{
+		"security=reality",
+		"pbk=reality-public-key-placeholder",
+		"sid=abc123",
+		"spx=%2F",
+		"sni=www.example.test",
+		"fp=chrome",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected structured JSON REALITY URI to contain %q: %q", want, got)
+		}
+	}
+	if !strings.HasSuffix(got, "#JSON%20Reality%20VLESS") {
+		t.Fatalf("unexpected structured JSON REALITY fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONStructuredAccountAliases(t *testing.T) {
 	raw := `{
   "nodes": [

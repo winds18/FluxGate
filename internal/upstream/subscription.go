@@ -609,6 +609,10 @@ func normalizedStructuredProxyKey(key string) string {
 		return "skip-cert-verify"
 	case "servicename":
 		return "service-name"
+	case "shortid":
+		return "short-id"
+	case "spiderx":
+		return "spider-x"
 	case "wshost":
 		return "ws-host"
 	case "wsheaders":

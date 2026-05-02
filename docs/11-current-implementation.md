@@ -46,7 +46,8 @@
 - 裸 VMess JSON 字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Display_Name`、`Server-Port`、`User_ID`、`Packet_Encoding`、`Disable-SNI` 和 `Client-Fingerprint`。
 - subscription 来源支持解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI；SSD `servers` 支持数组和按名称分组的对象映射，并兼容 SIP008 同款 Shadowsocks 字段别名。
 - SIP008 和 SSD JSON 字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Version`、`Servers`、`Display_Name`、`Server-Port`、`Encrypt_Method`、`PluginOpts` 和 `PluginOptions`。
-- subscription 来源支持解析 Surge `[Proxy]` 代理段中的 SS、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并兼容 `trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https`、`naive-quic` 和 `socks5h` 协议别名，转换为标准 URI。
+- subscription 来源支持解析 Surge `[Proxy]` 代理段中的 SS、SSR、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https`、`naive-quic` 和 `socks5h` 协议别名，转换为标准 URI。
+- Surge `[Proxy]` `ssr`/`shadowsocksr` 节点会按 Shadowsocks 兼容链路归一化为 `ss://`，保留服务端、端口、加密方法、密码和节点名，并避免 SSR 专有 `protocol`/`obfs` 参数误写入 sing-box Shadowsocks `network`。
 - subscription 来源支持解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点，以及 Direct/Reject 变体/DNS 内置出站；Clash YAML 结构化 `type` 兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive+https`、`naive-https`、`naive-quic` 和 `socks5h` 别名。
 - Clash YAML `type: ssr`/`shadowsocksr` 节点会按 Shadowsocks 兼容链路归一化为 `ss://`，保留服务端、端口、加密方法、密码和节点名，并避免 SSR 专有 `protocol`/`obfs` 参数误写入 sing-box Shadowsocks `network`。
 - Clash YAML 解析支持嵌套 `proxies`/`proxy-list`/`proxies-list`/`nodes`/`node-list`/`server-list` 列表，并兼容 `proxyList`、`nodeList`、`serverList` 等 camelCase/PascalCase 写法，可兼容带内嵌 provider 节点清单的订阅结构。

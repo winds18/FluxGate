@@ -3030,6 +3030,28 @@ func TestNormalizeContentSurgeProxyListProtocolAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyListShadowsocksR(t *testing.T) {
+	raw := `
+[Proxy]
+香港 Surge SSR = ssr, ssr.surge.example.test, 8388, aes-128-gcm, qa-placeholder, protocol=auth_sha1_v4, obfs=tls1.2_ticket_auth
+东京 Surge ShadowsocksR = shadowsocksr, server=shadowsocksr.surge.example.test, port=8389, encrypt-method=chacha20-ietf-poly1305, password=qa-placeholder-2, protocol=origin, obfs=plain
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@ssr.surge.example.test:8388#%E9%A6%99%E6%B8%AF%20Surge%20SSR",
+		"ss://chacha20-ietf-poly1305:qa-placeholder-2@shadowsocksr.surge.example.test:8389#%E4%B8%9C%E4%BA%AC%20Surge%20ShadowsocksR",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected Surge ShadowsocksR URI list: %q", got)
+	}
+	if strings.Contains(got, "network=") || strings.Contains(got, "auth_sha1_v4") || strings.Contains(got, "tls1.2_ticket_auth") {
+		t.Fatalf("unexpected SSR-only fields leaked into Surge Shadowsocks URI: %q", got)
+	}
+}
+
 func TestNormalizeContentSurgeProxyListVLESSAndVMess(t *testing.T) {
 	raw := `
 [Proxy]

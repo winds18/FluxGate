@@ -63,6 +63,10 @@ func surgeProxyURI(line string) string {
 			proxy["plugin_opts"] = pluginOpts
 		}
 		return clashShadowsocksURI(proxy)
+	case "ssr", "shadowsocksr":
+		proxy["method"] = surgeFirstValue(options, positionals, 2, "encrypt-method", "method", "cipher")
+		proxy["password"] = surgeFirstValue(options, positionals, 3, "password", "passwd")
+		return clashShadowsocksRURI(proxy)
 	case "vless":
 		proxy["uuid"] = surgeFirstValue(options, positionals, 2, "uuid", "id", "username", "user", "password")
 		if flow := surgeOption(options, "flow"); flow != "" {

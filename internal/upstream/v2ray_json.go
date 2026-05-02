@@ -409,7 +409,7 @@ func v2raySOCKSServerURIs(outbound map[string]any) []string {
 
 func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(map[string]string) string) []string {
 	settings := v2rayFieldMap(outbound, "settings")
-	servers := v2rayObjectList(v2rayValue(settings, "servers"))
+	servers := v2rayProxyServerList(v2rayValue(settings, "servers"))
 	total := v2rayProxyServerUserCount(servers)
 	sequence := 0
 	var uris []string
@@ -442,6 +442,43 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 		}
 	}
 	return uris
+}
+
+func v2rayProxyServerList(value any) []map[string]any {
+	mapped, ok := value.(map[string]any)
+	if !ok || v2rayLooksLikeObject(mapped) {
+		return v2rayObjectList(value)
+	}
+	keys := make([]string, 0, len(mapped))
+	for key := range mapped {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	result := make([]map[string]any, 0, len(keys))
+	for _, key := range keys {
+		if server := v2rayMappedAccountServer(key, mapped[key]); server != nil {
+			result = append(result, server)
+			continue
+		}
+		appendV2RayMappedObjects(&result, key, mapped[key])
+	}
+	return result
+}
+
+func v2rayMappedAccountServer(key string, value any) map[string]any {
+	accounts := v2rayMap(value)
+	if accounts == nil || v2rayLooksLikeObject(accounts) {
+		return nil
+	}
+	server := map[string]any{
+		"name":     key,
+		"accounts": accounts,
+	}
+	applyV2RayMappedEndpointKey(server, key)
+	if v2rayEndpointAddress(server) == "" {
+		return nil
+	}
+	return server
 }
 
 func v2rayProxyServerUsers(server map[string]any) []map[string]any {

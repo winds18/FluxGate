@@ -89,7 +89,7 @@
 - V2Ray/Xray JSON VMess/VLESS `vnext.users` 支持以 UUID 为 key 的对象映射；映射值可补充 `email`/`name`、`security`、`flow` 等字段，缺少 `id` 时会使用映射 key 作为用户 ID。
 - V2Ray/Xray JSON `vnext` 和 `servers` 支持以服务端域名或 IP 为 key 的对象映射；对象缺少 `address`/`server` 时会使用映射 key 作为节点服务端，映射 key 写成 `host:port` 或 `[ipv6]:port` 时会同步拆出端口；VMess/VLESS 的 `vnext` 映射值也支持直接写用户对象、用户数组、UUID 标量或 UUID 数组，Trojan/Shadowsocks 的 `servers` 映射值支持直接写密码字符串或密码数组。
 - Clash YAML 和 sing-box JSON VMess/VLESS 节点支持 `packetEncoding`、`packet_encoding` 和 `packet-encoding` 写法，并同步为 sing-box `packet_encoding`。
-- V2Ray/Xray JSON Trojan/HTTP/SOCKS outbound 支持 `host`/`add`、`serverPort`/`server-port`、`pass`/`passwd`/`pwd`/`psk`/`token`、`userName`/`accountName`、`users`、`accounts` 数组、`accounts` 用户名到密码或对象映射和 server 层认证写法。
+- V2Ray/Xray JSON Trojan/HTTP/SOCKS outbound 支持 `host`/`add`、`serverPort`/`server-port`、`pass`/`passwd`/`pwd`/`psk`/`token`、`userName`/`accountName`、`users`、`accounts` 数组、`accounts` 用户名到密码或对象映射和 server 层认证写法；HTTP/SOCKS 的 `servers` 端点映射值也支持直接写账号名到密码或账号对象的映射。
 - subscription 来源支持按 `refresh_interval_minutes` 定时同步；后台调度默认每 60 秒检查一批到期来源。
 - 上游来源自动前缀。
 - 重复来源名前缀自动编号，例如 `[机场A]`、`[机场A-2]`。

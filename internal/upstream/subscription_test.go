@@ -5287,6 +5287,59 @@ func TestNormalizeContentV2RayJSONProxyAccountAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONProxyEndpointAccountMaps(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray HTTP Endpoint Account Map",
+      "protocol": "http",
+      "settings": {
+        "servers": {
+          "http-account-map.v2ray.example.test:8080": {
+            "qa-http": "http-map-placeholder",
+            "qa-http-object": {
+              "pass": "http-map-object-placeholder",
+              "name": "qa-http-object"
+            }
+          }
+        }
+      }
+    },
+    {
+      "tag": "V2Ray SOCKS Endpoint Account Map",
+      "protocol": "socks",
+      "settings": {
+        "servers": {
+          "socks-account-map.v2ray.example.test:1080": {
+            "qa-socks": {
+              "password": "socks-map-placeholder",
+              "name": "qa-socks"
+            }
+          }
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "http://qa-http:http-map-placeholder@http-account-map.v2ray.example.test:8080#qa-http" {
+		t.Fatalf("unexpected v2ray http scalar account map URI: %q", lines[0])
+	}
+	if lines[1] != "http://qa-http-object:http-map-object-placeholder@http-account-map.v2ray.example.test:8080#qa-http-object" {
+		t.Fatalf("unexpected v2ray http object account map URI: %q", lines[1])
+	}
+	if lines[2] != "socks5://qa-socks:socks-map-placeholder@socks-account-map.v2ray.example.test:1080#qa-socks" {
+		t.Fatalf("unexpected v2ray socks account map URI: %q", lines[2])
+	}
+}
+
 func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

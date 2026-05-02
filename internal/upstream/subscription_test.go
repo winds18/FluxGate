@@ -1703,6 +1703,52 @@ func TestNormalizeContentJSONStructuredRealityAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredRealityArrayAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON Reality Array VLESS",
+      "protocol": "vless",
+      "server": "json-reality-array-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000095",
+      "reality": {
+        "publicKey": "array-reality-public-key",
+        "serverNames": ["array-sni.example.test", "backup-array-sni.example.test"],
+        "shortIds": ["abc123", "def456"],
+        "spiderX": "cdn"
+      },
+      "tls": {
+        "clientFingerprint": "chrome"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "vless://00000000-0000-0000-0000-000000000095@json-reality-array-vless.example.test:443?")
+	for _, want := range []string{
+		"security=reality",
+		"sni=array-sni.example.test",
+		"pbk=array-reality-public-key",
+		"sid=abc123",
+		"spx=cdn",
+		"fp=chrome",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected structured JSON REALITY array URI to contain %q: %q", want, got)
+		}
+	}
+	if strings.Contains(got, "backup-array-sni") || strings.Contains(got, "def456") {
+		t.Fatalf("expected structured JSON REALITY array aliases to use the first value only: %q", got)
+	}
+	if !strings.HasSuffix(got, "#JSON%20Reality%20Array%20VLESS") {
+		t.Fatalf("unexpected structured JSON REALITY array fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONStructuredAccountAliases(t *testing.T) {
 	raw := `{
   "nodes": [

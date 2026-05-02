@@ -552,14 +552,30 @@ func collectJSONProxyFields(target map[string]string, scopes []string, values ma
 		case map[string]any:
 			collectJSONProxyFields(target, append(scopes, normalizedKey), typed)
 		default:
-			if scalar := strings.Join(stringListFromAnyValue(value), ","); scalar != "" {
-				storeJSONProxyField(target, scopes, normalizedKey, scalar)
-				continue
-			}
-			if scalar := strings.TrimSpace(stringFromAnyValue(value)); scalar != "" {
+			if scalar := normalizedStructuredProxyValue(normalizedKey, value); scalar != "" {
 				storeJSONProxyField(target, scopes, normalizedKey, scalar)
 			}
 		}
+	}
+}
+
+func normalizedStructuredProxyValue(key string, value any) string {
+	values := stringListFromAnyValue(value)
+	if len(values) > 0 {
+		if structuredProxyKeyPrefersFirstValue(key) {
+			return strings.TrimSpace(values[0])
+		}
+		return strings.Join(values, ",")
+	}
+	return strings.TrimSpace(stringFromAnyValue(value))
+}
+
+func structuredProxyKeyPrefersFirstValue(key string) bool {
+	switch key {
+	case "servername", "short-id":
+		return true
+	default:
+		return false
 	}
 }
 
@@ -609,7 +625,11 @@ func normalizedStructuredProxyKey(key string) string {
 		return "skip-cert-verify"
 	case "servicename":
 		return "service-name"
+	case "servernames":
+		return "servername"
 	case "shortid":
+		return "short-id"
+	case "shortids":
 		return "short-id"
 	case "spiderx":
 		return "spider-x"

@@ -4612,6 +4612,56 @@ func TestNormalizeContentSingBoxJSONWireGuardEndpoint(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONSingularOutboundAndEndpoint(t *testing.T) {
+	raw := `{
+  "outbound": {
+    "type": "trojan",
+    "tag": "sing-box singular outbound",
+    "server": "trojan.singular.example.test",
+    "server_port": 443,
+    "password": "trojan-placeholder",
+    "tls": {
+      "enabled": true,
+      "server_name": "trojan.singular.example.test"
+    }
+  },
+  "endpoint": {
+    "type": "wireguard",
+    "tag": "sing-box singular endpoint",
+    "address": ["10.66.0.2/32"],
+    "private_key": "endpoint-private",
+    "peers": [
+      {
+        "address": "wg.singular.example.test",
+        "port": 51820,
+        "public_key": "endpoint-peer",
+        "allowed_ips": ["0.0.0.0/0"]
+      }
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected singular outbound and endpoint URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan.singular.example.test:443?")
+	if !strings.Contains(lines[0], "sni=trojan.singular.example.test") ||
+		!strings.HasSuffix(lines[0], "#sing-box%20singular%20outbound") {
+		t.Fatalf("unexpected singular outbound URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "wireguard://wg.singular.example.test:51820?")
+	if !strings.Contains(lines[1], "private_key=endpoint-private") ||
+		!strings.Contains(lines[1], "peer_public_key=endpoint-peer") ||
+		!strings.Contains(lines[1], "allowed_ips=0.0.0.0%2F0") ||
+		!strings.HasSuffix(lines[1], "#sing-box%20singular%20endpoint") {
+		t.Fatalf("unexpected singular endpoint URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentSingBoxJSONVLESSHTTPTransport(t *testing.T) {
 	raw := `{
   "outbounds": [

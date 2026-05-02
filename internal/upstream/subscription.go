@@ -423,7 +423,10 @@ func normalizedJSONURIKey(key string) string {
 }
 
 func structuredJSONDocumentURI(values map[string]any) string {
-	if jsonFieldValue(values, "outbounds") == nil && jsonFieldValue(values, "endpoints") == nil {
+	if jsonFieldValue(values, "outbounds") == nil &&
+		jsonFieldValue(values, "outbound") == nil &&
+		jsonFieldValue(values, "endpoints") == nil &&
+		jsonFieldValue(values, "endpoint") == nil {
 		return ""
 	}
 	raw, err := json.Marshal(values)

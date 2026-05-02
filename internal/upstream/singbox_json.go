@@ -17,8 +17,14 @@ func SingBoxJSONURIList(content string) string {
 	if err := decoder.Decode(&doc); err != nil {
 		return ""
 	}
-	outbounds := singBoxObjectList(singBoxValue(doc, "outbounds"))
-	endpoints := singBoxObjectList(singBoxValue(doc, "endpoints"))
+	outbounds := appendSingBoxObjectLists(
+		singBoxObjectList(singBoxValue(doc, "outbounds")),
+		singBoxObjectList(singBoxValue(doc, "outbound")),
+	)
+	endpoints := appendSingBoxObjectLists(
+		singBoxObjectList(singBoxValue(doc, "endpoints")),
+		singBoxObjectList(singBoxValue(doc, "endpoint")),
+	)
 	if len(outbounds)+len(endpoints) == 0 {
 		return ""
 	}
@@ -35,6 +41,14 @@ func SingBoxJSONURIList(content string) string {
 		}
 	}
 	return strings.Join(uris, "\n")
+}
+
+func appendSingBoxObjectLists(lists ...[]map[string]any) []map[string]any {
+	var result []map[string]any
+	for _, list := range lists {
+		result = append(result, list...)
+	}
+	return result
 }
 
 func singBoxObjectList(value any) []map[string]any {

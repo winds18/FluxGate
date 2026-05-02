@@ -5288,6 +5288,75 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONVNextUserMaps(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray VMess User Map",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": [
+          {
+            "address": "vmess-user-map.v2ray.example.test",
+            "port": 443,
+            "users": {
+              "00000000-0000-0000-0000-000000000096": {
+                "security": "auto",
+                "email": "香港 V2Ray VMess User Map"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "tag": "V2Ray VLESS User Map",
+      "protocol": "vless",
+      "settings": {
+        "vnext": [
+          {
+            "address": "vless-user-map.v2ray.example.test",
+            "port": 443,
+            "users": {
+              "00000000-0000-0000-0000-000000000097": {
+                "encryption": "none",
+                "flow": "xtls-rprx-vision",
+                "name": "东京 V2Ray VLESS User Map"
+              }
+            }
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 V2Ray user map URIs, got %d: %q", len(lines), got)
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[0], "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode v2ray vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	for _, want := range []string{
+		`"ps":"香港 V2Ray VMess User Map"`,
+		`"add":"vmess-user-map.v2ray.example.test"`,
+		`"id":"00000000-0000-0000-0000-000000000096"`,
+	} {
+		if !strings.Contains(decodedText, want) {
+			t.Fatalf("expected v2ray VMess user map document to contain %q: %q", want, decodedText)
+		}
+	}
+	if lines[1] != "vless://00000000-0000-0000-0000-000000000097@vless-user-map.v2ray.example.test:443?flow=xtls-rprx-vision#%E4%B8%9C%E4%BA%AC%20V2Ray%20VLESS%20User%20Map" {
+		t.Fatalf("unexpected v2ray VLESS user map URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONVLESSPacketEncoding(t *testing.T) {
 	raw := `{
   "outbounds": [

@@ -86,7 +86,7 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 	sequence := 0
 	var uris []string
 	for _, vnext := range vnexts {
-		users := v2rayObjectList(v2rayValue(vnext, "users"))
+		users := v2rayVNextUsers(vnext)
 		if len(users) == 0 {
 			users = []map[string]any{{}}
 		}
@@ -116,6 +116,48 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 		}
 	}
 	return uris
+}
+
+func v2rayVNextUsers(vnext map[string]any) []map[string]any {
+	value := v2rayValue(vnext, "users")
+	if users := v2rayVNextMappedUsers(value); len(users) > 0 {
+		return users
+	}
+	return v2rayObjectList(value)
+}
+
+func v2rayVNextMappedUsers(value any) []map[string]any {
+	accounts, ok := value.(map[string]any)
+	if !ok || v2rayLooksLikeObject(accounts) {
+		return nil
+	}
+	keys := make([]string, 0, len(accounts))
+	for key := range accounts {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	users := make([]map[string]any, 0, len(keys))
+	for _, key := range keys {
+		fields := v2rayMap(accounts[key])
+		if fields == nil {
+			if !v2rayLooksLikeUUID(key) {
+				continue
+			}
+			fields = map[string]any{
+				"id":       key,
+				"name":     key,
+				"security": stringFromAnyValue(accounts[key]),
+			}
+		}
+		if v2rayVNextUserID(fields) == "" && v2rayLooksLikeUUID(key) {
+			fields["id"] = key
+		}
+		if v2rayString(fields, "name") == "" && v2rayString(fields, "email") == "" {
+			fields["name"] = key
+		}
+		users = append(users, fields)
+	}
+	return users
 }
 
 func v2rayVNextUserID(user map[string]any) string {
@@ -644,10 +686,29 @@ func v2rayLooksLikeObject(value map[string]any) bool {
 	return false
 }
 
+func v2rayLooksLikeUUID(value string) bool {
+	if len(value) != 36 {
+		return false
+	}
+	for index, char := range value {
+		switch index {
+		case 8, 13, 18, 23:
+			if char != '-' {
+				return false
+			}
+		default:
+			if (char < '0' || char > '9') && (char < 'a' || char > 'f') && (char < 'A' || char > 'F') {
+				return false
+			}
+		}
+	}
+	return true
+}
+
 func v2rayVNextUserCount(vnexts []map[string]any) int {
 	total := 0
 	for _, vnext := range vnexts {
-		users := v2rayObjectList(v2rayValue(vnext, "users"))
+		users := v2rayVNextUsers(vnext)
 		if len(users) == 0 {
 			total++
 			continue

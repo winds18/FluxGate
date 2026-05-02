@@ -85,6 +85,7 @@
 - V2Ray/Xray JSON `grpcSettings` 支持 `service-name`、`idle-timeout`、`health-check-timeout`、`permit-without-stream` 和 `multi-mode` 这类 hyphen 别名。
 - V2Ray/Xray JSON 存在 `quicSettings`/`quic_settings`/`quic-settings` 时会保留为 QUIC transport。
 - V2Ray/Xray JSON VMess/VLESS `vnext` endpoint 支持 `address`、`server`、`host`、`add`、`serverAddress`、`serverHost`、`remoteHost`、`nodeHost`、`endpoint` 和 `server_port`/`serverPort`/`server-port`/`remotePort`/`nodePort`/`portNumber` 别名；VMess/VLESS user 支持 `id`、`uuid`、`userId`、`user_id` 和 `user-id` 认证字段，VMess user 支持 `alter-id`/`aid` 和 `cipher` 别名，VMess/VLESS user 支持 `flow`/`flowName`/`xtlsFlow` 等 flow 别名，并支持 `packetEncoding`/`packet_encoding`/`packet-encoding` 同步为 sing-box `packet_encoding`。
+- V2Ray/Xray JSON VMess/VLESS `vnext.users` 支持以 UUID 为 key 的对象映射；映射值可补充 `email`/`name`、`security`、`flow` 等字段，缺少 `id` 时会使用映射 key 作为用户 ID。
 - Clash YAML 和 sing-box JSON VMess/VLESS 节点支持 `packetEncoding`、`packet_encoding` 和 `packet-encoding` 写法，并同步为 sing-box `packet_encoding`。
 - V2Ray/Xray JSON Trojan/HTTP/SOCKS outbound 支持 `host`/`add`、`serverPort`/`server-port`、`pass`/`passwd`/`pwd`/`psk`/`token`、`userName`/`accountName`、`users`、`accounts` 数组、`accounts` 用户名到密码或对象映射和 server 层认证写法。
 - subscription 来源支持按 `refresh_interval_minutes` 定时同步；后台调度默认每 60 秒检查一批到期来源。

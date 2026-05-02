@@ -91,7 +91,7 @@ func normalizedV2RayProtocol(protocol string) string {
 
 func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) string) []string {
 	settings := v2rayFieldMap(outbound, "settings")
-	vnexts := v2rayObjectList(v2rayValue(settings, "vnext"))
+	vnexts := v2rayVNextList(v2rayValue(settings, "vnext"))
 	total := v2rayVNextUserCount(vnexts)
 	sequence := 0
 	var uris []string
@@ -126,6 +126,68 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 		}
 	}
 	return uris
+}
+
+func v2rayVNextList(value any) []map[string]any {
+	mapped, ok := value.(map[string]any)
+	if !ok || v2rayLooksLikeObject(mapped) {
+		return v2rayObjectList(value)
+	}
+	keys := make([]string, 0, len(mapped))
+	for key := range mapped {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	result := make([]map[string]any, 0, len(keys))
+	for _, key := range keys {
+		if vnext := v2rayScalarVNext(key, mapped[key]); vnext != nil {
+			result = append(result, vnext)
+			continue
+		}
+		appendV2RayMappedObjects(&result, key, mapped[key])
+	}
+	return result
+}
+
+func v2rayScalarVNext(key string, value any) map[string]any {
+	users := v2rayScalarVNextUsers(key, value)
+	if len(users) == 0 {
+		return nil
+	}
+	mapped := map[string]any{
+		"name":  key,
+		"users": users,
+	}
+	applyV2RayMappedEndpointKey(mapped, key)
+	if v2rayEndpointAddress(mapped) == "" {
+		return nil
+	}
+	return mapped
+}
+
+func v2rayScalarVNextUsers(key string, value any) []any {
+	switch typed := value.(type) {
+	case []any:
+		users := make([]any, 0, len(typed))
+		for index, item := range typed {
+			uuid := strings.TrimSpace(stringFromAnyValue(item))
+			if !v2rayLooksLikeUUID(uuid) {
+				return nil
+			}
+			user := map[string]any{"id": uuid}
+			if len(typed) > 1 {
+				user["name"] = key + "-" + strconv.Itoa(index+1)
+			}
+			users = append(users, user)
+		}
+		return users
+	default:
+		uuid := strings.TrimSpace(stringFromAnyValue(value))
+		if !v2rayLooksLikeUUID(uuid) {
+			return nil
+		}
+		return []any{map[string]any{"id": uuid}}
+	}
 }
 
 func v2rayVNextUsers(vnext map[string]any) []map[string]any {

@@ -5544,6 +5544,66 @@ func TestNormalizeContentV2RayJSONEndpointUserArrayMaps(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONEndpointScalarUserMaps(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray VMess Endpoint Scalar User",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": {
+          "vmess-scalar-user.v2ray.example.test:443": "00000000-0000-0000-0000-000000000101"
+        }
+      }
+    },
+    {
+      "tag": "V2Ray VLESS Endpoint Scalar Users",
+      "protocol": "vless",
+      "settings": {
+        "vnext": {
+          "vless-scalar-users.v2ray.example.test:8443": [
+            "00000000-0000-0000-0000-000000000102",
+            "00000000-0000-0000-0000-000000000103"
+          ]
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 V2Ray endpoint scalar user URIs, got %d: %q", len(lines), got)
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[0], "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode v2ray vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	for _, want := range []string{
+		`"ps":"vmess-scalar-user.v2ray.example.test:443"`,
+		`"add":"vmess-scalar-user.v2ray.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000101"`,
+	} {
+		if !strings.Contains(decodedText, want) {
+			t.Fatalf("expected v2ray VMess endpoint scalar user document to contain %q: %q", want, decodedText)
+		}
+	}
+	expected := []string{
+		"vless://00000000-0000-0000-0000-000000000102@vless-scalar-users.v2ray.example.test:8443#vless-scalar-users.v2ray.example.test:8443-1",
+		"vless://00000000-0000-0000-0000-000000000103@vless-scalar-users.v2ray.example.test:8443#vless-scalar-users.v2ray.example.test:8443-2",
+	}
+	for index, want := range expected {
+		if lines[index+1] != want {
+			t.Fatalf("unexpected v2ray VLESS endpoint scalar user URI at %d: %q", index+1, lines[index+1])
+		}
+	}
+}
+
 func TestNormalizeContentV2RayJSONVLESSPacketEncoding(t *testing.T) {
 	raw := `{
   "outbounds": [

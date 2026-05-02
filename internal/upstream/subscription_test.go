@@ -1842,6 +1842,91 @@ func TestNormalizeContentJSONStructuredTLSHostAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredTLSEnabledAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON TLS Enabled Trojan",
+      "protocol": "trojan",
+      "server": "json-tls-enabled-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "tlsEnabled": true,
+      "sni": "tls-enabled-sni.example.test"
+    },
+    {
+      "name": "JSON Over TLS VLESS",
+      "protocol": "vless",
+      "server": "json-over-tls-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000099",
+      "over_tls": true,
+      "serverName": "over-tls-sni.example.test"
+    },
+    {
+      "name": "JSON Nested TLS Enable Trojan",
+      "protocol": "trojan",
+      "server": "json-nested-tls-enable-trojan.example.test",
+      "port": 443,
+      "password": "nested-trojan-placeholder",
+      "tls": {
+        "enable": true,
+        "serverName": "nested-enable-sni.example.test"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 structured JSON TLS enabled alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	expectations := []struct {
+		index  int
+		prefix string
+		values []string
+	}{
+		{
+			index:  0,
+			prefix: "trojan://trojan-placeholder@json-tls-enabled-trojan.example.test:443?",
+			values: []string{
+				"security=tls",
+				"sni=tls-enabled-sni.example.test",
+				"#JSON%20TLS%20Enabled%20Trojan",
+			},
+		},
+		{
+			index:  1,
+			prefix: "vless://00000000-0000-0000-0000-000000000099@json-over-tls-vless.example.test:443?",
+			values: []string{
+				"security=tls",
+				"sni=over-tls-sni.example.test",
+				"#JSON%20Over%20TLS%20VLESS",
+			},
+		},
+		{
+			index:  2,
+			prefix: "trojan://nested-trojan-placeholder@json-nested-tls-enable-trojan.example.test:443?",
+			values: []string{
+				"security=tls",
+				"sni=nested-enable-sni.example.test",
+				"#JSON%20Nested%20TLS%20Enable%20Trojan",
+			},
+		},
+	}
+	for _, item := range expectations {
+		assertHasPrefix(t, lines[item.index], item.prefix)
+		for _, want := range item.values {
+			if !strings.Contains(lines[item.index], want) {
+				t.Fatalf("expected structured JSON TLS enabled URI %d to contain %q: %q", item.index, want, lines[item.index])
+			}
+		}
+	}
+}
+
 func TestNormalizeContentJSONStructuredAllowInsecureAliases(t *testing.T) {
 	raw := `{
   "nodes": [

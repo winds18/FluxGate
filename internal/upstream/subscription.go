@@ -531,7 +531,7 @@ func splitStructuredProxyHostPort(value string) (string, string) {
 }
 
 func normalizeStructuredProxyTLSFields(proxy map[string]string) {
-	if firstMapValue(proxy, "tls") == "" && boolMapValue(proxy, "tls.enabled") {
+	if firstMapValue(proxy, "tls") == "" && boolMapValue(proxy, "tls.enabled", "tls.enable") {
 		proxy["tls"] = "true"
 	}
 }
@@ -593,6 +593,12 @@ func normalizedStructuredProxyKey(key string) string {
 		return "disable-sni"
 	case "earlydataheadername":
 		return "early-data-header-name"
+	case "enable_tls":
+		return "tls"
+	case "enable-tls":
+		return "tls"
+	case "enabletls":
+		return "tls"
 	case "grpcopts":
 		return "grpc-opts"
 	case "grpcservicename":
@@ -611,6 +617,12 @@ func normalizedStructuredProxyKey(key string) string {
 		return "network"
 	case "networktype":
 		return "network"
+	case "over_tls":
+		return "tls"
+	case "over-tls":
+		return "tls"
+	case "overtls":
+		return "tls"
 	case "idletimeout":
 		return "idle-timeout"
 	case "pingtimeout":
@@ -669,6 +681,18 @@ func normalizedStructuredProxyKey(key string) string {
 		return "servername"
 	case "tlsservername":
 		return "servername"
+	case "tls_enable":
+		return "tls"
+	case "tls-enable":
+		return "tls"
+	case "tlsenable":
+		return "tls"
+	case "tls_enabled":
+		return "tls"
+	case "tls-enabled":
+		return "tls"
+	case "tlsenabled":
+		return "tls"
 	case "wshost":
 		return "ws-host"
 	case "wsheaders":

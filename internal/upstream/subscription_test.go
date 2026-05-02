@@ -6,6 +6,10 @@ import (
 	"testing"
 )
 
+func ssrTestBase64(value string) string {
+	return base64.RawURLEncoding.EncodeToString([]byte(value))
+}
+
 func TestNormalizeContentPlainURIList(t *testing.T) {
 	got, err := NormalizeContent(" # comment\nvless://uuid@example.com:443#HK\n\n")
 	if err != nil {
@@ -76,6 +80,22 @@ func TestNormalizeContentCanonicalizesShadowsocksSchemeAlias(t *testing.T) {
 	want := "ss://aes-128-gcm:qa-placeholder@ss-alias.example.test:8388#SS%20Alias"
 	if got != want {
 		t.Fatalf("unexpected canonical Shadowsocks URI: %q", got)
+	}
+}
+
+func TestNormalizeContentCanonicalizesShadowsocksRURI(t *testing.T) {
+	password := ssrTestBase64("qa-placeholder")
+	remarks := ssrTestBase64("香港 SSR 01")
+	group := ssrTestBase64("FluxGate")
+	payload := "ssr.example.test:8388:origin:aes-128-gcm:plain:" + password + "/?remarks=" + remarks + "&group=" + group
+	raw := "ssr://" + ssrTestBase64(payload)
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := "ss://aes-128-gcm:qa-placeholder@ssr.example.test:8388#%E9%A6%99%E6%B8%AF%20SSR%2001"
+	if got != want {
+		t.Fatalf("unexpected canonical ShadowsocksR URI: %q", got)
 	}
 }
 

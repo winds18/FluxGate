@@ -49,6 +49,7 @@ var supportedURIPrefixes = []string{
 	"socks5://",
 	"socks5h://",
 	"ss://",
+	"ssr://",
 	"ssh://",
 	"tor://",
 	"trojan://",
@@ -199,7 +200,9 @@ func URIList(content string) string {
 		lower := strings.ToLower(line)
 		for _, prefix := range supportedURIPrefixes {
 			if strings.HasPrefix(lower, prefix) {
-				lines = append(lines, canonicalSpecialURI(line))
+				if canonical := canonicalSpecialURI(line); canonical != "" {
+					lines = append(lines, canonical)
+				}
 				break
 			}
 		}
@@ -220,6 +223,8 @@ func canonicalSpecialURI(rawURI string) string {
 		return rewriteURIScheme(rawURI, "block")
 	case strings.HasPrefix(lower, "shadowsocks://"):
 		return rewriteURIScheme(rawURI, "ss")
+	case strings.HasPrefix(lower, "ssr://"):
+		return canonicalSSRURI(rawURI)
 	case strings.HasPrefix(lower, "http+tls://"),
 		strings.HasPrefix(lower, "http-tls://"):
 		return rewriteURIScheme(rawURI, "https")

@@ -2,6 +2,7 @@ package upstream
 
 import (
 	"encoding/json"
+	"net/netip"
 	"sort"
 	"strconv"
 	"strings"
@@ -655,6 +656,9 @@ func appendV2RayMappedObjects(result *[]map[string]any, key string, value any) {
 		if v2rayString(typed, "name") == "" && v2rayString(typed, "tag") == "" && v2rayString(typed, "email") == "" {
 			typed["name"] = key
 		}
+		if v2rayEndpointAddress(typed) == "" && v2rayLooksLikeEndpointKey(key) {
+			typed["server"] = key
+		}
 		*result = append(*result, typed)
 	case []any:
 		for index, item := range typed {
@@ -668,6 +672,9 @@ func appendV2RayMappedObjects(result *[]map[string]any, key string, value any) {
 					name = key + "-" + strconv.Itoa(index+1)
 				}
 				mapped["name"] = name
+			}
+			if v2rayEndpointAddress(mapped) == "" && v2rayLooksLikeEndpointKey(key) {
+				mapped["server"] = key
 			}
 			*result = append(*result, mapped)
 		}
@@ -703,6 +710,20 @@ func v2rayLooksLikeUUID(value string) bool {
 		}
 	}
 	return true
+}
+
+func v2rayLooksLikeEndpointKey(value string) bool {
+	key := strings.TrimSpace(value)
+	if key == "" || strings.ContainsAny(key, " \t\r\n/\\") {
+		return false
+	}
+	if _, err := netip.ParseAddr(key); err == nil {
+		return true
+	}
+	if strings.Count(key, ".") > 0 {
+		return true
+	}
+	return false
 }
 
 func v2rayVNextUserCount(vnexts []map[string]any) int {

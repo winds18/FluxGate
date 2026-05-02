@@ -167,6 +167,7 @@
 - V2Ray/Xray JSON 存在 `quicSettings`/`quic_settings`/`quic-settings` 时会保留为 QUIC transport。
 - V2Ray/Xray JSON VMess/VLESS `vnext` endpoint 可识别 `address`、`server`、`host`、`add`、`serverAddress`、`serverHost`、`remoteHost`、`nodeHost`、`endpoint` 和 `server_port`/`serverPort`/`server-port`/`remotePort`/`nodePort`/`portNumber` 别名；VMess/VLESS user 可识别 `id`、`uuid`、`userId`、`user_id` 和 `user-id` 认证字段，VMess user 可识别 `alter-id`/`aid` 和 `cipher` 别名，VMess/VLESS user 可识别 `flow`/`flowName`/`xtlsFlow` 等 flow 别名，并可识别 `packetEncoding`/`packet_encoding`/`packet-encoding` 同步为 sing-box `packet_encoding`。
 - V2Ray/Xray JSON VMess/VLESS `vnext.users` 支持以 UUID 为 key 的对象映射，缺少 `id` 时会使用映射 key 作为用户 ID，并保留映射值中的名称、加密、flow 和 packet encoding 等字段。
+- V2Ray/Xray JSON `vnext` 和 `servers` 支持以服务端域名或 IP 为 key 的对象映射，缺少服务端字段时会使用映射 key 作为节点服务端。
 - Clash YAML 和 sing-box JSON VMess/VLESS 节点可识别 `packetEncoding`、`packet_encoding` 和 `packet-encoding` 写法，并同步为 sing-box `packet_encoding`。
 - V2Ray/Xray JSON Trojan/HTTP/SOCKS outbound 可兼容 `host`/`add`、`serverPort`/`server-port`、`pass`/`passwd`/`pwd`/`psk`/`token`、`userName`/`accountName`、`users`、`accounts` 数组、`accounts` 用户名到密码或对象映射和 server 层认证写法。
 - 节点来源前缀和展示名规则。

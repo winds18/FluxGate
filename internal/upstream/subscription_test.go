@@ -5357,6 +5357,69 @@ func TestNormalizeContentV2RayJSONVNextUserMaps(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONEndpointObjectMaps(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray VMess Endpoint Map",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": {
+          "vmess-endpoint-map.v2ray.example.test": {
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000098",
+                "security": "auto",
+                "email": "香港 V2Ray VMess Endpoint Map"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "tag": "V2Ray Trojan Endpoint Map",
+      "protocol": "trojan",
+      "settings": {
+        "servers": {
+          "trojan-endpoint-map.v2ray.example.test": {
+            "port": 443,
+            "password": "trojan-placeholder",
+            "name": "东京 V2Ray Trojan Endpoint Map"
+          }
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 V2Ray endpoint map URIs, got %d: %q", len(lines), got)
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[0], "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode v2ray vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	for _, want := range []string{
+		`"ps":"香港 V2Ray VMess Endpoint Map"`,
+		`"add":"vmess-endpoint-map.v2ray.example.test"`,
+		`"id":"00000000-0000-0000-0000-000000000098"`,
+	} {
+		if !strings.Contains(decodedText, want) {
+			t.Fatalf("expected v2ray VMess endpoint map document to contain %q: %q", want, decodedText)
+		}
+	}
+	if lines[1] != "trojan://trojan-placeholder@trojan-endpoint-map.v2ray.example.test:443#%E4%B8%9C%E4%BA%AC%20V2Ray%20Trojan%20Endpoint%20Map" {
+		t.Fatalf("unexpected v2ray Trojan endpoint map URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONVLESSPacketEncoding(t *testing.T) {
 	raw := `{
   "outbounds": [

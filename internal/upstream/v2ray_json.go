@@ -2,6 +2,7 @@ package upstream
 
 import (
 	"encoding/json"
+	"net"
 	"net/netip"
 	"sort"
 	"strconv"
@@ -664,9 +665,7 @@ func appendV2RayMappedObjects(result *[]map[string]any, key string, value any) {
 		if v2rayString(typed, "name") == "" && v2rayString(typed, "tag") == "" && v2rayString(typed, "email") == "" {
 			typed["name"] = key
 		}
-		if v2rayEndpointAddress(typed) == "" && v2rayLooksLikeEndpointKey(key) {
-			typed["server"] = key
-		}
+		applyV2RayMappedEndpointKey(typed, key)
 		*result = append(*result, typed)
 	case []any:
 		for index, item := range typed {
@@ -681,11 +680,22 @@ func appendV2RayMappedObjects(result *[]map[string]any, key string, value any) {
 				}
 				mapped["name"] = name
 			}
-			if v2rayEndpointAddress(mapped) == "" && v2rayLooksLikeEndpointKey(key) {
-				mapped["server"] = key
-			}
+			applyV2RayMappedEndpointKey(mapped, key)
 			*result = append(*result, mapped)
 		}
+	}
+}
+
+func applyV2RayMappedEndpointKey(values map[string]any, key string) {
+	host, port := v2rayEndpointKeyParts(key)
+	if host == "" {
+		return
+	}
+	if v2rayEndpointAddress(values) == "" {
+		values["server"] = host
+	}
+	if port != "" && v2rayPort(values) == "" {
+		values["port"] = port
 	}
 }
 
@@ -721,17 +731,25 @@ func v2rayLooksLikeUUID(value string) bool {
 }
 
 func v2rayLooksLikeEndpointKey(value string) bool {
+	host, _ := v2rayEndpointKeyParts(value)
+	return host != ""
+}
+
+func v2rayEndpointKeyParts(value string) (string, string) {
 	key := strings.TrimSpace(value)
 	if key == "" || strings.ContainsAny(key, " \t\r\n/\\") {
-		return false
+		return "", ""
+	}
+	if host, port, err := net.SplitHostPort(key); err == nil && strings.TrimSpace(host) != "" && strings.TrimSpace(port) != "" {
+		return strings.Trim(host, "[]"), strings.TrimSpace(port)
 	}
 	if _, err := netip.ParseAddr(key); err == nil {
-		return true
+		return key, ""
 	}
 	if strings.Count(key, ".") > 0 {
-		return true
+		return key, ""
 	}
-	return false
+	return "", ""
 }
 
 func v2rayVNextUserCount(vnexts []map[string]any) int {

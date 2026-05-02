@@ -5428,8 +5428,7 @@ func TestNormalizeContentV2RayJSONEndpointObjectMaps(t *testing.T) {
       "protocol": "vmess",
       "settings": {
         "vnext": {
-          "vmess-endpoint-map.v2ray.example.test": {
-            "port": 443,
+          "vmess-endpoint-map.v2ray.example.test:443": {
             "users": [
               {
                 "id": "00000000-0000-0000-0000-000000000098",
@@ -5446,8 +5445,7 @@ func TestNormalizeContentV2RayJSONEndpointObjectMaps(t *testing.T) {
       "protocol": "trojan",
       "settings": {
         "servers": {
-          "trojan-endpoint-map.v2ray.example.test": {
-            "port": 443,
+          "trojan-endpoint-map.v2ray.example.test:443": {
             "password": "trojan-placeholder",
             "name": "东京 V2Ray Trojan Endpoint Map"
           }

@@ -2021,6 +2021,42 @@ nodes: [{ name: "Nodes Inline 首尔 01", type: vless, server: nodes-inline-vles
 	}
 }
 
+func TestNormalizeContentClashYAMLCamelCaseListAliases(t *testing.T) {
+	raw := `
+proxy-providers:
+  camel-provider:
+    type: inline
+    serverList:
+      - name: "Camel Provider 香港 01"
+        type: ss
+        server: camel-provider-ss.example.test
+        port: 8388
+        cipher: aes-128-gcm
+        password: "qa-placeholder"
+ProxyList: [{ name: "Pascal Inline 东京 01", type: trojan, server: pascal-inline-trojan.example.test, port: 443, password: "trojan-placeholder", tls: true, sni: pascal-inline-trojan.example.test }]
+nodeList:
+  - name: "Camel Block 首尔 01"
+    type: vless
+    server: camel-block-vless.example.test
+    port: 443
+    uuid: "00000000-0000-0000-0000-000000000111"
+    tls: true
+    sni: camel-block-vless.example.test
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@camel-provider-ss.example.test:8388#Camel%20Provider%20%E9%A6%99%E6%B8%AF%2001",
+		"trojan://trojan-placeholder@pascal-inline-trojan.example.test:443?security=tls&sni=pascal-inline-trojan.example.test#Pascal%20Inline%20%E4%B8%9C%E4%BA%AC%2001",
+		"vless://00000000-0000-0000-0000-000000000111@camel-block-vless.example.test:443?security=tls&sni=camel-block-vless.example.test#Camel%20Block%20%E9%A6%96%E5%B0%94%2001",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected camel-case list alias URIs: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLAnchoredProxyList(t *testing.T) {
 	raw := `
 proxies: &airport_nodes

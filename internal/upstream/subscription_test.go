@@ -1660,6 +1660,50 @@ func TestNormalizeContentJSONStructuredNestedTLSFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredAccountAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON AccountName HTTP",
+      "protocol": "http",
+      "address": "json-account-http.example.test",
+      "serverPort": 8080,
+      "accountName": "qa-http",
+      "accountPassword": "http-placeholder",
+      "path": "connect"
+    },
+    {
+      "name": "JSON Account Naive",
+      "protocolName": "naive",
+      "host": "json-account-naive.example.test",
+      "port": 443,
+      "account": "qa-naive",
+      "credential": "naive-placeholder",
+      "tls": {
+        "enabled": true,
+        "serverName": "json-account-naive.example.test"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON account alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "http://qa-http:http-placeholder@json-account-http.example.test:8080/connect#JSON%20AccountName%20HTTP" {
+		t.Fatalf("unexpected structured JSON account alias HTTP URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "naive://qa-naive:naive-placeholder@json-account-naive.example.test:443?")
+	if !strings.Contains(lines[1], "sni=json-account-naive.example.test") ||
+		!strings.HasSuffix(lines[1], "#JSON%20Account%20Naive") {
+		t.Fatalf("unexpected structured JSON account alias Naive URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONStructuredVMessTypeUsesProxyParser(t *testing.T) {
 	raw := `{
   "nodes": [

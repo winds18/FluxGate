@@ -5604,6 +5604,46 @@ func TestNormalizeContentV2RayJSONEndpointScalarUserMaps(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONServerScalarPasswordMaps(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray Trojan Scalar Server",
+      "protocol": "trojan",
+      "settings": {
+        "servers": {
+          "trojan-scalar-server.v2ray.example.test:443": "trojan-scalar-placeholder"
+        }
+      }
+    },
+    {
+      "tag": "V2Ray SS Scalar Server",
+      "protocol": "shadowsocks",
+      "settings": {
+        "method": "aes-128-gcm",
+        "servers": {
+          "ss-scalar-server.v2ray.example.test:8388": "ss-scalar-placeholder"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 V2Ray scalar server map URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "trojan://trojan-scalar-placeholder@trojan-scalar-server.v2ray.example.test:443#trojan-scalar-server.v2ray.example.test:443" {
+		t.Fatalf("unexpected v2ray Trojan scalar server URI: %q", lines[0])
+	}
+	if lines[1] != "ss://aes-128-gcm:ss-scalar-placeholder@ss-scalar-server.v2ray.example.test:8388#ss-scalar-server.v2ray.example.test:8388" {
+		t.Fatalf("unexpected v2ray Shadowsocks scalar server URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONVLESSPacketEncoding(t *testing.T) {
 	raw := `{
   "outbounds": [

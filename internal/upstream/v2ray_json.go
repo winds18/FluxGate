@@ -280,7 +280,7 @@ func v2rayEndpointAddress(values map[string]any) string {
 
 func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[string]string) string) []string {
 	settings := v2rayFieldMap(outbound, "settings")
-	servers := v2rayObjectList(v2rayValue(settings, "servers"))
+	servers := v2rayServerList(v2rayValue(settings, "servers"))
 	total := len(servers)
 	var uris []string
 	for index, server := range servers {
@@ -292,7 +292,7 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 			"password": v2rayCredentialPassword(server),
 		}
 		if protocol == "shadowsocks" {
-			proxy["method"] = v2rayShadowsocksMethod(server)
+			proxy["method"] = firstNonEmptyString(v2rayShadowsocksMethod(server), v2rayShadowsocksMethod(settings))
 			if plugin := firstNonEmptyString(v2rayString(server, "plugin"), v2rayString(settings, "plugin")); plugin != "" {
 				proxy["plugin"] = plugin
 			}
@@ -324,6 +324,49 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 		}
 	}
 	return uris
+}
+
+func v2rayServerList(value any) []map[string]any {
+	mapped, ok := value.(map[string]any)
+	if !ok || v2rayLooksLikeObject(mapped) {
+		return v2rayObjectList(value)
+	}
+	keys := make([]string, 0, len(mapped))
+	for key := range mapped {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	result := make([]map[string]any, 0, len(keys))
+	for _, key := range keys {
+		if server := v2rayScalarServer(key, mapped[key]); server != nil {
+			result = append(result, server)
+			continue
+		}
+		appendV2RayMappedObjects(&result, key, mapped[key])
+	}
+	return result
+}
+
+func v2rayScalarServer(key string, value any) map[string]any {
+	if _, ok := value.(map[string]any); ok {
+		return nil
+	}
+	if _, ok := value.([]any); ok {
+		return nil
+	}
+	password := strings.TrimSpace(stringFromAnyValue(value))
+	if password == "" {
+		return nil
+	}
+	server := map[string]any{
+		"name":     key,
+		"password": password,
+	}
+	applyV2RayMappedEndpointKey(server, key)
+	if v2rayEndpointAddress(server) == "" {
+		return nil
+	}
+	return server
 }
 
 func v2rayShadowsocksMethod(server map[string]any) string {

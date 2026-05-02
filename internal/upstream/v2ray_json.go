@@ -100,7 +100,7 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 				"uuid":    v2rayVNextUserID(user),
 				"alterid": firstNonEmptyString(v2rayString(user, "alterId"), v2rayString(user, "alter_id"), v2rayString(user, "alter-id"), v2rayString(user, "aid")),
 				"cipher":  firstNonEmptyString(v2rayString(user, "security"), v2rayString(user, "encryption"), v2rayString(user, "cipher")),
-				"flow":    v2rayString(user, "flow"),
+				"flow":    v2rayVNextUserFlow(user),
 			}
 			if packetEncoding := firstNonEmptyString(
 				v2rayString(user, "packetEncoding"),
@@ -125,6 +125,18 @@ func v2rayVNextUserID(user map[string]any) string {
 		v2rayString(user, "userId"),
 		v2rayString(user, "user_id"),
 		v2rayString(user, "user-id"),
+	)
+}
+
+func v2rayVNextUserFlow(user map[string]any) string {
+	return firstNonEmptyString(
+		v2rayString(user, "flow"),
+		v2rayString(user, "flowName"),
+		v2rayString(user, "flow_name"),
+		v2rayString(user, "flow-name"),
+		v2rayString(user, "xtlsFlow"),
+		v2rayString(user, "xtls_flow"),
+		v2rayString(user, "xtls-flow"),
 	)
 }
 

@@ -5253,7 +5253,8 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
             "users": [
               {
                 "user-id": "00000000-0000-0000-0000-000000000088",
-                "encryption": "none"
+                "encryption": "none",
+                "flowName": "xtls-rprx-vision"
               }
             ]
           }
@@ -5279,7 +5280,7 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
 		!strings.Contains(decodedText, `"port":"443"`) {
 		t.Fatalf("unexpected v2ray vmess alias document: %q", decodedText)
 	}
-	if lines[1] != "vless://00000000-0000-0000-0000-000000000088@vless-alias.v2ray.example.test:8443#%E6%96%B0%E5%8A%A0%E5%9D%A1%20V2Ray%20VLESS%20NodeHost%20Alias" {
+	if lines[1] != "vless://00000000-0000-0000-0000-000000000088@vless-alias.v2ray.example.test:8443?flow=xtls-rprx-vision#%E6%96%B0%E5%8A%A0%E5%9D%A1%20V2Ray%20VLESS%20NodeHost%20Alias" {
 		t.Fatalf("unexpected v2ray vless alias URI: %q", lines[1])
 	}
 }

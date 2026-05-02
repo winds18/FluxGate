@@ -129,7 +129,7 @@ func surgeProxyURI(line string) string {
 			proxy["version"] = version
 		}
 		return clashShadowTLSURI(proxy)
-	case "naive", "naive+quic", "naive-quic", "naive+https":
+	case "naive", "naive+quic", "naive-quic", "naive+https", "naive-https":
 		if protocol == "naive+quic" || protocol == "naive-quic" {
 			proxy["type"] = "naive+quic"
 		} else {
@@ -196,8 +196,8 @@ func surgeProxyURI(line string) string {
 			proxy["tls"] = "true"
 		}
 		return clashTrojanURI(proxy)
-	case "http", "https":
-		if protocol == "https" {
+	case "http", "https", "http+tls", "http-tls":
+		if protocol != "http" {
 			proxy["type"] = "https"
 			proxy["tls"] = "true"
 		}

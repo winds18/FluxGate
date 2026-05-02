@@ -112,7 +112,7 @@ func quantumultXProxyURI(line string) string {
 			proxy["version"] = version
 		}
 		return clashShadowTLSURI(proxy)
-	case "naive", "naive+quic", "naive-quic", "naive+https":
+	case "naive", "naive+quic", "naive-quic", "naive+https", "naive-https":
 		if protocol == "naive+quic" || protocol == "naive-quic" {
 			proxy["type"] = "naive+quic"
 		} else {
@@ -185,10 +185,10 @@ func quantumultXProxyURI(line string) string {
 		proxy["cipher"] = surgeOption(options, "method", "cipher", "security")
 		proxy["alterid"] = surgeOption(options, "alter-id", "alter_id", "alterid", "aid")
 		return clashVMessURI(proxy)
-	case "http", "https":
+	case "http", "https", "http+tls", "http-tls":
 		proxy["username"] = surgeFirstValue(options, positionals, 1, "username", "user")
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass")
-		if protocol == "https" {
+		if protocol != "http" {
 			proxy["type"] = "https"
 			proxy["tls"] = "true"
 		}
@@ -213,7 +213,7 @@ func parseQuantumultXProxyLine(line string) (string, []string, bool) {
 	}
 	protocol = strings.ToLower(strings.TrimSpace(protocol))
 	switch protocol {
-	case "ss", "shadowsocks", "hysteria2", "hy2", "tuic", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "ssh", "wireguard", "wg", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "socks", "socks5", "socks5h":
+	case "ss", "shadowsocks", "hysteria2", "hy2", "tuic", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "naive-https", "ssh", "wireguard", "wg", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "http+tls", "http-tls", "socks", "socks5", "socks5h":
 	default:
 		return "", nil, false
 	}

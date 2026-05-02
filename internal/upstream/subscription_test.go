@@ -838,14 +838,17 @@ socks5=qx-socks-udp.example.test:1080, qa-user, socks-placeholder, udp=true, tag
 func TestNormalizeContentQuantumultXProtocolAliases(t *testing.T) {
 	raw := `[server_local]
 trojan-go=qx-trojan-go-alias.example.test:443, password=trojan-placeholder, over-tls=true, tls-host=qx-trojan-go-alias.example.test, tag=东京 QuantumultX Trojan-Go Alias
+http+tls=qx-http-plus-tls-alias.example.test:443, qa-user, http-placeholder, tls-host=qx-http-plus-tls-alias.example.test, tag=香港 QuantumultX HTTP Plus TLS Alias
+http-tls=qx-http-dash-tls-alias.example.test:443, username=qa-user, password=http-dash-placeholder, tls-host=qx-http-dash-tls-alias.example.test, tag=新加坡 QuantumultX HTTP Dash TLS Alias
+naive-https=qx-naive-https-alias.example.test:443, username=qa-user, password=naive-https-placeholder, tls-host=qx-naive-https-alias.example.test, tag=台北 QuantumultX Naive HTTPS Alias
 socks5h=qx-socks5h-alias.example.test:1080, qa-user, socks-placeholder, udp=true, tag=首尔 QuantumultX SOCKS5H Alias`
 	got, err := NormalizeContent(raw)
 	if err != nil {
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 2 {
-		t.Fatalf("expected 2 Quantumult X alias URIs, got %d: %q", len(lines), got)
+	if len(lines) != 5 {
+		t.Fatalf("expected 5 Quantumult X alias URIs, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@qx-trojan-go-alias.example.test:443?")
 	if !strings.Contains(lines[0], "security=tls") ||
@@ -853,10 +856,25 @@ socks5h=qx-socks5h-alias.example.test:1080, qa-user, socks-placeholder, udp=true
 		!strings.HasSuffix(lines[0], "#%E4%B8%9C%E4%BA%AC%20QuantumultX%20Trojan-Go%20Alias") {
 		t.Fatalf("unexpected Quantumult X Trojan-Go alias URI: %q", lines[0])
 	}
-	assertHasPrefix(t, lines[1], "socks5://qa-user:socks-placeholder@qx-socks5h-alias.example.test:1080?")
-	if !strings.Contains(lines[1], "udp=1") ||
-		!strings.HasSuffix(lines[1], "#%E9%A6%96%E5%B0%94%20QuantumultX%20SOCKS5H%20Alias") {
-		t.Fatalf("unexpected Quantumult X SOCKS5H alias URI: %q", lines[1])
+	assertHasPrefix(t, lines[1], "https://qa-user:http-placeholder@qx-http-plus-tls-alias.example.test:443?")
+	if !strings.Contains(lines[1], "sni=qx-http-plus-tls-alias.example.test") ||
+		!strings.HasSuffix(lines[1], "#%E9%A6%99%E6%B8%AF%20QuantumultX%20HTTP%20Plus%20TLS%20Alias") {
+		t.Fatalf("unexpected Quantumult X HTTP Plus TLS alias URI: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "https://qa-user:http-dash-placeholder@qx-http-dash-tls-alias.example.test:443?")
+	if !strings.Contains(lines[2], "sni=qx-http-dash-tls-alias.example.test") ||
+		!strings.HasSuffix(lines[2], "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20QuantumultX%20HTTP%20Dash%20TLS%20Alias") {
+		t.Fatalf("unexpected Quantumult X HTTP Dash TLS alias URI: %q", lines[2])
+	}
+	assertHasPrefix(t, lines[3], "naive://qa-user:naive-https-placeholder@qx-naive-https-alias.example.test:443?")
+	if !strings.Contains(lines[3], "sni=qx-naive-https-alias.example.test") ||
+		!strings.HasSuffix(lines[3], "#%E5%8F%B0%E5%8C%97%20QuantumultX%20Naive%20HTTPS%20Alias") {
+		t.Fatalf("unexpected Quantumult X Naive HTTPS alias URI: %q", lines[3])
+	}
+	assertHasPrefix(t, lines[4], "socks5://qa-user:socks-placeholder@qx-socks5h-alias.example.test:1080?")
+	if !strings.Contains(lines[4], "udp=1") ||
+		!strings.HasSuffix(lines[4], "#%E9%A6%96%E5%B0%94%20QuantumultX%20SOCKS5H%20Alias") {
+		t.Fatalf("unexpected Quantumult X SOCKS5H alias URI: %q", lines[4])
 	}
 }
 
@@ -2732,6 +2750,9 @@ func TestNormalizeContentSurgeProxyListProtocolAliases(t *testing.T) {
 	raw := `
 [Proxy]
 东京 Surge Trojan-Go Alias = trojan-go, trojan-go.surge-alias.example.test, 443, trojan-placeholder, sni=trojan-go.surge-alias.example.test
+香港 Surge HTTP Plus TLS Alias = http+tls, http-plus-tls.surge-alias.example.test, 443, qa-user, http-placeholder, sni=http-plus-tls.surge-alias.example.test
+新加坡 Surge HTTP Dash TLS Alias = http-tls, http-dash-tls.surge-alias.example.test, 443, qa-user, http-dash-placeholder, sni=http-dash-tls.surge-alias.example.test
+台北 Surge Naive HTTPS Alias = naive-https, naive-https.surge-alias.example.test, 443, qa-user, naive-https-placeholder, sni=naive-https.surge-alias.example.test
 首尔 Surge SOCKS5H Alias = socks5h, socks5h.surge-alias.example.test, 1080, qa-user, socks-placeholder, udp=true
 `
 	got, err := NormalizeContent(raw)
@@ -2739,8 +2760,8 @@ func TestNormalizeContentSurgeProxyListProtocolAliases(t *testing.T) {
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 2 {
-		t.Fatalf("expected 2 Surge alias URIs, got %d: %q", len(lines), got)
+	if len(lines) != 5 {
+		t.Fatalf("expected 5 Surge alias URIs, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan-go.surge-alias.example.test:443?")
 	if !strings.Contains(lines[0], "security=tls") ||
@@ -2748,10 +2769,25 @@ func TestNormalizeContentSurgeProxyListProtocolAliases(t *testing.T) {
 		!strings.HasSuffix(lines[0], "#%E4%B8%9C%E4%BA%AC%20Surge%20Trojan-Go%20Alias") {
 		t.Fatalf("unexpected Surge Trojan-Go alias URI: %q", lines[0])
 	}
-	assertHasPrefix(t, lines[1], "socks5://qa-user:socks-placeholder@socks5h.surge-alias.example.test:1080?")
-	if !strings.Contains(lines[1], "udp=1") ||
-		!strings.HasSuffix(lines[1], "#%E9%A6%96%E5%B0%94%20Surge%20SOCKS5H%20Alias") {
-		t.Fatalf("unexpected Surge SOCKS5H alias URI: %q", lines[1])
+	assertHasPrefix(t, lines[1], "https://qa-user:http-placeholder@http-plus-tls.surge-alias.example.test:443?")
+	if !strings.Contains(lines[1], "sni=http-plus-tls.surge-alias.example.test") ||
+		!strings.HasSuffix(lines[1], "#%E9%A6%99%E6%B8%AF%20Surge%20HTTP%20Plus%20TLS%20Alias") {
+		t.Fatalf("unexpected Surge HTTP Plus TLS alias URI: %q", lines[1])
+	}
+	assertHasPrefix(t, lines[2], "https://qa-user:http-dash-placeholder@http-dash-tls.surge-alias.example.test:443?")
+	if !strings.Contains(lines[2], "sni=http-dash-tls.surge-alias.example.test") ||
+		!strings.HasSuffix(lines[2], "#%E6%96%B0%E5%8A%A0%E5%9D%A1%20Surge%20HTTP%20Dash%20TLS%20Alias") {
+		t.Fatalf("unexpected Surge HTTP Dash TLS alias URI: %q", lines[2])
+	}
+	assertHasPrefix(t, lines[3], "naive://qa-user:naive-https-placeholder@naive-https.surge-alias.example.test:443?")
+	if !strings.Contains(lines[3], "sni=naive-https.surge-alias.example.test") ||
+		!strings.HasSuffix(lines[3], "#%E5%8F%B0%E5%8C%97%20Surge%20Naive%20HTTPS%20Alias") {
+		t.Fatalf("unexpected Surge Naive HTTPS alias URI: %q", lines[3])
+	}
+	assertHasPrefix(t, lines[4], "socks5://qa-user:socks-placeholder@socks5h.surge-alias.example.test:1080?")
+	if !strings.Contains(lines[4], "udp=1") ||
+		!strings.HasSuffix(lines[4], "#%E9%A6%96%E5%B0%94%20Surge%20SOCKS5H%20Alias") {
+		t.Fatalf("unexpected Surge SOCKS5H alias URI: %q", lines[4])
 	}
 }
 

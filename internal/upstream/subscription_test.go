@@ -1983,6 +1983,44 @@ proxy-list: [{ name: "Alias Inline 东京 01", type: trojan, server: alias-inlin
 	}
 }
 
+func TestNormalizeContentClashYAMLNodeAndServerListAliases(t *testing.T) {
+	raw := `
+proxy-providers:
+  node-list-a:
+    type: inline
+    node-list:
+      - name: "NodeList Provider 香港 01"
+        type: ss
+        server: nodelist-provider-ss.example.test
+        port: 8388
+        cipher: aes-128-gcm
+        password: "qa-placeholder"
+  server-list-a:
+    type: inline
+    server_list:
+      - name: "ServerList Provider 东京 01"
+        type: trojan
+        server: serverlist-provider-trojan.example.test
+        port: 443
+        password: "trojan-placeholder"
+        tls: true
+        sni: serverlist-provider-trojan.example.test
+nodes: [{ name: "Nodes Inline 首尔 01", type: vless, server: nodes-inline-vless.example.test, port: 443, uuid: "00000000-0000-0000-0000-000000000110", tls: true, sni: nodes-inline-vless.example.test }]
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@nodelist-provider-ss.example.test:8388#NodeList%20Provider%20%E9%A6%99%E6%B8%AF%2001",
+		"trojan://trojan-placeholder@serverlist-provider-trojan.example.test:443?security=tls&sni=serverlist-provider-trojan.example.test#ServerList%20Provider%20%E4%B8%9C%E4%BA%AC%2001",
+		"vless://00000000-0000-0000-0000-000000000110@nodes-inline-vless.example.test:443?security=tls&sni=nodes-inline-vless.example.test#Nodes%20Inline%20%E9%A6%96%E5%B0%94%2001",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected node/server list alias URIs: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLAnchoredProxyList(t *testing.T) {
 	raw := `
 proxies: &airport_nodes

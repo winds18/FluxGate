@@ -128,8 +128,8 @@
 - subscription 来源可解析 Surge `[Proxy]` 代理段中的 SS、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并兼容 `trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https`、`naive-quic` 和 `socks5h` 协议别名，转换为标准 URI。
 - subscription 来源支持按刷新间隔自动同步到期订阅。
 - subscription 来源可解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点，以及 Direct/Reject 变体/DNS 内置出站；Clash YAML 结构化 `type` 兼容 `trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive+https`、`naive-https`、`naive-quic` 和 `socks5h` 别名。
-- Clash YAML 解析支持嵌套 `proxies`/`proxy-list`/`proxies-list` 列表，可兼容带内嵌 provider 节点清单的订阅结构。
-- Clash YAML 解析支持 `proxies: [{ ... }]`、`proxy-list: [{ ... }]` 和 `proxies-list: [{ ... }]` 内联节点数组，可兼容 provider 或顶层节点的紧凑写法。
+- Clash YAML 解析支持嵌套 `proxies`/`proxy-list`/`proxies-list`/`nodes`/`node-list`/`server-list` 列表，可兼容带内嵌 provider 节点清单的订阅结构。
+- Clash YAML 解析支持 `proxies: [{ ... }]`、`proxy-list: [{ ... }]`、`proxies-list: [{ ... }]`、`nodes: [{ ... }]` 和 `node-list: [{ ... }]` 内联节点数组，可兼容 provider 或顶层节点的紧凑写法。
 - Clash YAML 解析支持 `proxies: &anchor` 这类带 YAML anchor 的块状节点列表。
 - Clash YAML 解析支持 `- &anchor { ... }` 和 `proxies: [&anchor { ... }]` 这类节点条目级 anchor 的内联写法。
 - Clash YAML 解析支持常见块状和内联 `ws-opts`、`grpc-opts` 嵌套写法，能保留 WebSocket path/host 和 gRPC service name。

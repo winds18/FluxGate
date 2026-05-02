@@ -108,7 +108,8 @@ func isClashYAMLProxiesField(line string) bool {
 
 func isClashYAMLProxiesKey(key string) bool {
 	switch strings.ToLower(strings.TrimSpace(key)) {
-	case "proxies", "proxy-list", "proxy_list", "proxies-list", "proxies_list":
+	case "proxies", "proxy-list", "proxy_list", "proxies-list", "proxies_list",
+		"nodes", "node-list", "node_list", "server-list", "server_list":
 		return true
 	default:
 		return false

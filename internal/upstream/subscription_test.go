@@ -549,7 +549,7 @@ func TestNormalizeContentJSONStructuredGenericTransport(t *testing.T) {
         "type": "ws",
         "path": "/nested",
         "headers": {
-          "Host": "ws.json-transport-vless.example.test"
+          ":authority": "ws-authority.json-transport-vless.example.test"
         },
         "maxEarlyData": 512,
         "earlyDataHeaderName": "Sec-WebSocket-Protocol"
@@ -588,7 +588,7 @@ func TestNormalizeContentJSONStructuredGenericTransport(t *testing.T) {
 		"sni=json-transport-vless.example.test",
 		"type=ws",
 		"path=%2Fnested",
-		"host=ws.json-transport-vless.example.test",
+		"host=ws-authority.json-transport-vless.example.test",
 		"max_early_data=512",
 		"early_data_header_name=Sec-WebSocket-Protocol",
 		"#JSON%20Transport%20VLESS",
@@ -750,6 +750,132 @@ func TestNormalizeContentJSONStructuredTransportContainerAliases(t *testing.T) {
 	} {
 		if !strings.Contains(lines[3], want) {
 			t.Fatalf("expected structured JSON httpUpgradeSettings URI to contain %q: %q", want, lines[3])
+		}
+	}
+}
+
+func TestNormalizeContentJSONStructuredTransportAuthorityAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON WS Authority VLESS",
+      "protocol": "vless",
+      "server": "json-ws-authority-vless.example.test",
+      "port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000137",
+      "tls": true,
+      "serverName": "json-ws-authority-vless.example.test",
+      "wsSettings": {
+        "path": "/ws-authority",
+        "authority": "ws-authority.example.test"
+      }
+    },
+    {
+      "name": "JSON HTTP Authority VLESS",
+      "protocol": "vless",
+      "server": "json-http-authority-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000138",
+      "tls": true,
+      "serverName": "json-http-authority-vless.example.test",
+      "httpSettings": {
+        "path": "/h2-authority",
+        "headers": {
+          ":authority": ["h2-authority.example.test", "h2-backup.example.test"]
+        }
+      }
+    },
+    {
+      "name": "JSON Transport Authority VLESS",
+      "protocol": "vless",
+      "server": "json-transport-authority-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000139",
+      "tls": true,
+      "serverName": "json-transport-authority-vless.example.test",
+      "transport": {
+        "type": "http",
+        "path": "/generic-authority",
+        "headers": {
+          "authority": ["generic-authority.example.test", "generic-backup.example.test"]
+        }
+      }
+    },
+    {
+      "name": "JSON HTTPUpgrade Authority Trojan",
+      "protocol": "trojan",
+      "server": "json-httpupgrade-authority-trojan.example.test",
+      "port": 443,
+      "password": "authority-placeholder",
+      "security": "tls",
+      "sni": "json-httpupgrade-authority-trojan.example.test",
+      "httpUpgradeSettings": {
+        "path": "/upgrade-authority",
+        "headers": {
+          "authority": "upgrade-authority.example.test"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 structured JSON authority alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000137@json-ws-authority-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-ws-authority-vless.example.test",
+		"type=ws",
+		"path=%2Fws-authority",
+		"host=ws-authority.example.test",
+		"#JSON%20WS%20Authority%20VLESS",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON ws authority URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "vless://00000000-0000-0000-0000-000000000138@json-http-authority-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-http-authority-vless.example.test",
+		"type=http",
+		"path=%2Fh2-authority",
+		"host=h2-authority.example.test%2Ch2-backup.example.test",
+		"#JSON%20HTTP%20Authority%20VLESS",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON http authority URI to contain %q: %q", want, lines[1])
+		}
+	}
+	assertHasPrefix(t, lines[2], "vless://00000000-0000-0000-0000-000000000139@json-transport-authority-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-transport-authority-vless.example.test",
+		"type=http",
+		"path=%2Fgeneric-authority",
+		"host=generic-authority.example.test%2Cgeneric-backup.example.test",
+		"#JSON%20Transport%20Authority%20VLESS",
+	} {
+		if !strings.Contains(lines[2], want) {
+			t.Fatalf("expected structured JSON transport authority URI to contain %q: %q", want, lines[2])
+		}
+	}
+	assertHasPrefix(t, lines[3], "trojan://authority-placeholder@json-httpupgrade-authority-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-httpupgrade-authority-trojan.example.test",
+		"type=httpupgrade",
+		"path=%2Fupgrade-authority",
+		"host=upgrade-authority.example.test",
+		"#JSON%20HTTPUpgrade%20Authority%20Trojan",
+	} {
+		if !strings.Contains(lines[3], want) {
+			t.Fatalf("expected structured JSON httpupgrade authority URI to contain %q: %q", want, lines[3])
 		}
 	}
 }

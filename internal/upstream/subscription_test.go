@@ -5965,7 +5965,7 @@ func TestNormalizeContentV2RayJSONServerFieldAliases(t *testing.T) {
           {
             "host": "trojan-alias.v2ray.example.test",
             "server-port": 443,
-            "pass": "trojan-placeholder"
+            "token": "trojan-placeholder"
           }
         ]
       }
@@ -5979,7 +5979,7 @@ func TestNormalizeContentV2RayJSONServerFieldAliases(t *testing.T) {
             "add": "ss-alias.v2ray.example.test",
             "serverPort": 8388,
             "security": "aes-256-gcm",
-            "pass": "ss-placeholder"
+            "passwd": "ss-placeholder"
           }
         ]
       }
@@ -5992,8 +5992,8 @@ func TestNormalizeContentV2RayJSONServerFieldAliases(t *testing.T) {
           {
             "host": "http-alias.v2ray.example.test",
             "server-port": 8080,
-            "username": "qa-user",
-            "password": "http-placeholder"
+            "userName": "qa-user",
+            "pwd": "http-placeholder"
           }
         ]
       }
@@ -6008,8 +6008,8 @@ func TestNormalizeContentV2RayJSONServerFieldAliases(t *testing.T) {
             "serverPort": 1080,
             "users": [
               {
-                "user": "qa-user",
-                "pass": "socks-placeholder"
+                "accountName": "qa-user",
+                "psk": "socks-placeholder"
               }
             ]
           }

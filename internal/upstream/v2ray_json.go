@@ -169,7 +169,7 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 			"name":     v2rayName(outbound, server, nil, address, index+1, total),
 			"server":   address,
 			"port":     v2rayPort(server),
-			"password": firstNonEmptyString(v2rayString(server, "password"), v2rayString(server, "pass")),
+			"password": v2rayCredentialPassword(server),
 		}
 		if protocol == "shadowsocks" {
 			proxy["method"] = firstNonEmptyString(v2rayString(server, "method"), v2rayString(server, "cipher"), v2rayString(server, "security"), v2rayString(server, "encryption"))
@@ -233,8 +233,8 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 				"type":     proxyType,
 				"server":   address,
 				"port":     v2rayPort(server),
-				"username": firstNonEmptyString(v2rayString(user, "user"), v2rayString(user, "username"), v2rayString(user, "account")),
-				"password": firstNonEmptyString(v2rayString(user, "pass"), v2rayString(user, "password")),
+				"username": v2rayCredentialUsername(user),
+				"password": v2rayCredentialPassword(user),
 			}
 			appendV2RayStreamProxyValues(outbound, proxy)
 			if proxyType == "socks5" && v2raySOCKSUDPEnabled(settings, server) {
@@ -262,16 +262,42 @@ func v2rayProxyServerUsers(server map[string]any) []map[string]any {
 			}
 		}
 	}
-	if user := firstNonEmptyString(v2rayString(server, "user"), v2rayString(server, "username"), v2rayString(server, "account")); user != "" {
+	if user := v2rayCredentialUsername(server); user != "" {
 		return []map[string]any{{
 			"user": user,
-			"pass": firstNonEmptyString(v2rayString(server, "pass"), v2rayString(server, "password")),
+			"pass": v2rayCredentialPassword(server),
 		}}
 	}
-	if password := firstNonEmptyString(v2rayString(server, "pass"), v2rayString(server, "password")); password != "" {
+	if password := v2rayCredentialPassword(server); password != "" {
 		return []map[string]any{{"pass": password}}
 	}
 	return nil
+}
+
+func v2rayCredentialUsername(values map[string]any) string {
+	return firstNonEmptyString(
+		v2rayString(values, "user"),
+		v2rayString(values, "username"),
+		v2rayString(values, "userName"),
+		v2rayString(values, "user_name"),
+		v2rayString(values, "user-name"),
+		v2rayString(values, "account"),
+		v2rayString(values, "accountName"),
+		v2rayString(values, "account_name"),
+		v2rayString(values, "account-name"),
+		v2rayString(values, "login"),
+	)
+}
+
+func v2rayCredentialPassword(values map[string]any) string {
+	return firstNonEmptyString(
+		v2rayString(values, "pass"),
+		v2rayString(values, "password"),
+		v2rayString(values, "passwd"),
+		v2rayString(values, "pwd"),
+		v2rayString(values, "psk"),
+		v2rayString(values, "token"),
+	)
 }
 
 func v2rayScalarAccountUsers(value any) []map[string]any {

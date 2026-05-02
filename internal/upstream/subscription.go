@@ -599,6 +599,12 @@ func normalizedStructuredProxyKey(key string) string {
 		return "tls"
 	case "enabletls":
 		return "tls"
+	case "flow_name":
+		return "flow"
+	case "flow-name":
+		return "flow"
+	case "flowname":
+		return "flow"
 	case "grpcopts":
 		return "grpc-opts"
 	case "grpcservicename":
@@ -723,6 +729,12 @@ func normalizedStructuredProxyKey(key string) string {
 		return "skip-cert-verify"
 	case "tlsskipverify":
 		return "skip-cert-verify"
+	case "xtls_flow":
+		return "flow"
+	case "xtls-flow":
+		return "flow"
+	case "xtlsflow":
+		return "flow"
 	case "wshost":
 		return "ws-host"
 	case "wsheaders":

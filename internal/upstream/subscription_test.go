@@ -1287,6 +1287,43 @@ func TestNormalizeContentJSONParsesInlineProxyProviderNodes(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredFlowAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON FlowName VLESS",
+      "type": "vless",
+      "server": "json-flow-name-vless.example.test",
+      "port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000110",
+      "flowName": "xtls-rprx-vision"
+    },
+    {
+      "name": "JSON XTLS Flow VLESS",
+      "type": "vless",
+      "server": "json-xtls-flow-vless.example.test",
+      "port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000111",
+      "xtls_flow": "xtls-rprx-vision"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON flow alias URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "vless://00000000-0000-0000-0000-000000000110@json-flow-name-vless.example.test:443?flow=xtls-rprx-vision#JSON%20FlowName%20VLESS" {
+		t.Fatalf("unexpected structured JSON flowName VLESS URI: %q", lines[0])
+	}
+	if lines[1] != "vless://00000000-0000-0000-0000-000000000111@json-xtls-flow-vless.example.test:443?flow=xtls-rprx-vision#JSON%20XTLS%20Flow%20VLESS" {
+		t.Fatalf("unexpected structured JSON xtls_flow VLESS URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONParsesInlineProxyProviderListAliases(t *testing.T) {
 	raw := `{
   "proxyProviders": {

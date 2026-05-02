@@ -5225,12 +5225,12 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
 	raw := `{
   "outbounds": [
     {
-      "tag": "香港 V2Ray VMess Host Alias",
+      "tag": "香港 V2Ray VMess ServerHost Alias",
       "protocol": "vmess",
       "settings": {
         "vnext": [
           {
-            "host": "vmess-alias.v2ray.example.test",
+            "serverHost": "vmess-alias.v2ray.example.test",
             "serverPort": 443,
             "users": [
               {
@@ -5243,12 +5243,12 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
       }
     },
     {
-      "tag": "新加坡 V2Ray VLESS Server Alias",
+      "tag": "新加坡 V2Ray VLESS NodeHost Alias",
       "protocol": "vless",
       "settings": {
         "vnext": [
           {
-            "server": "vless-alias.v2ray.example.test",
+            "nodeHost": "vless-alias.v2ray.example.test",
             "server_port": 8443,
             "users": [
               {
@@ -5279,7 +5279,7 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
 		!strings.Contains(decodedText, `"port":"443"`) {
 		t.Fatalf("unexpected v2ray vmess alias document: %q", decodedText)
 	}
-	if lines[1] != "vless://00000000-0000-0000-0000-000000000088@vless-alias.v2ray.example.test:8443#%E6%96%B0%E5%8A%A0%E5%9D%A1%20V2Ray%20VLESS%20Server%20Alias" {
+	if lines[1] != "vless://00000000-0000-0000-0000-000000000088@vless-alias.v2ray.example.test:8443#%E6%96%B0%E5%8A%A0%E5%9D%A1%20V2Ray%20VLESS%20NodeHost%20Alias" {
 		t.Fatalf("unexpected v2ray vless alias URI: %q", lines[1])
 	}
 }

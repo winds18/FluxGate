@@ -128,6 +128,11 @@ func v2rayEndpointAddress(values map[string]any) string {
 		v2rayString(values, "server"),
 		v2rayString(values, "host"),
 		v2rayString(values, "add"),
+		v2rayString(values, "serverAddress"),
+		v2rayString(values, "serverHost"),
+		v2rayString(values, "remoteHost"),
+		v2rayString(values, "nodeHost"),
+		v2rayString(values, "endpoint"),
 	)
 }
 

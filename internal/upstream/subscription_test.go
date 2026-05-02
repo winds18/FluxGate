@@ -5011,6 +5011,125 @@ func TestNormalizeContentV2RayJSONHTTPAndSOCKS(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONProtocolAliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray Trojan-Go Alias",
+      "protocol": "trojan-go",
+      "settings": {
+        "servers": [
+          {
+            "address": "trojan-go.v2ray-alias.example.test",
+            "port": 443,
+            "password": "trojan-placeholder"
+          }
+        ]
+      },
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "trojan-go.v2ray-alias.example.test"
+        }
+      }
+    },
+    {
+      "tag": "V2Ray VMess AEAD Alias",
+      "protocol": "vmess-aead",
+      "settings": {
+        "vnext": [
+          {
+            "address": "vmess-aead.v2ray-alias.example.test",
+            "port": 443,
+            "users": [
+              {
+                "id": "00000000-0000-0000-0000-000000000094",
+                "security": "auto"
+              }
+            ]
+          }
+        ]
+      },
+      "streamSettings": {
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "vmess-aead.v2ray-alias.example.test"
+        }
+      }
+    },
+    {
+      "tag": "V2Ray HTTP Plus TLS Alias",
+      "protocol": "http+tls",
+      "settings": {
+        "servers": [
+          {
+            "address": "http-plus-tls.v2ray-alias.example.test",
+            "port": 443,
+            "users": [
+              {
+                "user": "qa-user",
+                "pass": "http-placeholder"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "V2Ray HTTP Dash TLS Alias",
+      "protocol": "http-tls",
+      "settings": {
+        "servers": [
+          {
+            "address": "http-dash-tls.v2ray-alias.example.test",
+            "port": 443,
+            "username": "qa-user",
+            "password": "http-dash-placeholder"
+          }
+        ]
+      }
+    },
+    {
+      "tag": "V2Ray Reject Alias",
+      "protocol": "reject-drop"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 5 {
+		t.Fatalf("expected 5 v2ray alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan-go.v2ray-alias.example.test:443?")
+	if !strings.Contains(lines[0], "security=tls") ||
+		!strings.Contains(lines[0], "sni=trojan-go.v2ray-alias.example.test") ||
+		!strings.HasSuffix(lines[0], "#V2Ray%20Trojan-Go%20Alias") {
+		t.Fatalf("unexpected v2ray Trojan-Go alias URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "vmess://")
+	decodedVMessText := decodeVMessURIForTest(t, lines[1])
+	for _, want := range []string{
+		`"ps":"V2Ray VMess AEAD Alias"`,
+		`"add":"vmess-aead.v2ray-alias.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000094"`,
+		`"tls":"tls"`,
+		`"sni":"vmess-aead.v2ray-alias.example.test"`,
+	} {
+		if !strings.Contains(decodedVMessText, want) {
+			t.Fatalf("expected v2ray VMess AEAD alias document to contain %q: %q", want, decodedVMessText)
+		}
+	}
+	assertHasPrefix(t, lines[2], "https://qa-user:http-placeholder@http-plus-tls.v2ray-alias.example.test:443#V2Ray%20HTTP%20Plus%20TLS%20Alias")
+	assertHasPrefix(t, lines[3], "https://qa-user:http-dash-placeholder@http-dash-tls.v2ray-alias.example.test:443#V2Ray%20HTTP%20Dash%20TLS%20Alias")
+	if lines[4] != "block://default#V2Ray%20Reject%20Alias" {
+		t.Fatalf("unexpected v2ray reject alias URI: %q", lines[4])
+	}
+}
+
 func TestNormalizeContentV2RayJSONProxyAccountAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

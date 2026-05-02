@@ -5340,6 +5340,51 @@ func TestNormalizeContentV2RayJSONProxyEndpointAccountMaps(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONProxyEndpointScalarAccounts(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray HTTP Endpoint Scalar Account",
+      "protocol": "http",
+      "settings": {
+        "servers": {
+          "http-scalar-account.v2ray.example.test:8080": "qa-http:http-scalar-placeholder"
+        }
+      }
+    },
+    {
+      "tag": "V2Ray SOCKS Endpoint Scalar Accounts",
+      "protocol": "socks",
+      "settings": {
+        "servers": {
+          "socks-scalar-account.v2ray.example.test:1080": [
+            "qa-socks-a:socks-scalar-a-placeholder",
+            "qa-socks-b:socks-scalar-b-placeholder"
+          ]
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "http://qa-http:http-scalar-placeholder@http-scalar-account.v2ray.example.test:8080#qa-http" {
+		t.Fatalf("unexpected v2ray http scalar account URI: %q", lines[0])
+	}
+	if lines[1] != "socks5://qa-socks-a:socks-scalar-a-placeholder@socks-scalar-account.v2ray.example.test:1080#qa-socks-a" {
+		t.Fatalf("unexpected v2ray socks scalar account URI: %q", lines[1])
+	}
+	if lines[2] != "socks5://qa-socks-b:socks-scalar-b-placeholder@socks-scalar-account.v2ray.example.test:1080#qa-socks-b" {
+		t.Fatalf("unexpected v2ray socks scalar account URI: %q", lines[2])
+	}
+}
+
 func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
 	raw := `{
   "outbounds": [

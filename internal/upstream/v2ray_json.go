@@ -466,19 +466,63 @@ func v2rayProxyServerList(value any) []map[string]any {
 }
 
 func v2rayMappedAccountServer(key string, value any) map[string]any {
-	accounts := v2rayMap(value)
-	if accounts == nil || v2rayLooksLikeObject(accounts) {
+	users := v2rayMappedAccountUsers(value)
+	if len(users) == 0 {
 		return nil
 	}
 	server := map[string]any{
-		"name":     key,
-		"accounts": accounts,
+		"name":  key,
+		"users": users,
 	}
 	applyV2RayMappedEndpointKey(server, key)
 	if v2rayEndpointAddress(server) == "" {
 		return nil
 	}
 	return server
+}
+
+func v2rayMappedAccountUsers(value any) []any {
+	if accounts := v2rayMap(value); accounts != nil {
+		if v2rayLooksLikeObject(accounts) {
+			return nil
+		}
+		mappedUsers := v2rayScalarAccountUsers(accounts)
+		users := make([]any, 0, len(mappedUsers))
+		for _, user := range mappedUsers {
+			users = append(users, user)
+		}
+		return users
+	}
+	if values, ok := value.([]any); ok {
+		users := make([]any, 0, len(values))
+		for _, item := range values {
+			user := v2rayScalarCredentialUser(item)
+			if user == nil {
+				return nil
+			}
+			users = append(users, user)
+		}
+		return users
+	}
+	if user := v2rayScalarCredentialUser(value); user != nil {
+		return []any{user}
+	}
+	return nil
+}
+
+func v2rayScalarCredentialUser(value any) map[string]any {
+	credential := strings.TrimSpace(stringFromAnyValue(value))
+	username, password, ok := strings.Cut(credential, ":")
+	username = strings.TrimSpace(username)
+	password = strings.TrimSpace(password)
+	if !ok || username == "" || password == "" {
+		return nil
+	}
+	return map[string]any{
+		"name": username,
+		"user": username,
+		"pass": password,
+	}
 }
 
 func v2rayProxyServerUsers(server map[string]any) []map[string]any {

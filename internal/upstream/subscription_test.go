@@ -1722,6 +1722,65 @@ func TestNormalizeContentJSONStructuredTLSServerNameAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredAllowInsecureAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON TLS Kebab Insecure Trojan",
+      "protocol": "trojan",
+      "server": "json-tls-kebab-insecure-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "serverName": "kebab-insecure.example.test",
+        "allow-insecure": true
+      }
+    },
+    {
+      "name": "JSON TLS Snake Insecure VLESS",
+      "protocol": "vless",
+      "server": "json-tls-snake-insecure-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000097",
+      "tls": {
+        "enabled": true,
+        "serverName": "snake-insecure.example.test",
+        "allow_insecure": true
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON allow insecure proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@json-tls-kebab-insecure-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=kebab-insecure.example.test",
+		"insecure=1",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON TLS kebab allow-insecure URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "vless://00000000-0000-0000-0000-000000000097@json-tls-snake-insecure-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=snake-insecure.example.test",
+		"insecure=1",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON TLS snake allow_insecure URI to contain %q: %q", want, lines[1])
+		}
+	}
+}
+
 func TestNormalizeContentJSONStructuredRealityAliases(t *testing.T) {
 	raw := `{
   "nodes": [

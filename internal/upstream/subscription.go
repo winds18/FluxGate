@@ -581,6 +581,10 @@ func structuredProxyKeyPrefersFirstValue(key string) bool {
 
 func normalizedStructuredProxyKey(key string) string {
 	switch key {
+	case "allow_insecure":
+		return "insecure"
+	case "allow-insecure":
+		return "insecure"
 	case "allowinsecure":
 		return "insecure"
 	case "clientfingerprint":

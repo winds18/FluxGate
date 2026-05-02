@@ -657,6 +657,18 @@ func normalizedStructuredProxyKey(key string) string {
 		return "transport"
 	case "transporttype":
 		return "transport"
+	case "tls_host":
+		return "servername"
+	case "tls-host":
+		return "servername"
+	case "tlshost":
+		return "servername"
+	case "tls_server_name":
+		return "servername"
+	case "tls-server-name":
+		return "servername"
+	case "tlsservername":
+		return "servername"
 	case "wshost":
 		return "ws-host"
 	case "wsheaders":

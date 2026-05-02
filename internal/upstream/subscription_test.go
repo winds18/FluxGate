@@ -1787,6 +1787,61 @@ func TestNormalizeContentJSONStructuredTLSServerNameAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredTLSHostAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON TLS Host Trojan",
+      "protocol": "trojan",
+      "server": "json-tls-host-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "tls": true,
+      "tlsHost": "tls-host-sni.example.test"
+    },
+    {
+      "name": "JSON TLS Server Name VLESS",
+      "protocol": "vless",
+      "server": "json-tls-server-name-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000098",
+      "tls": {
+        "enabled": true,
+        "tls_server_name": "tls-server-name-sni.example.test"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON TLS host alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@json-tls-host-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=tls-host-sni.example.test",
+		"#JSON%20TLS%20Host%20Trojan",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON tlsHost URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "vless://00000000-0000-0000-0000-000000000098@json-tls-server-name-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=tls-server-name-sni.example.test",
+		"#JSON%20TLS%20Server%20Name%20VLESS",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON tls_server_name URI to contain %q: %q", want, lines[1])
+		}
+	}
+}
+
 func TestNormalizeContentJSONStructuredAllowInsecureAliases(t *testing.T) {
 	raw := `{
   "nodes": [

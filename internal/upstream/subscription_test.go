@@ -5978,7 +5978,7 @@ func TestNormalizeContentV2RayJSONServerFieldAliases(t *testing.T) {
           {
             "add": "ss-alias.v2ray.example.test",
             "serverPort": 8388,
-            "security": "aes-256-gcm",
+            "encryptMethod": "aes-256-gcm",
             "passwd": "ss-placeholder"
           }
         ]

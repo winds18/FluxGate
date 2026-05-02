@@ -172,7 +172,7 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 			"password": v2rayCredentialPassword(server),
 		}
 		if protocol == "shadowsocks" {
-			proxy["method"] = firstNonEmptyString(v2rayString(server, "method"), v2rayString(server, "cipher"), v2rayString(server, "security"), v2rayString(server, "encryption"))
+			proxy["method"] = v2rayShadowsocksMethod(server)
 			if plugin := firstNonEmptyString(v2rayString(server, "plugin"), v2rayString(settings, "plugin")); plugin != "" {
 				proxy["plugin"] = plugin
 			}
@@ -204,6 +204,18 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 		}
 	}
 	return uris
+}
+
+func v2rayShadowsocksMethod(server map[string]any) string {
+	return firstNonEmptyString(
+		v2rayString(server, "method"),
+		v2rayString(server, "cipher"),
+		v2rayString(server, "security"),
+		v2rayString(server, "encryption"),
+		v2rayString(server, "encryptMethod"),
+		v2rayString(server, "encrypt_method"),
+		v2rayString(server, "encrypt-method"),
+	)
 }
 
 func v2rayHTTPServerURIs(outbound map[string]any) []string {

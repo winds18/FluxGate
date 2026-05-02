@@ -152,7 +152,7 @@
 - subscription 来源可解析 V2Ray/Xray JSON `outbounds` 中的 VMess、VLESS、Trojan、Shadowsocks、HTTP、SOCKS、freedom、blackhole、reject 变体和 DNS 出站，并兼容 `trojan-go`、`vmess-aead`、`http+tls`、`http-tls`、`socks4`、`socks4a`、`socks5`、`socks5h` 协议别名，保留常见 TLS、REALITY、WebSocket、gRPC、QUIC、HTTP/H2 和 HTTPUpgrade 传输参数；REALITY 兼容 `serverName`/`serverNames`、`shortId`/`shortIds` 和 hyphen/snake-case 别名。
 - V2Ray/Xray JSON `streamSettings`、TLS/REALITY 设置和各 transport 设置块支持 camelCase、snake_case 和 hyphen-case 容器字段别名。
 - V2Ray/Xray JSON 顶层、outbound、settings、vnext/server、user/account、streamSettings、TLS、uTLS、REALITY、WebSocket、gRPC、HTTP、HTTPUpgrade 和 TCP header 字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Outbounds`、`Settings`、`VNext`、`Server-Port`、`StreamSettings`、`TLSSettings`、`ServerName`、`Disable-SNI`、`WSSettings`、`MaxEarlyData`、`GrpcSettings` 和 `PermitWithoutStream`。
-- V2Ray/Xray JSON Shadowsocks outbound 可识别 `host`/`add`、`serverPort`/`server-port`、`pass`、`security`/`encryption` 字段别名，并保留 SIP003 `plugin`、`plugin_opts`、`plugin_options`、`network` 和 `protocol` 标志，结构化订阅导入后会继续进入 Shadowsocks 转换链路。
+- V2Ray/Xray JSON Shadowsocks outbound 可识别 `host`/`add`、`serverPort`/`server-port`、`pass`/`passwd`/`pwd`/`psk`/`token`、`security`/`encryption`/`encryptMethod` 字段别名，并保留 SIP003 `plugin`、`plugin_opts`、`plugin_options`、`network` 和 `protocol` 标志，结构化订阅导入后会继续进入 Shadowsocks 转换链路。
 - V2Ray/Xray JSON 普通 TLS 会兼容 `serverName`/`serverNames` 以及 hyphen/snake-case SNI 别名，数组写法会选取首个有效值同步到生成的节点 URI。
 - V2Ray/Xray JSON 普通 TLS 会兼容 `allowInsecure`、`skip-cert-verify`、`insecure` 和 `disable_sni` 写法，并同步到生成的节点 URI。
 - V2Ray/Xray JSON 普通 TLS 会保留 `fingerprint`、`clientFingerprint` 或 `utls.fingerprint` 客户端指纹，并同步为 sing-box uTLS fingerprint。

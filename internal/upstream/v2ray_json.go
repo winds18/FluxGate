@@ -133,7 +133,13 @@ func v2rayVNextUsers(vnext map[string]any) []map[string]any {
 	if users := v2rayVNextMappedUsers(value); len(users) > 0 {
 		return users
 	}
-	return v2rayObjectList(value)
+	if users := v2rayObjectList(value); len(users) > 0 {
+		return users
+	}
+	if v2rayVNextUserID(vnext) != "" {
+		return []map[string]any{vnext}
+	}
+	return nil
 }
 
 func v2rayVNextMappedUsers(value any) []map[string]any {

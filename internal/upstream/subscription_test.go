@@ -5481,6 +5481,69 @@ func TestNormalizeContentV2RayJSONEndpointObjectMaps(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONEndpointUserArrayMaps(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray VMess Endpoint User Array",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": {
+          "vmess-user-array.v2ray.example.test:443": [
+            {
+              "id": "00000000-0000-0000-0000-000000000099",
+              "security": "auto",
+              "email": "香港 V2Ray VMess User Array"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "tag": "V2Ray VLESS Endpoint User Array",
+      "protocol": "vless",
+      "settings": {
+        "vnext": {
+          "vless-user-array.v2ray.example.test:8443": [
+            {
+              "uuid": "00000000-0000-0000-0000-000000000100",
+              "flow": "xtls-rprx-vision",
+              "name": "东京 V2Ray VLESS User Array"
+            }
+          ]
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 V2Ray endpoint user array URIs, got %d: %q", len(lines), got)
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[0], "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode v2ray vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	for _, want := range []string{
+		`"ps":"香港 V2Ray VMess User Array"`,
+		`"add":"vmess-user-array.v2ray.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000099"`,
+	} {
+		if !strings.Contains(decodedText, want) {
+			t.Fatalf("expected v2ray VMess endpoint user array document to contain %q: %q", want, decodedText)
+		}
+	}
+	if lines[1] != "vless://00000000-0000-0000-0000-000000000100@vless-user-array.v2ray.example.test:8443?flow=xtls-rprx-vision#%E4%B8%9C%E4%BA%AC%20V2Ray%20VLESS%20User%20Array" {
+		t.Fatalf("unexpected v2ray VLESS endpoint user array URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONVLESSPacketEncoding(t *testing.T) {
 	raw := `{
   "outbounds": [

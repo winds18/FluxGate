@@ -60,6 +60,10 @@ func quantumultXProxyURI(line string) string {
 		proxy["method"] = surgeFirstValue(options, positionals, 1, "method", "cipher", "encrypt-method")
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass")
 		return clashShadowsocksURI(proxy)
+	case "ssr", "shadowsocksr":
+		proxy["method"] = surgeFirstValue(options, positionals, 1, "method", "cipher", "encrypt-method")
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass")
+		return clashShadowsocksRURI(proxy)
 	case "hysteria2", "hy2":
 		proxy["type"] = "hysteria2"
 		proxy["password"] = surgeFirstValue(options, positionals, 1, "password", "passwd", "pass", "auth", "auth-str", "auth_str", "token")
@@ -213,7 +217,7 @@ func parseQuantumultXProxyLine(line string) (string, []string, bool) {
 	}
 	protocol = strings.ToLower(strings.TrimSpace(protocol))
 	switch protocol {
-	case "ss", "shadowsocks", "hysteria2", "hy2", "tuic", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "naive-https", "ssh", "wireguard", "wg", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "http+tls", "http-tls", "socks", "socks5", "socks5h":
+	case "ss", "shadowsocks", "ssr", "shadowsocksr", "hysteria2", "hy2", "tuic", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "naive-https", "ssh", "wireguard", "wg", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "http+tls", "http-tls", "socks", "socks5", "socks5h":
 	default:
 		return "", nil, false
 	}

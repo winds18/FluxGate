@@ -898,6 +898,26 @@ socks5h=qx-socks5h-alias.example.test:1080, qa-user, socks-placeholder, udp=true
 	}
 }
 
+func TestNormalizeContentQuantumultXShadowsocksR(t *testing.T) {
+	raw := `[server_local]
+ssr=qx-ssr.example.test:8388, aes-128-gcm, qa-placeholder, protocol=auth_sha1_v4, obfs=tls1.2_ticket_auth, tag=香港 QuantumultX SSR
+shadowsocksr=qx-shadowsocksr.example.test:8389, method=chacha20-ietf-poly1305, password=qa-placeholder-2, protocol=origin, obfs=plain, tag=东京 QuantumultX ShadowsocksR`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@qx-ssr.example.test:8388#%E9%A6%99%E6%B8%AF%20QuantumultX%20SSR",
+		"ss://chacha20-ietf-poly1305:qa-placeholder-2@qx-shadowsocksr.example.test:8389#%E4%B8%9C%E4%BA%AC%20QuantumultX%20ShadowsocksR",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected Quantumult X ShadowsocksR URI list: %q", got)
+	}
+	if strings.Contains(got, "network=") || strings.Contains(got, "auth_sha1_v4") || strings.Contains(got, "tls1.2_ticket_auth") {
+		t.Fatalf("unexpected SSR-only fields leaked into Quantumult X Shadowsocks URI: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONWrappedBase64URIList(t *testing.T) {
 	payload := strings.Join([]string{
 		"vless://00000000-0000-0000-0000-000000000081@example.com:443#香港 02",

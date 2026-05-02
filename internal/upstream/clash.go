@@ -147,6 +147,10 @@ func normalizedClashProxyType(proxyType string) string {
 		return "anytls"
 	case "shadow-tls":
 		return "shadowtls"
+	case "http+tls", "http-tls":
+		return "https"
+	case "naive+https", "naive-https":
+		return "naive"
 	case "naive-quic":
 		return "naive+quic"
 	case "socks5h":
@@ -473,7 +477,7 @@ func clashHTTPURI(proxy map[string]string) string {
 		return ""
 	}
 
-	proxyType := strings.ToLower(firstMapValue(proxy, "type"))
+	proxyType := normalizedClashProxyType(firstMapValue(proxy, "type"))
 	values := url.Values{}
 	sni := firstMapValue(proxy, "sni", "servername", "server_name")
 	if sni != "" {

@@ -1666,7 +1666,11 @@ proxies:
   - { name: "Clash HY2 Alias", type: hy2, server: hy2.clash-alias.example.test, port: 443, password: "hy2-placeholder" }
   - { name: "Clash AnyTLS Alias", type: any-tls, server: anytls.clash-alias.example.test, port: 443, password: "anytls-placeholder" }
   - { name: "Clash ShadowTLS Alias", type: shadow-tls, server: shadowtls.clash-alias.example.test, port: 443, version: 3, password: "shadowtls-placeholder" }
+  - { name: "Clash HTTP Plus TLS Alias", type: http+tls, server: http-plus-tls.clash-alias.example.test, port: 443, username: qa-user, password: "http-placeholder", path: /connect }
+  - { name: "Clash HTTP Dash TLS Alias", type: http-tls, server: http-dash-tls.clash-alias.example.test, port: 443, username: qa-user, password: "http-dash-placeholder" }
   - { name: "Clash Naive QUIC Alias", type: naive-quic, server: naive.clash-alias.example.test, port: 443, username: qa-user, password: "naive-placeholder" }
+  - { name: "Clash Naive HTTPS Alias", type: naive+https, server: naive-https.clash-alias.example.test, port: 443, username: qa-user, password: "naive-https-placeholder", sni: naive-https.clash-alias.example.test }
+  - { name: "Clash Naive Dash HTTPS Alias", type: naive-https, server: naive-dash-https.clash-alias.example.test, port: 443, username: qa-user, password: "naive-dash-https-placeholder", sni: naive-dash-https.clash-alias.example.test }
   - { name: "Clash SOCKS5H Alias", type: socks5h, server: socks5h.clash-alias.example.test, port: 1080, username: qa-user, password: "socks-placeholder", network: udp }
 `
 	got, err := NormalizeContent(raw)
@@ -1674,8 +1678,8 @@ proxies:
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 7 {
-		t.Fatalf("expected 7 normalized Clash alias nodes, got %d: %q", len(lines), got)
+	if len(lines) != 11 {
+		t.Fatalf("expected 11 normalized Clash alias nodes, got %d: %q", len(lines), got)
 	}
 
 	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan-go.clash-alias.example.test:443?")
@@ -1705,15 +1709,27 @@ proxies:
 		!strings.HasSuffix(lines[4], "#Clash%20ShadowTLS%20Alias") {
 		t.Fatalf("unexpected Clash ShadowTLS alias URI: %q", lines[4])
 	}
-	assertHasPrefix(t, lines[5], "naive+quic://qa-user:naive-placeholder@naive.clash-alias.example.test:443?")
-	if !strings.Contains(lines[5], "quic=1") ||
-		!strings.HasSuffix(lines[5], "#Clash%20Naive%20QUIC%20Alias") {
-		t.Fatalf("unexpected Clash Naive QUIC alias URI: %q", lines[5])
+	assertHasPrefix(t, lines[5], "https://qa-user:http-placeholder@http-plus-tls.clash-alias.example.test:443/connect#Clash%20HTTP%20Plus%20TLS%20Alias")
+	assertHasPrefix(t, lines[6], "https://qa-user:http-dash-placeholder@http-dash-tls.clash-alias.example.test:443#Clash%20HTTP%20Dash%20TLS%20Alias")
+	assertHasPrefix(t, lines[7], "naive+quic://qa-user:naive-placeholder@naive.clash-alias.example.test:443?")
+	if !strings.Contains(lines[7], "quic=1") ||
+		!strings.HasSuffix(lines[7], "#Clash%20Naive%20QUIC%20Alias") {
+		t.Fatalf("unexpected Clash Naive QUIC alias URI: %q", lines[7])
 	}
-	assertHasPrefix(t, lines[6], "socks5://qa-user:socks-placeholder@socks5h.clash-alias.example.test:1080?")
-	if !strings.Contains(lines[6], "network=udp") ||
-		!strings.HasSuffix(lines[6], "#Clash%20SOCKS5H%20Alias") {
-		t.Fatalf("unexpected Clash SOCKS5H alias URI: %q", lines[6])
+	assertHasPrefix(t, lines[8], "naive://qa-user:naive-https-placeholder@naive-https.clash-alias.example.test:443?")
+	if !strings.Contains(lines[8], "sni=naive-https.clash-alias.example.test") ||
+		!strings.HasSuffix(lines[8], "#Clash%20Naive%20HTTPS%20Alias") {
+		t.Fatalf("unexpected Clash Naive HTTPS alias URI: %q", lines[8])
+	}
+	assertHasPrefix(t, lines[9], "naive://qa-user:naive-dash-https-placeholder@naive-dash-https.clash-alias.example.test:443?")
+	if !strings.Contains(lines[9], "sni=naive-dash-https.clash-alias.example.test") ||
+		!strings.HasSuffix(lines[9], "#Clash%20Naive%20Dash%20HTTPS%20Alias") {
+		t.Fatalf("unexpected Clash Naive Dash HTTPS alias URI: %q", lines[9])
+	}
+	assertHasPrefix(t, lines[10], "socks5://qa-user:socks-placeholder@socks5h.clash-alias.example.test:1080?")
+	if !strings.Contains(lines[10], "network=udp") ||
+		!strings.HasSuffix(lines[10], "#Clash%20SOCKS5H%20Alias") {
+		t.Fatalf("unexpected Clash SOCKS5H alias URI: %q", lines[10])
 	}
 }
 

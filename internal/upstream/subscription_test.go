@@ -615,6 +615,71 @@ func TestNormalizeContentJSONStructuredGenericTransport(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredTransportTypeAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON NetworkType WS",
+      "protocol": "vless",
+      "server": "json-networktype-vless.example.test",
+      "serverPort": 443,
+      "id": "00000000-0000-0000-0000-000000000133",
+      "tls": true,
+      "serverName": "json-networktype-vless.example.test",
+      "networkType": "ws",
+      "wsPath": "/network-type",
+      "wsHost": "ws.json-networktype-vless.example.test"
+    },
+    {
+      "name": "JSON TransportType gRPC",
+      "protocol": "trojan",
+      "server": "json-transporttype-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "security": "tls",
+      "sni": "json-transporttype-trojan.example.test",
+      "transport_type": "grpc",
+      "grpcServiceName": "fluxgate-transport-type",
+      "permitWithoutStream": true
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON transport alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000133@json-networktype-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-networktype-vless.example.test",
+		"type=ws",
+		"path=%2Fnetwork-type",
+		"host=ws.json-networktype-vless.example.test",
+		"#JSON%20NetworkType%20WS",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON networkType URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@json-transporttype-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-transporttype-trojan.example.test",
+		"type=grpc",
+		"service_name=fluxgate-transport-type",
+		"permit_without_stream=true",
+		"#JSON%20TransportType%20gRPC",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON transport_type URI to contain %q: %q", want, lines[1])
+		}
+	}
+}
+
 func TestNormalizeContentJSONStructuredProxyHyphenAliases(t *testing.T) {
 	raw := `{
   "nodes": [

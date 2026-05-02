@@ -603,6 +603,14 @@ func normalizedStructuredProxyKey(key string) string {
 		return "httpupgrade-opts"
 	case "maxearlydata":
 		return "max-early-data"
+	case "nettype":
+		return "network"
+	case "network_type":
+		return "network"
+	case "network-type":
+		return "network"
+	case "networktype":
+		return "network"
 	case "idletimeout":
 		return "idle-timeout"
 	case "pingtimeout":
@@ -643,6 +651,12 @@ func normalizedStructuredProxyKey(key string) string {
 		return "short-id"
 	case "spiderx":
 		return "spider-x"
+	case "transport_type":
+		return "transport"
+	case "transport-type":
+		return "transport"
+	case "transporttype":
+		return "transport"
 	case "wshost":
 		return "ws-host"
 	case "wsheaders":

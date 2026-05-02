@@ -5786,7 +5786,7 @@ func TestNormalizeContentSingBoxJSONVLESSHTTPTransport(t *testing.T) {
       },
       "transport": {
         "type": "http",
-        "host": ["h2.singbox.example.test", "h2-backup.singbox.example.test"],
+        "authority": ["h2.singbox.example.test", "h2-backup.singbox.example.test"],
         "path": "/h2",
         "method": "GET",
         "idle_timeout": "20s",
@@ -5829,7 +5829,7 @@ func TestNormalizeContentSingBoxJSONTrojanWebSocketEarlyData(t *testing.T) {
         "type": "ws",
         "path": "/ws",
         "headers": {
-          "Host": "ws.singbox.example.test"
+          "authority": "ws.singbox.example.test"
         },
         "max_early_data": 2048,
         "early_data_header_name": "Sec-WebSocket-Protocol"
@@ -5870,7 +5870,7 @@ func TestNormalizeContentSingBoxJSONTrojanHTTPUpgradeTransport(t *testing.T) {
         "type": "httpupgrade",
         "path": "/upgrade",
         "headers": {
-          "Host": ["upgrade.singbox.example.test", "upgrade-backup.singbox.example.test"]
+          ":authority": ["upgrade.singbox.example.test", "upgrade-backup.singbox.example.test"]
         }
       }
     }
@@ -6081,7 +6081,9 @@ func TestNormalizeContentSingBoxJSONVMessHTTPTransport(t *testing.T) {
       },
       "transport": {
         "type": "http",
-        "host": ["h2.vmess.singbox.example.test", "h2-backup.vmess.singbox.example.test"],
+        "headers": {
+          "authority": ["h2.vmess.singbox.example.test", "h2-backup.vmess.singbox.example.test"]
+        },
         "path": "/h2"
       }
     }

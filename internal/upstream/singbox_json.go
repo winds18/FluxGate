@@ -306,15 +306,12 @@ func singBoxVMessURI(outbound map[string]any) string {
 			}
 		}
 		if strings.EqualFold(doc["net"], "http") || strings.EqualFold(doc["net"], "h2") {
-			if hosts := singBoxStringList(transport, "host"); len(hosts) > 0 {
+			if hosts := singBoxTransportDirectHosts(transport); len(hosts) > 0 {
 				doc["host"] = strings.Join(hosts, ",")
 			}
 		}
-		if headers := singBoxMap(transport, "headers"); headers != nil {
-			host := singBoxString(headers, "Host")
-			if host != "" {
-				doc["host"] = host
-			}
+		if hosts := singBoxTransportHeaderHosts(transport); len(hosts) > 0 {
+			doc["host"] = strings.Join(hosts, ",")
 		}
 	}
 
@@ -963,7 +960,7 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 		}
 	}
 	if strings.EqualFold(singBoxString(transport, "type"), "http") {
-		if hosts := singBoxStringList(transport, "host"); len(hosts) > 0 {
+		if hosts := singBoxTransportDirectHosts(transport); len(hosts) > 0 {
 			proxy["host"] = strings.Join(hosts, ",")
 		}
 		if method := singBoxString(transport, "method"); method != "" {
@@ -977,7 +974,7 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 		}
 	}
 	if strings.EqualFold(singBoxString(transport, "type"), "httpupgrade") {
-		if hosts := singBoxStringList(transport, "host"); len(hosts) > 0 {
+		if hosts := singBoxTransportDirectHosts(transport); len(hosts) > 0 {
 			proxy["host"] = strings.Join(hosts, ",")
 		}
 	}
@@ -995,11 +992,29 @@ func appendSingBoxTransportProxyValues(outbound map[string]any, proxy map[string
 	if serviceName := singBoxString(transport, "service_name"); serviceName != "" {
 		proxy["service_name"] = serviceName
 	}
-	if headers := singBoxMap(transport, "headers"); headers != nil {
-		if hosts := singBoxStringList(headers, "Host"); len(hosts) > 0 {
-			proxy["host"] = strings.Join(hosts, ",")
-		}
+	if hosts := singBoxTransportHeaderHosts(transport); len(hosts) > 0 {
+		proxy["host"] = strings.Join(hosts, ",")
 	}
+}
+
+func singBoxTransportDirectHosts(transport map[string]any) []string {
+	return firstNonEmptyStringList(
+		singBoxStringList(transport, "host"),
+		singBoxStringList(transport, "authority"),
+		singBoxStringList(transport, ":authority"),
+	)
+}
+
+func singBoxTransportHeaderHosts(transport map[string]any) []string {
+	headers := singBoxMap(transport, "headers")
+	if headers == nil {
+		return nil
+	}
+	return firstNonEmptyStringList(
+		singBoxStringList(headers, "Host"),
+		singBoxStringList(headers, "authority"),
+		singBoxStringList(headers, ":authority"),
+	)
 }
 
 func appendTLSQueryValues(outbound map[string]any, values url.Values) {

@@ -711,6 +711,18 @@ func normalizedStructuredProxyKey(key string) string {
 		return "tls"
 	case "tlsenabled":
 		return "tls"
+	case "tls_settings":
+		return "tls"
+	case "tls-settings":
+		return "tls"
+	case "tlssettings":
+		return "tls"
+	case "tls_options":
+		return "tls"
+	case "tls-options":
+		return "tls"
+	case "tlsoptions":
+		return "tls"
 	case "tls_allow_insecure":
 		return "insecure"
 	case "tls-allow-insecure":

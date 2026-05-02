@@ -1964,6 +1964,69 @@ func TestNormalizeContentJSONStructuredTLSEnabledAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredTLSContainerAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON TLS Settings Trojan",
+      "protocol": "trojan",
+      "server": "json-tls-settings-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "tlsSettings": {
+        "enabled": true,
+        "serverName": "tls-settings-sni.example.test",
+        "utls": {
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "name": "JSON TLS Options VLESS",
+      "protocol": "vless",
+      "server": "json-tls-options-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000101",
+      "tls_options": {
+        "enable": true,
+        "server_name": "tls-options-sni.example.test",
+        "skip_verify": true
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON TLS container alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@json-tls-settings-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=tls-settings-sni.example.test",
+		"fp=chrome",
+		"#JSON%20TLS%20Settings%20Trojan",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON tlsSettings URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "vless://00000000-0000-0000-0000-000000000101@json-tls-options-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=tls-options-sni.example.test",
+		"insecure=1",
+		"#JSON%20TLS%20Options%20VLESS",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON tls_options URI to contain %q: %q", want, lines[1])
+		}
+	}
+}
+
 func TestNormalizeContentJSONStructuredAllowInsecureAliases(t *testing.T) {
 	raw := `{
   "nodes": [

@@ -4752,6 +4752,91 @@ func TestNormalizeContentV2RayJSONFieldCaseAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONDirectEndpointFields(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "香港 V2Ray VMess 扁平",
+      "protocol": "vmess",
+      "server": "vmess-direct.v2ray.example.test",
+      "serverPort": 443,
+      "uuid": "00000000-0000-0000-0000-000000000107",
+      "alterId": 0,
+      "security": "auto",
+      "streamSettings": {
+        "network": "ws",
+        "security": "tls",
+        "tlsSettings": {
+          "serverName": "vmess-direct.v2ray.example.test"
+        },
+        "wsSettings": {
+          "path": "/direct"
+        }
+      }
+    },
+    {
+      "tag": "新加坡 V2Ray VLESS Settings 扁平",
+      "protocol": "vless",
+      "settings": {
+        "address": "vless-direct.v2ray.example.test",
+        "server-port": 8443,
+        "user-id": "00000000-0000-0000-0000-000000000108",
+        "flow": "xtls-rprx-vision"
+      }
+    },
+    {
+      "tag": "东京 V2Ray Trojan 扁平",
+      "protocol": "trojan",
+      "address": "trojan-direct.v2ray.example.test",
+      "port": 443,
+      "pass": "trojan-placeholder"
+    },
+    {
+      "tag": "首尔 V2Ray SS Settings 扁平",
+      "protocol": "shadowsocks",
+      "settings": {
+        "host": "ss-direct.v2ray.example.test",
+        "portNumber": 8388,
+        "encryptMethod": "aes-256-gcm",
+        "passwd": "ss-placeholder"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 V2Ray direct endpoint URIs, got %d: %q", len(lines), got)
+	}
+	decoded := decodeVMessURIForTest(t, lines[0])
+	for _, want := range []string{
+		`"ps":"香港 V2Ray VMess 扁平"`,
+		`"add":"vmess-direct.v2ray.example.test"`,
+		`"port":"443"`,
+		`"id":"00000000-0000-0000-0000-000000000107"`,
+		`"net":"ws"`,
+		`"path":"/direct"`,
+		`"tls":"tls"`,
+		`"sni":"vmess-direct.v2ray.example.test"`,
+	} {
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected V2Ray direct VMess URI to contain %q: %q", want, decoded)
+		}
+	}
+	if lines[1] != "vless://00000000-0000-0000-0000-000000000108@vless-direct.v2ray.example.test:8443?flow=xtls-rprx-vision#%E6%96%B0%E5%8A%A0%E5%9D%A1%20V2Ray%20VLESS%20Settings%20%E6%89%81%E5%B9%B3" {
+		t.Fatalf("unexpected V2Ray direct VLESS URI: %q", lines[1])
+	}
+	if lines[2] != "trojan://trojan-placeholder@trojan-direct.v2ray.example.test:443#%E4%B8%9C%E4%BA%AC%20V2Ray%20Trojan%20%E6%89%81%E5%B9%B3" {
+		t.Fatalf("unexpected V2Ray direct Trojan URI: %q", lines[2])
+	}
+	if lines[3] != "ss://aes-256-gcm:ss-placeholder@ss-direct.v2ray.example.test:8388#%E9%A6%96%E5%B0%94%20V2Ray%20SS%20Settings%20%E6%89%81%E5%B9%B3" {
+		t.Fatalf("unexpected V2Ray direct Shadowsocks URI: %q", lines[3])
+	}
+}
+
 func TestNormalizeContentV2RayJSONTCPHTTPHeader(t *testing.T) {
 	raw := `{
   "outbounds": [

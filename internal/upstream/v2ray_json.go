@@ -92,6 +92,9 @@ func normalizedV2RayProtocol(protocol string) string {
 func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) string) []string {
 	settings := v2rayFieldMap(outbound, "settings")
 	vnexts := v2rayVNextList(v2rayValue(settings, "vnext"))
+	if len(vnexts) == 0 {
+		vnexts = v2rayDirectEndpointList(outbound, settings)
+	}
 	total := v2rayVNextUserCount(vnexts)
 	sequence := 0
 	var uris []string
@@ -296,6 +299,9 @@ func v2rayEndpointAddress(values map[string]any) string {
 func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[string]string) string) []string {
 	settings := v2rayFieldMap(outbound, "settings")
 	servers := v2rayServerList(v2rayValue(settings, "servers"))
+	if len(servers) == 0 {
+		servers = v2rayDirectEndpointList(outbound, settings)
+	}
 	total := len(servers)
 	var uris []string
 	for index, server := range servers {
@@ -425,6 +431,9 @@ func v2raySOCKSServerURIs(outbound map[string]any) []string {
 func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(map[string]string) string) []string {
 	settings := v2rayFieldMap(outbound, "settings")
 	servers := v2rayProxyServerList(v2rayValue(settings, "servers"))
+	if len(servers) == 0 {
+		servers = v2rayDirectEndpointList(outbound, settings)
+	}
 	total := v2rayProxyServerUserCount(servers)
 	sequence := 0
 	var uris []string
@@ -882,6 +891,15 @@ func v2rayObjectList(value any) []map[string]any {
 	default:
 		return nil
 	}
+}
+
+func v2rayDirectEndpointList(outbound, settings map[string]any) []map[string]any {
+	for _, candidate := range []map[string]any{settings, outbound} {
+		if candidate != nil && v2rayEndpointAddress(candidate) != "" {
+			return []map[string]any{candidate}
+		}
+	}
+	return nil
 }
 
 func appendV2RayMappedObjects(result *[]map[string]any, key string, value any) {

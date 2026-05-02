@@ -264,15 +264,15 @@ func v2rayProxyServerURIs(outbound map[string]any, proxyType string, build func(
 }
 
 func v2rayProxyServerUsers(server map[string]any) []map[string]any {
-	for _, key := range []string{"users", "accounts"} {
-		if users := v2rayObjectList(v2rayValue(server, key)); len(users) > 0 {
-			return users
-		}
-		if key == "accounts" {
-			if users := v2rayScalarAccountUsers(v2rayValue(server, key)); len(users) > 0 {
-				return users
-			}
-		}
+	if users := v2rayObjectList(v2rayValue(server, "users")); len(users) > 0 {
+		return users
+	}
+	accounts := v2rayValue(server, "accounts")
+	if users := v2rayScalarAccountUsers(accounts); len(users) > 0 {
+		return users
+	}
+	if users := v2rayObjectList(accounts); len(users) > 0 {
+		return users
 	}
 	if user := v2rayCredentialUsername(server); user != "" {
 		return []map[string]any{{
@@ -325,12 +325,22 @@ func v2rayScalarAccountUsers(value any) []map[string]any {
 	users := make([]map[string]any, 0, len(keys))
 	for _, key := range keys {
 		password := strings.TrimSpace(stringFromAnyValue(accounts[key]))
+		fields := v2rayMap(accounts[key])
+		if password == "" && fields != nil {
+			password = v2rayCredentialPassword(fields)
+		}
 		if key == "" || password == "" {
 			continue
 		}
+		username := key
+		name := key
+		if fields != nil {
+			username = firstNonEmptyString(v2rayCredentialUsername(fields), key)
+			name = firstNonEmptyString(v2rayString(fields, "name"), v2rayString(fields, "email"), username)
+		}
 		users = append(users, map[string]any{
-			"name": key,
-			"user": key,
+			"name": name,
+			"user": username,
 			"pass": password,
 		})
 	}

@@ -5180,7 +5180,10 @@ func TestNormalizeContentV2RayJSONProxyAccountAliases(t *testing.T) {
             "address": "http-accounts.v2ray.example.test",
             "port": 8080,
             "accounts": {
-              "qa-http": "http-placeholder"
+              "qa-http": {
+                "password": "http-placeholder",
+                "name": "qa-http"
+              }
             }
           }
         ]

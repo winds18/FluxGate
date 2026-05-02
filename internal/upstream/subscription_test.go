@@ -1986,6 +1986,100 @@ func TestNormalizeContentJSONStructuredAllowInsecureAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredTLSInsecureAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON TLS Skip Certificate Verify Trojan",
+      "protocol": "trojan",
+      "server": "json-tls-skip-certificate-verify-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "serverName": "skip-certificate-verify.example.test",
+        "skipCertificateVerify": true
+      }
+    },
+    {
+      "name": "JSON TLS Skip Verify VLESS",
+      "protocol": "vless",
+      "server": "json-tls-skip-verify-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000100",
+      "tls": {
+        "enabled": true,
+        "serverName": "skip-verify.example.test",
+        "skip-verify": true
+      }
+    },
+    {
+      "name": "JSON TLS Top Level Insecure Trojan",
+      "protocol": "trojan",
+      "server": "json-tls-top-level-insecure-trojan.example.test",
+      "port": 443,
+      "password": "top-level-trojan-placeholder",
+      "tlsEnabled": true,
+      "tlsAllowInsecure": true,
+      "tlsSkipVerify": true,
+      "sni": "top-level-insecure.example.test"
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 structured JSON TLS insecure alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	expectations := []struct {
+		index  int
+		prefix string
+		values []string
+	}{
+		{
+			index:  0,
+			prefix: "trojan://trojan-placeholder@json-tls-skip-certificate-verify-trojan.example.test:443?",
+			values: []string{
+				"security=tls",
+				"sni=skip-certificate-verify.example.test",
+				"insecure=1",
+				"#JSON%20TLS%20Skip%20Certificate%20Verify%20Trojan",
+			},
+		},
+		{
+			index:  1,
+			prefix: "vless://00000000-0000-0000-0000-000000000100@json-tls-skip-verify-vless.example.test:443?",
+			values: []string{
+				"security=tls",
+				"sni=skip-verify.example.test",
+				"insecure=1",
+				"#JSON%20TLS%20Skip%20Verify%20VLESS",
+			},
+		},
+		{
+			index:  2,
+			prefix: "trojan://top-level-trojan-placeholder@json-tls-top-level-insecure-trojan.example.test:443?",
+			values: []string{
+				"security=tls",
+				"sni=top-level-insecure.example.test",
+				"insecure=1",
+				"#JSON%20TLS%20Top%20Level%20Insecure%20Trojan",
+			},
+		},
+	}
+	for _, item := range expectations {
+		assertHasPrefix(t, lines[item.index], item.prefix)
+		for _, want := range item.values {
+			if !strings.Contains(lines[item.index], want) {
+				t.Fatalf("expected structured JSON TLS insecure URI %d to contain %q: %q", item.index, want, lines[item.index])
+			}
+		}
+	}
+}
+
 func TestNormalizeContentJSONStructuredRealityAliases(t *testing.T) {
 	raw := `{
   "nodes": [

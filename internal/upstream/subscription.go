@@ -647,6 +647,18 @@ func normalizedStructuredProxyKey(key string) string {
 		return "reality-opts"
 	case "skipcertverify":
 		return "skip-cert-verify"
+	case "skip_certificate_verify":
+		return "skip-cert-verify"
+	case "skip-certificate-verify":
+		return "skip-cert-verify"
+	case "skipcertificateverify":
+		return "skip-cert-verify"
+	case "skip_verify":
+		return "skip-cert-verify"
+	case "skip-verify":
+		return "skip-cert-verify"
+	case "skipverify":
+		return "skip-cert-verify"
 	case "servicename":
 		return "service-name"
 	case "server-name":
@@ -693,6 +705,24 @@ func normalizedStructuredProxyKey(key string) string {
 		return "tls"
 	case "tlsenabled":
 		return "tls"
+	case "tls_allow_insecure":
+		return "insecure"
+	case "tls-allow-insecure":
+		return "insecure"
+	case "tlsallowinsecure":
+		return "insecure"
+	case "tls_insecure":
+		return "insecure"
+	case "tls-insecure":
+		return "insecure"
+	case "tlsinsecure":
+		return "insecure"
+	case "tls_skip_verify":
+		return "skip-cert-verify"
+	case "tls-skip-verify":
+		return "skip-cert-verify"
+	case "tlsskipverify":
+		return "skip-cert-verify"
 	case "wshost":
 		return "ws-host"
 	case "wsheaders":

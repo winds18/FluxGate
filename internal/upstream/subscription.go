@@ -677,6 +677,12 @@ func normalizedStructuredProxyKey(key string) string {
 		return "private-key-path"
 	case "publickey":
 		return "public-key"
+	case "quic_settings":
+		return "quic-opts"
+	case "quic-settings":
+		return "quic-opts"
+	case "quicsettings":
+		return "quic-opts"
 	case "realityopts":
 		return "reality-opts"
 	case "skipcertverify":
@@ -715,6 +721,12 @@ func normalizedStructuredProxyKey(key string) string {
 		return "transport"
 	case "transporttype":
 		return "transport"
+	case "tcp_settings":
+		return "tcp-opts"
+	case "tcp-settings":
+		return "tcp-opts"
+	case "tcpsettings":
+		return "tcp-opts"
 	case "tls_host":
 		return "servername"
 	case "tls-host":
@@ -817,7 +829,7 @@ func storeJSONProxyField(target map[string]string, scopes []string, key, value s
 }
 
 func shouldPromoteStructuredProxyField(scopes []string) bool {
-	return len(scopes) == 0 || scopes[0] != "transport"
+	return len(scopes) == 0 || (scopes[0] != "transport" && scopes[0] != "tcp-opts" && scopes[0] != "quic-opts")
 }
 
 func firstJSONString(values map[string]any, keys ...string) string {

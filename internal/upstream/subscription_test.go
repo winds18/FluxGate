@@ -754,6 +754,79 @@ func TestNormalizeContentJSONStructuredTransportContainerAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredLowLevelTransportContainerAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON QuicSettings VLESS",
+      "protocol": "vless",
+      "server": "json-quicsettings-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000136",
+      "tls": true,
+      "serverName": "json-quicsettings-vless.example.test",
+      "quicSettings": {
+        "security": "none"
+      }
+    },
+    {
+      "name": "JSON TCPSettings HTTP Trojan",
+      "protocol": "trojan",
+      "server": "json-tcpsettings-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "security": "tls",
+      "sni": "json-tcpsettings-trojan.example.test",
+      "tcpSettings": {
+        "header": {
+          "type": "http",
+          "request": {
+            "method": "GET",
+            "path": ["/front", "/backup"],
+            "headers": {
+              "Host": ["front.json-tcp.example.test", "front-backup.json-tcp.example.test"]
+            }
+          }
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON low-level transport alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000136@json-quicsettings-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-quicsettings-vless.example.test",
+		"type=quic",
+		"#JSON%20QuicSettings%20VLESS",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON quicSettings URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@json-tcpsettings-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-tcpsettings-trojan.example.test",
+		"type=http",
+		"host=front.json-tcp.example.test%2Cfront-backup.json-tcp.example.test",
+		"path=%2Ffront%2C%2Fbackup",
+		"method=GET",
+		"#JSON%20TCPSettings%20HTTP%20Trojan",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON tcpSettings HTTP URI to contain %q: %q", want, lines[1])
+		}
+	}
+}
+
 func TestNormalizeContentJSONStructuredTransportTypeAliases(t *testing.T) {
 	raw := `{
   "nodes": [

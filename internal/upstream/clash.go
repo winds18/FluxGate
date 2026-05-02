@@ -849,11 +849,12 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	wsHost := firstMapValue(proxy, "ws-headers.host", "ws_headers.host", "ws-opts.headers.host", "ws_opts.headers.host", "transport.ws-headers.host", "transport.ws_headers.host", "transport.headers.host", "ws-host", "ws_host", "transport.ws-host", "transport.ws_host")
 	wsMaxEarlyData := firstMapValue(proxy, "ws-opts.max-early-data", "ws_opts.max_early_data", "ws-opts.max_early_data", "ws_opts.max-early-data", "transport.ws-opts.max-early-data", "transport.ws_opts.max_early_data", "transport.max-early-data", "transport.max_early_data", "max-early-data", "max_early_data")
 	wsEarlyDataHeaderName := firstMapValue(proxy, "ws-opts.early-data-header-name", "ws_opts.early_data_header_name", "ws-opts.early_data_header_name", "ws_opts.early-data-header-name", "transport.ws-opts.early-data-header-name", "transport.ws_opts.early_data_header_name", "transport.early-data-header-name", "transport.early_data_header_name", "early-data-header-name", "early_data_header_name")
-	httpPath := firstMapValue(proxy, "http-opts.path", "http_opts.path", "transport.http-opts.path", "transport.http_opts.path")
-	httpHost := firstMapValue(proxy, "http-opts.host", "http_opts.host", "http-opts.headers.host", "http_opts.headers.host", "transport.http-opts.host", "transport.http_opts.host", "transport.http-opts.headers.host", "transport.http_opts.headers.host")
+	tcpHTTPHeaderType := firstMapValue(proxy, "tcp-opts.header.type", "tcp_opts.header.type", "tcp-opts.headers.type", "tcp_opts.headers.type")
+	httpPath := firstMapValue(proxy, "http-opts.path", "http_opts.path", "transport.http-opts.path", "transport.http_opts.path", "tcp-opts.header.request.path", "tcp_opts.header.request.path")
+	httpHost := firstMapValue(proxy, "http-opts.host", "http_opts.host", "http-opts.headers.host", "http_opts.headers.host", "transport.http-opts.host", "transport.http_opts.host", "transport.http-opts.headers.host", "transport.http_opts.headers.host", "tcp-opts.header.request.host", "tcp_opts.header.request.host", "tcp-opts.header.request.headers.host", "tcp_opts.header.request.headers.host")
 	httpUpgradePath := firstMapValue(proxy, "httpupgrade-opts.path", "httpupgrade_opts.path", "http-upgrade-opts.path", "http_upgrade_opts.path", "transport.httpupgrade-opts.path", "transport.httpupgrade_opts.path", "transport.http-upgrade-opts.path", "transport.http_upgrade_opts.path")
 	httpUpgradeHost := firstMapValue(proxy, "httpupgrade-opts.host", "httpupgrade_opts.host", "httpupgrade-opts.headers.host", "httpupgrade_opts.headers.host", "http-upgrade-opts.host", "http_upgrade_opts.host", "http-upgrade-opts.headers.host", "http_upgrade_opts.headers.host", "transport.httpupgrade-opts.host", "transport.httpupgrade_opts.host", "transport.httpupgrade-opts.headers.host", "transport.httpupgrade_opts.headers.host", "transport.http-upgrade-opts.host", "transport.http_upgrade_opts.host", "transport.http-upgrade-opts.headers.host", "transport.http_upgrade_opts.headers.host")
-	httpMethod := firstMapValue(proxy, "http-opts.method", "http_opts.method", "transport.http-opts.method", "transport.http_opts.method", "transport.method", "method")
+	httpMethod := firstMapValue(proxy, "http-opts.method", "http_opts.method", "transport.http-opts.method", "transport.http_opts.method", "transport.method", "method", "tcp-opts.header.request.method", "tcp_opts.header.request.method")
 	httpIdleTimeout := firstMapValue(proxy, "http-opts.idle-timeout", "http_opts.idle_timeout", "transport.http-opts.idle-timeout", "transport.http_opts.idle_timeout", "transport.idle-timeout", "transport.idle_timeout", "idle-timeout", "idle_timeout")
 	httpPingTimeout := firstMapValue(proxy, "http-opts.ping-timeout", "http_opts.ping_timeout", "transport.http-opts.ping-timeout", "transport.http_opts.ping_timeout", "transport.ping-timeout", "transport.ping_timeout", "ping-timeout", "ping_timeout")
 	grpcIdleTimeout := firstMapValue(proxy, "grpc-opts.idle-timeout", "grpc_opts.idle_timeout", "grpc-opts.idle_timeout", "grpc_opts.idle-timeout", "transport.grpc-opts.idle-timeout", "transport.grpc_opts.idle_timeout", "transport.grpc-opts.idle_timeout", "transport.grpc_opts.idle-timeout", "grpc-idle-timeout", "grpc_idle_timeout", "transport.idle-timeout", "transport.idle_timeout", "idle-timeout", "idle_timeout")
@@ -865,6 +866,9 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	serviceName := firstMapValue(proxy, "grpc-service-name", "grpc_service_name", "grpc-opts.grpc-service-name", "grpc_opts.grpc_service_name", "transport.grpc-service-name", "transport.grpc_service_name", "transport.grpc-opts.grpc-service-name", "transport.grpc_opts.grpc_service_name", "transport.service-name", "transport.service_name", "service-name", "service_name")
 	if strings.EqualFold(transportType, "http-upgrade") || strings.EqualFold(transportType, "http_upgrade") {
 		transportType = "httpupgrade"
+	}
+	if strings.EqualFold(transportType, "tcp") && strings.EqualFold(tcpHTTPHeaderType, "http") {
+		transportType = "http"
 	}
 	if strings.EqualFold(transportType, "ws") || strings.EqualFold(transportType, "websocket") {
 		wsPath = firstNonEmptyString(wsPath, firstMapValue(proxy, "transport.path"))
@@ -882,6 +886,12 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	host = firstNonEmptyString(wsHost, httpHost, httpUpgradeHost, firstMapValue(proxy, "host"))
 	if strings.EqualFold(transportType, "tls") {
 		transportType = ""
+	}
+	if transportType == "" && firstMapValue(proxy, "quic-opts.security", "quic_opts.security") != "" {
+		transportType = "quic"
+	}
+	if transportType == "" && strings.EqualFold(tcpHTTPHeaderType, "http") {
+		transportType = "http"
 	}
 	if transportType == "" && serviceName != "" {
 		transportType = "grpc"

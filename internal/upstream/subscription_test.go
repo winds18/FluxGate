@@ -4944,6 +4944,69 @@ func TestNormalizeContentV2RayJSONInternalOutbounds(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONLegacyOutboundFields(t *testing.T) {
+	raw := `{
+  "Outbound": {
+    "tag": "香港 V2Ray Legacy VMess",
+    "protocol": "vmess",
+    "settings": {
+      "vnext": [
+        {
+          "address": "legacy-vmess.v2ray.example.test",
+          "port": 443,
+          "users": [
+            {
+              "id": "00000000-0000-0000-0000-000000000099",
+              "security": "auto"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  "OutboundDetour": [
+    {
+      "tag": "东京 V2Ray Legacy Trojan",
+      "protocol": "trojan",
+      "settings": {
+        "servers": [
+          {
+            "address": "legacy-trojan.v2ray.example.test",
+            "port": 443,
+            "password": "trojan-placeholder"
+          }
+        ]
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 legacy V2Ray outbound URIs, got %d: %q", len(lines), got)
+	}
+	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[0], "vmess://"))
+	if err != nil {
+		t.Fatalf("failed to decode v2ray vmess URI: %v", err)
+	}
+	decodedText := string(decoded)
+	for _, want := range []string{
+		`"ps":"香港 V2Ray Legacy VMess"`,
+		`"add":"legacy-vmess.v2ray.example.test"`,
+		`"id":"00000000-0000-0000-0000-000000000099"`,
+	} {
+		if !strings.Contains(decodedText, want) {
+			t.Fatalf("expected legacy v2ray VMess document to contain %q: %q", want, decodedText)
+		}
+	}
+	if lines[1] != "trojan://trojan-placeholder@legacy-trojan.v2ray.example.test:443#%E4%B8%9C%E4%BA%AC%20V2Ray%20Legacy%20Trojan" {
+		t.Fatalf("unexpected legacy v2ray Trojan URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONHTTPAndSOCKS(t *testing.T) {
 	raw := `{
   "outbounds": [

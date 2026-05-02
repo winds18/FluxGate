@@ -16,7 +16,7 @@ func V2RayJSONURIList(content string) string {
 		return ""
 	}
 
-	outbounds := v2rayObjectList(v2rayValue(doc, "outbounds"))
+	outbounds := v2rayTopLevelOutbounds(doc)
 	if len(outbounds) == 0 {
 		return ""
 	}
@@ -26,6 +26,14 @@ func V2RayJSONURIList(content string) string {
 		uris = append(uris, v2rayOutboundURIs(outbound)...)
 	}
 	return strings.Join(uris, "\n")
+}
+
+func v2rayTopLevelOutbounds(doc map[string]any) []map[string]any {
+	var outbounds []map[string]any
+	for _, key := range []string{"outbounds", "outbound", "outboundDetour"} {
+		outbounds = append(outbounds, v2rayObjectList(v2rayValue(doc, key))...)
+	}
+	return outbounds
 }
 
 func v2rayOutboundURIs(outbound map[string]any) []string {

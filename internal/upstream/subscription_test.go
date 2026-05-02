@@ -5231,7 +5231,7 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
         "vnext": [
           {
             "serverHost": "vmess-alias.v2ray.example.test",
-            "serverPort": 443,
+            "portNumber": 443,
             "users": [
               {
                 "user_id": "00000000-0000-0000-0000-000000000087",
@@ -5249,7 +5249,7 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
         "vnext": [
           {
             "nodeHost": "vless-alias.v2ray.example.test",
-            "server_port": 8443,
+            "nodePort": 8443,
             "users": [
               {
                 "user-id": "00000000-0000-0000-0000-000000000088",

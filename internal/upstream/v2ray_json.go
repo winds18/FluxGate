@@ -654,7 +654,21 @@ func v2rayString(values map[string]any, key string) string {
 
 func v2rayPort(values map[string]any, keys ...string) string {
 	if len(keys) == 0 {
-		keys = []string{"port", "server_port", "serverPort", "server-port"}
+		keys = []string{
+			"port",
+			"server_port",
+			"serverPort",
+			"server-port",
+			"remotePort",
+			"remote_port",
+			"remote-port",
+			"nodePort",
+			"node_port",
+			"node-port",
+			"portNumber",
+			"port_number",
+			"port-number",
+		}
 	}
 	for _, key := range keys {
 		if port := intFromAnyValue(v2rayValue(values, key)); port > 0 {

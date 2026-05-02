@@ -451,6 +451,7 @@ func clashJSONProxyURI(values map[string]any, fallbackName string) string {
 	collectJSONProxyFields(proxy, nil, values)
 	applyClashJSONProxyAliases(proxy)
 	normalizeStructuredProxyServerPort(proxy)
+	normalizeStructuredProxyTLSFields(proxy)
 	if firstMapValue(proxy, "name") == "" {
 		if name := firstNonEmptyString(firstMapValue(proxy, "tag", "remarks", "ps", "id"), fallbackName); name != "" {
 			proxy["name"] = name
@@ -526,6 +527,12 @@ func splitStructuredProxyHostPort(value string) (string, string) {
 		return "", ""
 	}
 	return strings.Trim(host, "[]"), port
+}
+
+func normalizeStructuredProxyTLSFields(proxy map[string]string) {
+	if firstMapValue(proxy, "tls") == "" && boolMapValue(proxy, "tls.enabled") {
+		proxy["tls"] = "true"
+	}
 }
 
 func collectJSONProxyFields(target map[string]string, scopes []string, values map[string]any) {

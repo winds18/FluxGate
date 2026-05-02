@@ -1589,6 +1589,77 @@ func TestNormalizeContentJSONStructuredAliasFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredNestedTLSFields(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON Nested TLS Trojan",
+      "protocol": "trojan",
+      "server": "json-nested-tls-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "json-nested-tls-trojan.example.test",
+        "insecure": true,
+        "utls": {
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "name": "JSON Nested TLS VLESS",
+      "protocol": "vless",
+      "server": "json-nested-tls-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000091",
+      "tls": {
+        "enabled": true,
+        "serverName": "json-nested-tls-vless.example.test",
+        "disableSNI": true,
+        "clientFingerprint": "firefox"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON nested TLS proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@json-nested-tls-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-nested-tls-trojan.example.test",
+		"insecure=1",
+		"fp=chrome",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON nested TLS Trojan URI to contain %q: %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#JSON%20Nested%20TLS%20Trojan") {
+		t.Fatalf("unexpected structured JSON nested TLS Trojan fragment: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "vless://00000000-0000-0000-0000-000000000091@json-nested-tls-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-nested-tls-vless.example.test",
+		"disable_sni=1",
+		"fp=firefox",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON nested TLS VLESS URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#JSON%20Nested%20TLS%20VLESS") {
+		t.Fatalf("unexpected structured JSON nested TLS VLESS fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONStructuredVMessTypeUsesProxyParser(t *testing.T) {
 	raw := `{
   "nodes": [

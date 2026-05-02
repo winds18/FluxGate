@@ -615,6 +615,145 @@ func TestNormalizeContentJSONStructuredGenericTransport(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredTransportContainerAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON WSSettings VLESS",
+      "protocol": "vless",
+      "server": "json-wssettings-vless.example.test",
+      "port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000134",
+      "tls": true,
+      "serverName": "json-wssettings-vless.example.test",
+      "wsSettings": {
+        "path": "/ws-settings",
+        "headers": {
+          "Host": "wssettings.example.test"
+        },
+        "maxEarlyData": 1024,
+        "earlyDataHeaderName": "Sec-WebSocket-Protocol"
+      }
+    },
+    {
+      "name": "JSON GrpcSettings Trojan",
+      "protocol": "trojan",
+      "server": "json-grpcsettings-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "security": "tls",
+      "sni": "json-grpcsettings-trojan.example.test",
+      "grpcSettings": {
+        "serviceName": "fluxgate-grpc-settings",
+        "idleTimeout": "20s",
+        "pingTimeout": "8s",
+        "permitWithoutStream": true,
+        "multiMode": true
+      }
+    },
+    {
+      "name": "JSON HttpSettings VLESS",
+      "protocol": "vless",
+      "server": "json-httpsettings-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000135",
+      "tls": true,
+      "serverName": "json-httpsettings-vless.example.test",
+      "httpSettings": {
+        "path": "/h2",
+        "host": "http-settings.example.test",
+        "method": "GET",
+        "idleTimeout": "40s",
+        "pingTimeout": "12s"
+      }
+    },
+    {
+      "name": "JSON HTTPUpgradeSettings Trojan",
+      "protocol": "trojan",
+      "server": "json-httpupgrade-trojan.example.test",
+      "port": 443,
+      "password": "upgrade-placeholder",
+      "security": "tls",
+      "sni": "json-httpupgrade-trojan.example.test",
+      "httpUpgradeSettings": {
+        "path": "/upgrade",
+        "headers": {
+          "Host": "upgrade-settings.example.test"
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 4 {
+		t.Fatalf("expected 4 structured JSON transport container alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "vless://00000000-0000-0000-0000-000000000134@json-wssettings-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-wssettings-vless.example.test",
+		"type=ws",
+		"path=%2Fws-settings",
+		"host=wssettings.example.test",
+		"max_early_data=1024",
+		"early_data_header_name=Sec-WebSocket-Protocol",
+		"#JSON%20WSSettings%20VLESS",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON wsSettings URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "trojan://trojan-placeholder@json-grpcsettings-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-grpcsettings-trojan.example.test",
+		"type=grpc",
+		"service_name=fluxgate-grpc-settings",
+		"idle_timeout=20s",
+		"ping_timeout=8s",
+		"permit_without_stream=true",
+		"multi_mode=true",
+		"#JSON%20GrpcSettings%20Trojan",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON grpcSettings URI to contain %q: %q", want, lines[1])
+		}
+	}
+	assertHasPrefix(t, lines[2], "vless://00000000-0000-0000-0000-000000000135@json-httpsettings-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-httpsettings-vless.example.test",
+		"type=http",
+		"path=%2Fh2",
+		"host=http-settings.example.test",
+		"method=GET",
+		"idle_timeout=40s",
+		"ping_timeout=12s",
+		"#JSON%20HttpSettings%20VLESS",
+	} {
+		if !strings.Contains(lines[2], want) {
+			t.Fatalf("expected structured JSON httpSettings URI to contain %q: %q", want, lines[2])
+		}
+	}
+	assertHasPrefix(t, lines[3], "trojan://upgrade-placeholder@json-httpupgrade-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-httpupgrade-trojan.example.test",
+		"type=httpupgrade",
+		"path=%2Fupgrade",
+		"host=upgrade-settings.example.test",
+		"#JSON%20HTTPUpgradeSettings%20Trojan",
+	} {
+		if !strings.Contains(lines[3], want) {
+			t.Fatalf("expected structured JSON httpUpgradeSettings URI to contain %q: %q", want, lines[3])
+		}
+	}
+}
+
 func TestNormalizeContentJSONStructuredTransportTypeAliases(t *testing.T) {
 	raw := `{
   "nodes": [

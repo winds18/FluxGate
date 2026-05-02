@@ -883,6 +883,9 @@ func appendClashTransportQueryValues(proxy map[string]string, values url.Values)
 	if strings.EqualFold(transportType, "tls") {
 		transportType = ""
 	}
+	if transportType == "" && serviceName != "" {
+		transportType = "grpc"
+	}
 	if transportType == "" && (httpPath != "" || httpHost != "" || httpMethod != "" || httpIdleTimeout != "" || httpPingTimeout != "") {
 		transportType = "http"
 	}

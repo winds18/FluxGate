@@ -607,10 +607,38 @@ func normalizedStructuredProxyKey(key string) string {
 		return "flow"
 	case "grpcopts":
 		return "grpc-opts"
+	case "grpc_settings":
+		return "grpc-opts"
+	case "grpc-settings":
+		return "grpc-opts"
+	case "grpcsettings":
+		return "grpc-opts"
 	case "grpcservicename":
 		return "grpc-service-name"
+	case "h2_settings":
+		return "http-opts"
+	case "h2-settings":
+		return "http-opts"
+	case "h2settings":
+		return "http-opts"
 	case "httpopts":
 		return "http-opts"
+	case "http_settings":
+		return "http-opts"
+	case "http-settings":
+		return "http-opts"
+	case "httpsettings":
+		return "http-opts"
+	case "http_upgrade_settings":
+		return "httpupgrade-opts"
+	case "http-upgrade-settings":
+		return "httpupgrade-opts"
+	case "httpupgrade_settings":
+		return "httpupgrade-opts"
+	case "httpupgrade-settings":
+		return "httpupgrade-opts"
+	case "httpupgradesettings":
+		return "httpupgrade-opts"
 	case "httpupgradeopts":
 		return "httpupgrade-opts"
 	case "maxearlydata":
@@ -752,6 +780,18 @@ func normalizedStructuredProxyKey(key string) string {
 	case "wsheaders":
 		return "ws-headers"
 	case "wsopts":
+		return "ws-opts"
+	case "ws_settings":
+		return "ws-opts"
+	case "ws-settings":
+		return "ws-opts"
+	case "wssettings":
+		return "ws-opts"
+	case "web_socket_settings":
+		return "ws-opts"
+	case "web-socket-settings":
+		return "ws-opts"
+	case "websocketsettings":
 		return "ws-opts"
 	case "wspath":
 		return "ws-path"

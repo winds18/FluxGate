@@ -85,6 +85,13 @@ func quantumultXProxyURI(line string) string {
 			"udp-relay-mode", "udp_relay_mode",
 		)
 		return clashTUICURI(proxy)
+	case "juicity":
+		proxy["uuid"] = surgeFirstValue(options, positionals, 1, "uuid", "id", "username", "user")
+		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass", "psk", "token")
+		surgeCopyOptions(proxy, options,
+			"congestion-control", "congestion_control", "congestion-controller", "congestion_controller",
+		)
+		return clashJuicityURI(proxy)
 	case "hysteria":
 		proxy["password"] = surgeFirstValue(options, positionals, 1, "auth-str", "auth_str", "password", "passwd", "pass", "token")
 		surgeCopyOptions(proxy, options,
@@ -218,7 +225,7 @@ func parseQuantumultXProxyLine(line string) (string, []string, bool) {
 	}
 	protocol = strings.ToLower(strings.TrimSpace(protocol))
 	switch protocol {
-	case "ss", "shadowsocks", "ssr", "shadowsocksr", "hysteria2", "hy2", "tuic", "tuic-v5", "tuic5", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "naive-https", "ssh", "wireguard", "wg", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "http+tls", "http-tls", "socks", "socks5", "socks5h":
+	case "ss", "shadowsocks", "ssr", "shadowsocksr", "hysteria2", "hy2", "tuic", "tuic-v5", "tuic5", "juicity", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "naive-https", "ssh", "wireguard", "wg", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "http+tls", "http-tls", "socks", "socks5", "socks5h":
 	default:
 		return "", nil, false
 	}

@@ -31,6 +31,7 @@ var supportedURIPrefixes = []string{
 	"hy2://",
 	"hysteria://",
 	"hysteria2://",
+	"juicity://",
 	"naive://",
 	"naive+https://",
 	"naive-https://",

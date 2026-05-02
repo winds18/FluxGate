@@ -102,6 +102,13 @@ func surgeProxyURI(line string) string {
 			"udp-relay-mode", "udp_relay_mode",
 		)
 		return clashTUICURI(proxy)
+	case "juicity":
+		proxy["uuid"] = surgeFirstValue(options, positionals, 2, "uuid", "id", "username", "user")
+		proxy["password"] = surgeFirstValue(options, positionals, 3, "password", "passwd", "pass", "psk", "token")
+		surgeCopyOptions(proxy, options,
+			"congestion-control", "congestion_control", "congestion-controller", "congestion_controller",
+		)
+		return clashJuicityURI(proxy)
 	case "hysteria":
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "auth-str", "auth_str", "password", "passwd", "token")
 		surgeCopyOptions(proxy, options,

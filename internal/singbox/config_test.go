@@ -1310,6 +1310,41 @@ func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsJuicityOutbound(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         190,
+			URI:        "juicity://00000000-0000-0000-0000-000000000190:juicity-placeholder@juicity.example:443?congestionControl=bbr&serverName=juicity.example&allowInsecure=1&disableSNI=1&alpn=h3&clientFingerprint=chrome#juicity",
+			Protocol:   "juicity",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_190")
+	if outbound == nil {
+		t.Fatalf("expected juicity outbound up_190, got %+v", config.Outbounds)
+	}
+	if outbound["type"] != "juicity" || outbound["server"] != "juicity.example" || outbound["server_port"] != 443 {
+		t.Fatalf("unexpected juicity server fields: %+v", outbound)
+	}
+	if outbound["uuid"] != "00000000-0000-0000-0000-000000000190" || outbound["password"] != "juicity-placeholder" || outbound["congestion_control"] != "bbr" {
+		t.Fatalf("unexpected juicity auth fields: %+v", outbound)
+	}
+	tls, ok := outbound["tls"].(map[string]any)
+	if !ok || tls["enabled"] != true || tls["server_name"] != "juicity.example" || tls["insecure"] != true || tls["disable_sni"] != true {
+		t.Fatalf("unexpected juicity tls: %+v", outbound["tls"])
+	}
+	alpn, ok := tls["alpn"].([]string)
+	if !ok || len(alpn) != 1 || alpn[0] != "h3" {
+		t.Fatalf("unexpected juicity alpn: %+v", tls["alpn"])
+	}
+	utls, ok := tls["utls"].(map[string]any)
+	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
+		t.Fatalf("unexpected juicity utls: %+v", tls["utls"])
+	}
+}
+
 func TestBuildConfigSupportsAnyTLSShadowTLSQueryCredentialAliases(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

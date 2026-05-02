@@ -150,6 +150,8 @@ func singBoxOutboundURI(outbound map[string]any) string {
 		return singBoxHysteria2URI(outbound)
 	case "tuic":
 		return singBoxTUICURI(outbound)
+	case "juicity":
+		return singBoxJuicityURI(outbound)
 	case "anytls":
 		return singBoxAnyTLSURI(outbound)
 	case "shadowtls":
@@ -374,6 +376,29 @@ func singBoxTUICURI(outbound map[string]any) string {
 	appendTLSQueryValues(outbound, values)
 	return (&url.URL{
 		Scheme:   "tuic",
+		User:     url.UserPassword(uuid, password),
+		Host:     net.JoinHostPort(server, port),
+		RawQuery: values.Encode(),
+		Fragment: singBoxName(outbound),
+	}).String()
+}
+
+func singBoxJuicityURI(outbound map[string]any) string {
+	server := singBoxString(outbound, "server")
+	port := singBoxPort(outbound)
+	uuid := singBoxString(outbound, "uuid")
+	password := singBoxString(outbound, "password")
+	if server == "" || port == "" || uuid == "" || password == "" {
+		return ""
+	}
+
+	values := url.Values{}
+	if congestionControl := singBoxString(outbound, "congestion_control"); congestionControl != "" {
+		values.Set("congestion_control", congestionControl)
+	}
+	appendTLSQueryValues(outbound, values)
+	return (&url.URL{
+		Scheme:   "juicity",
 		User:     url.UserPassword(uuid, password),
 		Host:     net.JoinHostPort(server, port),
 		RawQuery: values.Encode(),

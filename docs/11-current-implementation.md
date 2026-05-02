@@ -38,7 +38,7 @@
 - JSON 结构化节点支持常见字段别名，例如 `protocol`/`proto`/`scheme`/`nodeType`/`serverType`/`protocolType`/`proxyType`/`proxyProtocol`、`host`/`hostname`/`address`/`serverAddress`/`serverHost`/`remoteHost`/`nodeHost`/`endpoint`/`add`、`server_port`/`serverPort`/`server-port`/`remotePort`/`nodePort`/`portNumber`、`method`/`encryptMethod`/`encrypt-method`、`pass`/`passwd`/`pwd`、`id`/`user-id` 和 `displayName`/`nodeName`/`label`/`title`/`remarks`/`remark`。
 - JSON 结构化节点会归一化常见 camelCase 参数，例如 `skipCertVerify`、`allowInsecure`、`disableSNI`、`clientFingerprint`、`pluginOpts`、`wsOpts`、`wsHeaders`、`grpcServiceName`、`privateKeyPath` 等，避免导入后丢失 TLS、插件和传输配置。
 - JSON 结构化节点支持通用 `transport` 容器，可从 `transport.type`、`transport.path`、`transport.host`、`transport.headers.Host`、`transport.serviceName`、`transport.idleTimeout` 等字段生成 WebSocket、HTTP、HTTPUpgrade 或 gRPC 传输参数。
-- subscription 来源支持解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、SSR、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点，并兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https`、`naive-quic` 和 `socks5h` 协议别名，转换为标准 URI。
+- subscription 来源支持解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、SSR、Hysteria2/Hy2、TUIC、Juicity、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点，并兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https`、`naive-quic` 和 `socks5h` 协议别名，转换为标准 URI。
 - Quantumult X `ssr`/`shadowsocksr` 节点会按 Shadowsocks 兼容链路归一化为 `ss://`，保留服务端、端口、加密方法、密码和节点名，并避免 SSR 专有 `protocol`/`obfs` 参数误写入 sing-box Shadowsocks `network`。
 - Quantumult X、Surge、Clash YAML 和 sing-box JSON 的 `tuic-v5`/`tuic5` 类型会按 TUIC 兼容链路归一化为 `tuic://`，保留 UUID、密码、拥塞控制、UDP relay、SNI 和节点名。
 - Quantumult X 和 Surge 结构化 VLESS/Trojan 节点支持保留 gRPC transport 和 service name，并同步到 sing-box outbound。
@@ -48,9 +48,9 @@
 - 裸 VMess JSON 字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Display_Name`、`Server-Port`、`User_ID`、`Packet_Encoding`、`Disable-SNI` 和 `Client-Fingerprint`。
 - subscription 来源支持解析 SSD/ShadowsocksD `ssd://` 订阅和裸 SSD JSON，并展开为标准 `ss://` URI；SSD `servers` 支持数组和按名称分组的对象映射，并兼容 SIP008 同款 Shadowsocks 字段别名。
 - SIP008 和 SSD JSON 字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Version`、`Servers`、`Display_Name`、`Server-Port`、`Encrypt_Method`、`PluginOpts` 和 `PluginOptions`。
-- subscription 来源支持解析 Surge `[Proxy]` 代理段中的 SS、SSR、Trojan、VLESS、VMess、Hysteria2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https`、`naive-quic` 和 `socks5h` 协议别名，转换为标准 URI。
+- subscription 来源支持解析 Surge `[Proxy]` 代理段中的 SS、SSR、Trojan、VLESS、VMess、Hysteria2、TUIC、Juicity、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https`、`naive-quic` 和 `socks5h` 协议别名，转换为标准 URI。
 - Surge `[Proxy]` `ssr`/`shadowsocksr` 节点会按 Shadowsocks 兼容链路归一化为 `ss://`，保留服务端、端口、加密方法、密码和节点名，并避免 SSR 专有 `protocol`/`obfs` 参数误写入 sing-box Shadowsocks `network`。
-- subscription 来源支持解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点，以及 Direct/Reject 变体/DNS 内置出站；Clash YAML 结构化 `type` 兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive+https`、`naive-https`、`naive-quic` 和 `socks5h` 别名。
+- subscription 来源支持解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Juicity/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点，以及 Direct/Reject 变体/DNS 内置出站；Clash YAML 结构化 `type` 兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive+https`、`naive-https`、`naive-quic` 和 `socks5h` 别名。
 - Clash YAML `type: ssr`/`shadowsocksr` 节点会按 Shadowsocks 兼容链路归一化为 `ss://`，保留服务端、端口、加密方法、密码和节点名，并避免 SSR 专有 `protocol`/`obfs` 参数误写入 sing-box Shadowsocks `network`。
 - Clash YAML 解析支持嵌套 `proxies`/`proxy-list`/`proxies-list`/`nodes`/`node-list`/`server-list` 列表，并兼容 `proxyList`、`nodeList`、`serverList` 等 camelCase/PascalCase 写法，可兼容带内嵌 provider 节点清单的订阅结构。
 - Clash YAML 解析支持 `proxies: [{ ... }]`、`proxy-list: [{ ... }]`、`proxies-list: [{ ... }]`、`nodes: [{ ... }]` 和 `node-list: [{ ... }]` 等内联节点数组，并兼容 camelCase/PascalCase 容器名，可兼容 provider 或顶层节点的紧凑写法。
@@ -69,7 +69,7 @@
 - `trojan-go://` 裸 URI 会归一化为标准 `trojan://`，复用现有 Trojan TLS、REALITY 和传输参数转换链路。
 - `vmess-aead://` 裸 URI 会归一化为标准 `vmess://`，复用现有 VMess TLS、WebSocket、gRPC、HTTP 和 packet encoding 转换链路。
 - `tuic-v5://` 和 `tuic5://` 裸 URI 会归一化为标准 `tuic://`，复用现有 TUIC outbound 转换链路；手动保存 `tuic-v5`/`tuic5` 协议节点时配置生成侧也会按 TUIC 输出。
-- subscription 来源支持解析 sing-box JSON `outbounds` 中的常见 Shadowsocks/Trojan/VLESS/VMess/Hysteria2/TUIC/AnyTLS/ShadowTLS/Naive/Hysteria/HTTP/SOCKS/SSH/WireGuard/Tor 节点，并兼容 `trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive+https`、`naive-https`、`naive-quic` 和 `socks5h` 结构化 `type` 别名。
+- subscription 来源支持解析 sing-box JSON `outbounds` 中的常见 Shadowsocks/Trojan/VLESS/VMess/Hysteria2/TUIC/Juicity/AnyTLS/ShadowTLS/Naive/Hysteria/HTTP/SOCKS/SSH/WireGuard/Tor 节点，并兼容 `trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive+https`、`naive-https`、`naive-quic` 和 `socks5h` 结构化 `type` 别名。
 - subscription 来源支持解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
 - sing-box JSON 顶层、outbound、endpoint、TLS、uTLS、REALITY、transport、headers 和 WireGuard peer 字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Outbounds`、`Server-Port`、`ServerPort`、`ServerName`、`Disable-SNI`、`ServiceName`、`PermitWithoutStream`、`PrivateKey`、`AllowedIPs`。
 - sing-box JSON `outbounds` 和 `endpoints` 支持数组、单个对象、按名称分组的对象映射和分组数组映射；映射对象缺少 `tag`/`name` 时会使用映射键或分组序号作为节点名。
@@ -119,7 +119,7 @@
 - sing-box config rollback API 和管理后台回滚入口，可恢复上一版配置文件。
 - sing-box config publish/rollback API 会返回 `restart_required`，管理后台会提示发布或回滚后需要重启 sing-box。
 - sing-box restart API 和管理后台重启入口已落地；发布/回滚可在 `SING_BOX_AUTO_RESTART=true` 时自动调用受配置保护的重启命令。
-- active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
+- active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/Juicity/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会转换为 sing-box outbound，并通过默认 selector 承接网关出口。
 - 配置生成侧兼容导入层已支持的 URI 协议别名，包括 `shadowsocks`、`trojan-go`、`vmess-aead`、`tuic-v5`、`tuic5`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https` 和 `naive-quic`，手动保存这些协议名时也会归一为对应 sing-box outbound。
 - Direct URI、`freedom://` URI 和 sing-box JSON `direct` outbound 可导入为直连上游 outbound，并进入默认上游 selector 和 V2Ray outbound stats 列表；配置生成侧也兼容手动保存的 `freedom` 协议节点。
 - Block URI、`blackhole://` URI、`reject://` URI、Clash `reject`/`reject-drop` 和 sing-box JSON `block` outbound 可导入为内部拦截 outbound；为避免误承接普通代理流量，Block outbound 不进入默认上游 selector 和 V2Ray outbound stats 列表；配置生成侧也兼容手动保存的 `blackhole`/`reject`/`reject-drop`/`reject-no-drop`/`reject-tinygif` 协议节点。
@@ -145,6 +145,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 `up_mbps`、`down_mbps`、`insecure`、`disable_sni`、`alpn`、证书 pin、`fp`/`client-fingerprint` 和 `tls.utls.fingerprint` 参数，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`obfsPassword` 和 `clientFingerprint` 查询别名。
 - TUIC URI 支持从 `uuid`/`id`/`user_id`/`user-id` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，并兼容 `congestionControl`、`udpOverStream`、`udpRelayMode`、`zeroRttHandshake`、`heartbeatInterval`、`serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 查询别名，兼容缺少 userinfo 的订阅写法。
 - sing-box JSON 和 URI 导入链路会保留 TUIC `insecure`/`skip-cert-verify`、`disable_sni`、`alpn`、`tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound。
+- Clash YAML、Quantumult X、Surge、sing-box JSON 和 URI 导入链路会保留 Juicity UUID、密码、`congestion_control`、SNI、跳过证书校验、`disable_sni`、ALPN 和 `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound。
 - AnyTLS 和 ShadowTLS URI 支持从 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
 - sing-box JSON 和 URI 导入链路会保留 AnyTLS 会话空闲参数和 `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`idleSessionCheckInterval`、`idleSessionTimeout`、`minIdleSession` 和 `clientFingerprint` 查询别名。
 - sing-box JSON 和 URI 导入链路会保留 ShadowTLS `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 查询别名。

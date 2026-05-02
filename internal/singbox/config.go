@@ -260,6 +260,8 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildHysteria2Outbound(node)
 	case "tuic", "tuic-v5", "tuic5":
 		return buildTUICOutbound(node)
+	case "juicity":
+		return buildJuicityOutbound(node)
 	case "anytls", "any-tls":
 		return buildAnyTLSOutbound(node)
 	case "shadowtls", "shadow-tls":
@@ -789,6 +791,61 @@ func buildTUICOutbound(node store.Node) (map[string]any, bool) {
 	}
 	if network := strings.TrimSpace(query.Get("network")); network != "" {
 		outbound["network"] = network
+	}
+
+	tls := map[string]any{"enabled": true}
+	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
+		tls["server_name"] = serverName
+	}
+	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) {
+		tls["insecure"] = true
+	}
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
+		tls["disable_sni"] = true
+	}
+	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
+		tls["alpn"] = alpn
+	}
+	if fingerprint := firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")); fingerprint != "" {
+		tls["utls"] = map[string]any{
+			"enabled":     true,
+			"fingerprint": fingerprint,
+		}
+	}
+	outbound["tls"] = tls
+
+	return outbound, true
+}
+
+func buildJuicityOutbound(node store.Node) (map[string]any, bool) {
+	if node.Status != "active" || node.Protocol != "juicity" {
+		return nil, false
+	}
+	parsed, err := url.Parse(strings.TrimSpace(node.URI))
+	if err != nil || parsed.Scheme != "juicity" || parsed.Hostname() == "" {
+		return nil, false
+	}
+
+	query := parsed.Query()
+	uuid, password := tuicCredentials(
+		parsed.User,
+		firstNonEmpty(query.Get("uuid"), query.Get("id"), query.Get("user_id"), query.Get("user-id")),
+		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")),
+	)
+	if uuid == "" || password == "" {
+		return nil, false
+	}
+
+	outbound := map[string]any{
+		"type":        "juicity",
+		"tag":         upstreamTag(node),
+		"server":      parsed.Hostname(),
+		"server_port": portWithFallback(parsed.Port(), node.ServerPort, 443),
+		"uuid":        uuid,
+		"password":    password,
+	}
+	if congestionControl := firstNonEmpty(query.Get("congestion_control"), query.Get("congestion-control"), query.Get("congestion-controller"), query.Get("congestionControl")); congestionControl != "" {
+		outbound["congestion_control"] = congestionControl
 	}
 
 	tls := map[string]any{"enabled": true}

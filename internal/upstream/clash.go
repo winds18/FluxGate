@@ -179,6 +179,8 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashHysteria2URI(proxy)
 	case "tuic":
 		return clashTUICURI(proxy)
+	case "juicity":
+		return clashJuicityURI(proxy)
 	case "hysteria":
 		return clashHysteriaURI(proxy)
 	case "http", "https":
@@ -419,6 +421,42 @@ func clashTUICURI(proxy map[string]string) string {
 	}
 	result := &url.URL{
 		Scheme:   "tuic",
+		User:     url.UserPassword(uuid, password),
+		Host:     net.JoinHostPort(server, port),
+		Fragment: firstMapValue(proxy, "name"),
+	}
+	if len(values) > 0 {
+		result.RawQuery = values.Encode()
+	}
+	return result.String()
+}
+
+func clashJuicityURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	uuid := firstMapValue(proxy, "uuid", "id")
+	password := firstMapValue(proxy, "password", "passwd", "pass", "token", "psk")
+	if server == "" || port == "" || uuid == "" || password == "" {
+		return ""
+	}
+	values := url.Values{}
+	if congestionControl := firstMapValue(proxy, "congestion-control", "congestion_control", "congestion-controller", "congestion_controller"); congestionControl != "" {
+		values.Set("congestion_control", congestionControl)
+	}
+	if sni := firstMapValue(proxy, "sni", "servername", "server_name", "serverName"); sni != "" {
+		values.Set("sni", sni)
+	}
+	if alpn := firstMapValue(proxy, "alpn"); alpn != "" {
+		values.Set("alpn", alpn)
+	}
+	if fingerprint := firstMapValue(proxy, "fp", "fingerprint", "client-fingerprint", "client_fingerprint", "clientFingerprint"); fingerprint != "" {
+		values.Set("fp", fingerprint)
+	}
+	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure", "allowInsecure", "allow_insecure") {
+		values.Set("insecure", "1")
+	}
+	result := &url.URL{
+		Scheme:   "juicity",
 		User:     url.UserPassword(uuid, password),
 		Host:     net.JoinHostPort(server, port),
 		Fragment: firstMapValue(proxy, "name"),

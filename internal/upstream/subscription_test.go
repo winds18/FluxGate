@@ -23,6 +23,7 @@ func TestNormalizeContentPlainURIList(t *testing.T) {
 func TestNormalizeContentSupportsCurrentOutboundURIList(t *testing.T) {
 	raw := strings.Join([]string{
 		"tuic://00000000-0000-0000-0000-000000000048:qa-placeholder@example.io:443#TUIC",
+		"juicity://00000000-0000-0000-0000-000000000122:qa-placeholder@example.juicity:443#Juicity",
 		"anytls://qa-placeholder@example.chat:443#AnyTLS",
 		"block://default#Block",
 		"dns://default#DNS",
@@ -4071,6 +4072,66 @@ func TestNormalizeContentSingBoxJSONTUICV5Aliases(t *testing.T) {
 		!strings.Contains(lines[1], "sni=tuic5.singbox-alias.example.test") ||
 		!strings.HasSuffix(lines[1], "#sing-box%20TUIC5%20Alias") {
 		t.Fatalf("unexpected sing-box TUIC5 URI: %q", lines[1])
+	}
+}
+
+func TestNormalizeContentJuicityStructuredFormats(t *testing.T) {
+	cases := []struct {
+		name string
+		raw  string
+	}{
+		{
+			name: "clash yaml",
+			raw: `proxies:
+  - { name: "Clash Juicity", type: juicity, server: juicity.clash.example.test, port: 443, uuid: "00000000-0000-0000-0000-000000000122", password: "juicity-placeholder", congestion-control: bbr, sni: juicity.clash.example.test }`,
+		},
+		{
+			name: "quantumult x",
+			raw: `[server_local]
+juicity=juicity.qx.example.test:443, uuid=00000000-0000-0000-0000-000000000122, password=juicity-placeholder, congestion-controller=bbr, tls-host=juicity.qx.example.test, tls-verification=false, tag=QuantumultX Juicity`,
+		},
+		{
+			name: "surge",
+			raw: `[Proxy]
+Surge Juicity = juicity, juicity.surge.example.test, 443, 00000000-0000-0000-0000-000000000122, juicity-placeholder, congestion-control=bbr, sni=juicity.surge.example.test, skip-cert-verify=true`,
+		},
+		{
+			name: "sing-box json",
+			raw: `{
+  "outbounds": [
+    {
+      "type": "juicity",
+      "tag": "sing-box Juicity",
+      "server": "juicity.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000122",
+      "password": "juicity-placeholder",
+      "congestion_control": "bbr",
+      "tls": {
+        "enabled": true,
+        "server_name": "juicity.singbox.example.test"
+      }
+    }
+  ]
+}`,
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NormalizeContent(tt.raw)
+			if err != nil {
+				t.Fatalf("NormalizeContent returned error: %v", err)
+			}
+			if !strings.HasPrefix(got, "juicity://00000000-0000-0000-0000-000000000122:juicity-placeholder@juicity.") {
+				t.Fatalf("expected Juicity URI, got %q", got)
+			}
+			for _, want := range []string{"congestion_control=bbr", "sni=juicity."} {
+				if !strings.Contains(got, want) {
+					t.Fatalf("expected Juicity URI to contain %q: %q", want, got)
+				}
+			}
+		})
 	}
 }
 

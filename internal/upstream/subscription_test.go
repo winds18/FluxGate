@@ -1887,6 +1887,35 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLShadowsocksR(t *testing.T) {
+	raw := `
+proxies:
+  - name: "Clash 香港 SSR"
+    type: ssr
+    server: ssr.clash.example.test
+    port: 8388
+    cipher: aes-128-gcm
+    password: "qa-placeholder"
+    protocol: auth_sha1_v4
+    obfs: tls1.2_ticket_auth
+  - { name: "Clash 东京 ShadowsocksR", type: shadowsocksr, server: shadowsocksr.clash.example.test, port: 8389, method: chacha20-ietf-poly1305, password: "qa-placeholder-2", protocol: origin, obfs: plain }
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	want := strings.Join([]string{
+		"ss://aes-128-gcm:qa-placeholder@ssr.clash.example.test:8388#Clash%20%E9%A6%99%E6%B8%AF%20SSR",
+		"ss://chacha20-ietf-poly1305:qa-placeholder-2@shadowsocksr.clash.example.test:8389#Clash%20%E4%B8%9C%E4%BA%AC%20ShadowsocksR",
+	}, "\n")
+	if got != want {
+		t.Fatalf("unexpected Clash ShadowsocksR URI list: %q", got)
+	}
+	if strings.Contains(got, "network=") || strings.Contains(got, "auth_sha1_v4") || strings.Contains(got, "tls1.2_ticket_auth") {
+		t.Fatalf("unexpected SSR-only fields leaked into Shadowsocks URI: %q", got)
+	}
+}
+
 func TestNormalizeContentClashYAMLNestedProviderProxies(t *testing.T) {
 	raw := `
 proxy-providers:

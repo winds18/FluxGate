@@ -165,6 +165,8 @@ func clashProxyURI(proxy map[string]string) string {
 	switch proxyType {
 	case "ss", "shadowsocks":
 		return clashShadowsocksURI(proxy)
+	case "ssr", "shadowsocksr":
+		return clashShadowsocksRURI(proxy)
 	case "trojan":
 		return clashTrojanURI(proxy)
 	case "vless":
@@ -228,6 +230,23 @@ func clashShadowsocksURI(proxy map[string]string) string {
 	}
 	if len(values) > 0 {
 		result.RawQuery = values.Encode()
+	}
+	return result.String()
+}
+
+func clashShadowsocksRURI(proxy map[string]string) string {
+	server := firstMapValue(proxy, "server")
+	port := firstMapValue(proxy, "port")
+	method := firstMapValue(proxy, "cipher", "method")
+	password := firstMapValue(proxy, "password")
+	if server == "" || port == "" || method == "" || password == "" {
+		return ""
+	}
+	result := &url.URL{
+		Scheme:   "ss",
+		User:     url.UserPassword(method, password),
+		Host:     net.JoinHostPort(server, port),
+		Fragment: firstMapValue(proxy, "name"),
 	}
 	return result.String()
 }

@@ -108,7 +108,7 @@
 - subscription 来源可解析 JSON URI 数组和常见 `nodes`/`links`/`subscription`/`raw_content` 包装对象，包装字段中的内嵌 Clash YAML、SIP008、sing-box JSON 和 base64 订阅内容也会归一化。
 - JSON 包装订阅可解析 `payload`、`result`、`response`、`body`、`text`、`sub` 等常见接口外层字段。
 - JSON 包装订阅会忽略 `meta`、`pagination`、`errors`、`message`、`traceId` 等常见接口元信息字段，避免把接口文档或分页 URL 误导入为 HTTP 节点。
-- JSON 包装订阅会忽略 Clash 风格 `proxy-providers`、`rule-providers`、`proxy-groups`、`health-check` 和 `rules` 中的下载 URL、健康检查 URL 和规则源 URL，避免误导入为 HTTP 节点；其中 `proxy-providers` 内嵌的 `proxies`/`proxy-list` 节点清单会继续按结构化节点解析。
+- JSON 包装订阅会忽略 Clash 风格 `proxy-providers`、`rule-providers`、`proxy-groups`、`health-check` 和 `rules` 中的下载 URL、健康检查 URL 和规则源 URL，避免误导入为 HTTP 节点；其中 `proxy-providers` 内嵌的 `proxies`/`proxy-list`/`nodeList`/`serverList` 节点清单会继续按结构化节点解析。
 - JSON 包装订阅可解析 `list`、`records`、`rows`、`entries`、`nodeList`、`proxyList`、`serverList`、`subscriptionList`、`urlList`、`linkList` 及其 snake_case/kebab-case 变体等常见集合字段，容器名不会污染缺少 fragment 的节点 URI 展示名。
 - JSON 包装订阅字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Data.NodeList`、`Proxy_List` 和 `Payload.LinkList`。
 - JSON 包装订阅节点名称字段也兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Name`、`Display_Name` 和 `NodeName`，缺少 fragment 的链接会继续保留真实展示名。

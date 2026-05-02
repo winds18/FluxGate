@@ -1103,6 +1103,56 @@ func TestNormalizeContentJSONParsesInlineProxyProviderNodes(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONParsesInlineProxyProviderListAliases(t *testing.T) {
+	raw := `{
+  "proxyProviders": {
+    "node-list-provider": {
+      "type": "inline",
+      "url": "https://provider-download.example.test/should-not-import.yaml",
+      "nodeList": [
+        {
+          "name": "JSON Provider NodeList SS",
+          "type": "ss",
+          "server": "provider-nodelist-ss.example.test",
+          "port": 8388,
+          "cipher": "aes-128-gcm",
+          "password": "qa-placeholder"
+        }
+      ]
+    },
+    "server-list-provider": {
+      "type": "inline",
+      "serverList": [
+        {
+          "name": "JSON Provider ServerList Trojan",
+          "type": "trojan",
+          "server": "provider-serverlist-trojan.example.test",
+          "port": 443,
+          "password": "trojan-placeholder"
+        }
+      ]
+    }
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 inline provider alias URIs, got %d: %q", len(lines), got)
+	}
+	if lines[0] != "ss://aes-128-gcm:qa-placeholder@provider-nodelist-ss.example.test:8388#JSON%20Provider%20NodeList%20SS" {
+		t.Fatalf("unexpected provider nodeList Shadowsocks URI: %q", lines[0])
+	}
+	if lines[1] != "trojan://trojan-placeholder@provider-serverlist-trojan.example.test:443#JSON%20Provider%20ServerList%20Trojan" {
+		t.Fatalf("unexpected provider serverList Trojan URI: %q", lines[1])
+	}
+	if strings.Contains(got, "provider-download.example.test") {
+		t.Fatalf("unexpected provider download URL imported as node: %q", got)
+	}
+}
+
 func TestNormalizeContentJSONCommonCollectionFields(t *testing.T) {
 	raw := `{
   "data": {

@@ -181,6 +181,13 @@ func v2rayScalarVNextUsers(key string, value any) []any {
 			users = append(users, user)
 		}
 		return users
+	case map[string]any:
+		mappedUsers := v2rayVNextMappedUsers(typed)
+		users := make([]any, 0, len(mappedUsers))
+		for _, user := range mappedUsers {
+			users = append(users, user)
+		}
+		return users
 	default:
 		uuid := strings.TrimSpace(stringFromAnyValue(value))
 		if !v2rayLooksLikeUUID(uuid) {
@@ -218,13 +225,21 @@ func v2rayVNextMappedUsers(value any) []map[string]any {
 	for _, key := range keys {
 		fields := v2rayMap(accounts[key])
 		if fields == nil {
-			if !v2rayLooksLikeUUID(key) {
+			value := strings.TrimSpace(stringFromAnyValue(accounts[key]))
+			switch {
+			case v2rayLooksLikeUUID(key):
+				fields = map[string]any{
+					"id":       key,
+					"name":     key,
+					"security": value,
+				}
+			case v2rayLooksLikeUUID(value):
+				fields = map[string]any{
+					"id":   value,
+					"name": key,
+				}
+			default:
 				continue
-			}
-			fields = map[string]any{
-				"id":       key,
-				"name":     key,
-				"security": stringFromAnyValue(accounts[key]),
 			}
 		}
 		if v2rayVNextUserID(fields) == "" && v2rayLooksLikeUUID(key) {

@@ -5702,6 +5702,73 @@ func TestNormalizeContentV2RayJSONEndpointScalarUserMaps(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONEndpointMappedUserMaps(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "tag": "V2Ray VMess Endpoint Mapped Users",
+      "protocol": "vmess",
+      "settings": {
+        "vnext": {
+          "vmess-mapped-users.v2ray.example.test:443": {
+            "qa-vmess": "00000000-0000-0000-0000-000000000104",
+            "qa-vmess-object": {
+              "uuid": "00000000-0000-0000-0000-000000000105",
+              "security": "auto"
+            }
+          }
+        }
+      }
+    },
+    {
+      "tag": "V2Ray VLESS Endpoint Mapped Users",
+      "protocol": "vless",
+      "settings": {
+        "vnext": {
+          "vless-mapped-users.v2ray.example.test:8443": {
+            "qa-vless": {
+              "id": "00000000-0000-0000-0000-000000000106",
+              "flow": "xtls-rprx-vision"
+            }
+          }
+        }
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 V2Ray endpoint mapped user URIs, got %d: %q", len(lines), got)
+	}
+	for index, want := range []string{
+		`"ps":"qa-vmess"`,
+		`"id":"00000000-0000-0000-0000-000000000104"`,
+		`"add":"vmess-mapped-users.v2ray.example.test"`,
+	} {
+		decoded := decodeVMessURIForTest(t, lines[0])
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected v2ray VMess mapped scalar user %d to contain %q: %q", index, want, decoded)
+		}
+	}
+	for index, want := range []string{
+		`"ps":"qa-vmess-object"`,
+		`"id":"00000000-0000-0000-0000-000000000105"`,
+		`"scy":"auto"`,
+	} {
+		decoded := decodeVMessURIForTest(t, lines[1])
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected v2ray VMess mapped object user %d to contain %q: %q", index, want, decoded)
+		}
+	}
+	if lines[2] != "vless://00000000-0000-0000-0000-000000000106@vless-mapped-users.v2ray.example.test:8443?flow=xtls-rprx-vision#qa-vless" {
+		t.Fatalf("unexpected v2ray VLESS endpoint mapped user URI: %q", lines[2])
+	}
+}
+
 func TestNormalizeContentV2RayJSONServerScalarPasswordMaps(t *testing.T) {
 	raw := `{
   "outbounds": [

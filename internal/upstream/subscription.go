@@ -294,6 +294,7 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			return
 		}
 		handled := map[string]bool{}
+		collectJSONInlineProxyProviderAliases(typed, handled, uris)
 		collectJSONURIKeyAliases(typed, handled, []string{"uri", "url", "link", "share", "share_link", "shareLink", "share_url", "share-url", "shareUrl", "shareURL", "subscription_url", "subscription-url", "subscriptionUrl", "subscriptionURL", "node_url", "node-url", "nodeUrl", "nodeURL"}, nodeName, uris)
 		if nodeName != "" {
 			collectJSONURIKeyAliases(typed, handled, []string{"subscribe_url", "subscribe-url", "subscribeUrl", "subscribeURL", "sub_url", "sub-url", "subUrl", "subURL", "download_url", "download-url", "downloadUrl", "downloadURL"}, nodeName, uris)
@@ -315,6 +316,62 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			collectJSONURIs(key, item, uris)
 		}
 	}
+}
+
+func collectJSONInlineProxyProviderAliases(values map[string]any, handled map[string]bool, uris *[]string) {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		switch normalizedJSONURIKey(key) {
+		case "proxyprovider", "proxyproviders":
+			handled[key] = true
+			collectJSONInlineProxyProviders(values[key], uris)
+		}
+	}
+}
+
+func collectJSONInlineProxyProviders(value any, uris *[]string) {
+	switch typed := value.(type) {
+	case []any:
+		for _, item := range typed {
+			collectJSONInlineProxyProviders(item, uris)
+		}
+	case map[string]any:
+		if collectJSONInlineProviderProxyLists(typed, uris) {
+			return
+		}
+		keys := make([]string, 0, len(typed))
+		for key := range typed {
+			keys = append(keys, key)
+		}
+		sort.Strings(keys)
+		for _, key := range keys {
+			collectJSONInlineProxyProviders(typed[key], uris)
+		}
+	}
+}
+
+func collectJSONInlineProviderProxyLists(values map[string]any, uris *[]string) bool {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	collected := false
+	for _, alias := range []string{"proxies", "proxy_list", "proxy-list", "proxies_list", "proxies-list", "nodes"} {
+		normalizedAlias := normalizedJSONURIKey(alias)
+		for _, key := range keys {
+			if normalizedJSONURIKey(key) != normalizedAlias {
+				continue
+			}
+			collectJSONURIs("", values[key], uris)
+			collected = true
+		}
+	}
+	return collected
 }
 
 func collectJSONURIKeyAliases(values map[string]any, handled map[string]bool, aliases []string, name string, uris *[]string) {

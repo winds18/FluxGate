@@ -1037,6 +1037,72 @@ func TestNormalizeContentJSONIgnoresClashProviderMetadataURLs(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONParsesInlineProxyProviderNodes(t *testing.T) {
+	raw := `{
+  "proxy-providers": {
+    "inline-airport": {
+      "type": "inline",
+      "url": "https://provider-download.example.test/should-not-import.yaml",
+      "health-check": {
+        "enable": true,
+        "url": "http://www.gstatic.com/generate_204"
+      },
+      "proxies": [
+        {
+          "name": "JSON Inline Provider Trojan",
+          "type": "trojan",
+          "server": "inline-provider-trojan.example.test",
+          "port": 443,
+          "password": "trojan-placeholder",
+          "tls": true,
+          "sni": "inline-provider-trojan.example.test"
+        },
+        {
+          "name": "JSON Inline Provider VLESS",
+          "type": "vless",
+          "server": "inline-provider-vless.example.test",
+          "port": 8443,
+          "uuid": "00000000-0000-0000-0000-000000000109",
+          "flow": "xtls-rprx-vision"
+        }
+      ]
+    }
+  },
+  "rule-providers": {
+    "reject-list": {
+      "type": "http",
+      "url": "https://rules.example.test/reject.yaml"
+    }
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 inline provider URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@inline-provider-trojan.example.test:443?")
+	if !strings.Contains(lines[0], "security=tls") ||
+		!strings.Contains(lines[0], "sni=inline-provider-trojan.example.test") ||
+		!strings.HasSuffix(lines[0], "#JSON%20Inline%20Provider%20Trojan") {
+		t.Fatalf("unexpected inline provider Trojan URI: %q", lines[0])
+	}
+	if lines[1] != "vless://00000000-0000-0000-0000-000000000109@inline-provider-vless.example.test:8443?flow=xtls-rprx-vision#JSON%20Inline%20Provider%20VLESS" {
+		t.Fatalf("unexpected inline provider VLESS URI: %q", lines[1])
+	}
+	for _, unwanted := range []string{
+		"provider-download.example.test",
+		"gstatic.com",
+		"rules.example.test",
+	} {
+		if strings.Contains(got, unwanted) {
+			t.Fatalf("unexpected provider metadata URL imported as node: %q", got)
+		}
+	}
+}
+
 func TestNormalizeContentJSONCommonCollectionFields(t *testing.T) {
 	raw := `{
   "data": {

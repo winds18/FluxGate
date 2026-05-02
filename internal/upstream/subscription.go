@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"net/url"
 	"sort"
@@ -449,6 +450,7 @@ func clashJSONProxyURI(values map[string]any, fallbackName string) string {
 	proxy := map[string]string{}
 	collectJSONProxyFields(proxy, nil, values)
 	applyClashJSONProxyAliases(proxy)
+	normalizeStructuredProxyServerPort(proxy)
 	if firstMapValue(proxy, "name") == "" {
 		if name := firstNonEmptyString(firstMapValue(proxy, "tag", "remarks", "ps", "id"), fallbackName); name != "" {
 			proxy["name"] = name
@@ -463,7 +465,7 @@ func applyClashJSONProxyAliases(proxy map[string]string) {
 		aliases   []string
 	}{
 		{canonical: "name", aliases: []string{"displayname", "display_name", "display-name", "nodename", "node_name", "node-name", "label", "title", "remarks", "remark", "tag", "ps"}},
-		{canonical: "type", aliases: []string{"protocol", "proto", "scheme", "nodetype", "node_type", "node-type", "servertype", "server_type", "server-type", "protocoltype", "protocol_type", "protocol-type", "proxytype", "proxy_type", "proxy-type", "proxyprotocol", "proxy_protocol", "proxy-protocol"}},
+		{canonical: "type", aliases: []string{"protocol", "proto", "scheme", "protocolname", "protocol_name", "protocol-name", "nodetype", "node_type", "node-type", "servertype", "server_type", "server-type", "protocoltype", "protocol_type", "protocol-type", "proxytype", "proxy_type", "proxy-type", "proxyprotocol", "proxy_protocol", "proxy-protocol"}},
 		{canonical: "server", aliases: []string{"host", "hostname", "address", "addr", "add", "serveraddress", "server_address", "server-address", "serverhost", "server_host", "server-host", "remotehost", "remote_host", "remote-host", "nodehost", "node_host", "node-host", "endpoint", "endpointaddress", "endpoint_address", "endpoint-address"}},
 		{canonical: "port", aliases: []string{"server_port", "serverport", "server-port", "remoteport", "remote_port", "remote-port", "nodeport", "node_port", "node-port", "portnumber", "port_number", "port-number"}},
 		{canonical: "uuid", aliases: []string{"id", "user_id", "userid", "user-id"}},
@@ -483,6 +485,47 @@ func applyClashJSONProxyAliases(proxy map[string]string) {
 			}
 		}
 	}
+}
+
+func normalizeStructuredProxyServerPort(proxy map[string]string) {
+	for _, key := range []string{"server", "host", "address", "endpoint"} {
+		raw := firstMapValue(proxy, key)
+		if raw == "" {
+			continue
+		}
+		host, port := splitStructuredProxyHostPort(raw)
+		if host == "" || port == "" {
+			continue
+		}
+		proxy["server"] = host
+		if firstMapValue(proxy, "port") == "" {
+			proxy["port"] = port
+		}
+		return
+	}
+}
+
+func splitStructuredProxyHostPort(value string) (string, string) {
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", ""
+	}
+	if host, port, err := net.SplitHostPort(value); err == nil && strings.TrimSpace(host) != "" && strings.TrimSpace(port) != "" {
+		return strings.Trim(host, "[]"), strings.TrimSpace(port)
+	}
+	if strings.ContainsAny(value, " \t\r\n/\\") {
+		return "", ""
+	}
+	index := strings.LastIndex(value, ":")
+	if index <= 0 || index >= len(value)-1 {
+		return "", ""
+	}
+	host := strings.TrimSpace(value[:index])
+	port := strings.TrimSpace(value[index+1:])
+	if host == "" || port == "" || strings.Contains(host, ":") {
+		return "", ""
+	}
+	return strings.Trim(host, "[]"), port
 }
 
 func collectJSONProxyFields(target map[string]string, scopes []string, values map[string]any) {

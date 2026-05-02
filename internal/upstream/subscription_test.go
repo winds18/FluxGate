@@ -359,6 +359,53 @@ func TestNormalizeContentJSONStructuredProxyAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredHostPortAliases(t *testing.T) {
+	raw := `{
+  "data": {
+    "items": [
+      {
+        "displayName": "JSON HostPort Trojan",
+        "protocolName": "trojan",
+        "address": "json-hostport-trojan.example.test:443",
+        "password": "trojan-placeholder",
+        "tls": true,
+        "serverName": "json-hostport-trojan.example.test"
+      },
+      {
+        "name": "JSON HostPort SS",
+        "protocol": "shadowsocks",
+        "server": "json-hostport-ss.example.test:8388",
+        "method": "aes-128-gcm",
+        "pass": "qa-placeholder"
+      }
+    ]
+  }
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON host-port proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@json-hostport-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=json-hostport-trojan.example.test",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON host-port Trojan URI to contain %q: %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#JSON%20HostPort%20Trojan") {
+		t.Fatalf("unexpected structured JSON host-port Trojan fragment: %q", lines[0])
+	}
+	if lines[1] != "ss://aes-128-gcm:qa-placeholder@json-hostport-ss.example.test:8388#JSON%20HostPort%20SS" {
+		t.Fatalf("unexpected structured JSON host-port SS URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONStructuredProviderAliases(t *testing.T) {
 	raw := `{
   "servers": [

@@ -1660,6 +1660,68 @@ func TestNormalizeContentJSONStructuredNestedTLSFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentJSONStructuredTLSServerNameAliases(t *testing.T) {
+	raw := `{
+  "nodes": [
+    {
+      "name": "JSON TLS Kebab Trojan",
+      "protocol": "trojan",
+      "server": "json-tls-kebab-trojan.example.test",
+      "port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "server-name": "kebab-sni.example.test",
+        "client-fingerprint": "chrome"
+      }
+    },
+    {
+      "name": "JSON TLS Snake VLESS",
+      "protocol": "vless",
+      "server": "json-tls-snake-vless.example.test",
+      "port": 443,
+      "id": "00000000-0000-0000-0000-000000000096",
+      "tls": {
+        "enabled": true,
+        "server_names": ["snake-sni.example.test", "backup-snake-sni.example.test"],
+        "skip_cert_verify": true
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 structured JSON TLS alias proxy URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@json-tls-kebab-trojan.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=kebab-sni.example.test",
+		"fp=chrome",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected structured JSON TLS kebab URI to contain %q: %q", want, lines[0])
+		}
+	}
+	assertHasPrefix(t, lines[1], "vless://00000000-0000-0000-0000-000000000096@json-tls-snake-vless.example.test:443?")
+	for _, want := range []string{
+		"security=tls",
+		"sni=snake-sni.example.test",
+		"insecure=1",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected structured JSON TLS snake URI to contain %q: %q", want, lines[1])
+		}
+	}
+	if strings.Contains(lines[1], "backup-snake-sni") {
+		t.Fatalf("expected structured JSON TLS server_names array to use the first value only: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentJSONStructuredRealityAliases(t *testing.T) {
 	raw := `{
   "nodes": [

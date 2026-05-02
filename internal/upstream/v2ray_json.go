@@ -338,8 +338,8 @@ func v2rayServerList(value any) []map[string]any {
 	sort.Strings(keys)
 	result := make([]map[string]any, 0, len(keys))
 	for _, key := range keys {
-		if server := v2rayScalarServer(key, mapped[key]); server != nil {
-			result = append(result, server)
+		if servers := v2rayScalarServers(key, mapped[key]); len(servers) > 0 {
+			result = append(result, servers...)
 			continue
 		}
 		appendV2RayMappedObjects(&result, key, mapped[key])
@@ -347,13 +347,31 @@ func v2rayServerList(value any) []map[string]any {
 	return result
 }
 
-func v2rayScalarServer(key string, value any) map[string]any {
+func v2rayScalarServers(key string, value any) []map[string]any {
 	if _, ok := value.(map[string]any); ok {
 		return nil
 	}
-	if _, ok := value.([]any); ok {
-		return nil
+	if values, ok := value.([]any); ok {
+		servers := make([]map[string]any, 0, len(values))
+		for index, item := range values {
+			server := v2rayScalarServer(key, item)
+			if server == nil {
+				return nil
+			}
+			if len(values) > 1 {
+				server["name"] = key + "-" + strconv.Itoa(index+1)
+			}
+			servers = append(servers, server)
+		}
+		return servers
 	}
+	if server := v2rayScalarServer(key, value); server != nil {
+		return []map[string]any{server}
+	}
+	return nil
+}
+
+func v2rayScalarServer(key string, value any) map[string]any {
 	password := strings.TrimSpace(stringFromAnyValue(value))
 	if password == "" {
 		return nil

@@ -28,7 +28,8 @@ func V2RayJSONURIList(content string) string {
 }
 
 func v2rayOutboundURIs(outbound map[string]any) []string {
-	switch normalizedV2RayProtocol(v2rayString(outbound, "protocol")) {
+	protocol := normalizedV2RayProtocol(v2rayString(outbound, "protocol"))
+	switch protocol {
 	case "vmess":
 		return v2rayVNextURIs(outbound, clashVMessURI)
 	case "vless":
@@ -43,6 +44,8 @@ func v2rayOutboundURIs(outbound map[string]any) []string {
 		return v2rayProxyServerURIs(outbound, "https", clashHTTPURI)
 	case "socks":
 		return v2raySOCKSServerURIs(outbound)
+	case "socks4", "socks4a", "socks5":
+		return v2rayProxyServerURIs(outbound, protocol, clashSOCKSURI)
 	case "freedom", "direct":
 		uri := clashInternalURI("direct", map[string]string{"name": v2rayName(outbound, nil, nil, "Direct", 1, 1)}, "Direct")
 		return []string{uri}
@@ -65,6 +68,10 @@ func normalizedV2RayProtocol(protocol string) string {
 		return "vmess"
 	case "http+tls", "http-tls", "https":
 		return "https"
+	case "socks5h":
+		return "socks5"
+	case "socks4", "socks4a", "socks5":
+		return strings.ToLower(strings.TrimSpace(protocol))
 	case "reject", "reject-drop", "reject-no-drop", "reject-tinygif":
 		return "block"
 	default:

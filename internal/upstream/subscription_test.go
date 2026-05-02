@@ -5090,6 +5090,38 @@ func TestNormalizeContentV2RayJSONProtocolAliases(t *testing.T) {
       }
     },
     {
+      "tag": "V2Ray SOCKS5H Alias",
+      "protocol": "socks5h",
+      "settings": {
+        "servers": [
+          {
+            "address": "socks5h.v2ray-alias.example.test",
+            "port": 1080,
+            "users": [
+              {
+                "user": "qa-user",
+                "pass": "socks-placeholder"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "tag": "V2Ray SOCKS4A Alias",
+      "protocol": "socks4a",
+      "settings": {
+        "servers": [
+          {
+            "address": "socks4a.v2ray-alias.example.test",
+            "port": 1081,
+            "username": "qa-user",
+            "password": "socks4a-placeholder"
+          }
+        ]
+      }
+    },
+    {
       "tag": "V2Ray Reject Alias",
       "protocol": "reject-drop"
     }
@@ -5100,8 +5132,8 @@ func TestNormalizeContentV2RayJSONProtocolAliases(t *testing.T) {
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 5 {
-		t.Fatalf("expected 5 v2ray alias URIs, got %d: %q", len(lines), got)
+	if len(lines) != 7 {
+		t.Fatalf("expected 7 v2ray alias URIs, got %d: %q", len(lines), got)
 	}
 	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan-go.v2ray-alias.example.test:443?")
 	if !strings.Contains(lines[0], "security=tls") ||
@@ -5125,8 +5157,14 @@ func TestNormalizeContentV2RayJSONProtocolAliases(t *testing.T) {
 	}
 	assertHasPrefix(t, lines[2], "https://qa-user:http-placeholder@http-plus-tls.v2ray-alias.example.test:443#V2Ray%20HTTP%20Plus%20TLS%20Alias")
 	assertHasPrefix(t, lines[3], "https://qa-user:http-dash-placeholder@http-dash-tls.v2ray-alias.example.test:443#V2Ray%20HTTP%20Dash%20TLS%20Alias")
-	if lines[4] != "block://default#V2Ray%20Reject%20Alias" {
-		t.Fatalf("unexpected v2ray reject alias URI: %q", lines[4])
+	if lines[4] != "socks5://qa-user:socks-placeholder@socks5h.v2ray-alias.example.test:1080#V2Ray%20SOCKS5H%20Alias" {
+		t.Fatalf("unexpected v2ray SOCKS5H alias URI: %q", lines[4])
+	}
+	if lines[5] != "socks4a://qa-user:socks4a-placeholder@socks4a.v2ray-alias.example.test:1081#V2Ray%20SOCKS4A%20Alias" {
+		t.Fatalf("unexpected v2ray SOCKS4A alias URI: %q", lines[5])
+	}
+	if lines[6] != "block://default#V2Ray%20Reject%20Alias" {
+		t.Fatalf("unexpected v2ray reject alias URI: %q", lines[6])
 	}
 }
 

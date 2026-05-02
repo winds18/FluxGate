@@ -6109,6 +6109,79 @@ func TestNormalizeContentSingBoxJSONVMessHTTPTransport(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONVMessDirectTransportHosts(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "vmess",
+      "tag": "香港 VMess WS Direct Host",
+      "server": "ws-direct.vmess.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000140",
+      "tls": {
+        "enabled": true,
+        "server_name": "ws-direct.vmess.singbox.example.test"
+      },
+      "transport": {
+        "type": "ws",
+        "authority": "ws-direct-host.vmess.singbox.example.test",
+        "path": "/ws-direct"
+      }
+    },
+    {
+      "type": "vmess",
+      "tag": "东京 VMess HTTPUpgrade Direct Host",
+      "server": "upgrade-direct.vmess.singbox.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000141",
+      "tls": {
+        "enabled": true,
+        "server_name": "upgrade-direct.vmess.singbox.example.test"
+      },
+      "transport": {
+        "type": "httpupgrade",
+        "host": ["upgrade-direct.vmess.singbox.example.test", "upgrade-direct-backup.vmess.singbox.example.test"],
+        "path": "/upgrade-direct"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 VMess transport host URIs, got %d: %q", len(lines), got)
+	}
+	decodedWS := decodeVMessURIForTest(t, lines[0])
+	for _, want := range []string{
+		`"ps":"香港 VMess WS Direct Host"`,
+		`"net":"ws"`,
+		`"host":"ws-direct-host.vmess.singbox.example.test"`,
+		`"path":"/ws-direct"`,
+		`"tls":"tls"`,
+		`"sni":"ws-direct.vmess.singbox.example.test"`,
+	} {
+		if !strings.Contains(decodedWS, want) {
+			t.Fatalf("expected sing-box vmess ws document to contain %q: %q", want, decodedWS)
+		}
+	}
+	decodedUpgrade := decodeVMessURIForTest(t, lines[1])
+	for _, want := range []string{
+		`"ps":"东京 VMess HTTPUpgrade Direct Host"`,
+		`"net":"httpupgrade"`,
+		`"host":"upgrade-direct.vmess.singbox.example.test,upgrade-direct-backup.vmess.singbox.example.test"`,
+		`"path":"/upgrade-direct"`,
+		`"tls":"tls"`,
+		`"sni":"upgrade-direct.vmess.singbox.example.test"`,
+	} {
+		if !strings.Contains(decodedUpgrade, want) {
+			t.Fatalf("expected sing-box vmess httpupgrade document to contain %q: %q", want, decodedUpgrade)
+		}
+	}
+}
+
 func TestNormalizeContentV2RayJSON(t *testing.T) {
 	raw := `{
   "outbounds": [

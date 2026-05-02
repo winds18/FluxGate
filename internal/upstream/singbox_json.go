@@ -305,7 +305,7 @@ func singBoxVMessURI(outbound map[string]any) string {
 				doc["path"] = serviceName
 			}
 		}
-		if strings.EqualFold(doc["net"], "http") || strings.EqualFold(doc["net"], "h2") {
+		if singBoxVMessTransportCarriesHost(doc["net"]) {
 			if hosts := singBoxTransportDirectHosts(transport); len(hosts) > 0 {
 				doc["host"] = strings.Join(hosts, ",")
 			}
@@ -320,6 +320,15 @@ func singBoxVMessURI(outbound map[string]any) string {
 		return ""
 	}
 	return "vmess://" + base64.RawURLEncoding.EncodeToString(encoded)
+}
+
+func singBoxVMessTransportCarriesHost(transportType string) bool {
+	switch strings.ToLower(strings.TrimSpace(transportType)) {
+	case "ws", "websocket", "http", "h2", "httpupgrade", "http-upgrade", "http_upgrade":
+		return true
+	default:
+		return false
+	}
 }
 
 func singBoxHysteria2URI(outbound map[string]any) string {

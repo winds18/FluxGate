@@ -5234,7 +5234,7 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
             "serverPort": 443,
             "users": [
               {
-                "uuid": "00000000-0000-0000-0000-000000000087",
+                "user_id": "00000000-0000-0000-0000-000000000087",
                 "security": "auto"
               }
             ]
@@ -5252,7 +5252,7 @@ func TestNormalizeContentV2RayJSONVNextEndpointAliases(t *testing.T) {
             "server_port": 8443,
             "users": [
               {
-                "uuid": "00000000-0000-0000-0000-000000000088",
+                "user-id": "00000000-0000-0000-0000-000000000088",
                 "encryption": "none"
               }
             ]

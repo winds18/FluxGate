@@ -97,7 +97,7 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 				"name":    v2rayName(outbound, vnext, user, server, sequence, total),
 				"server":  server,
 				"port":    v2rayPort(vnext),
-				"uuid":    firstNonEmptyString(v2rayString(user, "id"), v2rayString(user, "uuid")),
+				"uuid":    v2rayVNextUserID(user),
 				"alterid": firstNonEmptyString(v2rayString(user, "alterId"), v2rayString(user, "alter_id"), v2rayString(user, "alter-id"), v2rayString(user, "aid")),
 				"cipher":  firstNonEmptyString(v2rayString(user, "security"), v2rayString(user, "encryption"), v2rayString(user, "cipher")),
 				"flow":    v2rayString(user, "flow"),
@@ -116,6 +116,16 @@ func v2rayVNextURIs(outbound map[string]any, build func(map[string]string) strin
 		}
 	}
 	return uris
+}
+
+func v2rayVNextUserID(user map[string]any) string {
+	return firstNonEmptyString(
+		v2rayString(user, "id"),
+		v2rayString(user, "uuid"),
+		v2rayString(user, "userId"),
+		v2rayString(user, "user_id"),
+		v2rayString(user, "user-id"),
+	)
 }
 
 func v2rayVNextServer(vnext map[string]any) string {

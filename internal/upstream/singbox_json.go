@@ -120,6 +120,10 @@ func normalizedSingBoxOutboundType(outboundType string) string {
 		return "anytls"
 	case "shadow-tls":
 		return "shadowtls"
+	case "http+tls", "http-tls":
+		return "https"
+	case "naive+https", "naive-https":
+		return "naive"
 	case "naive-quic":
 		return "naive+quic"
 	case "socks5h":
@@ -515,7 +519,7 @@ func singBoxHTTPURI(outbound map[string]any) string {
 	}
 
 	scheme := "http"
-	if strings.EqualFold(singBoxString(outbound, "type"), "https") || tlsMap(outbound) != nil {
+	if normalizedSingBoxOutboundType(singBoxString(outbound, "type")) == "https" || tlsMap(outbound) != nil {
 		scheme = "https"
 	}
 	values := url.Values{}

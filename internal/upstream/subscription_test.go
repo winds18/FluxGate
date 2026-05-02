@@ -3495,12 +3495,41 @@ func TestNormalizeContentSingBoxJSONProtocolAliases(t *testing.T) {
       "password": "shadowtls-placeholder"
     },
     {
+      "type": "http+tls",
+      "tag": "sing-box HTTP Plus TLS Alias",
+      "server": "http-plus-tls.singbox-alias.example.test",
+      "server_port": 443,
+      "username": "qa-user",
+      "password": "http-placeholder",
+      "path": "/connect"
+    },
+    {
+      "type": "http-tls",
+      "tag": "sing-box HTTP Dash TLS Alias",
+      "server": "http-dash-tls.singbox-alias.example.test",
+      "server_port": 443,
+      "username": "qa-user",
+      "password": "http-dash-placeholder"
+    },
+    {
       "type": "naive-quic",
       "tag": "sing-box Naive QUIC Alias",
       "server": "naive.singbox-alias.example.test",
       "server_port": 443,
       "username": "qa-user",
       "password": "naive-placeholder"
+    },
+    {
+      "type": "naive-https",
+      "tag": "sing-box Naive HTTPS Alias",
+      "server": "naive-https.singbox-alias.example.test",
+      "server_port": 443,
+      "username": "qa-user",
+      "password": "naive-https-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "naive-https.singbox-alias.example.test"
+      }
     },
     {
       "type": "socks5h",
@@ -3518,8 +3547,8 @@ func TestNormalizeContentSingBoxJSONProtocolAliases(t *testing.T) {
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 7 {
-		t.Fatalf("expected 7 normalized sing-box alias nodes, got %d: %q", len(lines), got)
+	if len(lines) != 10 {
+		t.Fatalf("expected 10 normalized sing-box alias nodes, got %d: %q", len(lines), got)
 	}
 
 	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan-go.singbox-alias.example.test:443?")
@@ -3549,15 +3578,22 @@ func TestNormalizeContentSingBoxJSONProtocolAliases(t *testing.T) {
 		!strings.HasSuffix(lines[4], "#sing-box%20ShadowTLS%20Alias") {
 		t.Fatalf("unexpected sing-box ShadowTLS alias URI: %q", lines[4])
 	}
-	assertHasPrefix(t, lines[5], "naive+quic://qa-user:naive-placeholder@naive.singbox-alias.example.test:443?")
-	if !strings.Contains(lines[5], "quic=1") ||
-		!strings.HasSuffix(lines[5], "#sing-box%20Naive%20QUIC%20Alias") {
-		t.Fatalf("unexpected sing-box Naive QUIC alias URI: %q", lines[5])
+	assertHasPrefix(t, lines[5], "https://qa-user:http-placeholder@http-plus-tls.singbox-alias.example.test:443/connect#sing-box%20HTTP%20Plus%20TLS%20Alias")
+	assertHasPrefix(t, lines[6], "https://qa-user:http-dash-placeholder@http-dash-tls.singbox-alias.example.test:443#sing-box%20HTTP%20Dash%20TLS%20Alias")
+	assertHasPrefix(t, lines[7], "naive+quic://qa-user:naive-placeholder@naive.singbox-alias.example.test:443?")
+	if !strings.Contains(lines[7], "quic=1") ||
+		!strings.HasSuffix(lines[7], "#sing-box%20Naive%20QUIC%20Alias") {
+		t.Fatalf("unexpected sing-box Naive QUIC alias URI: %q", lines[7])
 	}
-	assertHasPrefix(t, lines[6], "socks5://qa-user:socks-placeholder@socks5h.singbox-alias.example.test:1080?")
-	if !strings.Contains(lines[6], "network=udp") ||
-		!strings.HasSuffix(lines[6], "#sing-box%20SOCKS5H%20Alias") {
-		t.Fatalf("unexpected sing-box SOCKS5H alias URI: %q", lines[6])
+	assertHasPrefix(t, lines[8], "naive://qa-user:naive-https-placeholder@naive-https.singbox-alias.example.test:443?")
+	if !strings.Contains(lines[8], "sni=naive-https.singbox-alias.example.test") ||
+		!strings.HasSuffix(lines[8], "#sing-box%20Naive%20HTTPS%20Alias") {
+		t.Fatalf("unexpected sing-box Naive HTTPS alias URI: %q", lines[8])
+	}
+	assertHasPrefix(t, lines[9], "socks5://qa-user:socks-placeholder@socks5h.singbox-alias.example.test:1080?")
+	if !strings.Contains(lines[9], "network=udp") ||
+		!strings.HasSuffix(lines[9], "#sing-box%20SOCKS5H%20Alias") {
+		t.Fatalf("unexpected sing-box SOCKS5H alias URI: %q", lines[9])
 	}
 }
 

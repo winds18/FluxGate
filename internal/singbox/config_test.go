@@ -764,6 +764,13 @@ func TestBuildConfigSupportsCanonicalProtocolAliases(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         103,
+			URI:        "tuic-v5://00000000-0000-0000-0000-000000000103:tuic-v5-placeholder@alias-tuic-v5.example:443?congestionControl=bbr&udpRelayMode=native&sni=alias-tuic-v5.example#tuic-v5-alias",
+			Protocol:   "tuic-v5",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	shadowsocks := findOutbound(config.Outbounds, "up_96")
@@ -801,6 +808,14 @@ func TestBuildConfigSupportsCanonicalProtocolAliases(t *testing.T) {
 	naiveHTTPSTLS, ok := naiveHTTPS["tls"].(map[string]any)
 	if !ok || naiveHTTPSTLS["enabled"] != true || naiveHTTPSTLS["server_name"] != "alias-naive-https.example" {
 		t.Fatalf("unexpected naive-https alias tls: %+v", naiveHTTPS["tls"])
+	}
+	tuic := findOutbound(config.Outbounds, "up_103")
+	if tuic == nil || tuic["type"] != "tuic" || tuic["uuid"] != "00000000-0000-0000-0000-000000000103" || tuic["password"] != "tuic-v5-placeholder" || tuic["congestion_control"] != "bbr" || tuic["udp_relay_mode"] != "native" {
+		t.Fatalf("unexpected tuic-v5 alias outbound: %+v", tuic)
+	}
+	tuicTLS, ok := tuic["tls"].(map[string]any)
+	if !ok || tuicTLS["enabled"] != true || tuicTLS["server_name"] != "alias-tuic-v5.example" {
+		t.Fatalf("unexpected tuic-v5 alias tls: %+v", tuic["tls"])
 	}
 }
 

@@ -45,7 +45,7 @@
 - Clash/Mihomo 与 sing-box 基础订阅生成。
 - sing-box config.json 生成骨架。
 - active VLESS/Trojan/Shadowsocks/VMess/Hysteria2/Hysteria/TUIC/AnyTLS/ShadowTLS/Naive/HTTP/SOCKS/SSH/WireGuard/Tor 上游节点会进入 sing-box outbound，并由默认 selector 承接出口。
-- 配置生成侧兼容导入层已支持的 `shadowsocks`、`trojan-go`、`vmess-aead`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https` 和 `naive-quic` 协议别名。
+- 配置生成侧兼容导入层已支持的 `shadowsocks`、`trojan-go`、`vmess-aead`、`tuic-v5`、`tuic5`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https` 和 `naive-quic` 协议别名。
 - Direct URI、`freedom://` URI 和 sing-box JSON `direct` outbound 可进入默认上游 selector 和 outbound stats 列表，配置生成侧兼容手动保存的 `freedom` 协议节点。
 - Block URI、`blackhole://` URI、`reject://` URI、Clash `reject`/`reject-drop` 和 sing-box JSON `block` outbound 可进入 sing-box 配置，但不会进入普通上游 selector 或 outbound stats 列表，配置生成侧兼容手动保存的 `blackhole`/`reject`/`reject-drop`/`reject-no-drop`/`reject-tinygif` 协议节点。
 - `reject-drop://`、`reject-no-drop://` 和 `reject-tinygif://` 裸 URI 会归一化为标准 `block://`，和 Clash 结构化 reject 变体保持一致。
@@ -119,6 +119,7 @@
 - JSON 结构化节点可解析通用 `transport` 容器，保留 `transport.type`、`transport.path`、`transport.host`、`transport.headers.Host`、`transport.serviceName`、`transport.idleTimeout` 等 WebSocket、HTTP、HTTPUpgrade 或 gRPC 参数。
 - subscription 来源可解析 Quantumult X `[server_local]`/`[server_remote]` 常见 SS、SSR、Hysteria2/Hy2、TUIC、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、Trojan、VLESS、VMess、HTTP 和 SOCKS 节点，并兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https`、`naive-quic` 和 `socks5h` 协议别名。
 - Quantumult X `ssr`/`shadowsocksr` 节点会按 Shadowsocks 兼容链路归一化为 `ss://`，保留服务端、端口、加密方法、密码和节点名，并避免 SSR 专有 `protocol`/`obfs` 参数误写入 sing-box Shadowsocks `network`。
+- Quantumult X、Surge、Clash YAML 和 sing-box JSON 的 `tuic-v5`/`tuic5` 类型会按 TUIC 兼容链路归一化为 `tuic://`，保留 UUID、密码、拥塞控制、UDP relay、SNI 和节点名。
 - Quantumult X 和 Surge 结构化 VLESS/Trojan 节点可保留 gRPC transport 和 service name。
 - Quantumult X HTTP/SOCKS 节点可兼容键值和位置参数两种认证写法。
 - subscription 来源可解析以节点名称为 key 的 JSON URI 对象映射。
@@ -147,6 +148,7 @@
 - `hy2://` 和 `wg://` 裸 URI 会归一化为标准 `hysteria2://` 和 `wireguard://`，让导入后的协议字段和配置生成链路保持一致。
 - `trojan-go://` 裸 URI 会归一化为标准 `trojan://`，复用现有 Trojan TLS、REALITY 和传输参数转换链路。
 - `vmess-aead://` 裸 URI 会归一化为标准 `vmess://`，复用现有 VMess TLS、WebSocket、gRPC、HTTP 和 packet encoding 转换链路。
+- `tuic-v5://` 和 `tuic5://` 裸 URI 会归一化为标准 `tuic://`，复用现有 TUIC outbound 转换链路；手动保存 `tuic-v5`/`tuic5` 协议节点时配置生成侧也会按 TUIC 输出。
 - sing-box JSON `outbounds` 兼容 `trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive+https`、`naive-https`、`naive-quic` 和 `socks5h` 结构化 `type` 别名。
 - subscription 来源可解析 sing-box JSON `outbounds` 中的 Naive/Naive+QUIC 节点，并保留 QUIC、UDP over TCP、并发、TLS 和 uTLS fingerprint 参数。
 - subscription 来源可解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。

@@ -55,6 +55,8 @@ var supportedURIPrefixes = []string{
 	"trojan://",
 	"trojan-go://",
 	"tuic://",
+	"tuic-v5://",
+	"tuic5://",
 	"vless://",
 	"vmess://",
 	"vmess-aead://",
@@ -244,6 +246,9 @@ func canonicalSpecialURI(rawURI string) string {
 		return rewriteURIScheme(rawURI, "trojan")
 	case strings.HasPrefix(lower, "vmess-aead://"):
 		return rewriteURIScheme(rawURI, "vmess")
+	case strings.HasPrefix(lower, "tuic-v5://"),
+		strings.HasPrefix(lower, "tuic5://"):
+		return rewriteURIScheme(rawURI, "tuic")
 	case strings.HasPrefix(lower, "wg://"):
 		return rewriteURIScheme(rawURI, "wireguard")
 	default:

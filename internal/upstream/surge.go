@@ -93,7 +93,8 @@ func surgeProxyURI(line string) string {
 			"certificate-public-key-sha256", "certificate_public_key_sha256", "fingerprint",
 		)
 		return clashHysteria2URI(proxy)
-	case "tuic":
+	case "tuic", "tuic-v5", "tuic5":
+		proxy["type"] = "tuic"
 		proxy["uuid"] = surgeFirstValue(options, positionals, 2, "uuid", "id", "username", "user")
 		proxy["password"] = surgeFirstValue(options, positionals, 3, "password", "passwd", "psk", "token")
 		surgeCopyOptions(proxy, options,

@@ -258,7 +258,7 @@ func buildNodeOutbound(node store.Node) (map[string]any, bool) {
 		return buildVMessOutbound(node)
 	case "hysteria2", "hy2":
 		return buildHysteria2Outbound(node)
-	case "tuic":
+	case "tuic", "tuic-v5", "tuic5":
 		return buildTUICOutbound(node)
 	case "anytls", "any-tls":
 		return buildAnyTLSOutbound(node)
@@ -746,11 +746,11 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 }
 
 func buildTUICOutbound(node store.Node) (map[string]any, bool) {
-	if node.Status != "active" || node.Protocol != "tuic" {
+	if node.Status != "active" || !isTUICProtocol(node.Protocol) {
 		return nil, false
 	}
 	parsed, err := url.Parse(strings.TrimSpace(node.URI))
-	if err != nil || parsed.Scheme != "tuic" || parsed.Hostname() == "" {
+	if err != nil || !isTUICProtocol(parsed.Scheme) || parsed.Hostname() == "" {
 		return nil, false
 	}
 
@@ -1457,6 +1457,15 @@ func isShadowsocksProtocol(protocol string) bool {
 func isVMessProtocol(protocol string) bool {
 	switch strings.ToLower(strings.TrimSpace(protocol)) {
 	case "vmess", "vmess-aead":
+		return true
+	default:
+		return false
+	}
+}
+
+func isTUICProtocol(protocol string) bool {
+	switch strings.ToLower(strings.TrimSpace(protocol)) {
+	case "tuic", "tuic-v5", "tuic5":
 		return true
 	default:
 		return false

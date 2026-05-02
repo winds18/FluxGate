@@ -142,6 +142,8 @@ func TestNormalizeContentCanonicalizesHTTPTLSSchemeAliases(t *testing.T) {
 func TestNormalizeContentCanonicalizesCommonShortSchemeAliases(t *testing.T) {
 	raw := strings.Join([]string{
 		"hy2://hy2-placeholder@hy2-alias.example.test:443#Hy2%20Alias",
+		"tuic-v5://00000000-0000-0000-0000-000000000112:tuic-placeholder@tuic-v5-alias.example.test:443#TUIC%20V5%20Alias",
+		"tuic5://00000000-0000-0000-0000-000000000113:tuic5-placeholder@tuic5-alias.example.test:443#TUIC5%20Alias",
 		"wg://wg-alias.example.test:51820?private_key=qa-private&peer_public_key=qa-peer&local_address=10.66.0.2/32#WG%20Alias",
 	}, "\n")
 	got, err := NormalizeContent(raw)
@@ -150,6 +152,8 @@ func TestNormalizeContentCanonicalizesCommonShortSchemeAliases(t *testing.T) {
 	}
 	want := strings.Join([]string{
 		"hysteria2://hy2-placeholder@hy2-alias.example.test:443#Hy2%20Alias",
+		"tuic://00000000-0000-0000-0000-000000000112:tuic-placeholder@tuic-v5-alias.example.test:443#TUIC%20V5%20Alias",
+		"tuic://00000000-0000-0000-0000-000000000113:tuic5-placeholder@tuic5-alias.example.test:443#TUIC5%20Alias",
 		"wireguard://wg-alias.example.test:51820?private_key=qa-private&peer_public_key=qa-peer&local_address=10.66.0.2/32#WG%20Alias",
 	}, "\n")
 	if got != want {
@@ -895,6 +899,33 @@ socks5h=qx-socks5h-alias.example.test:1080, qa-user, socks-placeholder, udp=true
 	if !strings.Contains(lines[4], "udp=1") ||
 		!strings.HasSuffix(lines[4], "#%E9%A6%96%E5%B0%94%20QuantumultX%20SOCKS5H%20Alias") {
 		t.Fatalf("unexpected Quantumult X SOCKS5H alias URI: %q", lines[4])
+	}
+}
+
+func TestNormalizeContentQuantumultXTUICV5Aliases(t *testing.T) {
+	raw := `[server_local]
+tuic-v5=qx-tuic-v5.example.test:443, uuid=00000000-0000-0000-0000-000000000114, password=tuic-placeholder, congestion-controller=bbr, udp-relay-mode=native, over-tls=true, tls-host=qx-tuic-v5.example.test, tag=大阪 QuantumultX TUIC V5
+tuic5=qx-tuic5.example.test:443, uuid=00000000-0000-0000-0000-000000000115, password=tuic5-placeholder, congestion-control=cubic, over-tls=true, tls-host=qx-tuic5.example.test, tag=东京 QuantumultX TUIC5`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Quantumult X TUIC alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "tuic://00000000-0000-0000-0000-000000000114:tuic-placeholder@qx-tuic-v5.example.test:443?")
+	if !strings.Contains(lines[0], "congestion_control=bbr") ||
+		!strings.Contains(lines[0], "udp_relay_mode=native") ||
+		!strings.Contains(lines[0], "sni=qx-tuic-v5.example.test") ||
+		!strings.HasSuffix(lines[0], "#%E5%A4%A7%E9%98%AA%20QuantumultX%20TUIC%20V5") {
+		t.Fatalf("unexpected Quantumult X TUIC V5 URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "tuic://00000000-0000-0000-0000-000000000115:tuic5-placeholder@qx-tuic5.example.test:443?")
+	if !strings.Contains(lines[1], "congestion_control=cubic") ||
+		!strings.Contains(lines[1], "sni=qx-tuic5.example.test") ||
+		!strings.HasSuffix(lines[1], "#%E4%B8%9C%E4%BA%AC%20QuantumultX%20TUIC5") {
+		t.Fatalf("unexpected Quantumult X TUIC5 URI: %q", lines[1])
 	}
 }
 
@@ -1904,6 +1935,35 @@ proxies:
 	if !strings.Contains(lines[10], "network=udp") ||
 		!strings.HasSuffix(lines[10], "#Clash%20SOCKS5H%20Alias") {
 		t.Fatalf("unexpected Clash SOCKS5H alias URI: %q", lines[10])
+	}
+}
+
+func TestNormalizeContentClashYAMLTUICV5Aliases(t *testing.T) {
+	raw := `
+proxies:
+  - { name: "Clash TUIC V5 Alias", type: tuic-v5, server: tuic-v5.clash-alias.example.test, port: 443, uuid: "00000000-0000-0000-0000-000000000116", password: "tuic-placeholder", congestion-controller: bbr, udp-relay-mode: native, sni: tuic-v5.clash-alias.example.test }
+  - { name: "Clash TUIC5 Alias", type: tuic5, server: tuic5.clash-alias.example.test, port: 443, uuid: "00000000-0000-0000-0000-000000000117", password: "tuic5-placeholder", congestion-control: cubic, sni: tuic5.clash-alias.example.test }
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Clash TUIC alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "tuic://00000000-0000-0000-0000-000000000116:tuic-placeholder@tuic-v5.clash-alias.example.test:443?")
+	if !strings.Contains(lines[0], "congestion_control=bbr") ||
+		!strings.Contains(lines[0], "udp_relay_mode=native") ||
+		!strings.Contains(lines[0], "sni=tuic-v5.clash-alias.example.test") ||
+		!strings.HasSuffix(lines[0], "#Clash%20TUIC%20V5%20Alias") {
+		t.Fatalf("unexpected Clash TUIC V5 URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "tuic://00000000-0000-0000-0000-000000000117:tuic5-placeholder@tuic5.clash-alias.example.test:443?")
+	if !strings.Contains(lines[1], "congestion_control=cubic") ||
+		!strings.Contains(lines[1], "sni=tuic5.clash-alias.example.test") ||
+		!strings.HasSuffix(lines[1], "#Clash%20TUIC5%20Alias") {
+		t.Fatalf("unexpected Clash TUIC5 URI: %q", lines[1])
 	}
 }
 
@@ -3050,6 +3110,35 @@ func TestNormalizeContentSurgeProxyListProtocolAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSurgeProxyListTUICV5Aliases(t *testing.T) {
+	raw := `
+[Proxy]
+大阪 Surge TUIC V5 Alias = tuic-v5, tuic-v5.surge-alias.example.test, 443, 00000000-0000-0000-0000-000000000118, tuic-placeholder, congestion-controller=bbr, udp-relay-mode=native, sni=tuic-v5.surge-alias.example.test
+东京 Surge TUIC5 Alias = tuic5, tuic5.surge-alias.example.test, 443, uuid=00000000-0000-0000-0000-000000000119, password=tuic5-placeholder, congestion-control=cubic, sni=tuic5.surge-alias.example.test
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Surge TUIC alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "tuic://00000000-0000-0000-0000-000000000118:tuic-placeholder@tuic-v5.surge-alias.example.test:443?")
+	if !strings.Contains(lines[0], "congestion_control=bbr") ||
+		!strings.Contains(lines[0], "udp_relay_mode=native") ||
+		!strings.Contains(lines[0], "sni=tuic-v5.surge-alias.example.test") ||
+		!strings.HasSuffix(lines[0], "#%E5%A4%A7%E9%98%AA%20Surge%20TUIC%20V5%20Alias") {
+		t.Fatalf("unexpected Surge TUIC V5 URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "tuic://00000000-0000-0000-0000-000000000119:tuic5-placeholder@tuic5.surge-alias.example.test:443?")
+	if !strings.Contains(lines[1], "congestion_control=cubic") ||
+		!strings.Contains(lines[1], "sni=tuic5.surge-alias.example.test") ||
+		!strings.HasSuffix(lines[1], "#%E4%B8%9C%E4%BA%AC%20Surge%20TUIC5%20Alias") {
+		t.Fatalf("unexpected Surge TUIC5 URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentSurgeProxyListShadowsocksR(t *testing.T) {
 	raw := `
 [Proxy]
@@ -3927,6 +4016,61 @@ func TestNormalizeContentSingBoxJSONProtocolAliases(t *testing.T) {
 	if !strings.Contains(lines[9], "network=udp") ||
 		!strings.HasSuffix(lines[9], "#sing-box%20SOCKS5H%20Alias") {
 		t.Fatalf("unexpected sing-box SOCKS5H alias URI: %q", lines[9])
+	}
+}
+
+func TestNormalizeContentSingBoxJSONTUICV5Aliases(t *testing.T) {
+	raw := `{
+  "outbounds": [
+    {
+      "type": "tuic-v5",
+      "tag": "sing-box TUIC V5 Alias",
+      "server": "tuic-v5.singbox-alias.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000120",
+      "password": "tuic-placeholder",
+      "congestion_control": "bbr",
+      "udp_relay_mode": "native",
+      "tls": {
+        "enabled": true,
+        "server_name": "tuic-v5.singbox-alias.example.test"
+      }
+    },
+    {
+      "type": "tuic5",
+      "tag": "sing-box TUIC5 Alias",
+      "server": "tuic5.singbox-alias.example.test",
+      "server_port": 443,
+      "uuid": "00000000-0000-0000-0000-000000000121",
+      "password": "tuic5-placeholder",
+      "congestion_control": "cubic",
+      "tls": {
+        "enabled": true,
+        "server_name": "tuic5.singbox-alias.example.test"
+      }
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 sing-box TUIC alias URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "tuic://00000000-0000-0000-0000-000000000120:tuic-placeholder@tuic-v5.singbox-alias.example.test:443?")
+	if !strings.Contains(lines[0], "congestion_control=bbr") ||
+		!strings.Contains(lines[0], "udp_relay_mode=native") ||
+		!strings.Contains(lines[0], "sni=tuic-v5.singbox-alias.example.test") ||
+		!strings.HasSuffix(lines[0], "#sing-box%20TUIC%20V5%20Alias") {
+		t.Fatalf("unexpected sing-box TUIC V5 URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "tuic://00000000-0000-0000-0000-000000000121:tuic5-placeholder@tuic5.singbox-alias.example.test:443?")
+	if !strings.Contains(lines[1], "congestion_control=cubic") ||
+		!strings.Contains(lines[1], "sni=tuic5.singbox-alias.example.test") ||
+		!strings.HasSuffix(lines[1], "#sing-box%20TUIC5%20Alias") {
+		t.Fatalf("unexpected sing-box TUIC5 URI: %q", lines[1])
 	}
 }
 

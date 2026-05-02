@@ -126,6 +126,8 @@ func normalizedSingBoxOutboundType(outboundType string) string {
 		return "naive"
 	case "naive-quic":
 		return "naive+quic"
+	case "tuic-v5", "tuic5":
+		return "tuic"
 	case "socks5h":
 		return "socks5"
 	default:

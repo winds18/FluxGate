@@ -76,7 +76,8 @@ func quantumultXProxyURI(line string) string {
 			"certificate-public-key-sha256", "certificate_public_key_sha256", "fingerprint",
 		)
 		return clashHysteria2URI(proxy)
-	case "tuic":
+	case "tuic", "tuic-v5", "tuic5":
+		proxy["type"] = "tuic"
 		proxy["uuid"] = surgeFirstValue(options, positionals, 1, "uuid", "id", "username", "user")
 		proxy["password"] = surgeFirstValue(options, positionals, 2, "password", "passwd", "pass", "psk", "token")
 		surgeCopyOptions(proxy, options,
@@ -217,7 +218,7 @@ func parseQuantumultXProxyLine(line string) (string, []string, bool) {
 	}
 	protocol = strings.ToLower(strings.TrimSpace(protocol))
 	switch protocol {
-	case "ss", "shadowsocks", "ssr", "shadowsocksr", "hysteria2", "hy2", "tuic", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "naive-https", "ssh", "wireguard", "wg", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "http+tls", "http-tls", "socks", "socks5", "socks5h":
+	case "ss", "shadowsocks", "ssr", "shadowsocksr", "hysteria2", "hy2", "tuic", "tuic-v5", "tuic5", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "naive-https", "ssh", "wireguard", "wg", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "http+tls", "http-tls", "socks", "socks5", "socks5h":
 	default:
 		return "", nil, false
 	}

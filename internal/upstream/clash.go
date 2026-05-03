@@ -360,7 +360,7 @@ func clashVMessURI(proxy map[string]string) string {
 func clashHysteria2URI(proxy map[string]string) string {
 	server := firstMapValue(proxy, "server")
 	port := firstMapValue(proxy, "port")
-	password := firstMapValue(proxy, "password", "auth", "auth-str", "auth_str")
+	password := firstMapValue(proxy, "password", "passwd", "pass", "psk", "token", "auth", "auth-str", "auth_str")
 	if server == "" || port == "" || password == "" {
 		return ""
 	}
@@ -490,7 +490,7 @@ func clashJuicityURI(proxy map[string]string) string {
 func clashHysteriaURI(proxy map[string]string) string {
 	server := firstMapValue(proxy, "server")
 	port := firstMapValue(proxy, "port")
-	authStr := firstMapValue(proxy, "auth-str", "auth_str", "password")
+	authStr := firstMapValue(proxy, "auth-str", "auth_str", "password", "passwd", "pass", "token", "psk")
 	auth := firstMapValue(proxy, "auth", "auth-base64", "auth_base64")
 	if server == "" || port == "" || (authStr == "" && auth == "") {
 		return ""

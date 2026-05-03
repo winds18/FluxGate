@@ -581,6 +581,10 @@ func structuredProxyKeyPrefersFirstValue(key string) bool {
 
 func normalizedStructuredProxyKey(key string) string {
 	switch key {
+	case "authbase64":
+		return "auth-base64"
+	case "authstr":
+		return "auth-str"
 	case "allow_insecure":
 		return "insecure"
 	case "allow-insecure":
@@ -591,6 +595,12 @@ func normalizedStructuredProxyKey(key string) string {
 		return "client-fingerprint"
 	case "disablesni":
 		return "disable-sni"
+	case "disablemtudiscovery":
+		return "disable-mtu-discovery"
+	case "downmbps":
+		return "down-mbps"
+	case "downspeed":
+		return "down-speed"
 	case "earlydataheadername":
 		return "early-data-header-name"
 	case "enable_tls":
@@ -651,6 +661,8 @@ func normalizedStructuredProxyKey(key string) string {
 		return "network"
 	case "networktype":
 		return "network"
+	case "obfspassword":
+		return "obfs-password"
 	case "over_tls":
 		return "tls"
 	case "over-tls":
@@ -685,6 +697,10 @@ func normalizedStructuredProxyKey(key string) string {
 		return "quic-opts"
 	case "realityopts":
 		return "reality-opts"
+	case "recvwindow":
+		return "recv-window"
+	case "recvwindowconn":
+		return "recv-window-conn"
 	case "skipcertverify":
 		return "skip-cert-verify"
 	case "skip_certificate_verify":
@@ -721,6 +737,10 @@ func normalizedStructuredProxyKey(key string) string {
 		return "transport"
 	case "transporttype":
 		return "transport"
+	case "upmbps":
+		return "up-mbps"
+	case "upspeed":
+		return "up-speed"
 	case "tcp_settings":
 		return "tcp-opts"
 	case "tcp-settings":

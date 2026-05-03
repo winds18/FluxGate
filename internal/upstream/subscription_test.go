@@ -3012,6 +3012,86 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLHysteriaCamelCaseAliases(t *testing.T) {
+	raw := `
+proxies:
+  - name: "Clash HY2 Camel"
+    type: hy2
+    server: hy2-camel.clash.example.test
+    port: 443
+    token: "hy2-token-placeholder"
+    obfs: salamander
+    obfsPassword: "hy2-obfs-placeholder"
+    upMbps: 40
+    downMbps: 160
+    serverName: hy2-camel.clash.example.test
+    allowInsecure: true
+    disableSNI: true
+    clientFingerprint: chrome
+  - name: "Clash Hysteria Camel"
+    type: hysteria
+    server: hysteria-camel.clash.example.test
+    port: 443
+    authStr: "hysteria-token-placeholder"
+    upMbps: 30
+    downMbps: 90
+    recvWindowConn: 1048576
+    recvWindow: 2097152
+    disableMtuDiscovery: true
+    serverName: hysteria-camel.clash.example.test
+    allowInsecure: true
+    disableSNI: true
+    clientFingerprint: firefox
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Clash Hysteria camelCase alias URIs, got %d: %q", len(lines), got)
+	}
+
+	assertHasPrefix(t, lines[0], "hysteria2://hy2-token-placeholder@hy2-camel.clash.example.test:443?")
+	for _, want := range []string{
+		"obfs=salamander",
+		"obfs-password=hy2-obfs-placeholder",
+		"up_mbps=40",
+		"down_mbps=160",
+		"sni=hy2-camel.clash.example.test",
+		"insecure=1",
+		"disable_sni=1",
+		"fp=chrome",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Clash Hysteria2 camelCase URI to contain %q, got %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#Clash%20HY2%20Camel") {
+		t.Fatalf("unexpected Clash Hysteria2 camelCase URI fragment: %q", lines[0])
+	}
+
+	assertHasPrefix(t, lines[1], "hysteria://hysteria-token-placeholder@hysteria-camel.clash.example.test:443?")
+	for _, want := range []string{
+		"up_mbps=30",
+		"down_mbps=90",
+		"recv_window_conn=1048576",
+		"recv_window=2097152",
+		"disable_mtu_discovery=1",
+		"sni=hysteria-camel.clash.example.test",
+		"insecure=1",
+		"disable_sni=1",
+		"fp=firefox",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Clash Hysteria camelCase URI to contain %q, got %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#Clash%20Hysteria%20Camel") {
+		t.Fatalf("unexpected Clash Hysteria camelCase URI fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentClashYAMLProtocolAliases(t *testing.T) {
 	raw := `
 proxies:

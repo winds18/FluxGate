@@ -142,6 +142,7 @@
 - VLESS 和 Trojan URI 可通过 `tls=tls`、`tls=true`、`tlsEnabled`、`enableTLS` 或 `overTLS` 查询参数显式启用普通 TLS，兼容未写 `security=tls` 的订阅写法。
 - VLESS 和 Trojan URI 的 SNI 兼容 `sni`、`servername`、`server_name`、`server-name`、`serverName`、`tlsHost`、`tls_host`、`tls-host`、`tlsServerName`、`tls_server_name` 和 `tls-server-name` 查询别名。
 - VLESS 和 Trojan URI 的跳过证书校验兼容 `insecure`、`skip-cert-verify`、`skip_cert_verify`、`skipCertVerify`、`skipCertificateVerify`、`skipVerify`、`allow-insecure`、`allowInsecure`、`tlsAllowInsecure` 和 `tlsSkipVerify` 查询别名。
+- VLESS 和 Trojan URI 的禁用 SNI 兼容 `disable_sni`、`disable-sni`、`disableSNI`、`disableSni`、`tlsDisableSNI`、`tlsDisableSni` 和 `tls-disable-sni` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure` 和 `disableSNI` 查询别名，同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure`、`skip_cert_verify` 和 `disableSNI` 查询别名，同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan WebSocket/gRPC 传输参数，并同步为 sing-box outbound transport。

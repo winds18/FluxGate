@@ -1256,6 +1256,20 @@ func TestBuildConfigSupportsVLESSTrojanTLSQueryAliases(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         221,
+			URI:        "vless://00000000-0000-0000-0000-000000000221@vless-disable-sni.example:443?tls=true&disableSni=true#vless-disable-sni",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         222,
+			URI:        "trojan://trojan-placeholder@trojan-tls-disable-sni.example:443?tls=true&tls-disable-sni=1#trojan-tls-disable-sni",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	vlessOutbound := findOutbound(config.Outbounds, "up_212")
@@ -1337,6 +1351,24 @@ func TestBuildConfigSupportsVLESSTrojanTLSQueryAliases(t *testing.T) {
 	trojanTLSHostTLS, ok := trojanTLSHostOutbound["tls"].(map[string]any)
 	if !ok || trojanTLSHostTLS["enabled"] != true || trojanTLSHostTLS["server_name"] != "trojan-host-alias.example" {
 		t.Fatalf("unexpected trojan tls-host query alias: %+v", trojanTLSHostOutbound["tls"])
+	}
+
+	vlessDisableSNIOutbound := findOutbound(config.Outbounds, "up_221")
+	if vlessDisableSNIOutbound == nil {
+		t.Fatalf("expected vless outbound up_221, got %+v", config.Outbounds)
+	}
+	vlessDisableSNITLS, ok := vlessDisableSNIOutbound["tls"].(map[string]any)
+	if !ok || vlessDisableSNITLS["enabled"] != true || vlessDisableSNITLS["disable_sni"] != true {
+		t.Fatalf("unexpected vless disableSni query alias: %+v", vlessDisableSNIOutbound["tls"])
+	}
+
+	trojanTLSDisableSNIOutbound := findOutbound(config.Outbounds, "up_222")
+	if trojanTLSDisableSNIOutbound == nil {
+		t.Fatalf("expected trojan outbound up_222, got %+v", config.Outbounds)
+	}
+	trojanTLSDisableSNITLS, ok := trojanTLSDisableSNIOutbound["tls"].(map[string]any)
+	if !ok || trojanTLSDisableSNITLS["enabled"] != true || trojanTLSDisableSNITLS["disable_sni"] != true {
+		t.Fatalf("unexpected trojan tls-disable-sni query alias: %+v", trojanTLSDisableSNIOutbound["tls"])
 	}
 }
 

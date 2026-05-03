@@ -327,7 +327,7 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 		queryTLSEnabled(query) ||
 		queryTLSServerName(query, "") != "" ||
 		queryTLSInsecure(query) ||
-		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
+		queryTLSDisableSNI(query) ||
 		strings.TrimSpace(query.Get("alpn")) != "" ||
 		firstNonEmpty(query.Get("pbk"), query.Get("public_key"), query.Get("public-key"), query.Get("publicKey")) != "" ||
 		firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")) != "" {
@@ -338,7 +338,7 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 		if queryTLSInsecure(query) {
 			tls["insecure"] = true
 		}
-		if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
+		if queryTLSDisableSNI(query) {
 			tls["disable_sni"] = true
 		}
 		if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
@@ -398,7 +398,7 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 		queryTLSEnabled(query) ||
 		queryTLSServerName(query, "", "peer") != "" ||
 		queryTLSInsecure(query) ||
-		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
+		queryTLSDisableSNI(query) ||
 		strings.TrimSpace(query.Get("alpn")) != "" ||
 		firstNonEmpty(query.Get("pbk"), query.Get("public_key"), query.Get("public-key"), query.Get("publicKey")) != "" ||
 		firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")) != "" {
@@ -409,7 +409,7 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 		if queryTLSInsecure(query) {
 			tls["insecure"] = true
 		}
-		if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
+		if queryTLSDisableSNI(query) {
 			tls["disable_sni"] = true
 		}
 		if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {
@@ -2064,6 +2064,19 @@ func queryTLSInsecure(query url.Values) bool {
 		query.Get("tls_skip_verify"),
 		query.Get("tls-skip-verify"),
 		query.Get("tlsSkipVerify"),
+	))
+}
+
+func queryTLSDisableSNI(query url.Values) bool {
+	return boolQuery(firstNonEmpty(
+		query.Get("disable_sni"),
+		query.Get("disable-sni"),
+		query.Get("disableSNI"),
+		query.Get("disableSni"),
+		query.Get("tls_disable_sni"),
+		query.Get("tls-disable-sni"),
+		query.Get("tlsDisableSNI"),
+		query.Get("tlsDisableSni"),
 	))
 }
 

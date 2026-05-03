@@ -324,6 +324,7 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 	}
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("security"), "reality") ||
+		queryTLSEnabled(query) ||
 		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName")) != "" ||
 		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) ||
 		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
@@ -394,6 +395,7 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 	}
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("security"), "reality") ||
+		queryTLSEnabled(query) ||
 		firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("serverName")) != "" ||
 		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) ||
 		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
@@ -2000,6 +2002,24 @@ func querySecretPassword(query url.Values) string {
 		query.Get("account-password"),
 		query.Get("accountPassword"),
 	)
+}
+
+func queryTLSEnabled(query url.Values) bool {
+	if strings.EqualFold(strings.TrimSpace(query.Get("tls")), "tls") {
+		return true
+	}
+	return boolQuery(firstNonEmpty(
+		query.Get("tls"),
+		query.Get("tls_enabled"),
+		query.Get("tls-enabled"),
+		query.Get("tlsEnabled"),
+		query.Get("enable_tls"),
+		query.Get("enable-tls"),
+		query.Get("enableTLS"),
+		query.Get("over_tls"),
+		query.Get("over-tls"),
+		query.Get("overTLS"),
+	))
 }
 
 func socksVersion(scheme string, queryVersion string) string {

@@ -1191,6 +1191,59 @@ func TestBuildConfigPreservesTrojanRealityTLS(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsVLESSTrojanTLSQueryAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         212,
+			URI:        "vless://00000000-0000-0000-0000-000000000212@vless-tls-alias.example:443?tlsEnabled=1#vless-tls-alias",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         213,
+			URI:        "trojan://trojan-placeholder@trojan-tls-alias.example:443?enableTLS=true#trojan-tls-alias",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         214,
+			URI:        "vless://00000000-0000-0000-0000-000000000214@vless-over-tls.example:443?overTLS=1#vless-over-tls",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	vlessOutbound := findOutbound(config.Outbounds, "up_212")
+	if vlessOutbound == nil {
+		t.Fatalf("expected vless outbound up_212, got %+v", config.Outbounds)
+	}
+	vlessTLS, ok := vlessOutbound["tls"].(map[string]any)
+	if !ok || vlessTLS["enabled"] != true || vlessTLS["server_name"] != "vless-tls-alias.example" {
+		t.Fatalf("unexpected vless TLS query aliases: %+v", vlessOutbound["tls"])
+	}
+
+	trojanOutbound := findOutbound(config.Outbounds, "up_213")
+	if trojanOutbound == nil {
+		t.Fatalf("expected trojan outbound up_213, got %+v", config.Outbounds)
+	}
+	trojanTLS, ok := trojanOutbound["tls"].(map[string]any)
+	if !ok || trojanTLS["enabled"] != true || trojanTLS["server_name"] != "trojan-tls-alias.example" {
+		t.Fatalf("unexpected trojan TLS query aliases: %+v", trojanOutbound["tls"])
+	}
+
+	overTLSOutbound := findOutbound(config.Outbounds, "up_214")
+	if overTLSOutbound == nil {
+		t.Fatalf("expected vless outbound up_214, got %+v", config.Outbounds)
+	}
+	overTLS, ok := overTLSOutbound["tls"].(map[string]any)
+	if !ok || overTLS["enabled"] != true || overTLS["server_name"] != "vless-over-tls.example" {
+		t.Fatalf("unexpected vless overTLS query alias: %+v", overTLSOutbound["tls"])
+	}
+}
+
 func TestBuildConfigPreservesVMessGRPCTransport(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

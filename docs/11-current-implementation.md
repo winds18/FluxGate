@@ -139,6 +139,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTPUpgrade transport 的 `host` 和 `path` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `httpUpgradeHost` 和 `httpUpgradePath` 查询别名。
 - VLESS、Trojan 和 VMess URI 生成 sing-box outbound 时，WebSocket、HTTP/H2 和 HTTPUpgrade transport Host 兼容 `authority`、`:authority`、`headers.Host`、`headers.:authority`、`headerHost` 和协议专属 Host 查询别名。
 - VLESS URI 可从 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 查询参数读取认证信息，Trojan URI 可从 `password`/`pass`/`passwd`/`pwd`/`psk`/`token`/`secret`/`credential`/`credentials`/`accountPassword` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
+- VLESS 和 Trojan URI 可通过 `tls=tls`、`tls=true`、`tlsEnabled`、`enableTLS` 或 `overTLS` 查询参数显式启用普通 TLS，兼容未写 `security=tls` 的订阅写法。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure` 和 `disableSNI` 查询别名，同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure`、`skip_cert_verify` 和 `disableSNI` 查询别名，同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan WebSocket/gRPC 传输参数，并同步为 sing-box outbound transport。

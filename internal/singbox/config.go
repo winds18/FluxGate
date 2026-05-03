@@ -1648,7 +1648,16 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 		"type": firstNonEmpty(query.Get("headerType"), query.Get("header-type"), query.Get("header_type")),
 		"host": vmessUserinfoTransportHost(query, transportType),
 		"path": vmessUserinfoTransportPath(query, transportType),
-		"sni":  firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name")),
+		"sni": firstNonEmpty(
+			query.Get("sni"),
+			query.Get("servername"),
+			query.Get("server_name"),
+			query.Get("server-name"),
+			query.Get("serverName"),
+			query.Get("tls_server_name"),
+			query.Get("tls-server-name"),
+			query.Get("tlsServerName"),
+		),
 		"alpn": query.Get("alpn"),
 	}
 	if multiMode := firstNonEmpty(query.Get("multi_mode"), query.Get("multi-mode"), query.Get("grpc_multi_mode"), query.Get("grpc-multi-mode")); multiMode != "" {
@@ -1662,13 +1671,24 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 	}
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("tls"), "tls") ||
-		boolQuery(query.Get("tls")) {
+		boolQuery(firstNonEmpty(
+			query.Get("tls"),
+			query.Get("tls_enabled"),
+			query.Get("tls-enabled"),
+			query.Get("tlsEnabled"),
+			query.Get("enable_tls"),
+			query.Get("enable-tls"),
+			query.Get("enableTLS"),
+			query.Get("over_tls"),
+			query.Get("over-tls"),
+			query.Get("overTLS"),
+		)) {
 		doc["tls"] = "tls"
 	}
 	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) {
 		doc["allowInsecure"] = "1"
 	}
-	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"))) {
+	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
 		doc["disable_sni"] = "1"
 	}
 	if fingerprint := firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")); fingerprint != "" {

@@ -1388,6 +1388,43 @@ func TestBuildConfigSupportsVMessQueryCredentials(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsVMessUserinfoTLSQueryAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         210,
+			URI:        "vmess://00000000-0000-0000-0000-000000000210@vmess-tls-alias.example:443?encryption=auto&tlsEnabled=1&serverName=alias.vmess.example&disableSNI=1#vmess-tls-alias",
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         211,
+			URI:        "vmess://00000000-0000-0000-0000-000000000211@vmess-tls-server-name.example:443?encryption=auto&enableTLS=true&tlsServerName=tls-name.vmess.example#vmess-tls-server-name",
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	serverNameOutbound := findOutbound(config.Outbounds, "up_210")
+	if serverNameOutbound == nil {
+		t.Fatalf("expected vmess outbound up_210, got %+v", config.Outbounds)
+	}
+	serverNameTLS, ok := serverNameOutbound["tls"].(map[string]any)
+	if !ok || serverNameTLS["enabled"] != true || serverNameTLS["server_name"] != "alias.vmess.example" || serverNameTLS["disable_sni"] != true {
+		t.Fatalf("unexpected vmess serverName TLS aliases: %+v", serverNameOutbound["tls"])
+	}
+
+	tlsServerNameOutbound := findOutbound(config.Outbounds, "up_211")
+	if tlsServerNameOutbound == nil {
+		t.Fatalf("expected vmess outbound up_211, got %+v", config.Outbounds)
+	}
+	tlsServerNameTLS, ok := tlsServerNameOutbound["tls"].(map[string]any)
+	if !ok || tlsServerNameTLS["enabled"] != true || tlsServerNameTLS["server_name"] != "tls-name.vmess.example" {
+		t.Fatalf("unexpected vmess tlsServerName aliases: %+v", tlsServerNameOutbound["tls"])
+	}
+}
+
 func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

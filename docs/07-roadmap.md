@@ -166,7 +166,7 @@
 - sing-box JSON `outbounds` 可解析 Juicity 节点并兼容 `trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive+https`、`naive-https`、`naive-quic` 和 `socks5h` 结构化 `type` 别名。
 - subscription 来源可解析 sing-box JSON `outbounds` 中的 Naive/Naive+QUIC 节点，并保留 QUIC、UDP over TCP、并发、TLS 和 uTLS fingerprint 参数。
 - subscription 来源可解析 sing-box JSON 顶层 `endpoints` 中的 WireGuard endpoint 模型，并转换为当前 Phase 1 WireGuard outbound 兼容 URI。
-- sing-box JSON 顶层可兼容单数 `outbound`/`endpoint` 和 `outboundList`/`outboundsList`、`endpointList`/`endpointsList` 写法；单对象、数组和对象映射都会进入同一归一化链路。
+- sing-box JSON 顶层可兼容单数 `outbound`/`endpoint` 和 `outboundList`/`outboundsList`、`endpointList`/`endpointsList` 写法；也兼容顶层直接给出 outbound/endpoint 数组、单个对象或按名称映射对象；单对象、数组和对象映射都会进入同一归一化链路。
 - sing-box JSON 顶层、outbound、endpoint、TLS、uTLS、REALITY、transport、headers 和 WireGuard peer 字段匹配兼容大小写差异和 snake_case/kebab-case/PascalCase 变体，例如 `Outbounds`、`Server-Port`、`ServerPort`、`ServerName`、`Disable-SNI`、`ServiceName`、`PermitWithoutStream`、`PrivateKey`、`AllowedIPs`。
 - sing-box JSON `outbounds` 和 `endpoints` 支持数组、单个对象、按名称分组的对象映射和分组数组映射。
 - sing-box JSON transport 的 `host`、`authority`、`headers.Host`、`headers.authority` 和 `headers.:authority` 支持字符串或数组写法，WebSocket、HTTP、HTTPUpgrade 和 VMess WebSocket/HTTP/HTTPUpgrade transport 会保留为逗号分隔 Host。

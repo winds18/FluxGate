@@ -274,7 +274,31 @@ func JSONURIList(content string) string {
 	}
 	var uris []string
 	collectJSONURIs("", doc, &uris)
-	return URIList(strings.Join(uris, "\n"))
+	normalized := URIList(strings.Join(uris, "\n"))
+	if singBoxNormalized := SingBoxJSONURIList(content); prefersSpecializedJSONList(singBoxNormalized, normalized) {
+		return singBoxNormalized
+	}
+	return normalized
+}
+
+func prefersSpecializedJSONList(candidate, current string) bool {
+	if candidate == "" {
+		return false
+	}
+	if current == "" {
+		return true
+	}
+	return normalizedListLineCount(candidate) > normalizedListLineCount(current)
+}
+
+func normalizedListLineCount(content string) int {
+	count := 0
+	for _, line := range strings.Split(content, "\n") {
+		if strings.TrimSpace(line) != "" {
+			count++
+		}
+	}
+	return count
 }
 
 func collectJSONURIs(name string, value any, uris *[]string) {

@@ -6442,6 +6442,121 @@ func TestNormalizeContentSingBoxJSONTopLevelListAliases(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONBareDocuments(t *testing.T) {
+	tests := []struct {
+		name string
+		raw  string
+		want func(t *testing.T, got string)
+	}{
+		{
+			name: "top-level array mixes outbound and endpoint models",
+			raw: `[
+  {
+    "type": "trojan",
+    "tag": "sing-box array outbound",
+    "server": "trojan.array.example.test",
+    "server_port": 443,
+    "password": "trojan-placeholder",
+    "tls": {
+      "enabled": true,
+      "server_name": "trojan.array.example.test"
+    }
+  },
+  {
+    "type": "wireguard",
+    "tag": "sing-box array endpoint",
+    "address": ["10.66.0.4/32"],
+    "private_key": "array-endpoint-private",
+    "peers": [
+      {
+        "address": "wg.array.example.test",
+        "port": 51820,
+        "public_key": "array-endpoint-peer",
+        "allowed_ips": ["0.0.0.0/0"]
+      }
+    ]
+  }
+]`,
+			want: func(t *testing.T, got string) {
+				t.Helper()
+				lines := strings.Split(got, "\n")
+				if len(lines) != 2 {
+					t.Fatalf("expected bare array outbound and endpoint URIs, got %d: %q", len(lines), got)
+				}
+				assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan.array.example.test:443?")
+				if !strings.Contains(lines[0], "sni=trojan.array.example.test") ||
+					!strings.HasSuffix(lines[0], "#sing-box%20array%20outbound") {
+					t.Fatalf("unexpected bare array outbound URI: %q", lines[0])
+				}
+				assertHasPrefix(t, lines[1], "wireguard://wg.array.example.test:51820?")
+				if !strings.Contains(lines[1], "private_key=array-endpoint-private") ||
+					!strings.Contains(lines[1], "peer_public_key=array-endpoint-peer") ||
+					!strings.Contains(lines[1], "allowed_ips=0.0.0.0%2F0") ||
+					!strings.HasSuffix(lines[1], "#sing-box%20array%20endpoint") {
+					t.Fatalf("unexpected bare array endpoint URI: %q", lines[1])
+				}
+			},
+		},
+		{
+			name: "top-level named map uses key as fallback tag",
+			raw: `{
+  "mapped-ss": {
+    "type": "shadowsocks",
+    "server": "mapped-ss.singbox.example.test",
+    "server_port": 8388,
+    "method": "aes-128-gcm",
+    "password": "qa-placeholder"
+  },
+  "mapped-trojan": {
+    "type": "trojan",
+    "server": "mapped-trojan.singbox.example.test",
+    "server_port": 443,
+    "password": "trojan-placeholder"
+  }
+}`,
+			want: func(t *testing.T, got string) {
+				t.Helper()
+				lines := strings.Split(got, "\n")
+				if len(lines) != 2 {
+					t.Fatalf("expected bare named map URIs, got %d: %q", len(lines), got)
+				}
+				if lines[0] != "ss://aes-128-gcm:qa-placeholder@mapped-ss.singbox.example.test:8388#mapped-ss" {
+					t.Fatalf("unexpected bare named map shadowsocks URI: %q", lines[0])
+				}
+				if lines[1] != "trojan://trojan-placeholder@mapped-trojan.singbox.example.test:443#mapped-trojan" {
+					t.Fatalf("unexpected bare named map trojan URI: %q", lines[1])
+				}
+			},
+		},
+		{
+			name: "top-level single object",
+			raw: `{
+  "type": "http",
+  "tag": "sing-box bare http",
+  "server": "http.bare.singbox.example.test",
+  "server_port": 8080,
+  "username": "qa-user",
+  "password": "http-placeholder"
+}`,
+			want: func(t *testing.T, got string) {
+				t.Helper()
+				if got != "http://qa-user:http-placeholder@http.bare.singbox.example.test:8080#sing-box%20bare%20http" {
+					t.Fatalf("unexpected bare single object URI: %q", got)
+				}
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := NormalizeContent(tt.raw)
+			if err != nil {
+				t.Fatalf("NormalizeContent returned error: %v", err)
+			}
+			tt.want(t, got)
+		})
+	}
+}
+
 func TestNormalizeContentSingBoxJSONVLESSHTTPTransport(t *testing.T) {
 	raw := `{
   "outbounds": [

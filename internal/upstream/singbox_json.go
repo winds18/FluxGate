@@ -13,9 +13,37 @@ import (
 func SingBoxJSONURIList(content string) string {
 	decoder := json.NewDecoder(strings.NewReader(strings.TrimSpace(content)))
 	decoder.UseNumber()
-	var doc map[string]any
-	if err := decoder.Decode(&doc); err != nil {
+	var root any
+	if err := decoder.Decode(&root); err != nil {
 		return ""
+	}
+	outbounds, endpoints := singBoxDocumentObjects(root)
+	if len(outbounds)+len(endpoints) == 0 {
+		return ""
+	}
+
+	var uris []string
+	for _, outbound := range outbounds {
+		if uri := singBoxOutboundURI(outbound); uri != "" {
+			uris = append(uris, uri)
+			continue
+		}
+		if uri := singBoxEndpointURI(outbound); uri != "" {
+			uris = append(uris, uri)
+		}
+	}
+	for _, endpoint := range endpoints {
+		if uri := singBoxEndpointURI(endpoint); uri != "" {
+			uris = append(uris, uri)
+		}
+	}
+	return strings.Join(uris, "\n")
+}
+
+func singBoxDocumentObjects(value any) ([]map[string]any, []map[string]any) {
+	doc, ok := value.(map[string]any)
+	if !ok {
+		return singBoxObjectList(value), nil
 	}
 	outbounds := appendSingBoxObjectLists(
 		singBoxObjectList(singBoxValue(doc, "outbounds")),
@@ -27,22 +55,10 @@ func SingBoxJSONURIList(content string) string {
 		singBoxObjectList(singBoxValue(doc, "endpoint")),
 		singBoxObjectList(singBoxValue(doc, "endpointList", "endpointsList")),
 	)
-	if len(outbounds)+len(endpoints) == 0 {
-		return ""
+	if len(outbounds)+len(endpoints) > 0 {
+		return outbounds, endpoints
 	}
-
-	var uris []string
-	for _, outbound := range outbounds {
-		if uri := singBoxOutboundURI(outbound); uri != "" {
-			uris = append(uris, uri)
-		}
-	}
-	for _, endpoint := range endpoints {
-		if uri := singBoxEndpointURI(endpoint); uri != "" {
-			uris = append(uris, uri)
-		}
-	}
-	return strings.Join(uris, "\n")
+	return singBoxObjectList(doc), nil
 }
 
 func appendSingBoxObjectLists(lists ...[]map[string]any) []map[string]any {

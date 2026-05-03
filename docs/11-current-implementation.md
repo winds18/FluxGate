@@ -178,7 +178,7 @@
 - Tor URI 支持 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments`/重复 `arg` 和 `torrc[Option]` 查询参数别名，并同步为 sing-box outbound。
 - Clash YAML Tor 结构化节点会保留 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments` 和嵌套 `torrc` 选项，并归一化到 Tor URI 到 sing-box outbound 生成链路。
 - Surge 和 Quantumult X Tor 结构化节点会保留 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments` 和 `torrc.*`/`torrc[Option]` 选项，并归一化到 Tor URI 到 sing-box outbound 生成链路。
-- Shadowsocks URI 支持从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
+- Shadowsocks URI 支持从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryptMethod`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`pwd`/`psk`/`token`/`secret`/`credential`/`accountPassword` 查询参数读取认证信息，并兼容 `pluginOptions` 查询别名，适配缺少 userinfo 的订阅写法。
 - Hysteria2/Hy2 URI 支持从 `password`、`auth`、`auth_str`、`authStr`、`pass`、`passwd`、`psk` 或 `token` 查询参数读取认证密码，兼容缺少 userinfo 的订阅写法。
 - Hysteria v1 URI 支持从 `token`、`auth`、`auth_str`、`authStr`、`authBase64`、`pass`、`passwd` 或 `psk` 查询参数读取认证字符串，兼容部分上游订阅的 token 写法。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。

@@ -93,7 +93,7 @@
 - Quantumult X SOCKS 节点可保留 `udp=true` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
 - sing-box JSON SOCKS outbound 可保留 `udp`、`udp_relay` 和 `udp-relay` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
 - V2Ray/Xray JSON SOCKS outbound 可保留 `udp`、`udpEnabled`、`udp_enabled`、`udp_relay`、`udp-relay`、`udp_over_tcp`、`udpOverTcp`、`udp-over-tcp` 和 `uot` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
-- Shadowsocks URI 可从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息。
+- Shadowsocks URI 可从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryptMethod`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`pwd`/`psk`/`token`/`secret`/`credential`/`accountPassword` 查询参数读取认证信息，并兼容 `pluginOptions` 查询别名。
 - Naive、HTTP/HTTPS 和 SOCKS URI 可从 `username`/`user`/`userName`/`accountName`/`login` 与 `password`/`pass`/`passwd`/`pwd`/`accountPassword` 查询参数读取认证信息。
 - SSH URI 可从 `username`/`user`/`userName`/`accountName`/`login` 与 `password`/`pass`/`passwd`/`pwd`/`accountPassword` 查询参数读取认证信息，并兼容 `identity_file`/`key_path`、`privateKey`、`privateKeyPath`、`privateKeyPassphrase`、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 等常见查询参数别名。
 - Clash YAML SSH 结构化节点会保留 `pass`/`passwd` credential 别名，以及 `privateKeyPath`、`privateKeyPassphrase`、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 等 camelCase 参数，并归一化到 SSH URI 到 sing-box outbound 生成链路。

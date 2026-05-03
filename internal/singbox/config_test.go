@@ -1767,6 +1767,29 @@ func TestBuildConfigSupportsShadowsocksQueryCredentials(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsShadowsocksCredentialQueryAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         99,
+			URI:        "ss://ss-alias.example:8388?encryptMethod=chacha20-ietf-poly1305&accountPassword=ss-alias-placeholder&plugin=v2ray-plugin&pluginOptions=mode%3Dwebsocket%3Bhost%3Dss.alias.example&network=udp#ss-alias",
+			Protocol:   "ss",
+			ServerPort: 8388,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_99")
+	if outbound == nil {
+		t.Fatalf("expected shadowsocks outbound up_99, got %+v", config.Outbounds)
+	}
+	if outbound["method"] != "chacha20-ietf-poly1305" || outbound["password"] != "ss-alias-placeholder" {
+		t.Fatalf("unexpected shadowsocks alias credential auth fields: %+v", outbound)
+	}
+	if outbound["plugin"] != "v2ray-plugin" || outbound["plugin_opts"] != "mode=websocket;host=ss.alias.example" || outbound["network"] != "udp" {
+		t.Fatalf("unexpected shadowsocks alias plugin fields: %+v", outbound)
+	}
+}
+
 func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

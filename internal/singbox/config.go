@@ -551,7 +551,7 @@ func buildShadowsocksOutbound(node store.Node) (map[string]any, bool) {
 		if plugin := strings.TrimSpace(query.Get("plugin")); plugin != "" {
 			outbound["plugin"] = plugin
 		}
-		if pluginOpts := firstNonEmpty(query.Get("plugin_opts"), query.Get("plugin-opts"), query.Get("plugin_options"), query.Get("plugin-options")); pluginOpts != "" {
+		if pluginOpts := firstNonEmpty(query.Get("plugin_opts"), query.Get("plugin-opts"), query.Get("plugin_options"), query.Get("plugin-options"), query.Get("pluginOptions")); pluginOpts != "" {
 			outbound["plugin_opts"] = pluginOpts
 		}
 		if network := strings.TrimSpace(query.Get("network")); network != "" {
@@ -1722,8 +1722,21 @@ func parseShadowsocksURI(rawURI string, fallbackPort int) (string, string, strin
 			}
 		}
 		query := parsed.Query()
-		method := firstNonEmpty(query.Get("method"), query.Get("cipher"), query.Get("encrypt-method"), query.Get("encrypt_method"), query.Get("encryption"), query.Get("security"))
-		password := firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token"))
+		method := firstNonEmpty(query.Get("method"), query.Get("cipher"), query.Get("encrypt-method"), query.Get("encrypt_method"), query.Get("encryptMethod"), query.Get("encryption"), query.Get("security"))
+		password := firstNonEmpty(
+			query.Get("password"),
+			query.Get("pass"),
+			query.Get("passwd"),
+			query.Get("pwd"),
+			query.Get("psk"),
+			query.Get("token"),
+			query.Get("secret"),
+			query.Get("credential"),
+			query.Get("credentials"),
+			query.Get("account_password"),
+			query.Get("account-password"),
+			query.Get("accountPassword"),
+		)
 		if method != "" && password != "" {
 			return method, password, parsed.Hostname(), portWithFallback(parsed.Port(), fallbackPort, 8388), true
 		}

@@ -1585,6 +1585,13 @@ func TestBuildConfigSupportsVMessUserinfoTLSQueryAliases(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         231,
+			URI:        "vmess://00000000-0000-0000-0000-000000000231@vmess-tls-host.example:443?encryption=auto&tlsHost=alias-host.vmess.example&tlsAllowInsecure=1&tlsDisableSni=1#vmess-tls-host",
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	serverNameOutbound := findOutbound(config.Outbounds, "up_210")
@@ -1603,6 +1610,15 @@ func TestBuildConfigSupportsVMessUserinfoTLSQueryAliases(t *testing.T) {
 	tlsServerNameTLS, ok := tlsServerNameOutbound["tls"].(map[string]any)
 	if !ok || tlsServerNameTLS["enabled"] != true || tlsServerNameTLS["server_name"] != "tls-name.vmess.example" {
 		t.Fatalf("unexpected vmess tlsServerName aliases: %+v", tlsServerNameOutbound["tls"])
+	}
+
+	tlsHostOutbound := findOutbound(config.Outbounds, "up_231")
+	if tlsHostOutbound == nil {
+		t.Fatalf("expected vmess outbound up_231, got %+v", config.Outbounds)
+	}
+	tlsHostTLS, ok := tlsHostOutbound["tls"].(map[string]any)
+	if !ok || tlsHostTLS["enabled"] != true || tlsHostTLS["server_name"] != "alias-host.vmess.example" || tlsHostTLS["insecure"] != true || tlsHostTLS["disable_sni"] != true {
+		t.Fatalf("unexpected vmess tlsHost aliases: %+v", tlsHostOutbound["tls"])
 	}
 }
 

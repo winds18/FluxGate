@@ -1791,6 +1791,15 @@ func TestNormalizeContentJSONCommonCollectionAliasFields(t *testing.T) {
     "serverList": [
       "ss://aes-128-gcm:qa-placeholder@server-list.example.test:8388"
     ],
+    "nodesList": [
+      "vless://00000000-0000-0000-0000-000000000094@nodes-list.example.test:443"
+    ],
+    "proxies_list": [
+      "trojan://trojan-placeholder@proxies-list.example.test:443?security=tls"
+    ],
+    "servers-list": [
+      "ss://aes-128-gcm:qa-placeholder@servers-list.example.test:8388"
+    ],
     "subscription_list": [
       {
         "name": "香港 subscription_list",
@@ -1808,8 +1817,11 @@ func TestNormalizeContentJSONCommonCollectionAliasFields(t *testing.T) {
 		"tuic://00000000-0000-0000-0000-000000000093:tuic-placeholder@proxy-singular.example.test:443",
 		"socks5://qa-user:socks-placeholder@server-singular.example.test:1080",
 		"vless://00000000-0000-0000-0000-000000000092@node-list.example.test:443",
+		"vless://00000000-0000-0000-0000-000000000094@nodes-list.example.test:443",
 		"trojan://trojan-placeholder@proxy-list.example.test:443?security=tls",
+		"trojan://trojan-placeholder@proxies-list.example.test:443?security=tls",
 		"ss://aes-128-gcm:qa-placeholder@server-list.example.test:8388",
+		"ss://aes-128-gcm:qa-placeholder@servers-list.example.test:8388",
 		"hysteria2://hy2-placeholder@subscription-list.example.test:443#%E9%A6%99%E6%B8%AF%20subscription_list",
 	}, "\n")
 	if got != want {

@@ -314,7 +314,7 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			markJSONURIKeyAliases(typed, handled, []string{"subscribe_url", "subscribe-url", "subscribeUrl", "subscribeURL", "sub_url", "sub-url", "subUrl", "subURL", "download_url", "download-url", "downloadUrl", "downloadURL"})
 		}
 		collectJSONURIKeyAliases(typed, handled, []string{"content", "raw", "raw_content", "raw-content", "rawContent", "subscription", "sub", "payload", "body", "text", "result", "response"}, "", uris)
-		collectJSONURIKeyAliases(typed, handled, []string{"uris", "node", "nodes", "proxy", "proxies", "items", "server", "servers", "subscriptions", "urls", "links", "data", "results", "payloads", "list", "nodeList", "node_list", "node-list", "proxyList", "proxy_list", "proxy-list", "serverList", "server_list", "server-list", "subscriptionList", "subscription_list", "subscription-list", "urlList", "url_list", "url-list", "linkList", "link_list", "link-list", "records", "rows", "entries"}, "", uris)
+		collectJSONURIKeyAliases(typed, handled, []string{"uris", "node", "nodes", "proxy", "proxies", "items", "server", "servers", "subscriptions", "urls", "links", "data", "results", "payloads", "list", "nodeList", "node_list", "node-list", "nodesList", "nodes_list", "nodes-list", "proxyList", "proxy_list", "proxy-list", "proxiesList", "proxies_list", "proxies-list", "serverList", "server_list", "server-list", "serversList", "servers_list", "servers-list", "subscriptionList", "subscription_list", "subscription-list", "subscriptionsList", "subscriptions_list", "subscriptions-list", "urlList", "url_list", "url-list", "urlsList", "urls_list", "urls-list", "linkList", "link_list", "link-list", "linksList", "links_list", "links-list", "records", "rows", "entries"}, "", uris)
 		keys := make([]string, 0, len(typed))
 		for key := range typed {
 			keys = append(keys, key)
@@ -373,7 +373,7 @@ func collectJSONInlineProviderProxyLists(values map[string]any, uris *[]string) 
 	}
 	sort.Strings(keys)
 	collected := false
-	for _, alias := range []string{"proxies", "proxy_list", "proxies_list", "nodes", "node_list", "server_list", "items", "list", "entries"} {
+	for _, alias := range []string{"proxies", "proxy_list", "proxies_list", "nodes", "node_list", "nodes_list", "server_list", "servers_list", "items", "list", "entries"} {
 		normalizedAlias := normalizedJSONURIKey(alias)
 		for _, key := range keys {
 			if normalizedJSONURIKey(key) != normalizedAlias {

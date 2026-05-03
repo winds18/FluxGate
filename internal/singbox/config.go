@@ -325,14 +325,14 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("security"), "reality") ||
 		queryTLSEnabled(query) ||
-		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName")) != "" ||
+		queryTLSServerName(query, "") != "" ||
 		queryTLSInsecure(query) ||
 		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
 		strings.TrimSpace(query.Get("alpn")) != "" ||
 		firstNonEmpty(query.Get("pbk"), query.Get("public_key"), query.Get("public-key"), query.Get("publicKey")) != "" ||
 		firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")) != "" {
 		tls := map[string]any{"enabled": true}
-		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName"), parsed.Hostname()); serverName != "" {
+		if serverName := queryTLSServerName(query, parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
 		}
 		if queryTLSInsecure(query) {
@@ -396,14 +396,14 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("security"), "reality") ||
 		queryTLSEnabled(query) ||
-		firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName")) != "" ||
+		queryTLSServerName(query, "", "peer") != "" ||
 		queryTLSInsecure(query) ||
 		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
 		strings.TrimSpace(query.Get("alpn")) != "" ||
 		firstNonEmpty(query.Get("pbk"), query.Get("public_key"), query.Get("public-key"), query.Get("publicKey")) != "" ||
 		firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")) != "" {
 		tls := map[string]any{"enabled": true}
-		if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName"), parsed.Hostname()); serverName != "" {
+		if serverName := queryTLSServerName(query, parsed.Hostname(), "peer"); serverName != "" {
 			tls["server_name"] = serverName
 		}
 		if queryTLSInsecure(query) {
@@ -2020,6 +2020,27 @@ func queryTLSEnabled(query url.Values) bool {
 		query.Get("over-tls"),
 		query.Get("overTLS"),
 	))
+}
+
+func queryTLSServerName(query url.Values, fallback string, extraAliases ...string) string {
+	values := []string{query.Get("sni")}
+	for _, alias := range extraAliases {
+		values = append(values, query.Get(alias))
+	}
+	values = append(values,
+		query.Get("servername"),
+		query.Get("server_name"),
+		query.Get("server-name"),
+		query.Get("serverName"),
+		query.Get("tls_host"),
+		query.Get("tls-host"),
+		query.Get("tlsHost"),
+		query.Get("tls_server_name"),
+		query.Get("tls-server-name"),
+		query.Get("tlsServerName"),
+		fallback,
+	)
+	return firstNonEmpty(values...)
 }
 
 func queryTLSInsecure(query url.Values) bool {

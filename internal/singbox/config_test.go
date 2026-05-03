@@ -1242,6 +1242,20 @@ func TestBuildConfigSupportsVLESSTrojanTLSQueryAliases(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         219,
+			URI:        "vless://00000000-0000-0000-0000-000000000219@vless-tls-host.example:443?tls=true&tlsHost=vless-host-alias.example#vless-tls-host",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         220,
+			URI:        "trojan://trojan-placeholder@trojan-tls-host.example:443?tls=true&tls-host=trojan-host-alias.example#trojan-tls-host",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	vlessOutbound := findOutbound(config.Outbounds, "up_212")
@@ -1305,6 +1319,24 @@ func TestBuildConfigSupportsVLESSTrojanTLSQueryAliases(t *testing.T) {
 	trojanAllowInsecureTLS, ok := trojanAllowInsecureOutbound["tls"].(map[string]any)
 	if !ok || trojanAllowInsecureTLS["enabled"] != true || trojanAllowInsecureTLS["insecure"] != true {
 		t.Fatalf("unexpected trojan allow-insecure query alias: %+v", trojanAllowInsecureOutbound["tls"])
+	}
+
+	vlessTLSHostOutbound := findOutbound(config.Outbounds, "up_219")
+	if vlessTLSHostOutbound == nil {
+		t.Fatalf("expected vless outbound up_219, got %+v", config.Outbounds)
+	}
+	vlessTLSHostTLS, ok := vlessTLSHostOutbound["tls"].(map[string]any)
+	if !ok || vlessTLSHostTLS["enabled"] != true || vlessTLSHostTLS["server_name"] != "vless-host-alias.example" {
+		t.Fatalf("unexpected vless tlsHost query alias: %+v", vlessTLSHostOutbound["tls"])
+	}
+
+	trojanTLSHostOutbound := findOutbound(config.Outbounds, "up_220")
+	if trojanTLSHostOutbound == nil {
+		t.Fatalf("expected trojan outbound up_220, got %+v", config.Outbounds)
+	}
+	trojanTLSHostTLS, ok := trojanTLSHostOutbound["tls"].(map[string]any)
+	if !ok || trojanTLSHostTLS["enabled"] != true || trojanTLSHostTLS["server_name"] != "trojan-host-alias.example" {
+		t.Fatalf("unexpected trojan tls-host query alias: %+v", trojanTLSHostOutbound["tls"])
 	}
 }
 

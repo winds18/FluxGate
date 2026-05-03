@@ -64,7 +64,7 @@ func SamplesFromV2RayCounters(sampledAtUnix int64, counters []Counter) []store.R
 
 func parseV2RayCounterName(name string) (string, string, string, bool) {
 	parts := strings.Split(strings.TrimSpace(name), ">>>")
-	if len(parts) != 4 || parts[2] != "traffic" {
+	if len(parts) != 4 || strings.ToLower(strings.TrimSpace(parts[2])) != "traffic" {
 		return "", "", "", false
 	}
 	metricType := strings.ToLower(strings.TrimSpace(parts[0]))

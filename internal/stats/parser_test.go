@@ -29,3 +29,17 @@ func TestSamplesFromV2RayCounters(t *testing.T) {
 		t.Fatalf("expected sampled_at to be populated")
 	}
 }
+
+func TestSamplesFromV2RayCountersToleratesWhitespaceAndCase(t *testing.T) {
+	samples := SamplesFromV2RayCounters(1777443000, []Counter{
+		{Name: " User >>> fg_u_2_t_2 >>> Traffic >>> Uplink ", Value: 12},
+		{Name: " USER >>> fg_u_2_t_2 >>> traffic >>> DownLink ", Value: 34},
+	})
+
+	if len(samples) != 1 {
+		t.Fatalf("expected 1 sample, got %+v", samples)
+	}
+	if samples[0].MetricType != "user" || samples[0].MetricName != "fg_u_2_t_2" || samples[0].RawValueUpload != 12 || samples[0].RawValueDownload != 34 {
+		t.Fatalf("unexpected tolerant parser sample: %+v", samples[0])
+	}
+}

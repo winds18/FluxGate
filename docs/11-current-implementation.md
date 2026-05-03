@@ -171,6 +171,7 @@
 - Hysteria v1 URI 支持从 `token` 查询参数读取认证字符串，兼容部分上游订阅的 token 写法。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
 - 流量统计入库骨架已落地：可解析 V2Ray stats 的 user/inbound/outbound 计数名称，写入 `traffic_samples`，计算 counter delta，并把 user 维度增量累加到 Token 用量和小时/天汇总表。
+- V2Ray stats 计数名称解析会容忍分段前后空白和 `traffic`/方向字段大小写差异，降低不同实现输出格式抖动导致样本被丢弃的概率。
 - user 维度流量入库后会自动判断 Token 额度；超额时将 Token 和 gateway account 标记为 `over_quota`，追加足够额度后自动恢复为 `active`。
 - stats 轮询发现 Token 因真实流量进入 `over_quota` 时，会自动发布新的 sing-box 配置；如果部署侧开启 `SING_BOX_AUTO_RESTART`，会继续走受配置保护的重启执行器。
 - 管理 API 和后台页面可查看 Token 今日、本月和累计流量用量摘要，展示最近 24 小时/最近 14 天流量图，并查看近 14 天上游出口流量摘要。

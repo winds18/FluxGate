@@ -655,6 +655,8 @@ func vmessTransportFromDoc(doc map[string]any) map[string]any {
 		return transport
 	case "http", "h2":
 		return vmessHTTPTransportFromDoc(doc)
+	case "httpupgrade", "http-upgrade", "http_upgrade":
+		return vmessHTTPUpgradeTransportFromDoc(doc)
 	case "tcp":
 		headerType := strings.ToLower(strings.TrimSpace(stringFromAny(doc["type"])))
 		if headerType == "http" {
@@ -670,6 +672,17 @@ func vmessHTTPTransportFromDoc(doc map[string]any) map[string]any {
 	transport := map[string]any{"type": "http"}
 	if hosts := splitCSV(stringFromAny(doc["host"])); len(hosts) > 0 {
 		transport["host"] = hosts
+	}
+	if path := strings.TrimSpace(stringFromAny(doc["path"])); path != "" {
+		transport["path"] = path
+	}
+	return transport
+}
+
+func vmessHTTPUpgradeTransportFromDoc(doc map[string]any) map[string]any {
+	transport := map[string]any{"type": "httpupgrade"}
+	if host := strings.TrimSpace(stringFromAny(doc["host"])); host != "" {
+		transport["host"] = host
 	}
 	if path := strings.TrimSpace(stringFromAny(doc["path"])); path != "" {
 		transport["path"] = path
@@ -1599,6 +1612,7 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 	if uuid == "" {
 		return nil, false
 	}
+	transportType := firstNonEmpty(query.Get("type"), query.Get("net"), query.Get("network"), "tcp")
 	doc := map[string]any{
 		"v":    "2",
 		"ps":   strings.TrimSpace(parsed.Fragment),
@@ -1607,10 +1621,10 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 		"id":   uuid,
 		"aid":  firstNonEmpty(query.Get("alterId"), query.Get("alterid"), query.Get("alter-id"), query.Get("aid"), "0"),
 		"scy":  firstNonEmpty(query.Get("encryption"), query.Get("scy"), query.Get("cipher"), "auto"),
-		"net":  firstNonEmpty(query.Get("type"), query.Get("net"), query.Get("network"), "tcp"),
+		"net":  transportType,
 		"type": firstNonEmpty(query.Get("headerType"), query.Get("header-type"), query.Get("header_type")),
-		"host": firstNonEmpty(query.Get("host"), query.Get("authority")),
-		"path": query.Get("path"),
+		"host": vmessUserinfoTransportHost(query, transportType),
+		"path": vmessUserinfoTransportPath(query, transportType),
 		"sni":  firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name")),
 		"alpn": query.Get("alpn"),
 	}
@@ -1638,6 +1652,34 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 		doc["fp"] = fingerprint
 	}
 	return doc, true
+}
+
+func vmessUserinfoTransportHost(query url.Values, transportType string) string {
+	host := firstNonEmpty(query.Get("host"), query.Get("authority"))
+	switch strings.ToLower(strings.TrimSpace(transportType)) {
+	case "ws", "websocket":
+		return firstNonEmpty(host, query.Get("ws_host"), query.Get("ws-host"), query.Get("wsHost"))
+	case "http", "h2":
+		return firstNonEmpty(host, query.Get("http_host"), query.Get("http-host"), query.Get("httpHost"))
+	case "httpupgrade", "http-upgrade", "http_upgrade":
+		return firstNonEmpty(host, query.Get("httpupgrade_host"), query.Get("httpupgrade-host"), query.Get("httpUpgradeHost"), query.Get("http_upgrade_host"), query.Get("http-upgrade-host"))
+	default:
+		return host
+	}
+}
+
+func vmessUserinfoTransportPath(query url.Values, transportType string) string {
+	path := query.Get("path")
+	switch strings.ToLower(strings.TrimSpace(transportType)) {
+	case "ws", "websocket":
+		return firstNonEmpty(path, query.Get("ws_path"), query.Get("ws-path"), query.Get("wsPath"))
+	case "http", "h2":
+		return firstNonEmpty(path, query.Get("http_path"), query.Get("http-path"), query.Get("httpPath"))
+	case "httpupgrade", "http-upgrade", "http_upgrade":
+		return firstNonEmpty(path, query.Get("httpupgrade_path"), query.Get("httpupgrade-path"), query.Get("httpUpgradePath"), query.Get("http_upgrade_path"), query.Get("http-upgrade-path"))
+	default:
+		return path
+	}
 }
 
 func parseShadowsocksURI(rawURI string, fallbackPort int) (string, string, string, int, bool) {

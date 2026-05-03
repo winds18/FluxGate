@@ -1181,6 +1181,55 @@ func TestBuildConfigPreservesVMessHTTPTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesVMessHTTPUpgradeTransport(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID: 182,
+			URI: vmessURI(t, map[string]any{
+				"add":  "vmess.upgrade.example",
+				"port": "443",
+				"id":   "00000000-0000-0000-0000-000000000182",
+				"aid":  "0",
+				"scy":  "auto",
+				"net":  "httpupgrade",
+				"host": "upgrade.vmess.example",
+				"path": "/upgrade",
+				"tls":  "tls",
+				"sni":  "vmess.upgrade.example",
+				"ps":   "vmess-upgrade",
+			}),
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         183,
+			URI:        "vmess://00000000-0000-0000-0000-000000000183@userinfo-upgrade.vmess.example:443?encryption=auto&security=tls&type=httpupgrade&httpUpgradeHost=userinfo-upgrade.vmess.example&httpUpgradePath=%2Fuserinfo-upgrade&sni=userinfo-upgrade.vmess.example#VMess%20Userinfo%20Upgrade",
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	outbound := findOutbound(config.Outbounds, "up_182")
+	if outbound == nil {
+		t.Fatalf("expected vmess outbound up_182, got %+v", config.Outbounds)
+	}
+	transport, ok := outbound["transport"].(map[string]any)
+	if !ok || transport["type"] != "httpupgrade" || transport["host"] != "upgrade.vmess.example" || transport["path"] != "/upgrade" {
+		t.Fatalf("unexpected vmess httpupgrade transport config: %+v", outbound["transport"])
+	}
+
+	userinfoOutbound := findOutbound(config.Outbounds, "up_183")
+	if userinfoOutbound == nil {
+		t.Fatalf("expected vmess outbound up_183, got %+v", config.Outbounds)
+	}
+	userinfoTransport, ok := userinfoOutbound["transport"].(map[string]any)
+	if !ok || userinfoTransport["type"] != "httpupgrade" || userinfoTransport["host"] != "userinfo-upgrade.vmess.example" || userinfoTransport["path"] != "/userinfo-upgrade" {
+		t.Fatalf("unexpected vmess userinfo httpupgrade transport config: %+v", userinfoOutbound["transport"])
+	}
+}
+
 func TestBuildConfigSupportsVMessUserinfoURI(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

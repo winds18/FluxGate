@@ -1622,6 +1622,13 @@ func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         225,
+			URI:        "tuic://tuic-tls-alias.example:443?id=00000000-0000-0000-0000-000000000225&password=tuic-tls-placeholder&tlsHost=alias.tuic.example&tlsSkipVerify=1&tlsDisableSni=1#tuic-tls-alias",
+			Protocol:   "tuic",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	outbound := findOutbound(config.Outbounds, "up_89")
@@ -1655,6 +1662,15 @@ func TestBuildConfigSupportsTUICQueryCredentialAliases(t *testing.T) {
 	}
 	if relayOutbound["uuid"] != "00000000-0000-0000-0000-000000000189" || relayOutbound["password"] != "tuic-relay-placeholder" || relayOutbound["udp_relay_mode"] != "native" {
 		t.Fatalf("unexpected tuic query credential relay alias fields: %+v", relayOutbound)
+	}
+
+	tlsAliasOutbound := findOutbound(config.Outbounds, "up_225")
+	if tlsAliasOutbound == nil {
+		t.Fatalf("expected tuic TLS alias outbound up_225, got %+v", config.Outbounds)
+	}
+	tlsAlias, ok := tlsAliasOutbound["tls"].(map[string]any)
+	if !ok || tlsAlias["enabled"] != true || tlsAlias["server_name"] != "alias.tuic.example" || tlsAlias["insecure"] != true || tlsAlias["disable_sni"] != true {
+		t.Fatalf("unexpected tuic TLS alias config: %+v", tlsAliasOutbound["tls"])
 	}
 }
 

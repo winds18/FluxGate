@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/winds18/FluxGate/internal/security"
@@ -29,10 +30,17 @@ type CreateTokenInput struct {
 }
 
 type CreateTokenResult struct {
-	Token        Token          `json:"token"`
-	PlainToken   string         `json:"plain_token"`
-	Subscription string         `json:"subscription"`
-	Account      GatewayAccount `json:"gateway_account"`
+	Token         Token              `json:"token"`
+	PlainToken    string             `json:"plain_token"`
+	Subscription  string             `json:"subscription"`
+	Subscriptions TokenSubscriptions `json:"subscriptions"`
+	Account       GatewayAccount     `json:"gateway_account"`
+}
+
+type TokenSubscriptions struct {
+	Default string `json:"default"`
+	Clash   string `json:"clash"`
+	SingBox string `json:"sing_box"`
 }
 
 func (s *Store) CreateTeam(ctx context.Context, input CreateTeamInput) (Team, error) {
@@ -181,12 +189,23 @@ func (s *Store) CreateToken(ctx context.Context, secret, publicBaseURL string, i
 		return CreateTokenResult{}, err
 	}
 
+	subscriptions := tokenSubscriptionURLs(publicBaseURL, plainToken)
 	return CreateTokenResult{
-		Token:        token,
-		PlainToken:   plainToken,
-		Subscription: publicBaseURL + "/sub/" + plainToken,
-		Account:      account,
+		Token:         token,
+		PlainToken:    plainToken,
+		Subscription:  subscriptions.Default,
+		Subscriptions: subscriptions,
+		Account:       account,
 	}, nil
+}
+
+func tokenSubscriptionURLs(publicBaseURL, plainToken string) TokenSubscriptions {
+	base := strings.TrimRight(publicBaseURL, "/") + "/sub/" + plainToken
+	return TokenSubscriptions{
+		Default: base,
+		Clash:   base + "?target=clash",
+		SingBox: base + "?target=sing-box",
+	}
 }
 
 func (s *Store) GetToken(ctx context.Context, id int64) (Token, error) {

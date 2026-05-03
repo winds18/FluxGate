@@ -632,6 +632,23 @@ td code {
   white-space: nowrap;
 }
 
+.subscription-list {
+  display: grid;
+  gap: 8px 10px;
+  grid-template-columns: minmax(96px, max-content) minmax(0, 1fr);
+  align-items: center;
+}
+
+.subscription-list span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.subscription-list code {
+  min-width: 0;
+}
+
 .table {
   overflow-x: auto;
 }

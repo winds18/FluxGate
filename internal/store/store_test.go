@@ -370,8 +370,18 @@ func TestTokenCreation(t *testing.T) {
 	if result.PlainToken == "" || result.Token.TokenPrefix == "" || result.Account.UUID == "" {
 		t.Fatalf("incomplete token result: %+v", result)
 	}
-	if result.Subscription == "" {
-		t.Fatalf("subscription URL missing")
+	expectedDefault := "https://flux.example/sub/" + result.PlainToken
+	if result.Subscription != expectedDefault {
+		t.Fatalf("unexpected subscription URL: %s", result.Subscription)
+	}
+	if result.Subscriptions.Default != expectedDefault {
+		t.Fatalf("unexpected default subscription URL: %s", result.Subscriptions.Default)
+	}
+	if result.Subscriptions.Clash != expectedDefault+"?target=clash" {
+		t.Fatalf("unexpected clash subscription URL: %s", result.Subscriptions.Clash)
+	}
+	if result.Subscriptions.SingBox != expectedDefault+"?target=sing-box" {
+		t.Fatalf("unexpected sing-box subscription URL: %s", result.Subscriptions.SingBox)
 	}
 }
 

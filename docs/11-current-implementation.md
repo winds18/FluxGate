@@ -21,6 +21,7 @@
 - 策略 `include_tags` 和 `exclude_tags` 已按 Token > 成员 > 团队优先级生效，会为匹配 Token 生成带 `auth_user` 的 sing-box route rule，限制该 Token 在虚拟节点下可走的上游出口。
 - Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
 - 管理后台 Token 列表支持按行输入自定义续期天数和追加额度 MiB，避免只能使用固定续期/加额步长。
+- 创建 Token 时会返回默认、Clash/Mihomo 和 sing-box 三类订阅地址；管理后台创建结果同步展示，便于直接分发给不同客户端。
 - 上游来源页面创建和列表。
 - 管理后台上游来源支持行内编辑名称、类型、URL、前缀、默认标签和刷新间隔；前缀变更会同步刷新自动命名节点。
 - subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。

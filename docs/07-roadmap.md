@@ -39,6 +39,7 @@
 - 策略 `include_tags` 和 `exclude_tags` 按 Token > 成员 > 团队优先级限制上游出口，并生成带 `auth_user` 的 sing-box route rule。
 - Token 续期、追加额度、撤销和恢复操作。
 - 管理后台 Token 列表可按行输入自定义续期天数和追加额度 MiB。
+- Token 创建响应同时返回默认、Clash/Mihomo 和 sing-box 三类订阅地址，后台创建结果可直接复制分发。
 - 来源前缀自动生成和重复前缀编号。
 - 来源默认标签会同步到导入的上游节点。
 - 节点手动改名保护和恢复自动命名。

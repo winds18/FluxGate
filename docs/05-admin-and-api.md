@@ -219,6 +219,8 @@ POST  /api/tokens/{id}/quota
 POST  /api/tokens/{id}/rotate-gateway-credential
 ```
 
+`POST /api/tokens` 创建成功时只返回一次明文 Token，并在 `subscriptions` 中同时给出 `default`、`clash` 和 `sing_box` 三类可分发订阅地址；兼容字段 `subscription` 等同于 `subscriptions.default`。
+
 ### 2.6 上游来源
 
 ```text

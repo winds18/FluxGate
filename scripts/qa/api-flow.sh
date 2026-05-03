@@ -248,6 +248,10 @@ post_json "/api/virtual-nodes" '{"name":"FluxGate-SG","listen_protocol":"vless",
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
 token_id="$(json_value "data.token.id" <"$OUT_DIR/token.json")"
 plain_token="$(json_value "data.plain_token" <"$OUT_DIR/token.json")"
+token_subscription_legacy="$(json_value "data.subscription || ''" <"$OUT_DIR/token.json")"
+token_subscription_default="$(json_value "data.subscriptions?.default || ''" <"$OUT_DIR/token.json")"
+token_subscription_clash="$(json_value "data.subscriptions?.clash || ''" <"$OUT_DIR/token.json")"
+token_subscription_sing_box="$(json_value "data.subscriptions?.sing_box || ''" <"$OUT_DIR/token.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/traffic/tokens" -o "$OUT_DIR/traffic-tokens.json"
 traffic_token_count="$(json_value "data.length" <"$OUT_DIR/traffic-tokens.json")"
 traffic_token_used="$(json_value "data.find((row) => row.token_id === $token_id)?.used_total_bytes ?? -1" <"$OUT_DIR/traffic-tokens.json")"
@@ -424,6 +428,21 @@ fi
 
 if [[ "$token_restored_status" != "active" ]]; then
   log "unexpected token status after restore: $token_restored_status"
+  exit 1
+fi
+
+if [[ "$token_subscription_legacy" != "$token_subscription_default" || "$token_subscription_default" != */sub/"$plain_token" ]]; then
+  log "token creation should return a default subscription URL with the plain token"
+  exit 1
+fi
+
+if [[ "$token_subscription_clash" != "$token_subscription_default?target=clash" ]]; then
+  log "token creation should return the Clash/Mihomo subscription URL"
+  exit 1
+fi
+
+if [[ "$token_subscription_sing_box" != "$token_subscription_default?target=sing-box" ]]; then
+  log "token creation should return the sing-box subscription URL"
   exit 1
 fi
 

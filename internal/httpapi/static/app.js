@@ -334,10 +334,21 @@ async function submitToken(event) {
     expire_days: numberField(form, "expire_days"),
     quota_bytes: quotaMiB * 1024 * 1024,
   });
+  const subscriptions = result.subscriptions || {};
+  const defaultSubscription = subscriptions.default || result.subscription || "";
+  const clashSubscription = subscriptions.clash || `${defaultSubscription}?target=clash`;
+  const singBoxSubscription = subscriptions.sing_box || `${defaultSubscription}?target=sing-box`;
   tokenResultEl.hidden = false;
   tokenResultEl.innerHTML = `
     <strong>订阅地址</strong>
-    <code>${escapeHTML(result.subscription)}</code>
+    <div class="subscription-list">
+      <span>默认</span>
+      <code>${escapeHTML(defaultSubscription)}</code>
+      <span>Clash/Mihomo</span>
+      <code>${escapeHTML(clashSubscription)}</code>
+      <span>sing-box</span>
+      <code>${escapeHTML(singBoxSubscription)}</code>
+    </div>
   `;
   tokenForm.reset();
 }

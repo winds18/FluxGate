@@ -86,6 +86,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   const trafficTokenRowCount = await page.locator("#traffic-tokens tbody tr").count();
   const quotaMeterCount = await page.locator("#traffic-tokens .quota-meter").count();
+  const tokenRowCount = await page.locator("#tokens tbody tr").count();
+  const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
+  const tokenQuotaInputCount = await page.locator("#tokens input[data-token-quota-mib]").count();
   let quotaUsageVisible = false;
   if (trafficTokenRowCount > 0) {
     await expect(page.locator("#traffic-tokens .quota-meter").first()).toBeVisible({ timeout: 5000 });
@@ -152,8 +155,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeDetailVisible = nodeDetailVisible;
   state.east8TimeSamples = east8TimeSamples;
   state.trafficTokenRowCount = trafficTokenRowCount;
+  state.tokenRowCount = tokenRowCount;
   state.quotaMeterCount = quotaMeterCount;
   state.quotaUsageVisible = quotaUsageVisible;
+  state.tokenExtendInputCount = tokenExtendInputCount;
+  state.tokenQuotaInputCount = tokenQuotaInputCount;
+  if (tokenRowCount > 0 && (tokenExtendInputCount !== tokenRowCount || tokenQuotaInputCount !== tokenRowCount)) {
+    throw new Error(`token custom controls missing: ${JSON.stringify(state)}`);
+  }
   const cookies = await context.cookies(baseURL);
   await page.screenshot({ path: screenshotPath, fullPage: true });
 

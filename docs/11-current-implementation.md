@@ -20,6 +20,7 @@
 - 策略 `allowed_virtual_nodes` 和 `max_nodes` 已按 Token > 成员 > 团队优先级生效，用于限制订阅输出中的可见虚拟节点，并同步约束 sing-box 入站里的用户分配；被策略挡住且没有可用用户的虚拟节点不会生成入站。
 - 策略 `include_tags` 和 `exclude_tags` 已按 Token > 成员 > 团队优先级生效，会为匹配 Token 生成带 `auth_user` 的 sing-box route rule，限制该 Token 在虚拟节点下可走的上游出口。
 - Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
+- 管理后台 Token 列表支持按行输入自定义续期天数和追加额度 MiB，避免只能使用固定续期/加额步长。
 - 上游来源页面创建和列表。
 - 管理后台上游来源支持行内编辑名称、类型、URL、前缀、默认标签和刷新间隔；前缀变更会同步刷新自动命名节点。
 - subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。
@@ -315,6 +316,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 有节点数据时，浏览器验收会确认节点池“详情”入口可展开单节点详情。
 - 浏览器验收会确认 RFC3339 和 SQLite 时间字符串都按东八区展示。
 - 有 Token 流量行时，浏览器验收会确认额度使用率进度条可见。
+- 有 Token 数据时，浏览器验收会确认每行都展示自定义续期天数和追加额度 MiB 输入控件。
 
 ## 4. 尚未完成
 

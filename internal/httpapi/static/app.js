@@ -532,9 +532,15 @@ async function handleTokenAction(event) {
   statusEl.textContent = "更新 Token 中";
   try {
     if (action === "extend") {
-      await postJSON(`/api/tokens/${id}/extend`, { extend_days: 30 });
+      const input = button.closest("[data-token-action-group]")?.querySelector("[data-token-extend-days]");
+      const extendDays = numberInputValue(input, 30);
+      if (extendDays <= 0) throw new Error("extend days must be greater than 0");
+      await postJSON(`/api/tokens/${id}/extend`, { extend_days: extendDays });
     } else if (action === "quota") {
-      await postJSON(`/api/tokens/${id}/quota`, { quota_bytes: 1024 * 1024 * 1024 });
+      const input = button.closest("[data-token-action-group]")?.querySelector("[data-token-quota-mib]");
+      const quotaMiB = numberInputValue(input, 1024);
+      if (quotaMiB <= 0) throw new Error("quota MiB must be greater than 0");
+      await postJSON(`/api/tokens/${id}/quota`, { quota_bytes: quotaMiB * 1024 * 1024 });
     } else if (action === "revoke") {
       await postJSON(`/api/tokens/${id}/revoke`, {});
     } else if (action === "restore") {
@@ -703,6 +709,11 @@ function textField(form, name) {
 
 function numberField(form, name) {
   const value = Number.parseInt(String(form.get(name) || "0"), 10);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function numberInputValue(input, fallback) {
+  const value = Number.parseInt(String(input?.value || fallback || "0"), 10);
   return Number.isFinite(value) ? value : 0;
 }
 
@@ -1009,8 +1020,14 @@ function renderTokens(rows) {
                 <td>${formatCell(row.quota_bytes, "quota_bytes")}</td>
                 <td>${formatCell((row.used_upload_bytes || 0) + (row.used_download_bytes || 0), "used_total")}</td>
                 <td class="table-actions">
-                  <button class="table-button" data-token-action="extend" data-token-id="${row.id}">续期30天</button>
-                  <button class="table-button" data-token-action="quota" data-token-id="${row.id}">+1024MiB</button>
+                  <span class="token-action-group" data-token-action-group>
+                    <input data-token-extend-days="${row.id}" type="number" min="1" value="30" aria-label="续期天数" />
+                    <button class="table-button" data-token-action="extend" data-token-id="${row.id}">续期</button>
+                  </span>
+                  <span class="token-action-group" data-token-action-group>
+                    <input data-token-quota-mib="${row.id}" type="number" min="1" value="1024" aria-label="追加额度 MiB" />
+                    <button class="table-button" data-token-action="quota" data-token-id="${row.id}">加额</button>
+                  </span>
                   <button class="table-button" data-token-action="restore" data-token-id="${row.id}">恢复</button>
                   <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">撤销</button>
                 </td>

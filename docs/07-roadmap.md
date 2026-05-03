@@ -38,6 +38,7 @@
 - 策略 `allowed_virtual_nodes` 和 `max_nodes` 按 Token > 成员 > 团队优先级限制可见虚拟节点，并同步作用于 sing-box 入站用户分配。
 - 策略 `include_tags` 和 `exclude_tags` 按 Token > 成员 > 团队优先级限制上游出口，并生成带 `auth_user` 的 sing-box route rule。
 - Token 续期、追加额度、撤销和恢复操作。
+- 管理后台 Token 列表可按行输入自定义续期天数和追加额度 MiB。
 - 来源前缀自动生成和重复前缀编号。
 - 来源默认标签会同步到导入的上游节点。
 - 节点手动改名保护和恢复自动命名。

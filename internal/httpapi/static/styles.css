@@ -236,6 +236,23 @@ main {
   min-width: 300px;
 }
 
+.token-action-group {
+  align-items: center;
+  background: var(--surface-muted);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  display: inline-flex;
+  gap: 6px;
+  padding: 4px;
+}
+
+.token-action-group input {
+  height: 30px;
+  min-height: 30px;
+  padding: 0 8px;
+  width: 82px;
+}
+
 .source-actions {
   min-width: 250px;
 }

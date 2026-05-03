@@ -2272,6 +2272,13 @@ func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         229,
+			URI:        "naive://alias-naive.example:443?user=qa-user&pwd=naive-alias-placeholder&tlsHost=alias.naive.example&tlsAllowInsecure=1&tlsDisableSni=1#naive-tls-alias",
+			Protocol:   "naive",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	outbound := findOutbound(config.Outbounds, "up_84")
@@ -2294,6 +2301,15 @@ func TestBuildConfigSupportsNaiveQueryCredentials(t *testing.T) {
 	utls, ok := tls["utls"].(map[string]any)
 	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
 		t.Fatalf("unexpected naive query credential utls: %+v", tls["utls"])
+	}
+
+	aliasOutbound := findOutbound(config.Outbounds, "up_229")
+	if aliasOutbound == nil {
+		t.Fatalf("expected naive TLS alias outbound up_229, got %+v", config.Outbounds)
+	}
+	aliasTLS, ok := aliasOutbound["tls"].(map[string]any)
+	if !ok || aliasTLS["enabled"] != true || aliasTLS["server_name"] != "alias.naive.example" || aliasTLS["insecure"] != true || aliasTLS["disable_sni"] != true {
+		t.Fatalf("unexpected naive TLS alias config: %+v", aliasOutbound["tls"])
 	}
 }
 
@@ -2332,6 +2348,13 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 			URI:      "http-tls://http-dash-tls.example/connect?user=qa-user&pass=http-dash-tls-placeholder#http-dash-tls",
 			Protocol: "http-tls",
 			Status:   "active",
+		},
+		{
+			ID:         230,
+			URI:        "http://http-alias.example:8080/connect?username=qa-user&password=http-alias-placeholder&tlsServerName=alias.http.example&tlsSkipVerify=1&tlsDisableSNI=1#http-tls-alias",
+			Protocol:   "http",
+			ServerPort: 8080,
+			Status:     "active",
 		},
 	})
 
@@ -2404,6 +2427,15 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	httpDashTLSTLS, ok := httpDashTLSOutbound["tls"].(map[string]any)
 	if !ok || httpDashTLSTLS["enabled"] != true || httpDashTLSTLS["server_name"] != "http-dash-tls.example" {
 		t.Fatalf("unexpected http-tls tls fields: %+v", httpDashTLSOutbound["tls"])
+	}
+
+	httpAliasOutbound := findOutbound(config.Outbounds, "up_230")
+	if httpAliasOutbound == nil {
+		t.Fatalf("expected http TLS alias outbound up_230, got %+v", config.Outbounds)
+	}
+	httpAliasTLS, ok := httpAliasOutbound["tls"].(map[string]any)
+	if !ok || httpAliasTLS["enabled"] != true || httpAliasTLS["server_name"] != "alias.http.example" || httpAliasTLS["insecure"] != true || httpAliasTLS["disable_sni"] != true {
+		t.Fatalf("unexpected http TLS alias config: %+v", httpAliasOutbound["tls"])
 	}
 }
 

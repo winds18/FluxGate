@@ -300,7 +300,7 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 		return nil, false
 	}
 	query := parsed.Query()
-	uuid := firstNonEmpty(userinfoUsername(parsed.User), query.Get("uuid"), query.Get("id"), query.Get("user_id"), query.Get("user-id"))
+	uuid := firstNonEmpty(userinfoUsername(parsed.User), queryUUID(query))
 	if uuid == "" {
 		return nil, false
 	}
@@ -799,7 +799,7 @@ func buildTUICOutbound(node store.Node) (map[string]any, bool) {
 	query := parsed.Query()
 	uuid, password := tuicCredentials(
 		parsed.User,
-		firstNonEmpty(query.Get("uuid"), query.Get("id"), query.Get("user_id"), query.Get("user-id")),
+		queryUUID(query),
 		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")),
 	)
 	if uuid == "" || password == "" {
@@ -869,7 +869,7 @@ func buildJuicityOutbound(node store.Node) (map[string]any, bool) {
 	query := parsed.Query()
 	uuid, password := tuicCredentials(
 		parsed.User,
-		firstNonEmpty(query.Get("uuid"), query.Get("id"), query.Get("user_id"), query.Get("user-id")),
+		queryUUID(query),
 		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")),
 	)
 	if uuid == "" || password == "" {
@@ -1635,7 +1635,7 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 		return nil, false
 	}
 	query := parsed.Query()
-	uuid := firstNonEmpty(userinfoUsername(parsed.User), query.Get("uuid"), query.Get("id"), query.Get("user_id"), query.Get("user-id"))
+	uuid := firstNonEmpty(userinfoUsername(parsed.User), queryUUID(query))
 	if uuid == "" {
 		return nil, false
 	}
@@ -1941,6 +1941,18 @@ func queryCredentialUsername(query url.Values) string {
 		query.Get("login_name"),
 		query.Get("login-name"),
 		query.Get("loginName"),
+	)
+}
+
+func queryUUID(query url.Values) string {
+	return firstNonEmpty(
+		query.Get("uuid"),
+		query.Get("id"),
+		query.Get("user_id"),
+		query.Get("user-id"),
+		query.Get("userId"),
+		query.Get("userID"),
+		query.Get("userid"),
 	)
 }
 

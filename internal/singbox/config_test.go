@@ -1741,6 +1741,71 @@ func TestBuildConfigSupportsVLESSTrojanQueryCredentials(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsUUIDQueryAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         199,
+			URI:        "vless://uuid-alias-vless.example:443?userId=00000000-0000-0000-0000-000000000199&security=tls#vless-uuid-alias",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         200,
+			URI:        "vmess://uuid-alias-vmess.example:443?userID=00000000-0000-0000-0000-000000000200&security=tls#vmess-uuid-alias",
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         201,
+			URI:        "tuic://uuid-alias-tuic.example:443?userid=00000000-0000-0000-0000-000000000201&token=tuic-uuid-alias-placeholder#tuic-uuid-alias",
+			Protocol:   "tuic",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         202,
+			URI:        "juicity://uuid-alias-juicity.example:443?userId=00000000-0000-0000-0000-000000000202&token=juicity-uuid-alias-placeholder#juicity-uuid-alias",
+			Protocol:   "juicity",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	vlessOutbound := findOutbound(config.Outbounds, "up_199")
+	if vlessOutbound == nil {
+		t.Fatalf("expected vless outbound up_199, got %+v", config.Outbounds)
+	}
+	if vlessOutbound["uuid"] != "00000000-0000-0000-0000-000000000199" {
+		t.Fatalf("unexpected vless UUID alias fields: %+v", vlessOutbound)
+	}
+
+	vmessOutbound := findOutbound(config.Outbounds, "up_200")
+	if vmessOutbound == nil {
+		t.Fatalf("expected vmess outbound up_200, got %+v", config.Outbounds)
+	}
+	if vmessOutbound["uuid"] != "00000000-0000-0000-0000-000000000200" {
+		t.Fatalf("unexpected vmess UUID alias fields: %+v", vmessOutbound)
+	}
+
+	tuicOutbound := findOutbound(config.Outbounds, "up_201")
+	if tuicOutbound == nil {
+		t.Fatalf("expected tuic outbound up_201, got %+v", config.Outbounds)
+	}
+	if tuicOutbound["uuid"] != "00000000-0000-0000-0000-000000000201" || tuicOutbound["password"] != "tuic-uuid-alias-placeholder" {
+		t.Fatalf("unexpected tuic UUID alias fields: %+v", tuicOutbound)
+	}
+
+	juicityOutbound := findOutbound(config.Outbounds, "up_202")
+	if juicityOutbound == nil {
+		t.Fatalf("expected juicity outbound up_202, got %+v", config.Outbounds)
+	}
+	if juicityOutbound["uuid"] != "00000000-0000-0000-0000-000000000202" || juicityOutbound["password"] != "juicity-uuid-alias-placeholder" {
+		t.Fatalf("unexpected juicity UUID alias fields: %+v", juicityOutbound)
+	}
+}
+
 func TestBuildConfigSupportsShadowsocksQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

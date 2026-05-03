@@ -725,9 +725,13 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 	password := firstNonEmpty(
 		hysteria2Password(parsed.User),
 		query.Get("password"),
+		query.Get("pass"),
+		query.Get("passwd"),
+		query.Get("psk"),
 		query.Get("auth"),
 		query.Get("auth_str"),
 		query.Get("auth-str"),
+		query.Get("authStr"),
 		query.Get("token"),
 	)
 	if password == "" {
@@ -1097,8 +1101,8 @@ func buildHysteriaOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	query := parsed.Query()
-	auth := firstNonEmpty(query.Get("auth"), query.Get("auth_base64"), query.Get("auth-base64"))
-	authStr := firstNonEmpty(query.Get("auth_str"), query.Get("auth-str"), query.Get("password"), query.Get("token"), parsed.User.Username())
+	auth := firstNonEmpty(query.Get("auth"), query.Get("auth_base64"), query.Get("auth-base64"), query.Get("authBase64"))
+	authStr := firstNonEmpty(query.Get("auth_str"), query.Get("auth-str"), query.Get("authStr"), query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token"), parsed.User.Username())
 	if auth == "" && authStr == "" {
 		return nil, false
 	}

@@ -1595,6 +1595,75 @@ func TestBuildConfigSupportsHysteriaTokenAuth(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsHysteriaAuthAliasQueries(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         195,
+			URI:        "hysteria://auth-base64.hysteria.example:443?authBase64=base64-auth-placeholder&serverName=auth-base64.hysteria.example#hysteria-auth-base64",
+			Protocol:   "hysteria",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         196,
+			URI:        "hysteria://auth-str.hysteria.example:443?authStr=hysteria-authstr-placeholder&upMbps=12&downMbps=34#hysteria-auth-str",
+			Protocol:   "hysteria",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         197,
+			URI:        "hysteria2://hy2-authstr.example:443?authStr=hy2-authstr-placeholder#hy2-auth-str",
+			Protocol:   "hysteria2",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         198,
+			URI:        "hy2://hy2-pass.example:443?pass=hy2-pass-placeholder#hy2-pass",
+			Protocol:   "hy2",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	authBase64Outbound := findOutbound(config.Outbounds, "up_195")
+	if authBase64Outbound == nil {
+		t.Fatalf("expected hysteria authBase64 outbound up_195, got %+v", config.Outbounds)
+	}
+	if authBase64Outbound["type"] != "hysteria" || authBase64Outbound["auth"] != "base64-auth-placeholder" {
+		t.Fatalf("unexpected hysteria authBase64 fields: %+v", authBase64Outbound)
+	}
+	authBase64TLS, ok := authBase64Outbound["tls"].(map[string]any)
+	if !ok || authBase64TLS["server_name"] != "auth-base64.hysteria.example" {
+		t.Fatalf("unexpected hysteria authBase64 tls: %+v", authBase64Outbound["tls"])
+	}
+
+	authStrOutbound := findOutbound(config.Outbounds, "up_196")
+	if authStrOutbound == nil {
+		t.Fatalf("expected hysteria authStr outbound up_196, got %+v", config.Outbounds)
+	}
+	if authStrOutbound["type"] != "hysteria" || authStrOutbound["auth_str"] != "hysteria-authstr-placeholder" || authStrOutbound["up_mbps"] != 12 || authStrOutbound["down_mbps"] != 34 {
+		t.Fatalf("unexpected hysteria authStr fields: %+v", authStrOutbound)
+	}
+
+	hy2AuthStrOutbound := findOutbound(config.Outbounds, "up_197")
+	if hy2AuthStrOutbound == nil {
+		t.Fatalf("expected hysteria2 authStr outbound up_197, got %+v", config.Outbounds)
+	}
+	if hy2AuthStrOutbound["type"] != "hysteria2" || hy2AuthStrOutbound["password"] != "hy2-authstr-placeholder" {
+		t.Fatalf("unexpected hysteria2 authStr fields: %+v", hy2AuthStrOutbound)
+	}
+
+	hy2PassOutbound := findOutbound(config.Outbounds, "up_198")
+	if hy2PassOutbound == nil {
+		t.Fatalf("expected hysteria2 pass outbound up_198, got %+v", config.Outbounds)
+	}
+	if hy2PassOutbound["type"] != "hysteria2" || hy2PassOutbound["password"] != "hy2-pass-placeholder" {
+		t.Fatalf("unexpected hysteria2 pass fields: %+v", hy2PassOutbound)
+	}
+}
+
 func TestBuildConfigSupportsVLESSTrojanQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

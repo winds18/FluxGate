@@ -1049,6 +1049,87 @@ func TestBuildConfigPreservesTrojanHTTPUpgradeTransport(t *testing.T) {
 	}
 }
 
+func TestBuildConfigPreservesURITransportHostAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         175,
+			URI:        "vless://00000000-0000-0000-0000-000000000175@ws-authority.example:443?security=tls&type=ws&path=/ws&authority=ws-authority.example.test#ws-authority",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         176,
+			URI:        "vless://00000000-0000-0000-0000-000000000176@http-authority.example:443?security=tls&type=http&headers.Host=h2-authority.example.test,h2-backup.example.test&httpPath=/h2#http-authority",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         177,
+			URI:        "trojan://trojan-placeholder@upgrade-authority.example:443?security=tls&type=httpupgrade&headers.%3Aauthority=upgrade-authority.example.test&httpUpgradePath=/upgrade#upgrade-authority",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         178,
+			URI:        "vmess://00000000-0000-0000-0000-000000000178@vmess-header-host.example:443?encryption=auto&security=tls&type=ws&path=/vmess&headerHost=vmess-header-host.example.test&sni=vmess-header-host.example#vmess-header-host",
+			Protocol:   "vmess",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	wsOutbound := findOutbound(config.Outbounds, "up_175")
+	if wsOutbound == nil {
+		t.Fatalf("expected vless outbound up_175, got %+v", config.Outbounds)
+	}
+	wsTransport, ok := wsOutbound["transport"].(map[string]any)
+	if !ok || wsTransport["type"] != "ws" || wsTransport["path"] != "/ws" {
+		t.Fatalf("unexpected websocket authority transport: %+v", wsOutbound["transport"])
+	}
+	wsHeaders, ok := wsTransport["headers"].(map[string]any)
+	if !ok || wsHeaders["Host"] != "ws-authority.example.test" {
+		t.Fatalf("unexpected websocket authority headers: %+v", wsTransport["headers"])
+	}
+
+	httpOutbound := findOutbound(config.Outbounds, "up_176")
+	if httpOutbound == nil {
+		t.Fatalf("expected vless outbound up_176, got %+v", config.Outbounds)
+	}
+	httpTransport, ok := httpOutbound["transport"].(map[string]any)
+	if !ok || httpTransport["type"] != "http" || httpTransport["path"] != "/h2" {
+		t.Fatalf("unexpected http authority transport: %+v", httpOutbound["transport"])
+	}
+	httpHosts, ok := httpTransport["host"].([]string)
+	if !ok || len(httpHosts) != 2 || httpHosts[0] != "h2-authority.example.test" || httpHosts[1] != "h2-backup.example.test" {
+		t.Fatalf("unexpected http authority hosts: %+v", httpTransport["host"])
+	}
+
+	upgradeOutbound := findOutbound(config.Outbounds, "up_177")
+	if upgradeOutbound == nil {
+		t.Fatalf("expected trojan outbound up_177, got %+v", config.Outbounds)
+	}
+	upgradeTransport, ok := upgradeOutbound["transport"].(map[string]any)
+	if !ok || upgradeTransport["type"] != "httpupgrade" || upgradeTransport["host"] != "upgrade-authority.example.test" || upgradeTransport["path"] != "/upgrade" {
+		t.Fatalf("unexpected httpupgrade authority transport: %+v", upgradeOutbound["transport"])
+	}
+
+	vmessOutbound := findOutbound(config.Outbounds, "up_178")
+	if vmessOutbound == nil {
+		t.Fatalf("expected vmess outbound up_178, got %+v", config.Outbounds)
+	}
+	vmessTransport, ok := vmessOutbound["transport"].(map[string]any)
+	if !ok || vmessTransport["type"] != "ws" || vmessTransport["path"] != "/vmess" {
+		t.Fatalf("unexpected vmess header host transport: %+v", vmessOutbound["transport"])
+	}
+	vmessHeaders, ok := vmessTransport["headers"].(map[string]any)
+	if !ok || vmessHeaders["Host"] != "vmess-header-host.example.test" {
+		t.Fatalf("unexpected vmess header host headers: %+v", vmessTransport["headers"])
+	}
+}
+
 func TestBuildConfigPreservesVLESSRealityTLS(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

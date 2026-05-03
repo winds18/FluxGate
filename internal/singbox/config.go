@@ -445,7 +445,7 @@ func transportFromQuery(query url.Values) map[string]any {
 		if path := firstNonEmpty(query.Get("path"), query.Get("ws_path"), query.Get("ws-path"), query.Get("wsPath")); path != "" {
 			transport["path"] = path
 		}
-		if host := firstNonEmpty(query.Get("host"), query.Get("ws_host"), query.Get("ws-host"), query.Get("wsHost")); host != "" {
+		if host := transportHostFromQuery(query, "ws_host", "ws-host", "wsHost"); host != "" {
 			transport["headers"] = map[string]any{"Host": host}
 		}
 		if maxEarlyData := intQuery(firstNonEmpty(query.Get("max_early_data"), query.Get("max-early-data"), query.Get("maxEarlyData"))); maxEarlyData > 0 {
@@ -477,7 +477,7 @@ func transportFromQuery(query url.Values) map[string]any {
 		return map[string]any{"type": "quic"}
 	case "http", "h2":
 		transport := map[string]any{"type": "http"}
-		if hosts := splitCSV(firstNonEmpty(query.Get("host"), query.Get("http_host"), query.Get("http-host"), query.Get("httpHost"))); len(hosts) > 0 {
+		if hosts := splitCSV(transportHostFromQuery(query, "http_host", "http-host", "httpHost")); len(hosts) > 0 {
 			transport["host"] = hosts
 		}
 		if path := firstNonEmpty(query.Get("path"), query.Get("http_path"), query.Get("http-path"), query.Get("httpPath")); path != "" {
@@ -495,7 +495,7 @@ func transportFromQuery(query url.Values) map[string]any {
 		return transport
 	case "httpupgrade", "http-upgrade", "http_upgrade":
 		transport := map[string]any{"type": "httpupgrade"}
-		if host := firstNonEmpty(query.Get("host"), query.Get("httpupgrade_host"), query.Get("httpupgrade-host"), query.Get("httpUpgradeHost"), query.Get("http_upgrade_host"), query.Get("http-upgrade-host")); host != "" {
+		if host := transportHostFromQuery(query, "httpupgrade_host", "httpupgrade-host", "httpUpgradeHost", "http_upgrade_host", "http-upgrade-host"); host != "" {
 			transport["host"] = host
 		}
 		if path := firstNonEmpty(query.Get("path"), query.Get("httpupgrade_path"), query.Get("httpupgrade-path"), query.Get("httpUpgradePath"), query.Get("http_upgrade_path"), query.Get("http-upgrade-path")); path != "" {
@@ -505,6 +505,29 @@ func transportFromQuery(query url.Values) map[string]any {
 	default:
 		return nil
 	}
+}
+
+func transportHostFromQuery(query url.Values, aliases ...string) string {
+	values := []string{
+		query.Get("host"),
+		query.Get("authority"),
+		query.Get(":authority"),
+		query.Get("headerHost"),
+		query.Get("header_host"),
+		query.Get("header-host"),
+		query.Get("headersHost"),
+		query.Get("headers_host"),
+		query.Get("headers-host"),
+		query.Get("headers.Host"),
+		query.Get("headers.host"),
+		query.Get("headers_authority"),
+		query.Get("headers-authority"),
+		query.Get("headers.:authority"),
+	}
+	for _, alias := range aliases {
+		values = append(values, query.Get(alias))
+	}
+	return firstNonEmpty(values...)
 }
 
 func buildShadowsocksOutbound(node store.Node) (map[string]any, bool) {
@@ -1655,16 +1678,15 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 }
 
 func vmessUserinfoTransportHost(query url.Values, transportType string) string {
-	host := firstNonEmpty(query.Get("host"), query.Get("authority"))
 	switch strings.ToLower(strings.TrimSpace(transportType)) {
 	case "ws", "websocket":
-		return firstNonEmpty(host, query.Get("ws_host"), query.Get("ws-host"), query.Get("wsHost"))
+		return transportHostFromQuery(query, "ws_host", "ws-host", "wsHost")
 	case "http", "h2":
-		return firstNonEmpty(host, query.Get("http_host"), query.Get("http-host"), query.Get("httpHost"))
+		return transportHostFromQuery(query, "http_host", "http-host", "httpHost")
 	case "httpupgrade", "http-upgrade", "http_upgrade":
-		return firstNonEmpty(host, query.Get("httpupgrade_host"), query.Get("httpupgrade-host"), query.Get("httpUpgradeHost"), query.Get("http_upgrade_host"), query.Get("http-upgrade-host"))
+		return transportHostFromQuery(query, "httpupgrade_host", "httpupgrade-host", "httpUpgradeHost", "http_upgrade_host", "http-upgrade-host")
 	default:
-		return host
+		return transportHostFromQuery(query)
 	}
 }
 

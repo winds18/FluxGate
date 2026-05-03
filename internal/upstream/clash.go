@@ -197,6 +197,8 @@ func clashProxyURI(proxy map[string]string) string {
 		return clashSSHURI(proxy)
 	case "wireguard", "wg":
 		return clashWireGuardURI(proxy)
+	case "tor":
+		return clashTorURI(proxy)
 	case "direct":
 		return clashInternalURI("direct", proxy, "Direct")
 	case "block", "reject", "reject-drop", "reject-no-drop", "reject-tinygif":
@@ -786,6 +788,42 @@ func clashWireGuardLocalAddress(proxy map[string]string) string {
 		addresses = append(addresses, ipv6)
 	}
 	return strings.Join(addresses, ",")
+}
+
+func clashTorURI(proxy map[string]string) string {
+	values := url.Values{}
+	for _, item := range []struct {
+		query string
+		keys  []string
+	}{
+		{query: "executable_path", keys: []string{"executable-path", "executable_path", "path"}},
+		{query: "data_directory", keys: []string{"data-directory", "data_directory", "data-dir", "data_dir", "dir"}},
+		{query: "extra_args", keys: []string{"extra-args", "extra_args", "extra-arg", "extra_arg", "args", "arg", "arguments"}},
+	} {
+		if value := firstMapValue(proxy, item.keys...); value != "" {
+			values.Set(item.query, value)
+		}
+	}
+	for key, value := range proxy {
+		option := ""
+		switch {
+		case strings.HasPrefix(key, "torrc."):
+			option = strings.TrimPrefix(key, "torrc.")
+		case strings.HasPrefix(key, "torrc_"):
+			option = strings.TrimPrefix(key, "torrc_")
+		}
+		option = strings.TrimSpace(option)
+		if option == "" || strings.TrimSpace(value) == "" {
+			continue
+		}
+		values.Set("torrc."+option, strings.TrimSpace(value))
+	}
+	return (&url.URL{
+		Scheme:   "tor",
+		Host:     "default",
+		Fragment: firstNonEmptyString(firstMapValue(proxy, "name"), "Tor"),
+		RawQuery: values.Encode(),
+	}).String()
 }
 
 func clashInternalURI(scheme string, proxy map[string]string, fallbackName string) string {

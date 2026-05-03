@@ -601,8 +601,18 @@ func normalizedStructuredProxyKey(key string) string {
 		return "down-mbps"
 	case "downspeed":
 		return "down-speed"
+	case "datadir":
+		return "data-directory"
+	case "datadirectory":
+		return "data-directory"
 	case "earlydataheadername":
 		return "early-data-header-name"
+	case "executablepath":
+		return "executable-path"
+	case "extraarg":
+		return "extra-args"
+	case "extraargs":
+		return "extra-args"
 	case "enable_tls":
 		return "tls"
 	case "enable-tls":

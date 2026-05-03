@@ -98,6 +98,7 @@
 - WireGuard URI 可兼容 `privateKey`/`publicKey`/`preSharedKey`、`ip`/`ipv6`/`localAddresses`、`allowedIPs`/`allowedIps`/`peerAllowedIps`、`systemInterface`、`interfaceName`、`reservedBytes` 和 `peerReserved` 等常见查询参数别名。
 - Clash YAML WireGuard 结构化节点会保留 `privateKey`、`peerPublicKey`、`localAddress`/`localAddresses`、`preSharedKey`、`allowedIPs`/`peerAllowedIps`、`reservedBytes`/`peerReserved`、`systemInterface` 和 `interfaceName` 等 camelCase 参数，并归一化到 WireGuard URI 到 sing-box outbound 生成链路。
 - Tor URI 可兼容 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/重复 `arg` 和 `torrc[Option]` 等常见查询参数别名。
+- Clash YAML Tor 结构化节点会保留 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments` 和嵌套 `torrc` 选项，并归一化到 Tor URI 到 sing-box outbound 生成链路。
 - Hysteria2/Hy2 URI 可从查询参数读取 `password`、`auth`、`auth_str` 或 `token` 认证密码。
 - Hysteria v1 URI 可从查询参数读取 `token` 认证字符串。
 - sing-box 服务端配置生成会过滤不可用 Token，避免已撤销、已过期或已超额用户继续进入网关配置。

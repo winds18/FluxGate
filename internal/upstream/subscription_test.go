@@ -4061,6 +4061,63 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLTorStructuredAliases(t *testing.T) {
+	raw := `
+proxies:
+  - name: "Clash Tor Block"
+    type: tor
+    executablePath: /usr/bin/tor
+    dataDir: cache/tor-block
+    extraArgs:
+      - --quiet
+      - --SocksPort
+      - auto
+    torrc:
+      ClientOnly: "1"
+      SocksPort: auto
+  - { name: "Clash Tor Inline", type: tor, executablePath: /opt/tor, dataDirectory: cache/tor-inline, extraArgs: [--RunAsDaemon, 0], torrc: { ClientOnly: 1 } }
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Clash Tor structured URIs, got %d: %q", len(lines), got)
+	}
+
+	assertHasPrefix(t, lines[0], "tor://default?")
+	for _, want := range []string{
+		"executable_path=%2Fusr%2Fbin%2Ftor",
+		"data_directory=cache%2Ftor-block",
+		"extra_args=--quiet%2C--SocksPort%2Cauto",
+		"torrc.clientonly=1",
+		"torrc.socksport=auto",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Clash Tor block URI to contain %q, got %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#Clash%20Tor%20Block") {
+		t.Fatalf("unexpected Clash Tor block URI fragment: %q", lines[0])
+	}
+
+	assertHasPrefix(t, lines[1], "tor://default?")
+	for _, want := range []string{
+		"executable_path=%2Fopt%2Ftor",
+		"data_directory=cache%2Ftor-inline",
+		"extra_args=--RunAsDaemon%2C0",
+		"torrc.clientonly=1",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Clash Tor inline URI to contain %q, got %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#Clash%20Tor%20Inline") {
+		t.Fatalf("unexpected Clash Tor inline URI fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentClashYAMLVLESSReality(t *testing.T) {
 	raw := `
 proxies:

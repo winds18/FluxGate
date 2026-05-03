@@ -132,8 +132,8 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan/VMess 的 `insecure`/`skip-cert-verify`、`disable_sni`、`alpn` 和 uTLS fingerprint TLS 参数，并同步到 sing-box outbound。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS WebSocket 的 `type=ws`、`path` 和 `host` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `wsPath` 和 `wsHost` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan WebSocket 的 `max_early_data` 和 `early_data_header_name` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `maxEarlyData` 和 `earlyDataHeaderName` 查询别名。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS gRPC 的 `type=grpc` 和 `service_name` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `serviceName` 查询别名。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan gRPC 的 `idle_timeout`、`ping_timeout`、`permit_without_stream` 和 `multi_mode` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `grpcIdleTimeout`、`grpcPingTimeout`、`permitWithoutStream` 和 `multiMode` 查询别名。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS gRPC 的 `type=grpc` 和 `service_name` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `serviceName` 和 `grpcServiceName` 查询别名。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan gRPC 的 `idle_timeout`、`ping_timeout`、`permit_without_stream` 和 `multi_mode` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `grpcIdleTimeout`、`grpcPingTimeout`、`permitWithoutStream`、`multiMode` 和 `grpcMultiMode` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan QUIC transport，并同步为 sing-box outbound transport。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTP transport 的 `host`、`path`、`method`、`idle_timeout` 和 `ping_timeout` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `httpHost`、`httpPath`、`httpMethod`、`httpIdleTimeout` 和 `httpPingTimeout` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTPUpgrade transport 的 `host` 和 `path` 参数，并同步为 sing-box outbound transport，兼容 URI 中 `httpUpgradeHost` 和 `httpUpgradePath` 查询别名。
@@ -142,11 +142,11 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure` 和 `disableSNI` 查询别名，同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure`、`skip_cert_verify` 和 `disableSNI` 查询别名，同步为 sing-box outbound TLS 配置。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan WebSocket/gRPC 传输参数，并同步为 sing-box outbound transport。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VMess gRPC 传输参数，并同步为 sing-box outbound transport。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 VMess gRPC 传输参数，并同步为 sing-box outbound transport，兼容 `serviceName`、`grpcServiceName`、`multiMode` 和 `grpcMultiMode` 写法。
 - VMess TCP HTTP 伪装和 HTTP/H2 传输参数会同步为 sing-box HTTP transport。
 - VMess HTTPUpgrade 传输参数会同步为 sing-box HTTPUpgrade transport，兼容 VMess JSON `net=httpupgrade` 以及 userinfo URI 中 `httpUpgradeHost`/`httpUpgradePath` 查询别名。
 - sing-box JSON VMess 节点的 HTTP transport 会保留 host 数组和 path，避免导入后丢失 HTTP 伪装参数。
-- VMess 可兼容 `vmess://uuid@host:port?...` userinfo 直连 URI，也可从 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 查询参数读取认证信息，并保留 TLS、WebSocket、SNI、ALPN、跳过证书校验、uTLS fingerprint 和 `packet_encoding`/`packet-encoding`/`packetEncoding` 参数；userinfo URI 兼容 `serverName`、`tlsServerName`、`disableSNI`、`tlsEnabled`、`enableTLS` 和 `overTLS` 查询别名。
+- VMess 可兼容 `vmess://uuid@host:port?...` userinfo 直连 URI，也可从 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 查询参数读取认证信息，并保留 TLS、WebSocket、gRPC、SNI、ALPN、跳过证书校验、uTLS fingerprint 和 `packet_encoding`/`packet-encoding`/`packetEncoding` 参数；userinfo URI 兼容 `serverName`、`tlsServerName`、`disableSNI`、`tlsEnabled`、`enableTLS`、`overTLS`、`grpcServiceName` 和 `grpcMultiMode` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria `recv_window_conn`、`recv_window`、`disable_mtu_discovery` 和 `tls.utls.fingerprint`/`fp` 参数，并同步为 sing-box outbound，兼容 URI 中 `authStr`、`authBase64`、`pass`、`passwd`、`pwd`、`secret`、`credential`、`accountPassword`、`serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`recvWindowConn`、`recvWindow`、`disableMTUDiscovery` 和 `clientFingerprint` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 `up_mbps`、`down_mbps`、`insecure`、`disable_sni`、`alpn`、证书 pin、`fp`/`client-fingerprint` 和 `tls.utls.fingerprint` 参数，并同步为 sing-box outbound，兼容 URI 中 `authStr`、`pass`、`passwd`、`pwd`、`secret`、`credential`、`accountPassword`、`serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`obfsPassword` 和 `clientFingerprint` 查询别名。
 - Clash YAML Hysteria/Hysteria2 结构化节点会保留 `token`/`pass`/`passwd` credential 别名、`obfsPassword`、`upMbps`、`downMbps`、`recvWindowConn`、`recvWindow`、`disableMtuDiscovery`、`disableMTUDiscovery`、`serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 等 camelCase 参数，并归一化到 Hysteria/Hysteria2 URI 到 sing-box outbound 生成链路。

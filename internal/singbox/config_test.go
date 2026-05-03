@@ -940,7 +940,7 @@ func TestBuildConfigPreservesVLESSGRPCKeepaliveOptions(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         77,
-			URI:        "vless://00000000-0000-0000-0000-000000000077@example.grpc:443?security=tls&type=grpc&service_name=fluxgate&idle_timeout=30s&ping_timeout=10s&permit_without_stream=1&multi_mode=1#grpc-keepalive",
+			URI:        "vless://00000000-0000-0000-0000-000000000077@example.grpc:443?security=tls&type=grpc&grpcServiceName=fluxgate&idle_timeout=30s&ping_timeout=10s&permit_without_stream=1&grpcMultiMode=1#grpc-keepalive",
 			Protocol:   "vless",
 			ServerPort: 443,
 			Status:     "active",
@@ -1196,17 +1196,17 @@ func TestBuildConfigPreservesVMessGRPCTransport(t *testing.T) {
 		{
 			ID: 71,
 			URI: vmessURI(t, map[string]any{
-				"add":        "vmess.grpc.example",
-				"port":       "443",
-				"id":         "00000000-0000-0000-0000-000000000071",
-				"aid":        "0",
-				"scy":        "auto",
-				"net":        "grpc",
-				"path":       "fluxgate-vmess",
-				"multi_mode": "1",
-				"tls":        "tls",
-				"sni":        "vmess.grpc.example",
-				"ps":         "vmess-grpc",
+				"add":             "vmess.grpc.example",
+				"port":            "443",
+				"id":              "00000000-0000-0000-0000-000000000071",
+				"aid":             "0",
+				"scy":             "auto",
+				"net":             "grpc",
+				"grpcServiceName": "fluxgate-vmess",
+				"grpcMultiMode":   "1",
+				"tls":             "tls",
+				"sni":             "vmess.grpc.example",
+				"ps":              "vmess-grpc",
 			}),
 			Protocol:   "vmess",
 			ServerPort: 443,
@@ -1361,7 +1361,7 @@ func TestBuildConfigSupportsVMessQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{
 			ID:         88,
-			URI:        "vmess://query-vmess.example:443?id=00000000-0000-0000-0000-000000000088&encryption=auto&security=tls&type=grpc&service_name=query-vmess&sni=query-vmess.example&packet_encoding=packetaddr#vmess-query",
+			URI:        "vmess://query-vmess.example:443?id=00000000-0000-0000-0000-000000000088&encryption=auto&security=tls&type=grpc&grpcServiceName=query-vmess&grpcMultiMode=1&sni=query-vmess.example&packet_encoding=packetaddr#vmess-query",
 			Protocol:   "vmess",
 			ServerPort: 443,
 			Status:     "active",
@@ -1383,7 +1383,7 @@ func TestBuildConfigSupportsVMessQueryCredentials(t *testing.T) {
 		t.Fatalf("unexpected vmess query credential tls: %+v", outbound["tls"])
 	}
 	transport, ok := outbound["transport"].(map[string]any)
-	if !ok || transport["type"] != "grpc" || transport["service_name"] != "query-vmess" {
+	if !ok || transport["type"] != "grpc" || transport["service_name"] != "query-vmess" || transport["multi_mode"] != true {
 		t.Fatalf("unexpected vmess query credential transport: %+v", outbound["transport"])
 	}
 }

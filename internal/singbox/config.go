@@ -457,7 +457,7 @@ func transportFromQuery(query url.Values) map[string]any {
 		return transport
 	case "grpc":
 		transport := map[string]any{"type": "grpc"}
-		if serviceName := firstNonEmpty(query.Get("service_name"), query.Get("serviceName"), query.Get("grpc_service_name"), query.Get("grpc-service-name")); serviceName != "" {
+		if serviceName := firstNonEmpty(query.Get("service_name"), query.Get("serviceName"), query.Get("grpc_service_name"), query.Get("grpc-service-name"), query.Get("grpcServiceName")); serviceName != "" {
 			transport["service_name"] = serviceName
 		}
 		if idleTimeout := firstNonEmpty(query.Get("idle_timeout"), query.Get("idle-timeout"), query.Get("idleTimeout"), query.Get("grpc_idle_timeout"), query.Get("grpc-idle-timeout"), query.Get("grpcIdleTimeout")); idleTimeout != "" {
@@ -669,10 +669,11 @@ func vmessTransportFromDoc(doc map[string]any) map[string]any {
 			stringFromAny(doc["serviceName"]),
 			stringFromAny(doc["grpc_service_name"]),
 			stringFromAny(doc["grpc-service-name"]),
+			stringFromAny(doc["grpcServiceName"]),
 		); serviceName != "" {
 			transport["service_name"] = serviceName
 		}
-		if boolFromAny(doc["multi_mode"]) || boolFromAny(doc["multi-mode"]) || boolFromAny(doc["grpc_multi_mode"]) || boolFromAny(doc["grpc-multi-mode"]) {
+		if boolFromAny(doc["multi_mode"]) || boolFromAny(doc["multi-mode"]) || boolFromAny(doc["multiMode"]) || boolFromAny(doc["grpc_multi_mode"]) || boolFromAny(doc["grpc-multi-mode"]) || boolFromAny(doc["grpcMultiMode"]) {
 			transport["multi_mode"] = true
 		}
 		return transport
@@ -1660,10 +1661,10 @@ func parseVMessUserinfoURI(rawURI string) (map[string]any, bool) {
 		),
 		"alpn": query.Get("alpn"),
 	}
-	if multiMode := firstNonEmpty(query.Get("multi_mode"), query.Get("multi-mode"), query.Get("grpc_multi_mode"), query.Get("grpc-multi-mode")); multiMode != "" {
+	if multiMode := firstNonEmpty(query.Get("multi_mode"), query.Get("multi-mode"), query.Get("multiMode"), query.Get("grpc_multi_mode"), query.Get("grpc-multi-mode"), query.Get("grpcMultiMode")); multiMode != "" {
 		doc["multi_mode"] = multiMode
 	}
-	if serviceName := firstNonEmpty(query.Get("service_name"), query.Get("serviceName"), query.Get("grpc_service_name"), query.Get("grpc-service-name")); serviceName != "" {
+	if serviceName := firstNonEmpty(query.Get("service_name"), query.Get("serviceName"), query.Get("grpc_service_name"), query.Get("grpc-service-name"), query.Get("grpcServiceName")); serviceName != "" {
 		doc["service_name"] = serviceName
 	}
 	if packetEncoding := firstNonEmpty(query.Get("packet_encoding"), query.Get("packet-encoding"), query.Get("packetEncoding")); packetEncoding != "" {

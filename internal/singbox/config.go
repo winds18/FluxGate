@@ -1209,7 +1209,7 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 
 	if isHTTPProxyTLSProtocol(parsed.Scheme) ||
 		strings.EqualFold(query.Get("security"), "tls") ||
-		boolQuery(query.Get("tls")) ||
+		queryTLSEnabled(query) ||
 		queryTLSServerName(query, "") != "" ||
 		queryTLSInsecure(query) ||
 		queryTLSDisableSNI(query) ||

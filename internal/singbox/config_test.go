@@ -2372,6 +2372,13 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 			ServerPort: 8080,
 			Status:     "active",
 		},
+		{
+			ID:         232,
+			URI:        "http://http-enable-tls-alias.example:8080/connect?username=qa-user&password=http-enable-tls-placeholder&tls=tls#http-enable-tls-alias",
+			Protocol:   "http",
+			ServerPort: 8080,
+			Status:     "active",
+		},
 	})
 
 	httpOutbound := findOutbound(config.Outbounds, "up_85")
@@ -2452,6 +2459,15 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	httpAliasTLS, ok := httpAliasOutbound["tls"].(map[string]any)
 	if !ok || httpAliasTLS["enabled"] != true || httpAliasTLS["server_name"] != "alias.http.example" || httpAliasTLS["insecure"] != true || httpAliasTLS["disable_sni"] != true {
 		t.Fatalf("unexpected http TLS alias config: %+v", httpAliasOutbound["tls"])
+	}
+
+	httpEnableTLSAliasOutbound := findOutbound(config.Outbounds, "up_232")
+	if httpEnableTLSAliasOutbound == nil {
+		t.Fatalf("expected http enable TLS alias outbound up_232, got %+v", config.Outbounds)
+	}
+	httpEnableTLSAliasTLS, ok := httpEnableTLSAliasOutbound["tls"].(map[string]any)
+	if !ok || httpEnableTLSAliasTLS["enabled"] != true || httpEnableTLSAliasTLS["server_name"] != "http-enable-tls-alias.example" {
+		t.Fatalf("unexpected http enable TLS alias config: %+v", httpEnableTLSAliasOutbound["tls"])
 	}
 }
 

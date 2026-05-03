@@ -92,7 +92,7 @@
 - Clash YAML AnyTLS/ShadowTLS 结构化节点会保留 `password`/`pass`/`passwd`/`psk`/`token` credential 别名；AnyTLS 会同步 `idleSessionCheckInterval`、`idleSessionTimeout` 和 `minIdleSession` 等会话空闲参数；两者都会通过公共 TLS helper 保留 `serverName`、`allowInsecure`、`disableSNI`、ALPN 和 `clientFingerprint` 客户端指纹。
 - sing-box JSON 和 URI 导入链路会保留 Naive/Naive+QUIC 跳过证书校验、禁用 SNI、ALPN、QUIC 控制项和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`insecureConcurrency`、`udpOverTcp`、`quicCongestionControl` 和 `clientFingerprint` 查询别名。
 - Clash YAML Naive 结构化节点会保留 `pass`/`passwd` credential 别名，以及 `insecureConcurrency`、`udpOverTcp` 和 `quicCongestionControl` 等 camelCase QUIC 控制参数，并通过公共 TLS helper 保留 `serverName`、`allowInsecure`、`disableSNI`、ALPN 和 `clientFingerprint` 客户端指纹。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 HTTP/HTTPS 代理跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 查询别名。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 HTTP/HTTPS 代理跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`clientFingerprint`、`tlsEnabled`、`enableTLS` 和 `overTLS` 查询别名。
 - Naive 和 HTTP/HTTPS URI 的 SNI、跳过证书校验和禁用 SNI 查询参数复用公共 TLS 别名解析，兼容 `tlsHost`、`tlsServerName`、`skipVerify`、`tlsAllowInsecure`、`tlsSkipVerify`、`tlsDisableSNI` 和 `tlsDisableSni` 等写法。
 - SOCKS URI 会按 `socks4://`、`socks4a://`、`socks5://` 或 `version=4/4a/5` 查询参数保留版本，并同步为 sing-box SOCKS outbound 的 `version` 字段。
 - SOCKS URI 支持 `udp`、`udpEnabled`、`udp_relay` 和 `udp-relay` 标志并归一为 sing-box outbound 的 `network=udp`，并兼容 `udpOverTcp` 查询别名。

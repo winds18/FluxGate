@@ -3981,6 +3981,86 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLSSHWireGuardCamelCaseAliases(t *testing.T) {
+	raw := `
+proxies:
+  - name: "Clash SSH Camel"
+    type: ssh
+    server: ssh-camel.clash.example.test
+    port: 22
+    user: qa-user
+    pass: "ssh-pass-placeholder"
+    privateKeyPath: keys/qa_id_ed25519
+    privateKeyPassphrase: key-passphrase-placeholder
+    hostKey: "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIplaceholder"
+    hostKeyAlgorithms: [ssh-ed25519, rsa-sha2-512]
+    clientVersion: SSH-2.0-FluxGateCamel
+    kexAlgorithm: [curve25519-sha256, diffie-hellman-group14-sha256]
+  - name: "Clash WireGuard Camel"
+    type: wg
+    server: wg-camel.clash.example.test
+    port: 51820
+    privateKey: private-key-placeholder
+    peerPublicKey: peer-public-key-placeholder
+    localAddresses:
+      - 10.77.0.2/32
+      - fd77::2/128
+    preSharedKey: psk-placeholder
+    allowedIPs: [0.0.0.0/0, ::/0]
+    reservedBytes: [4, 5, 6]
+    mtu: 1280
+    systemInterface: true
+    interfaceName: wg-camel
+    udp: true
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Clash SSH/WireGuard camelCase alias URIs, got %d: %q", len(lines), got)
+	}
+
+	assertHasPrefix(t, lines[0], "ssh://qa-user:ssh-pass-placeholder@ssh-camel.clash.example.test:22?")
+	for _, want := range []string{
+		"private_key_path=keys%2Fqa_id_ed25519",
+		"private_key_passphrase=key-passphrase-placeholder",
+		"host_key=ssh-ed25519+AAAAC3NzaC1lZDI1NTE5AAAAIplaceholder",
+		"host_key_algorithms=ssh-ed25519%2Crsa-sha2-512",
+		"client_version=SSH-2.0-FluxGateCamel",
+		"kex_algorithm=curve25519-sha256%2Cdiffie-hellman-group14-sha256",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Clash SSH camelCase URI to contain %q, got %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#Clash%20SSH%20Camel") {
+		t.Fatalf("unexpected Clash SSH camelCase URI fragment: %q", lines[0])
+	}
+
+	assertHasPrefix(t, lines[1], "wireguard://wg-camel.clash.example.test:51820?")
+	for _, want := range []string{
+		"private_key=private-key-placeholder",
+		"peer_public_key=peer-public-key-placeholder",
+		"local_address=10.77.0.2%2F32%2Cfd77%3A%3A2%2F128",
+		"pre_shared_key=psk-placeholder",
+		"allowed_ips=0.0.0.0%2F0%2C%3A%3A%2F0",
+		"reserved=4%2C5%2C6",
+		"mtu=1280",
+		"system_interface=1",
+		"interface_name=wg-camel",
+		"network=udp",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Clash WireGuard camelCase URI to contain %q, got %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#Clash%20WireGuard%20Camel") {
+		t.Fatalf("unexpected Clash WireGuard camelCase URI fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentClashYAMLVLESSReality(t *testing.T) {
 	raw := `
 proxies:

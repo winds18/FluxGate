@@ -94,7 +94,9 @@
 - Shadowsocks URI 可从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息。
 - Naive、HTTP/HTTPS 和 SOCKS URI 可从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息。
 - SSH URI 可从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息，并兼容 `identity_file`/`key_path`、`privateKey`、`privateKeyPath`、`privateKeyPassphrase`、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 等常见查询参数别名。
+- Clash YAML SSH 结构化节点会保留 `pass`/`passwd` credential 别名，以及 `privateKeyPath`、`privateKeyPassphrase`、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 等 camelCase 参数，并归一化到 SSH URI 到 sing-box outbound 生成链路。
 - WireGuard URI 可兼容 `privateKey`/`publicKey`/`preSharedKey`、`ip`/`ipv6`/`localAddresses`、`allowedIPs`/`allowedIps`/`peerAllowedIps`、`systemInterface`、`interfaceName`、`reservedBytes` 和 `peerReserved` 等常见查询参数别名。
+- Clash YAML WireGuard 结构化节点会保留 `privateKey`、`peerPublicKey`、`localAddress`/`localAddresses`、`preSharedKey`、`allowedIPs`/`peerAllowedIps`、`reservedBytes`/`peerReserved`、`systemInterface` 和 `interfaceName` 等 camelCase 参数，并归一化到 WireGuard URI 到 sing-box outbound 生成链路。
 - Tor URI 可兼容 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/重复 `arg` 和 `torrc[Option]` 等常见查询参数别名。
 - Hysteria2/Hy2 URI 可从查询参数读取 `password`、`auth`、`auth_str` 或 `token` 认证密码。
 - Hysteria v1 URI 可从查询参数读取 `token` 认证字符串。

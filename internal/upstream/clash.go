@@ -727,7 +727,7 @@ func clashSSHURI(proxy map[string]string) string {
 		}
 	}
 
-	password := firstMapValue(proxy, "password")
+	password := firstMapValue(proxy, "password", "passwd", "pass")
 	user := url.User(username)
 	if password != "" {
 		user = url.UserPassword(username, password)

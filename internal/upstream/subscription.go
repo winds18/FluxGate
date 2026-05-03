@@ -617,6 +617,10 @@ func normalizedStructuredProxyKey(key string) string {
 		return "flow"
 	case "grpcopts":
 		return "grpc-opts"
+	case "hostkey":
+		return "host-key"
+	case "hostkeyalgorithms":
+		return "host-key-algorithms"
 	case "grpc_settings":
 		return "grpc-opts"
 	case "grpc-settings":
@@ -671,6 +675,20 @@ func normalizedStructuredProxyKey(key string) string {
 		return "tls"
 	case "idletimeout":
 		return "idle-timeout"
+	case "identityfile":
+		return "private-key-path"
+	case "interfacename":
+		return "interface-name"
+	case "kexalgorithm":
+		return "kex-algorithm"
+	case "keypath":
+		return "private-key-path"
+	case "keypassphrase":
+		return "private-key-passphrase"
+	case "localaddress":
+		return "local-address"
+	case "localaddresses":
+		return "local-address"
 	case "pingtimeout":
 		return "ping-timeout"
 	case "permitwithoutstream":
@@ -689,6 +707,16 @@ func normalizedStructuredProxyKey(key string) string {
 		return "private-key-path"
 	case "publickey":
 		return "public-key"
+	case "peerallowedips":
+		return "peer-allowed-ips"
+	case "peerpublickey":
+		return "peer-public-key"
+	case "peerreserved":
+		return "peer-reserved"
+	case "peerreservedbytes":
+		return "peer-reserved"
+	case "presharedkey":
+		return "pre-shared-key"
 	case "quic_settings":
 		return "quic-opts"
 	case "quic-settings":
@@ -731,6 +759,14 @@ func normalizedStructuredProxyKey(key string) string {
 		return "short-id"
 	case "spiderx":
 		return "spider-x"
+	case "systeminterface":
+		return "system-interface"
+	case "reservedbytes":
+		return "reserved"
+	case "allowedips":
+		return "allowed-ips"
+	case "clientversion":
+		return "client-version"
 	case "transport_type":
 		return "transport"
 	case "transport-type":

@@ -20,10 +20,12 @@ func SingBoxJSONURIList(content string) string {
 	outbounds := appendSingBoxObjectLists(
 		singBoxObjectList(singBoxValue(doc, "outbounds")),
 		singBoxObjectList(singBoxValue(doc, "outbound")),
+		singBoxObjectList(singBoxValue(doc, "outboundList", "outboundsList")),
 	)
 	endpoints := appendSingBoxObjectLists(
 		singBoxObjectList(singBoxValue(doc, "endpoints")),
 		singBoxObjectList(singBoxValue(doc, "endpoint")),
+		singBoxObjectList(singBoxValue(doc, "endpointList", "endpointsList")),
 	)
 	if len(outbounds)+len(endpoints) == 0 {
 		return ""

@@ -6326,6 +6326,60 @@ func TestNormalizeContentSingBoxJSONSingularOutboundAndEndpoint(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentSingBoxJSONTopLevelListAliases(t *testing.T) {
+	raw := `{
+  "OutboundsList": [
+    {
+      "type": "trojan",
+      "tag": "sing-box list outbound",
+      "server": "trojan.list.example.test",
+      "server_port": 443,
+      "password": "trojan-placeholder",
+      "tls": {
+        "enabled": true,
+        "server_name": "trojan.list.example.test"
+      }
+    }
+  ],
+  "Endpoints_List": [
+    {
+      "type": "wireguard",
+      "tag": "sing-box list endpoint",
+      "address": ["10.66.0.3/32"],
+      "private_key": "endpoint-list-private",
+      "peers": [
+        {
+          "address": "wg.list.example.test",
+          "port": 51820,
+          "public_key": "endpoint-list-peer",
+          "allowed_ips": ["0.0.0.0/0"]
+        }
+      ]
+    }
+  ]
+}`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected top-level list alias outbound and endpoint URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "trojan://trojan-placeholder@trojan.list.example.test:443?")
+	if !strings.Contains(lines[0], "sni=trojan.list.example.test") ||
+		!strings.HasSuffix(lines[0], "#sing-box%20list%20outbound") {
+		t.Fatalf("unexpected top-level outbound list alias URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "wireguard://wg.list.example.test:51820?")
+	if !strings.Contains(lines[1], "private_key=endpoint-list-private") ||
+		!strings.Contains(lines[1], "peer_public_key=endpoint-list-peer") ||
+		!strings.Contains(lines[1], "allowed_ips=0.0.0.0%2F0") ||
+		!strings.HasSuffix(lines[1], "#sing-box%20list%20endpoint") {
+		t.Fatalf("unexpected top-level endpoint list alias URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentSingBoxJSONVLESSHTTPTransport(t *testing.T) {
 	raw := `{
   "outbounds": [
@@ -7338,6 +7392,22 @@ func TestNormalizeContentV2RayJSONLegacyOutboundFields(t *testing.T) {
         ]
       }
     }
+  ],
+  "OutboundDetours": [
+    {
+      "tag": "首尔 V2Ray Plural Shadowsocks",
+      "protocol": "shadowsocks",
+      "settings": {
+        "servers": [
+          {
+            "address": "plural-ss.v2ray.example.test",
+            "port": 8388,
+            "method": "aes-128-gcm",
+            "password": "qa-placeholder"
+          }
+        ]
+      }
+    }
   ]
 }`
 	got, err := NormalizeContent(raw)
@@ -7345,8 +7415,8 @@ func TestNormalizeContentV2RayJSONLegacyOutboundFields(t *testing.T) {
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 2 {
-		t.Fatalf("expected 2 legacy V2Ray outbound URIs, got %d: %q", len(lines), got)
+	if len(lines) != 3 {
+		t.Fatalf("expected 3 legacy V2Ray outbound URIs, got %d: %q", len(lines), got)
 	}
 	decoded, err := base64.RawURLEncoding.DecodeString(strings.TrimPrefix(lines[0], "vmess://"))
 	if err != nil {
@@ -7364,6 +7434,9 @@ func TestNormalizeContentV2RayJSONLegacyOutboundFields(t *testing.T) {
 	}
 	if lines[1] != "trojan://trojan-placeholder@legacy-trojan.v2ray.example.test:443#%E4%B8%9C%E4%BA%AC%20V2Ray%20Legacy%20Trojan" {
 		t.Fatalf("unexpected legacy v2ray Trojan URI: %q", lines[1])
+	}
+	if lines[2] != "ss://aes-128-gcm:qa-placeholder@plural-ss.v2ray.example.test:8388#%E9%A6%96%E5%B0%94%20V2Ray%20Plural%20Shadowsocks" {
+		t.Fatalf("unexpected plural v2ray Shadowsocks URI: %q", lines[2])
 	}
 }
 

@@ -1911,6 +1911,71 @@ func TestBuildConfigSupportsHTTPAndSOCKSQueryCredentials(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsUserPasswordCredentialQueryAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         95,
+			URI:        "naive://naive-alias.example:443?accountName=qa-naive-user&pwd=naive-alias-placeholder#naive-alias",
+			Protocol:   "naive",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         96,
+			URI:        "https://http-alias.example:8443/connect?userName=qa-http-user&accountPassword=http-alias-placeholder#http-alias",
+			Protocol:   "https",
+			ServerPort: 8443,
+			Status:     "active",
+		},
+		{
+			ID:         97,
+			URI:        "socks5://socks-alias.example:1080?accountName=qa-socks-user&pwd=socks-alias-placeholder&udp=1#socks-alias",
+			Protocol:   "socks5",
+			ServerPort: 1080,
+			Status:     "active",
+		},
+		{
+			ID:         98,
+			URI:        "ssh://ssh-alias.example:22?login=qa-ssh-user&accountPassword=ssh-alias-placeholder#ssh-alias",
+			Protocol:   "ssh",
+			ServerPort: 22,
+			Status:     "active",
+		},
+	})
+
+	naiveOutbound := findOutbound(config.Outbounds, "up_95")
+	if naiveOutbound == nil {
+		t.Fatalf("expected naive outbound up_95, got %+v", config.Outbounds)
+	}
+	if naiveOutbound["username"] != "qa-naive-user" || naiveOutbound["password"] != "naive-alias-placeholder" {
+		t.Fatalf("unexpected naive alias credential fields: %+v", naiveOutbound)
+	}
+
+	httpOutbound := findOutbound(config.Outbounds, "up_96")
+	if httpOutbound == nil {
+		t.Fatalf("expected http outbound up_96, got %+v", config.Outbounds)
+	}
+	if httpOutbound["username"] != "qa-http-user" || httpOutbound["password"] != "http-alias-placeholder" || httpOutbound["path"] != "/connect" {
+		t.Fatalf("unexpected http alias credential fields: %+v", httpOutbound)
+	}
+
+	socksOutbound := findOutbound(config.Outbounds, "up_97")
+	if socksOutbound == nil {
+		t.Fatalf("expected socks outbound up_97, got %+v", config.Outbounds)
+	}
+	if socksOutbound["username"] != "qa-socks-user" || socksOutbound["password"] != "socks-alias-placeholder" || socksOutbound["network"] != "udp" {
+		t.Fatalf("unexpected socks alias credential fields: %+v", socksOutbound)
+	}
+
+	sshOutbound := findOutbound(config.Outbounds, "up_98")
+	if sshOutbound == nil {
+		t.Fatalf("expected ssh outbound up_98, got %+v", config.Outbounds)
+	}
+	if sshOutbound["user"] != "qa-ssh-user" || sshOutbound["password"] != "ssh-alias-placeholder" {
+		t.Fatalf("unexpected ssh alias credential fields: %+v", sshOutbound)
+	}
+}
+
 func TestBuildConfigPreservesSOCKSVersionVariants(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

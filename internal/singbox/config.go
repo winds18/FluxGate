@@ -1033,8 +1033,8 @@ func buildNaiveOutbound(node store.Node) (map[string]any, bool) {
 	query := parsed.Query()
 	username, password := userPasswordWithQuery(
 		parsed.User,
-		firstNonEmpty(query.Get("username"), query.Get("user")),
-		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd")),
+		queryCredentialUsername(query),
+		queryCredentialPassword(query),
 	)
 	if username == "" || password == "" {
 		return nil, false
@@ -1194,8 +1194,8 @@ func buildHTTPOutbound(node store.Node) (map[string]any, bool) {
 	query := parsed.Query()
 	username, password := userPasswordWithQuery(
 		parsed.User,
-		firstNonEmpty(query.Get("username"), query.Get("user")),
-		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd")),
+		queryCredentialUsername(query),
+		queryCredentialPassword(query),
 	)
 	if username != "" {
 		outbound["username"] = username
@@ -1280,8 +1280,8 @@ func buildSOCKSOutbound(node store.Node) (map[string]any, bool) {
 	}
 	username, password := userPasswordWithQuery(
 		parsed.User,
-		firstNonEmpty(query.Get("username"), query.Get("user")),
-		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd")),
+		queryCredentialUsername(query),
+		queryCredentialPassword(query),
 	)
 	if username != "" {
 		outbound["username"] = username
@@ -1319,8 +1319,8 @@ func buildSSHOutbound(node store.Node) (map[string]any, bool) {
 	}
 	user, password := userPasswordWithQuery(
 		parsed.User,
-		firstNonEmpty(query.Get("user"), query.Get("username")),
-		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd")),
+		queryCredentialUsername(query),
+		queryCredentialPassword(query),
 	)
 	if user != "" {
 		outbound["user"] = user
@@ -1911,6 +1911,36 @@ func userPasswordWithQuery(user *url.Userinfo, queryUsername string, queryPasswo
 		password = strings.TrimSpace(queryPassword)
 	}
 	return username, password
+}
+
+func queryCredentialUsername(query url.Values) string {
+	return firstNonEmpty(
+		query.Get("username"),
+		query.Get("user"),
+		query.Get("user_name"),
+		query.Get("user-name"),
+		query.Get("userName"),
+		query.Get("account"),
+		query.Get("account_name"),
+		query.Get("account-name"),
+		query.Get("accountName"),
+		query.Get("login"),
+		query.Get("login_name"),
+		query.Get("login-name"),
+		query.Get("loginName"),
+	)
+}
+
+func queryCredentialPassword(query url.Values) string {
+	return firstNonEmpty(
+		query.Get("password"),
+		query.Get("pass"),
+		query.Get("passwd"),
+		query.Get("pwd"),
+		query.Get("account_password"),
+		query.Get("account-password"),
+		query.Get("accountPassword"),
+	)
 }
 
 func socksVersion(scheme string, queryVersion string) string {

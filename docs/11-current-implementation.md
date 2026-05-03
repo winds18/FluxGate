@@ -162,8 +162,8 @@
 - sing-box JSON 和 URI 导入链路会保留 Naive/Naive+QUIC `insecure`/`skip-cert-verify`、`disable_sni`、`alpn`、QUIC 控制项和 `tls.utls.fingerprint`/`fp` 参数，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`insecureConcurrency`、`udpOverTcp`、`quicCongestionControl` 和 `clientFingerprint` 查询别名。
 - Clash YAML Naive 结构化节点会保留 `pass`/`passwd` credential 别名，以及 `insecureConcurrency`、`udpOverTcp` 和 `quicCongestionControl` 等 camelCase QUIC 控制参数，并通过公共 TLS helper 保留 `serverName`、`allowInsecure`、`disableSNI`、ALPN 和 `clientFingerprint` 客户端指纹。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 HTTP/HTTPS 代理 `insecure`/`skip-cert-verify`、`disable_sni`、`alpn` 和 `tls.utls.fingerprint`/`fp` 参数，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 查询别名。
-- Naive、HTTP/HTTPS 和 SOCKS URI 支持从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
-- SSH URI 支持从 `username`/`user` 与 `password`/`pass`/`passwd` 查询参数读取认证信息，并兼容 `identity_file`、`key_path`、`key`、`privateKey`、`privateKeyPath`、`privateKeyPassphrase`、passphrase、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 查询别名，兼容缺少 userinfo 的订阅写法。
+- Naive、HTTP/HTTPS 和 SOCKS URI 支持从 `username`/`user`/`userName`/`accountName`/`login` 与 `password`/`pass`/`passwd`/`pwd`/`accountPassword` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
+- SSH URI 支持从 `username`/`user`/`userName`/`accountName`/`login` 与 `password`/`pass`/`passwd`/`pwd`/`accountPassword` 查询参数读取认证信息，并兼容 `identity_file`、`key_path`、`key`、`privateKey`、`privateKeyPath`、`privateKeyPassphrase`、passphrase、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 查询别名，兼容缺少 userinfo 的订阅写法。
 - Clash YAML SSH 结构化节点会保留 `pass`/`passwd` credential 别名，以及 `privateKeyPath`、`privateKeyPassphrase`、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 等 camelCase 参数，并归一化到 SSH URI 到 sing-box outbound 生成链路。
 - SOCKS URI 会按 `socks4://`、`socks4a://`、`socks5://` 或 `version=4/4a/5` 查询参数保留版本，并同步为 sing-box SOCKS outbound 的 `version` 字段。
 - SOCKS URI 支持 `udp`、`udpEnabled`、`udp_relay` 和 `udp-relay` 标志，并会归一为 sing-box outbound 的 `network=udp`，同时兼容 `udpOverTcp` 查询别名。
@@ -179,8 +179,8 @@
 - Clash YAML Tor 结构化节点会保留 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments` 和嵌套 `torrc` 选项，并归一化到 Tor URI 到 sing-box outbound 生成链路。
 - Surge 和 Quantumult X Tor 结构化节点会保留 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments` 和 `torrc.*`/`torrc[Option]` 选项，并归一化到 Tor URI 到 sing-box outbound 生成链路。
 - Shadowsocks URI 支持从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
-- Hysteria2/Hy2 URI 支持从 `password`、`auth`、`auth_str` 或 `token` 查询参数读取认证密码，兼容缺少 userinfo 的订阅写法。
-- Hysteria v1 URI 支持从 `token` 查询参数读取认证字符串，兼容部分上游订阅的 token 写法。
+- Hysteria2/Hy2 URI 支持从 `password`、`auth`、`auth_str`、`authStr`、`pass`、`passwd`、`psk` 或 `token` 查询参数读取认证密码，兼容缺少 userinfo 的订阅写法。
+- Hysteria v1 URI 支持从 `token`、`auth`、`auth_str`、`authStr`、`authBase64`、`pass`、`passwd` 或 `psk` 查询参数读取认证字符串，兼容部分上游订阅的 token 写法。
 - sing-box 服务端配置生成会过滤已撤销、已过期、已超额或 gateway account 不可用的 Token。
 - 流量统计入库骨架已落地：可解析 V2Ray stats 的 user/inbound/outbound 计数名称，写入 `traffic_samples`，计算 counter delta，并把 user 维度增量累加到 Token 用量和小时/天汇总表。
 - V2Ray stats 计数名称解析会容忍分段前后空白和 `traffic`/方向字段大小写差异，降低不同实现输出格式抖动导致样本被丢弃的概率。

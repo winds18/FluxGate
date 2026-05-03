@@ -314,7 +314,7 @@ func collectJSONURIs(name string, value any, uris *[]string) {
 			markJSONURIKeyAliases(typed, handled, []string{"subscribe_url", "subscribe-url", "subscribeUrl", "subscribeURL", "sub_url", "sub-url", "subUrl", "subURL", "download_url", "download-url", "downloadUrl", "downloadURL"})
 		}
 		collectJSONURIKeyAliases(typed, handled, []string{"content", "raw", "raw_content", "raw-content", "rawContent", "subscription", "sub", "payload", "body", "text", "result", "response"}, "", uris)
-		collectJSONURIKeyAliases(typed, handled, []string{"uris", "nodes", "proxies", "items", "servers", "subscriptions", "urls", "links", "data", "results", "payloads", "list", "nodeList", "node_list", "node-list", "proxyList", "proxy_list", "proxy-list", "serverList", "server_list", "server-list", "subscriptionList", "subscription_list", "subscription-list", "urlList", "url_list", "url-list", "linkList", "link_list", "link-list", "records", "rows", "entries"}, "", uris)
+		collectJSONURIKeyAliases(typed, handled, []string{"uris", "node", "nodes", "proxy", "proxies", "items", "server", "servers", "subscriptions", "urls", "links", "data", "results", "payloads", "list", "nodeList", "node_list", "node-list", "proxyList", "proxy_list", "proxy-list", "serverList", "server_list", "server-list", "subscriptionList", "subscription_list", "subscription-list", "urlList", "url_list", "url-list", "linkList", "link_list", "link-list", "records", "rows", "entries"}, "", uris)
 		keys := make([]string, 0, len(typed))
 		for key := range typed {
 			keys = append(keys, key)

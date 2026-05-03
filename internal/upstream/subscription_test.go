@@ -1773,11 +1773,20 @@ func TestNormalizeContentJSONCommonCollectionFields(t *testing.T) {
 func TestNormalizeContentJSONCommonCollectionAliasFields(t *testing.T) {
 	raw := `{
   "data": {
+    "node": [
+      "hysteria://hysteria-placeholder@node-singular.example.test:443"
+    ],
     "nodeList": [
       "vless://00000000-0000-0000-0000-000000000092@node-list.example.test:443"
     ],
+    "proxy": [
+      "tuic://00000000-0000-0000-0000-000000000093:tuic-placeholder@proxy-singular.example.test:443"
+    ],
     "proxy_list": [
       "trojan://trojan-placeholder@proxy-list.example.test:443?security=tls"
+    ],
+    "server": [
+      "socks5://qa-user:socks-placeholder@server-singular.example.test:1080"
     ],
     "serverList": [
       "ss://aes-128-gcm:qa-placeholder@server-list.example.test:8388"
@@ -1795,6 +1804,9 @@ func TestNormalizeContentJSONCommonCollectionAliasFields(t *testing.T) {
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	want := strings.Join([]string{
+		"hysteria://hysteria-placeholder@node-singular.example.test:443",
+		"tuic://00000000-0000-0000-0000-000000000093:tuic-placeholder@proxy-singular.example.test:443",
+		"socks5://qa-user:socks-placeholder@server-singular.example.test:1080",
 		"vless://00000000-0000-0000-0000-000000000092@node-list.example.test:443",
 		"trojan://trojan-placeholder@proxy-list.example.test:443?security=tls",
 		"ss://aes-128-gcm:qa-placeholder@server-list.example.test:8388",

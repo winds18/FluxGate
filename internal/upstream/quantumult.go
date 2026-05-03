@@ -39,6 +39,15 @@ func quantumultXProxyURI(line string) string {
 		return ""
 	}
 	positionals, options := surgePositionalsAndOptions(fields)
+	if protocol == "tor" {
+		name := firstNonEmptyString(surgeOption(options, "tag", "name", "remarks", "ps"), "Tor")
+		proxy := map[string]string{
+			"name": name,
+			"type": protocol,
+		}
+		surgeApplyTorOptions(proxy, options, positionals)
+		return clashTorURI(proxy)
+	}
 	server, port := quantumultXServerPort(positionals, options)
 	if server == "" || port == "" {
 		return ""
@@ -225,7 +234,7 @@ func parseQuantumultXProxyLine(line string) (string, []string, bool) {
 	}
 	protocol = strings.ToLower(strings.TrimSpace(protocol))
 	switch protocol {
-	case "ss", "shadowsocks", "ssr", "shadowsocksr", "hysteria2", "hy2", "tuic", "tuic-v5", "tuic5", "juicity", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "naive-https", "ssh", "wireguard", "wg", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "http+tls", "http-tls", "socks", "socks5", "socks5h":
+	case "ss", "shadowsocks", "ssr", "shadowsocksr", "hysteria2", "hy2", "tuic", "tuic-v5", "tuic5", "juicity", "hysteria", "anytls", "any-tls", "shadowtls", "shadow-tls", "naive", "naive+quic", "naive-quic", "naive+https", "naive-https", "ssh", "wireguard", "wg", "tor", "trojan", "trojan-go", "vless", "vmess", "vmess-aead", "http", "https", "http+tls", "http-tls", "socks", "socks5", "socks5h":
 	default:
 		return "", nil, false
 	}

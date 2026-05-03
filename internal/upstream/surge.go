@@ -195,6 +195,9 @@ func surgeProxyURI(line string) string {
 			proxy["system-interface"] = "true"
 		}
 		return clashWireGuardURI(proxy)
+	case "tor":
+		surgeApplyTorOptions(proxy, options, positionals)
+		return clashTorURI(proxy)
 	case "direct":
 		return clashInternalURI("direct", proxy, "Direct")
 	case "reject", "reject-drop", "reject-no-drop", "reject-tinygif", "block":
@@ -326,6 +329,34 @@ func surgeCopyOptions(proxy map[string]string, options map[string]string, keys .
 	for _, key := range keys {
 		if value := surgeOption(options, key); value != "" {
 			proxy[strings.ToLower(key)] = value
+		}
+	}
+}
+
+func surgeApplyTorOptions(proxy map[string]string, options map[string]string, positionals []string) {
+	if executablePath := surgeFirstValue(options, positionals, 0, "executable-path", "executable_path", "executablePath", "path"); executablePath != "" && !strings.EqualFold(executablePath, "default") {
+		proxy["executable-path"] = executablePath
+	}
+	if dataDirectory := surgeOption(options, "data-directory", "data_directory", "dataDirectory", "data-dir", "data_dir", "dataDir", "dir"); dataDirectory != "" {
+		proxy["data-directory"] = dataDirectory
+	}
+	if extraArgs := surgeOption(options, "extra-args", "extra_args", "extraArgs", "extra-arg", "extra_arg", "extraArg", "args", "arg", "arguments"); extraArgs != "" {
+		proxy["extra-args"] = extraArgs
+	}
+	for key, value := range options {
+		option := ""
+		switch {
+		case strings.HasPrefix(key, "torrc."):
+			option = strings.TrimPrefix(key, "torrc.")
+		case strings.HasPrefix(key, "torrc_"):
+			option = strings.TrimPrefix(key, "torrc_")
+		case strings.HasPrefix(key, "torrc[") && strings.HasSuffix(key, "]"):
+			option = strings.TrimSuffix(strings.TrimPrefix(key, "torrc["), "]")
+		}
+		option = strings.TrimSpace(option)
+		value = strings.TrimSpace(value)
+		if option != "" && value != "" {
+			proxy["torrc."+option] = value
 		}
 	}
 }

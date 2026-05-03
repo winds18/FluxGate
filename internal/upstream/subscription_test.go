@@ -1310,6 +1310,29 @@ socks5=qx-socks-udp.example.test:1080, qa-user, socks-placeholder, udp=true, tag
 	}
 }
 
+func TestNormalizeContentQuantumultXTorStructuredOptions(t *testing.T) {
+	raw := `[server_local]
+tor=default, executablePath=/opt/tor, dataDirectory=cache/qx-tor, extraArgs="--RunAsDaemon,0", torrc[ClientOnly]=1, tag=匿名 QuantumultX Tor`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "tor://default?")
+	for _, want := range []string{
+		"executable_path=%2Fopt%2Ftor",
+		"data_directory=cache%2Fqx-tor",
+		"extra_args=--RunAsDaemon%2C0",
+		"torrc.clientonly=1",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected Quantumult X Tor URI to contain %q, got %q", want, got)
+		}
+	}
+	if !strings.HasSuffix(got, "#%E5%8C%BF%E5%90%8D%20QuantumultX%20Tor") {
+		t.Fatalf("unexpected Quantumult X Tor fragment: %q", got)
+	}
+}
+
 func TestNormalizeContentQuantumultXProtocolAliases(t *testing.T) {
 	raw := `[server_local]
 trojan-go=qx-trojan-go-alias.example.test:443, password=trojan-placeholder, over-tls=true, tls-host=qx-trojan-go-alias.example.test, tag=东京 QuantumultX Trojan-Go Alias
@@ -4594,6 +4617,32 @@ func TestNormalizeContentSurgeProxyListSOCKSUDPFlag(t *testing.T) {
 	}
 	if !strings.HasSuffix(got, "#%E9%A6%96%E5%B0%94%20Surge%20SOCKS%20UDP") {
 		t.Fatalf("unexpected Surge SOCKS UDP fragment: %q", got)
+	}
+}
+
+func TestNormalizeContentSurgeProxyListTorStructuredOptions(t *testing.T) {
+	raw := `
+[Proxy]
+匿名 Surge Tor = tor, executable-path=/usr/bin/tor, data-dir=cache/surge-tor, extra-args="--quiet,--SocksPort,auto", torrc.ClientOnly=1, torrc.SocksPort=auto
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	assertHasPrefix(t, got, "tor://default?")
+	for _, want := range []string{
+		"executable_path=%2Fusr%2Fbin%2Ftor",
+		"data_directory=cache%2Fsurge-tor",
+		"extra_args=--quiet%2C--SocksPort%2Cauto",
+		"torrc.clientonly=1",
+		"torrc.socksport=auto",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("expected Surge Tor URI to contain %q, got %q", want, got)
+		}
+	}
+	if !strings.HasSuffix(got, "#%E5%8C%BF%E5%90%8D%20Surge%20Tor") {
+		t.Fatalf("unexpected Surge Tor fragment: %q", got)
 	}
 }
 

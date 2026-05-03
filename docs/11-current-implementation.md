@@ -174,6 +174,7 @@
 - Clash YAML WireGuard 结构化节点会保留 `privateKey`、`peerPublicKey`、`localAddress`/`localAddresses`、`preSharedKey`、`allowedIPs`/`peerAllowedIps`、`reservedBytes`/`peerReserved`、`systemInterface` 和 `interfaceName` 等 camelCase 参数，并归一化到 WireGuard URI 到 sing-box outbound 生成链路。
 - Tor URI 支持 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments`/重复 `arg` 和 `torrc[Option]` 查询参数别名，并同步为 sing-box outbound。
 - Clash YAML Tor 结构化节点会保留 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments` 和嵌套 `torrc` 选项，并归一化到 Tor URI 到 sing-box outbound 生成链路。
+- Surge 和 Quantumult X Tor 结构化节点会保留 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments` 和 `torrc.*`/`torrc[Option]` 选项，并归一化到 Tor URI 到 sing-box outbound 生成链路。
 - Shadowsocks URI 支持从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
 - Hysteria2/Hy2 URI 支持从 `password`、`auth`、`auth_str` 或 `token` 查询参数读取认证密码，兼容缺少 userinfo 的订阅写法。
 - Hysteria v1 URI 支持从 `token` 查询参数读取认证字符串，兼容部分上游订阅的 token 写法。

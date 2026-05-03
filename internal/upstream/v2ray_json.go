@@ -12,12 +12,12 @@ import (
 func V2RayJSONURIList(content string) string {
 	decoder := json.NewDecoder(strings.NewReader(strings.TrimSpace(content)))
 	decoder.UseNumber()
-	var doc map[string]any
-	if err := decoder.Decode(&doc); err != nil {
+	var root any
+	if err := decoder.Decode(&root); err != nil {
 		return ""
 	}
 
-	outbounds := v2rayTopLevelOutbounds(doc)
+	outbounds := v2rayRootOutbounds(root)
 	if len(outbounds) == 0 {
 		return ""
 	}
@@ -27,6 +27,18 @@ func V2RayJSONURIList(content string) string {
 		uris = append(uris, v2rayOutboundURIs(outbound)...)
 	}
 	return strings.Join(uris, "\n")
+}
+
+func v2rayRootOutbounds(value any) []map[string]any {
+	doc, ok := value.(map[string]any)
+	if !ok {
+		return v2rayObjectList(value)
+	}
+	outbounds := v2rayTopLevelOutbounds(doc)
+	if len(outbounds) > 0 {
+		return outbounds
+	}
+	return v2rayObjectList(doc)
 }
 
 func v2rayTopLevelOutbounds(doc map[string]any) []map[string]any {
@@ -329,12 +341,7 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 			); pluginOpts != "" {
 				proxy["plugin_opts"] = pluginOpts
 			}
-			if network := firstNonEmptyString(
-				v2rayString(server, "network"),
-				v2rayString(server, "protocol"),
-				v2rayString(settings, "network"),
-				v2rayString(settings, "protocol"),
-			); network != "" {
+			if network := v2rayShadowsocksNetwork(server, settings); network != "" {
 				proxy["network"] = network
 			}
 		} else {
@@ -345,6 +352,31 @@ func v2rayServerURIs(outbound map[string]any, protocol string, build func(map[st
 		}
 	}
 	return uris
+}
+
+func v2rayShadowsocksNetwork(server map[string]any, settings map[string]any) string {
+	for _, value := range []string{
+		v2rayString(server, "network"),
+		v2rayString(server, "protocol"),
+		v2rayString(settings, "network"),
+		v2rayString(settings, "protocol"),
+	} {
+		value = strings.TrimSpace(value)
+		if value == "" || isV2RayShadowsocksProtocol(value) {
+			continue
+		}
+		return value
+	}
+	return ""
+}
+
+func isV2RayShadowsocksProtocol(value string) bool {
+	switch normalizedV2RayProtocol(value) {
+	case "shadowsocks", "ss":
+		return true
+	default:
+		return false
+	}
 }
 
 func v2rayServerList(value any) []map[string]any {

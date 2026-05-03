@@ -7502,6 +7502,89 @@ func TestNormalizeContentV2RayJSONLegacyOutboundFields(t *testing.T) {
 	}
 }
 
+func TestNormalizeContentV2RayJSONTopLevelArrayAndMap(t *testing.T) {
+	rawArray := `[
+  {
+    "tag": "香港 V2Ray Array VMess",
+    "protocol": "vmess",
+    "settings": {
+      "vnext": [
+        {
+          "address": "array-vmess.v2ray.example.test",
+          "port": 443,
+          "users": [
+            {
+              "id": "00000000-0000-0000-0000-000000000112",
+              "security": "auto"
+            }
+          ]
+        }
+      ]
+    }
+  },
+  {
+    "tag": "东京 V2Ray Array Trojan",
+    "protocol": "trojan",
+    "settings": {
+      "servers": [
+        {
+          "address": "array-trojan.v2ray.example.test",
+          "port": 443,
+          "password": "trojan-placeholder"
+        }
+      ]
+    }
+  }
+]`
+	gotArray, err := NormalizeContent(rawArray)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error for top-level array: %v", err)
+	}
+	arrayLines := strings.Split(gotArray, "\n")
+	if len(arrayLines) != 2 {
+		t.Fatalf("expected 2 top-level array V2Ray URIs, got %d: %q", len(arrayLines), gotArray)
+	}
+	decoded := decodeVMessURIForTest(t, arrayLines[0])
+	for _, want := range []string{
+		`"ps":"香港 V2Ray Array VMess"`,
+		`"add":"array-vmess.v2ray.example.test"`,
+		`"id":"00000000-0000-0000-0000-000000000112"`,
+	} {
+		if !strings.Contains(decoded, want) {
+			t.Fatalf("expected top-level array VMess document to contain %q: %q", want, decoded)
+		}
+	}
+	if arrayLines[1] != "trojan://trojan-placeholder@array-trojan.v2ray.example.test:443#%E4%B8%9C%E4%BA%AC%20V2Ray%20Array%20Trojan" {
+		t.Fatalf("unexpected top-level array Trojan URI: %q", arrayLines[1])
+	}
+
+	rawMap := `{
+  "mapped-ss.v2ray.example.test:8388": {
+    "protocol": "shadowsocks",
+    "method": "aes-128-gcm",
+    "password": "qa-placeholder"
+  },
+  "mapped-trojan.v2ray.example.test:443": {
+    "protocol": "trojan",
+    "password": "trojan-placeholder"
+  }
+}`
+	gotMap, err := NormalizeContent(rawMap)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error for top-level map: %v", err)
+	}
+	mapLines := strings.Split(gotMap, "\n")
+	if len(mapLines) != 2 {
+		t.Fatalf("expected 2 top-level map V2Ray URIs, got %d: %q", len(mapLines), gotMap)
+	}
+	if mapLines[0] != "ss://aes-128-gcm:qa-placeholder@mapped-ss.v2ray.example.test:8388#mapped-ss.v2ray.example.test:8388" {
+		t.Fatalf("unexpected top-level map Shadowsocks URI: %q", mapLines[0])
+	}
+	if mapLines[1] != "trojan://trojan-placeholder@mapped-trojan.v2ray.example.test:443#mapped-trojan.v2ray.example.test:443" {
+		t.Fatalf("unexpected top-level map Trojan URI: %q", mapLines[1])
+	}
+}
+
 func TestNormalizeContentV2RayJSONHTTPAndSOCKS(t *testing.T) {
 	raw := `{
   "outbounds": [

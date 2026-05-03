@@ -1688,6 +1688,19 @@ func TestNormalizeContentJSONStructuredFlowAliases(t *testing.T) {
 func TestNormalizeContentJSONParsesInlineProxyProviderListAliases(t *testing.T) {
 	raw := `{
   "proxyProviders": {
+    "node-provider": {
+      "type": "inline",
+      "node": [
+        {
+          "name": "JSON Provider Node SS",
+          "type": "ss",
+          "server": "provider-node-ss.example.test",
+          "port": 8388,
+          "cipher": "aes-128-gcm",
+          "password": "qa-placeholder"
+        }
+      ]
+    },
     "node-list-provider": {
       "type": "inline",
       "url": "https://provider-download.example.test/should-not-import.yaml",
@@ -1702,6 +1715,31 @@ func TestNormalizeContentJSONParsesInlineProxyProviderListAliases(t *testing.T) 
         }
       ]
     },
+    "proxy-provider": {
+      "type": "inline",
+      "proxy": [
+        {
+          "name": "JSON Provider Proxy SS",
+          "type": "ss",
+          "server": "provider-proxy-ss.example.test",
+          "port": 8388,
+          "cipher": "aes-128-gcm",
+          "password": "qa-placeholder"
+        }
+      ]
+    },
+    "server-provider": {
+      "type": "inline",
+      "server": [
+        {
+          "name": "JSON Provider Server Trojan",
+          "type": "trojan",
+          "server": "provider-server-trojan.example.test",
+          "port": 443,
+          "password": "trojan-placeholder"
+        }
+      ]
+    },
     "server-list-provider": {
       "type": "inline",
       "serverList": [
@@ -1709,6 +1747,18 @@ func TestNormalizeContentJSONParsesInlineProxyProviderListAliases(t *testing.T) 
           "name": "JSON Provider ServerList Trojan",
           "type": "trojan",
           "server": "provider-serverlist-trojan.example.test",
+          "port": 443,
+          "password": "trojan-placeholder"
+        }
+      ]
+    },
+    "servers-provider": {
+      "type": "inline",
+      "servers": [
+        {
+          "name": "JSON Provider Servers Trojan",
+          "type": "trojan",
+          "server": "provider-servers-trojan.example.test",
           "port": 443,
           "password": "trojan-placeholder"
         }
@@ -1721,14 +1771,26 @@ func TestNormalizeContentJSONParsesInlineProxyProviderListAliases(t *testing.T) 
 		t.Fatalf("NormalizeContent returned error: %v", err)
 	}
 	lines := strings.Split(got, "\n")
-	if len(lines) != 2 {
-		t.Fatalf("expected 2 inline provider alias URIs, got %d: %q", len(lines), got)
+	if len(lines) != 6 {
+		t.Fatalf("expected 6 inline provider alias URIs, got %d: %q", len(lines), got)
 	}
 	if lines[0] != "ss://aes-128-gcm:qa-placeholder@provider-nodelist-ss.example.test:8388#JSON%20Provider%20NodeList%20SS" {
 		t.Fatalf("unexpected provider nodeList Shadowsocks URI: %q", lines[0])
 	}
-	if lines[1] != "trojan://trojan-placeholder@provider-serverlist-trojan.example.test:443#JSON%20Provider%20ServerList%20Trojan" {
-		t.Fatalf("unexpected provider serverList Trojan URI: %q", lines[1])
+	if lines[1] != "ss://aes-128-gcm:qa-placeholder@provider-node-ss.example.test:8388#JSON%20Provider%20Node%20SS" {
+		t.Fatalf("unexpected provider node Shadowsocks URI: %q", lines[1])
+	}
+	if lines[2] != "ss://aes-128-gcm:qa-placeholder@provider-proxy-ss.example.test:8388#JSON%20Provider%20Proxy%20SS" {
+		t.Fatalf("unexpected provider proxy Shadowsocks URI: %q", lines[2])
+	}
+	if lines[3] != "trojan://trojan-placeholder@provider-serverlist-trojan.example.test:443#JSON%20Provider%20ServerList%20Trojan" {
+		t.Fatalf("unexpected provider serverList Trojan URI: %q", lines[3])
+	}
+	if lines[4] != "trojan://trojan-placeholder@provider-server-trojan.example.test:443#JSON%20Provider%20Server%20Trojan" {
+		t.Fatalf("unexpected provider server Trojan URI: %q", lines[4])
+	}
+	if lines[5] != "trojan://trojan-placeholder@provider-servers-trojan.example.test:443#JSON%20Provider%20Servers%20Trojan" {
+		t.Fatalf("unexpected provider servers Trojan URI: %q", lines[5])
 	}
 	if strings.Contains(got, "provider-download.example.test") {
 		t.Fatalf("unexpected provider download URL imported as node: %q", got)

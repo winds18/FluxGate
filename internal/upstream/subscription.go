@@ -373,7 +373,7 @@ func collectJSONInlineProviderProxyLists(values map[string]any, uris *[]string) 
 	}
 	sort.Strings(keys)
 	collected := false
-	for _, alias := range []string{"proxies", "proxy_list", "proxies_list", "nodes", "node_list", "nodes_list", "server_list", "servers_list", "items", "list", "entries"} {
+	for _, alias := range []string{"proxy", "proxies", "proxy_list", "proxies_list", "node", "nodes", "node_list", "nodes_list", "server", "servers", "server_list", "servers_list", "items", "list", "entries"} {
 		normalizedAlias := normalizedJSONURIKey(alias)
 		for _, key := range keys {
 			if normalizedJSONURIKey(key) != normalizedAlias {

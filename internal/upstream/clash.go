@@ -628,19 +628,19 @@ func clashSOCKSURI(proxy map[string]string) string {
 func clashAnyTLSURI(proxy map[string]string) string {
 	server := firstMapValue(proxy, "server")
 	port := firstMapValue(proxy, "port")
-	password := firstMapValue(proxy, "password")
+	password := firstMapValue(proxy, "password", "passwd", "pass", "token", "psk")
 	if server == "" || port == "" || password == "" {
 		return ""
 	}
 
 	values := url.Values{}
-	if checkInterval := firstMapValue(proxy, "idle-session-check-interval", "idle_session_check_interval"); checkInterval != "" {
+	if checkInterval := firstMapValue(proxy, "idle-session-check-interval", "idle_session_check_interval", "idlesessioncheckinterval"); checkInterval != "" {
 		values.Set("idle_session_check_interval", checkInterval)
 	}
-	if timeout := firstMapValue(proxy, "idle-session-timeout", "idle_session_timeout"); timeout != "" {
+	if timeout := firstMapValue(proxy, "idle-session-timeout", "idle_session_timeout", "idlesessiontimeout"); timeout != "" {
 		values.Set("idle_session_timeout", timeout)
 	}
-	if minIdleSession := firstMapValue(proxy, "min-idle-session", "min_idle_session"); minIdleSession != "" {
+	if minIdleSession := firstMapValue(proxy, "min-idle-session", "min_idle_session", "minidlesession"); minIdleSession != "" {
 		values.Set("min_idle_session", minIdleSession)
 	}
 	appendClashTLSQueryValues(proxy, values)
@@ -655,7 +655,7 @@ func clashShadowTLSURI(proxy map[string]string) string {
 	}
 
 	version := firstNonEmptyString(firstMapValue(proxy, "version"), "1")
-	password := firstMapValue(proxy, "password")
+	password := firstMapValue(proxy, "password", "passwd", "pass", "token", "psk")
 	if version != "1" && password == "" {
 		return ""
 	}

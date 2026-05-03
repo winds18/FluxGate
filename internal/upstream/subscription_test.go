@@ -3087,6 +3087,79 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLAnyTLSShadowTLSAdvancedOptions(t *testing.T) {
+	raw := `
+proxies:
+  - name: "Clash AnyTLS Advanced"
+    type: anytls
+    server: anytls-advanced.clash.example.test
+    port: 443
+    token: "anytls-token-placeholder"
+    idleSessionCheckInterval: 20s
+    idleSessionTimeout: 45s
+    minIdleSession: 2
+    serverName: anytls-advanced.clash.example.test
+    alpn: h2
+    allowInsecure: true
+    disableSNI: true
+    clientFingerprint: chrome
+  - name: "Clash ShadowTLS Advanced"
+    type: shadowtls
+    server: shadowtls-advanced.clash.example.test
+    port: 443
+    version: 3
+    token: "shadow-token-placeholder"
+    serverName: shadowtls-advanced.clash.example.test
+    alpn: h2
+    allowInsecure: true
+    disableSNI: true
+    clientFingerprint: firefox
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 Clash AnyTLS/ShadowTLS advanced URIs, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "anytls://anytls-token-placeholder@anytls-advanced.clash.example.test:443?")
+	for _, want := range []string{
+		"idle_session_check_interval=20s",
+		"idle_session_timeout=45s",
+		"min_idle_session=2",
+		"sni=anytls-advanced.clash.example.test",
+		"alpn=h2",
+		"insecure=1",
+		"disable_sni=1",
+		"fp=chrome",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Clash AnyTLS advanced URI to contain %q, got %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#Clash%20AnyTLS%20Advanced") {
+		t.Fatalf("unexpected Clash AnyTLS advanced URI fragment: %q", lines[0])
+	}
+
+	assertHasPrefix(t, lines[1], "shadowtls://shadow-token-placeholder@shadowtls-advanced.clash.example.test:443?")
+	for _, want := range []string{
+		"version=3",
+		"sni=shadowtls-advanced.clash.example.test",
+		"alpn=h2",
+		"insecure=1",
+		"disable_sni=1",
+		"fp=firefox",
+	} {
+		if !strings.Contains(lines[1], want) {
+			t.Fatalf("expected Clash ShadowTLS advanced URI to contain %q, got %q", want, lines[1])
+		}
+	}
+	if !strings.HasSuffix(lines[1], "#Clash%20ShadowTLS%20Advanced") {
+		t.Fatalf("unexpected Clash ShadowTLS advanced URI fragment: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentClashYAMLTUICV5Aliases(t *testing.T) {
 	raw := `
 proxies:

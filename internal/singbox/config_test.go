@@ -1741,6 +1741,20 @@ func TestBuildConfigSupportsAnyTLSShadowTLSQueryCredentialAliases(t *testing.T) 
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         227,
+			URI:        "anytls://alias-anytls.example:443?pwd=anytls-alias-placeholder&tlsHost=alias.anytls.example&tlsAllowInsecure=1&tlsDisableSni=1#anytls-tls-alias",
+			Protocol:   "anytls",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         228,
+			URI:        "shadowtls://alias-shadowtls.example:443?version=3&secret=shadowtls-alias-placeholder&tlsServerName=alias.shadowtls.example&tlsSkipVerify=1&tlsDisableSNI=1#shadowtls-tls-alias",
+			Protocol:   "shadowtls",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	anytlsOutbound := findOutbound(config.Outbounds, "up_90")
@@ -1773,6 +1787,24 @@ func TestBuildConfigSupportsAnyTLSShadowTLSQueryCredentialAliases(t *testing.T) 
 	shadowtlsUTLS, ok := shadowtlsTLS["utls"].(map[string]any)
 	if !ok || shadowtlsUTLS["enabled"] != true || shadowtlsUTLS["fingerprint"] != "chrome" {
 		t.Fatalf("unexpected shadowtls query credential utls: %+v", shadowtlsTLS["utls"])
+	}
+
+	anytlsAliasOutbound := findOutbound(config.Outbounds, "up_227")
+	if anytlsAliasOutbound == nil {
+		t.Fatalf("expected anytls TLS alias outbound up_227, got %+v", config.Outbounds)
+	}
+	anytlsAliasTLS, ok := anytlsAliasOutbound["tls"].(map[string]any)
+	if !ok || anytlsAliasTLS["enabled"] != true || anytlsAliasTLS["server_name"] != "alias.anytls.example" || anytlsAliasTLS["insecure"] != true || anytlsAliasTLS["disable_sni"] != true {
+		t.Fatalf("unexpected anytls TLS alias config: %+v", anytlsAliasOutbound["tls"])
+	}
+
+	shadowtlsAliasOutbound := findOutbound(config.Outbounds, "up_228")
+	if shadowtlsAliasOutbound == nil {
+		t.Fatalf("expected shadowtls TLS alias outbound up_228, got %+v", config.Outbounds)
+	}
+	shadowtlsAliasTLS, ok := shadowtlsAliasOutbound["tls"].(map[string]any)
+	if !ok || shadowtlsAliasTLS["enabled"] != true || shadowtlsAliasTLS["server_name"] != "alias.shadowtls.example" || shadowtlsAliasTLS["insecure"] != true || shadowtlsAliasTLS["disable_sni"] != true {
+		t.Fatalf("unexpected shadowtls TLS alias config: %+v", shadowtlsAliasOutbound["tls"])
 	}
 }
 

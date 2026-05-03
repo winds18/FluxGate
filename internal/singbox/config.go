@@ -325,14 +325,14 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("security"), "reality") ||
 		queryTLSEnabled(query) ||
-		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName")) != "" ||
+		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName")) != "" ||
 		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) ||
 		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
 		strings.TrimSpace(query.Get("alpn")) != "" ||
 		firstNonEmpty(query.Get("pbk"), query.Get("public_key"), query.Get("public-key"), query.Get("publicKey")) != "" ||
 		firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")) != "" {
 		tls := map[string]any{"enabled": true}
-		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
+		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName"), parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
 		}
 		if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) {
@@ -396,14 +396,14 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 	if strings.EqualFold(query.Get("security"), "tls") ||
 		strings.EqualFold(query.Get("security"), "reality") ||
 		queryTLSEnabled(query) ||
-		firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("serverName")) != "" ||
+		firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName")) != "" ||
 		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) ||
 		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
 		strings.TrimSpace(query.Get("alpn")) != "" ||
 		firstNonEmpty(query.Get("pbk"), query.Get("public_key"), query.Get("public-key"), query.Get("publicKey")) != "" ||
 		firstNonEmpty(query.Get("fp"), query.Get("fingerprint"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")) != "" {
 		tls := map[string]any{"enabled": true}
-		if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
+		if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName"), parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
 		}
 		if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) {

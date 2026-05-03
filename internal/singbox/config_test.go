@@ -1214,6 +1214,20 @@ func TestBuildConfigSupportsVLESSTrojanTLSQueryAliases(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         215,
+			URI:        "vless://00000000-0000-0000-0000-000000000215@vless-tls-server-name.example:443?tls=true&tlsServerName=vless-tls-name.example#vless-tls-server-name",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         216,
+			URI:        "trojan://trojan-placeholder@trojan-server-name.example:443?tls=tls&server-name=trojan-server-name.example#trojan-server-name",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	vlessOutbound := findOutbound(config.Outbounds, "up_212")
@@ -1241,6 +1255,24 @@ func TestBuildConfigSupportsVLESSTrojanTLSQueryAliases(t *testing.T) {
 	overTLS, ok := overTLSOutbound["tls"].(map[string]any)
 	if !ok || overTLS["enabled"] != true || overTLS["server_name"] != "vless-over-tls.example" {
 		t.Fatalf("unexpected vless overTLS query alias: %+v", overTLSOutbound["tls"])
+	}
+
+	vlessServerNameOutbound := findOutbound(config.Outbounds, "up_215")
+	if vlessServerNameOutbound == nil {
+		t.Fatalf("expected vless outbound up_215, got %+v", config.Outbounds)
+	}
+	vlessServerNameTLS, ok := vlessServerNameOutbound["tls"].(map[string]any)
+	if !ok || vlessServerNameTLS["enabled"] != true || vlessServerNameTLS["server_name"] != "vless-tls-name.example" {
+		t.Fatalf("unexpected vless tlsServerName query alias: %+v", vlessServerNameOutbound["tls"])
+	}
+
+	trojanServerNameOutbound := findOutbound(config.Outbounds, "up_216")
+	if trojanServerNameOutbound == nil {
+		t.Fatalf("expected trojan outbound up_216, got %+v", config.Outbounds)
+	}
+	trojanServerNameTLS, ok := trojanServerNameOutbound["tls"].(map[string]any)
+	if !ok || trojanServerNameTLS["enabled"] != true || trojanServerNameTLS["server_name"] != "trojan-server-name.example" {
+		t.Fatalf("unexpected trojan server-name query alias: %+v", trojanServerNameOutbound["tls"])
 	}
 }
 

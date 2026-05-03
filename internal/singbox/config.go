@@ -760,13 +760,13 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 	}
 
 	tls := map[string]any{"enabled": true}
-	if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
+	if serverName := queryTLSServerName(query, parsed.Hostname()); serverName != "" {
 		tls["server_name"] = serverName
 	}
-	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"))) {
+	if queryTLSInsecure(query) {
 		tls["insecure"] = true
 	}
-	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
+	if queryTLSDisableSNI(query) {
 		tls["disable_sni"] = true
 	}
 	if fingerprint := firstNonEmpty(query.Get("pinSHA256"), query.Get("pin-sha256"), query.Get("fingerprint")); fingerprint != "" {
@@ -1147,13 +1147,13 @@ func buildHysteriaOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	tls := map[string]any{"enabled": true}
-	if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("serverName"), parsed.Hostname()); serverName != "" {
+	if serverName := queryTLSServerName(query, parsed.Hostname(), "peer"); serverName != "" {
 		tls["server_name"] = serverName
 	}
-	if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"))) {
+	if queryTLSInsecure(query) {
 		tls["insecure"] = true
 	}
-	if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
+	if queryTLSDisableSNI(query) {
 		tls["disable_sni"] = true
 	}
 	if alpn := splitCSV(query.Get("alpn")); len(alpn) > 0 {

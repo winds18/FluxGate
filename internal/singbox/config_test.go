@@ -1882,6 +1882,43 @@ func TestBuildConfigSupportsHysteriaAuthAliasQueries(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsHysteriaTLSAliasQueries(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         223,
+			URI:        "hy2://hy2-tls-alias.example:443?password=hy2-tls-placeholder&tlsServerName=alias.hy2.example&tlsSkipVerify=1&tlsDisableSni=1#hy2-tls-alias",
+			Protocol:   "hy2",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         224,
+			URI:        "hysteria://hysteria-tls-alias.example:443?token=hysteria-tls-placeholder&tlsHost=alias.hysteria.example&tlsAllowInsecure=1&tlsDisableSNI=1#hysteria-tls-alias",
+			Protocol:   "hysteria",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	hy2Outbound := findOutbound(config.Outbounds, "up_223")
+	if hy2Outbound == nil {
+		t.Fatalf("expected hysteria2 outbound up_223, got %+v", config.Outbounds)
+	}
+	hy2TLS, ok := hy2Outbound["tls"].(map[string]any)
+	if !ok || hy2TLS["enabled"] != true || hy2TLS["server_name"] != "alias.hy2.example" || hy2TLS["insecure"] != true || hy2TLS["disable_sni"] != true {
+		t.Fatalf("unexpected hysteria2 TLS alias config: %+v", hy2Outbound["tls"])
+	}
+
+	hysteriaOutbound := findOutbound(config.Outbounds, "up_224")
+	if hysteriaOutbound == nil {
+		t.Fatalf("expected hysteria outbound up_224, got %+v", config.Outbounds)
+	}
+	hysteriaTLS, ok := hysteriaOutbound["tls"].(map[string]any)
+	if !ok || hysteriaTLS["enabled"] != true || hysteriaTLS["server_name"] != "alias.hysteria.example" || hysteriaTLS["insecure"] != true || hysteriaTLS["disable_sni"] != true {
+		t.Fatalf("unexpected hysteria TLS alias config: %+v", hysteriaOutbound["tls"])
+	}
+}
+
 func TestBuildConfigSupportsVLESSTrojanQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

@@ -1345,13 +1345,13 @@ func buildSSHOutbound(node store.Node) (map[string]any, bool) {
 	if clientVersion := firstNonEmpty(query.Get("client_version"), query.Get("client-version"), query.Get("clientVersion")); clientVersion != "" {
 		outbound["client_version"] = clientVersion
 	}
-	if cipher := splitCSV(query.Get("cipher")); len(cipher) > 0 {
+	if cipher := querySSHCipher(query); len(cipher) > 0 {
 		outbound["cipher"] = cipher
 	}
-	if mac := splitCSV(query.Get("mac")); len(mac) > 0 {
+	if mac := querySSHMAC(query); len(mac) > 0 {
 		outbound["mac"] = mac
 	}
-	if kexAlgorithm := splitCSV(firstNonEmpty(query.Get("kex_algorithm"), query.Get("kex-algorithm"), query.Get("kexAlgorithm"))); len(kexAlgorithm) > 0 {
+	if kexAlgorithm := querySSHKexAlgorithm(query); len(kexAlgorithm) > 0 {
 		outbound["kex_algorithm"] = kexAlgorithm
 	}
 
@@ -1963,6 +1963,53 @@ func queryCredentialPassword(query url.Values) string {
 		query.Get("account-password"),
 		query.Get("accountPassword"),
 	)
+}
+
+func querySSHCipher(query url.Values) []string {
+	return splitCSV(firstNonEmpty(
+		query.Get("cipher"),
+		query.Get("ciphers"),
+		query.Get("cipher_algorithm"),
+		query.Get("cipher-algorithm"),
+		query.Get("cipherAlgorithm"),
+		query.Get("cipher_algorithms"),
+		query.Get("cipher-algorithms"),
+		query.Get("cipherAlgorithms"),
+	))
+}
+
+func querySSHMAC(query url.Values) []string {
+	return splitCSV(firstNonEmpty(
+		query.Get("mac"),
+		query.Get("macs"),
+		query.Get("mac_algorithm"),
+		query.Get("mac-algorithm"),
+		query.Get("macAlgorithm"),
+		query.Get("mac_algorithms"),
+		query.Get("mac-algorithms"),
+		query.Get("macAlgorithms"),
+	))
+}
+
+func querySSHKexAlgorithm(query url.Values) []string {
+	return splitCSV(firstNonEmpty(
+		query.Get("kex_algorithm"),
+		query.Get("kex-algorithm"),
+		query.Get("kexAlgorithm"),
+		query.Get("kex"),
+		query.Get("kex_algorithms"),
+		query.Get("kex-algorithms"),
+		query.Get("kexAlgorithms"),
+		query.Get("key_exchange"),
+		query.Get("key-exchange"),
+		query.Get("keyExchange"),
+		query.Get("key_exchange_algorithm"),
+		query.Get("key-exchange-algorithm"),
+		query.Get("keyExchangeAlgorithm"),
+		query.Get("key_exchange_algorithms"),
+		query.Get("key-exchange-algorithms"),
+		query.Get("keyExchangeAlgorithms"),
+	))
 }
 
 func querySecretPassword(query url.Values) string {

@@ -2588,6 +2588,13 @@ func TestBuildConfigSupportsSSHQueryCredentialAliases(t *testing.T) {
 			ServerPort: 22,
 			Status:     "active",
 		},
+		{
+			ID:         188,
+			URI:        "ssh://algorithm-alias-ssh.example:22?userName=qa-algo-user&accountPassword=ssh-algo-placeholder&ciphers=aes128-gcm@openssh.com,chacha20-poly1305@openssh.com&macAlgorithms=hmac-sha2-256,hmac-sha2-512&kexAlgorithms=curve25519-sha256,diffie-hellman-group14-sha256#ssh-algo-alias",
+			Protocol:   "ssh",
+			ServerPort: 22,
+			Status:     "active",
+		},
 	})
 
 	outbound := findOutbound(config.Outbounds, "up_88")
@@ -2622,6 +2629,26 @@ func TestBuildConfigSupportsSSHQueryCredentialAliases(t *testing.T) {
 	kexAlgorithm, ok := outbound["kex_algorithm"].([]string)
 	if !ok || len(kexAlgorithm) != 1 || kexAlgorithm[0] != "curve25519-sha256" {
 		t.Fatalf("unexpected ssh query credential kex algorithm: %+v", outbound["kex_algorithm"])
+	}
+
+	algorithmAliasOutbound := findOutbound(config.Outbounds, "up_188")
+	if algorithmAliasOutbound == nil {
+		t.Fatalf("expected ssh outbound up_188, got %+v", config.Outbounds)
+	}
+	if algorithmAliasOutbound["user"] != "qa-algo-user" || algorithmAliasOutbound["password"] != "ssh-algo-placeholder" {
+		t.Fatalf("unexpected ssh algorithm alias credentials: %+v", algorithmAliasOutbound)
+	}
+	aliasCipher, ok := algorithmAliasOutbound["cipher"].([]string)
+	if !ok || len(aliasCipher) != 2 || aliasCipher[0] != "aes128-gcm@openssh.com" || aliasCipher[1] != "chacha20-poly1305@openssh.com" {
+		t.Fatalf("unexpected ssh ciphers alias: %+v", algorithmAliasOutbound["cipher"])
+	}
+	aliasMAC, ok := algorithmAliasOutbound["mac"].([]string)
+	if !ok || len(aliasMAC) != 2 || aliasMAC[0] != "hmac-sha2-256" || aliasMAC[1] != "hmac-sha2-512" {
+		t.Fatalf("unexpected ssh macAlgorithms alias: %+v", algorithmAliasOutbound["mac"])
+	}
+	aliasKexAlgorithm, ok := algorithmAliasOutbound["kex_algorithm"].([]string)
+	if !ok || len(aliasKexAlgorithm) != 2 || aliasKexAlgorithm[0] != "curve25519-sha256" || aliasKexAlgorithm[1] != "diffie-hellman-group14-sha256" {
+		t.Fatalf("unexpected ssh kexAlgorithms alias: %+v", algorithmAliasOutbound["kex_algorithm"])
 	}
 }
 

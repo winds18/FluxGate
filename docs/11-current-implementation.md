@@ -172,7 +172,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 HTTP/HTTPS 代理 `insecure`/`skip-cert-verify`、`disable_sni`、`alpn` 和 `tls.utls.fingerprint`/`fp` 参数，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 查询别名。
 - Naive 和 HTTP/HTTPS URI 的 SNI、跳过证书校验和禁用 SNI 查询参数复用公共 TLS 别名解析，兼容 `tlsHost`、`tlsServerName`、`skipVerify`、`tlsAllowInsecure`、`tlsSkipVerify`、`tlsDisableSNI` 和 `tlsDisableSni` 等写法。
 - Naive、HTTP/HTTPS 和 SOCKS URI 支持从 `username`/`user`/`userName`/`accountName`/`login` 与 `password`/`pass`/`passwd`/`pwd`/`accountPassword` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
-- SSH URI 支持从 `username`/`user`/`userName`/`accountName`/`login` 与 `password`/`pass`/`passwd`/`pwd`/`accountPassword` 查询参数读取认证信息，并兼容 `identity_file`、`key_path`、`key`、`privateKey`、`privateKeyPath`、`privateKeyPassphrase`、passphrase、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 查询别名，兼容缺少 userinfo 的订阅写法。
+- SSH URI 支持从 `username`/`user`/`userName`/`accountName`/`login` 与 `password`/`pass`/`passwd`/`pwd`/`accountPassword` 查询参数读取认证信息，并兼容 `identity_file`、`key_path`、`key`、`privateKey`、`privateKeyPath`、`privateKeyPassphrase`、passphrase、`hostKey`、`hostKeyAlgorithms`、`clientVersion`、`cipher`/`ciphers`、`mac`/`macAlgorithms` 和 `kexAlgorithm`/`kexAlgorithms` 查询别名，兼容缺少 userinfo 的订阅写法。
 - Clash YAML SSH 结构化节点会保留 `pass`/`passwd` credential 别名，以及 `privateKeyPath`、`privateKeyPassphrase`、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 等 camelCase 参数，并归一化到 SSH URI 到 sing-box outbound 生成链路。
 - SOCKS URI 会按 `socks4://`、`socks4a://`、`socks5://` 或 `version=4/4a/5` 查询参数保留版本，并同步为 sing-box SOCKS outbound 的 `version` 字段。
 - SOCKS URI 支持 `udp`、`udpEnabled`、`udp_relay` 和 `udp-relay` 标志，并会归一为 sing-box outbound 的 `network=udp`，同时兼容 `udpOverTcp` 查询别名。

@@ -108,7 +108,7 @@ func isClashYAMLProxiesField(line string) bool {
 
 func isClashYAMLProxiesKey(key string) bool {
 	switch normalizedJSONURIKey(key) {
-	case "proxies", "proxylist", "proxieslist", "nodes", "nodelist", "serverlist":
+	case "proxy", "proxies", "proxylist", "proxieslist", "node", "nodes", "nodelist", "server", "servers", "serverlist":
 		return true
 	default:
 		return false

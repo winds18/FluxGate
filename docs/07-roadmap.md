@@ -72,6 +72,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 上下行带宽、TLS 标志、证书 pin、URI 客户端指纹和 sing-box `tls.utls.fingerprint` 参数并同步为 sing-box outbound，兼容 `serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`obfsPassword` 和 `clientFingerprint` 查询别名。
 - Clash YAML Hysteria/Hysteria2 结构化节点会保留 `fp`、`client-fingerprint`、`client_fingerprint` 和 `clientFingerprint` uTLS 指纹别名；Hysteria v1 的 `disable-sni`/`disable_sni` 会同步为 URI `disable_sni=1`。
 - TUIC URI 可从 `uuid`/`id`/`user_id`/`user-id` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，并兼容 `congestionControl`、`udpOverStream`、`udpRelayMode`、`zeroRttHandshake`、`heartbeatInterval`、`serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 等常见查询参数别名。
+- Clash YAML TUIC 结构化节点会保留 credential 别名、`udp-over-stream`/`udpOverStream`、`zero-rtt-handshake`/`zeroRttHandshake`、`heartbeat-interval`/`heartbeatInterval`、`disable-sni`/`disable_sni` 和 `client-fingerprint`/`clientFingerprint` 等参数，并归一化到 TUIC URI 到 sing-box outbound 生成链路。
 - sing-box JSON 和 URI 导入链路会保留 TUIC 跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound。
 - Clash YAML、Quantumult X、Surge、sing-box JSON 和 URI 导入链路会保留 Juicity UUID、密码、`congestion_control`、SNI、跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound。
 - AnyTLS 和 ShadowTLS URI 可从 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息。

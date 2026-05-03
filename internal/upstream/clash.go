@@ -401,17 +401,25 @@ func clashHysteria2URI(proxy map[string]string) string {
 func clashTUICURI(proxy map[string]string) string {
 	server := firstMapValue(proxy, "server")
 	port := firstMapValue(proxy, "port")
-	uuid := firstMapValue(proxy, "uuid")
-	password := firstMapValue(proxy, "password")
+	uuid := firstMapValue(proxy, "uuid", "id", "user-id", "user_id", "userid")
+	password := firstMapValue(proxy, "password", "passwd", "pass", "token", "psk")
 	if server == "" || port == "" || uuid == "" || password == "" {
 		return ""
 	}
 	values := url.Values{}
-	if congestionControl := firstMapValue(proxy, "congestion-control", "congestion_control", "congestion-controller", "congestion_controller"); congestionControl != "" {
+	if congestionControl := firstMapValue(proxy, "congestion-control", "congestion_control", "congestion-controller", "congestion_controller", "congestioncontrol", "congestioncontroller"); congestionControl != "" {
 		values.Set("congestion_control", congestionControl)
 	}
-	if udpRelayMode := firstMapValue(proxy, "udp-relay-mode", "udp_relay_mode"); udpRelayMode != "" {
+	if boolMapValue(proxy, "udp-over-stream", "udp_over_stream", "udpoverstream") {
+		values.Set("udp_over_stream", "1")
+	} else if udpRelayMode := firstMapValue(proxy, "udp-relay-mode", "udp_relay_mode", "udprelaymode"); udpRelayMode != "" {
 		values.Set("udp_relay_mode", udpRelayMode)
+	}
+	if boolMapValue(proxy, "zero-rtt-handshake", "zero_rtt_handshake", "zerortthandshake", "zero-rtt", "zero_rtt", "zerortt", "reduce-rtt", "reduce_rtt", "reducertt") {
+		values.Set("zero_rtt_handshake", "1")
+	}
+	if heartbeat := firstMapValue(proxy, "heartbeat", "heartbeat-interval", "heartbeat_interval", "heartbeatinterval"); heartbeat != "" {
+		values.Set("heartbeat", heartbeat)
 	}
 	if sni := firstMapValue(proxy, "sni", "servername", "server_name"); sni != "" {
 		values.Set("sni", sni)
@@ -421,6 +429,12 @@ func clashTUICURI(proxy map[string]string) string {
 	}
 	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
 		values.Set("insecure", "1")
+	}
+	if boolMapValue(proxy, "disable-sni", "disable_sni") {
+		values.Set("disable_sni", "1")
+	}
+	if fingerprint := firstMapValue(proxy, "fp", "client-fingerprint", "client_fingerprint", "clientFingerprint", "clientfingerprint"); fingerprint != "" {
+		values.Set("fp", fingerprint)
 	}
 	result := &url.URL{
 		Scheme:   "tuic",

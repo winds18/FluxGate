@@ -3116,6 +3116,52 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLTUICAdvancedOptions(t *testing.T) {
+	raw := `
+proxies:
+  - name: "Clash TUIC Advanced"
+    type: tuic
+    server: tuic-advanced.clash.example.test
+    port: 443
+    id: "00000000-0000-0000-0000-000000000123"
+    token: "tuic-token-placeholder"
+    congestionControl: bbr
+    udpOverStream: true
+    zeroRttHandshake: true
+    heartbeatInterval: 10s
+    sni: tuic-advanced.clash.example.test
+    skip-cert-verify: true
+    disable-sni: true
+    client-fingerprint: chrome
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 Clash TUIC advanced URI, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "tuic://00000000-0000-0000-0000-000000000123:tuic-token-placeholder@tuic-advanced.clash.example.test:443?")
+	for _, want := range []string{
+		"congestion_control=bbr",
+		"udp_over_stream=1",
+		"zero_rtt_handshake=1",
+		"heartbeat=10s",
+		"sni=tuic-advanced.clash.example.test",
+		"insecure=1",
+		"disable_sni=1",
+		"fp=chrome",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Clash TUIC advanced URI to contain %q, got %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#Clash%20TUIC%20Advanced") {
+		t.Fatalf("unexpected Clash TUIC advanced URI fragment: %q", lines[0])
+	}
+}
+
 func TestNormalizeContentClashYAMLShadowsocksR(t *testing.T) {
 	raw := `
 proxies:

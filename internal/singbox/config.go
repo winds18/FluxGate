@@ -326,7 +326,7 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 		strings.EqualFold(query.Get("security"), "reality") ||
 		queryTLSEnabled(query) ||
 		firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName")) != "" ||
-		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) ||
+		queryTLSInsecure(query) ||
 		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
 		strings.TrimSpace(query.Get("alpn")) != "" ||
 		firstNonEmpty(query.Get("pbk"), query.Get("public_key"), query.Get("public-key"), query.Get("publicKey")) != "" ||
@@ -335,7 +335,7 @@ func buildVLESSOutbound(node store.Node) (map[string]any, bool) {
 		if serverName := firstNonEmpty(query.Get("sni"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName"), parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
 		}
-		if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) {
+		if queryTLSInsecure(query) {
 			tls["insecure"] = true
 		}
 		if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
@@ -397,7 +397,7 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 		strings.EqualFold(query.Get("security"), "reality") ||
 		queryTLSEnabled(query) ||
 		firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName")) != "" ||
-		boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) ||
+		queryTLSInsecure(query) ||
 		boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) ||
 		strings.TrimSpace(query.Get("alpn")) != "" ||
 		firstNonEmpty(query.Get("pbk"), query.Get("public_key"), query.Get("public-key"), query.Get("publicKey")) != "" ||
@@ -406,7 +406,7 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 		if serverName := firstNonEmpty(query.Get("sni"), query.Get("peer"), query.Get("servername"), query.Get("server_name"), query.Get("server-name"), query.Get("serverName"), query.Get("tls_server_name"), query.Get("tls-server-name"), query.Get("tlsServerName"), parsed.Hostname()); serverName != "" {
 			tls["server_name"] = serverName
 		}
-		if boolQuery(firstNonEmpty(query.Get("insecure"), query.Get("skip-cert-verify"), query.Get("skip_cert_verify"), query.Get("allowInsecure"), query.Get("allow_insecure"))) {
+		if queryTLSInsecure(query) {
 			tls["insecure"] = true
 		}
 		if boolQuery(firstNonEmpty(query.Get("disable_sni"), query.Get("disable-sni"), query.Get("disableSNI"))) {
@@ -2019,6 +2019,30 @@ func queryTLSEnabled(query url.Values) bool {
 		query.Get("over_tls"),
 		query.Get("over-tls"),
 		query.Get("overTLS"),
+	))
+}
+
+func queryTLSInsecure(query url.Values) bool {
+	return boolQuery(firstNonEmpty(
+		query.Get("insecure"),
+		query.Get("skip-cert-verify"),
+		query.Get("skip_cert_verify"),
+		query.Get("skipCertVerify"),
+		query.Get("skip_certificate_verify"),
+		query.Get("skip-certificate-verify"),
+		query.Get("skipCertificateVerify"),
+		query.Get("skip_verify"),
+		query.Get("skip-verify"),
+		query.Get("skipVerify"),
+		query.Get("allow_insecure"),
+		query.Get("allow-insecure"),
+		query.Get("allowInsecure"),
+		query.Get("tls_allow_insecure"),
+		query.Get("tls-allow-insecure"),
+		query.Get("tlsAllowInsecure"),
+		query.Get("tls_skip_verify"),
+		query.Get("tls-skip-verify"),
+		query.Get("tlsSkipVerify"),
 	))
 }
 

@@ -1228,6 +1228,20 @@ func TestBuildConfigSupportsVLESSTrojanTLSQueryAliases(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         217,
+			URI:        "vless://00000000-0000-0000-0000-000000000217@vless-skip-cert.example:443?tls=true&skipCertVerify=1#vless-skip-cert",
+			Protocol:   "vless",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         218,
+			URI:        "trojan://trojan-placeholder@trojan-allow-insecure.example:443?tls=true&allow-insecure=true#trojan-allow-insecure",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	vlessOutbound := findOutbound(config.Outbounds, "up_212")
@@ -1273,6 +1287,24 @@ func TestBuildConfigSupportsVLESSTrojanTLSQueryAliases(t *testing.T) {
 	trojanServerNameTLS, ok := trojanServerNameOutbound["tls"].(map[string]any)
 	if !ok || trojanServerNameTLS["enabled"] != true || trojanServerNameTLS["server_name"] != "trojan-server-name.example" {
 		t.Fatalf("unexpected trojan server-name query alias: %+v", trojanServerNameOutbound["tls"])
+	}
+
+	vlessSkipCertOutbound := findOutbound(config.Outbounds, "up_217")
+	if vlessSkipCertOutbound == nil {
+		t.Fatalf("expected vless outbound up_217, got %+v", config.Outbounds)
+	}
+	vlessSkipCertTLS, ok := vlessSkipCertOutbound["tls"].(map[string]any)
+	if !ok || vlessSkipCertTLS["enabled"] != true || vlessSkipCertTLS["insecure"] != true {
+		t.Fatalf("unexpected vless skipCertVerify query alias: %+v", vlessSkipCertOutbound["tls"])
+	}
+
+	trojanAllowInsecureOutbound := findOutbound(config.Outbounds, "up_218")
+	if trojanAllowInsecureOutbound == nil {
+		t.Fatalf("expected trojan outbound up_218, got %+v", config.Outbounds)
+	}
+	trojanAllowInsecureTLS, ok := trojanAllowInsecureOutbound["tls"].(map[string]any)
+	if !ok || trojanAllowInsecureTLS["enabled"] != true || trojanAllowInsecureTLS["insecure"] != true {
+		t.Fatalf("unexpected trojan allow-insecure query alias: %+v", trojanAllowInsecureOutbound["tls"])
 	}
 }
 

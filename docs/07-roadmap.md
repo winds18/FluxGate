@@ -61,7 +61,7 @@
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTP transport 参数并同步为 sing-box outbound transport，兼容 URI 中 `httpHost`、`httpPath`、`httpMethod`、`httpIdleTimeout` 和 `httpPingTimeout` 查询别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS/Trojan HTTPUpgrade transport 参数并同步为 sing-box outbound transport，兼容 URI 中 `httpUpgradeHost` 和 `httpUpgradePath` 查询别名。
 - VLESS、Trojan 和 VMess URI 生成 sing-box outbound 时，WebSocket、HTTP/H2 和 HTTPUpgrade transport Host 兼容 `authority`、`:authority`、`headers.Host`、`headers.:authority`、`headerHost` 和协议专属 Host 查询别名。
-- VLESS URI 可从 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 查询参数读取认证信息，Trojan URI 可从 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息。
+- VLESS URI 可从 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 查询参数读取认证信息，Trojan URI 可从 `password`/`pass`/`passwd`/`pwd`/`psk`/`token`/`secret`/`credential`/`credentials`/`accountPassword` 查询参数读取认证信息。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 VLESS REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure` 和 `disableSNI` 等常见查询参数别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan REALITY 的 public key、short id 和 uTLS fingerprint 参数，并兼容 URI 中 `serverName`、`publicKey`、`shortId`、`clientFingerprint`、`allowInsecure`、`skip_cert_verify` 和 `disableSNI` 等常见查询参数别名。
 - Clash YAML、sing-box JSON 和 URI 导入链路会保留 Trojan WebSocket/gRPC 传输参数并同步为 sing-box outbound transport。
@@ -70,15 +70,15 @@
 - VMess HTTPUpgrade 传输参数会同步为 sing-box HTTPUpgrade transport，兼容 VMess JSON `net=httpupgrade` 以及 userinfo URI 中 `httpUpgradeHost`/`httpUpgradePath` 查询别名。
 - sing-box JSON VMess 节点的 HTTP transport 会保留 host 数组和 path，避免导入后丢失 HTTP 伪装参数。
 - VMess 可兼容 `vmess://uuid@host:port?...` userinfo 直连 URI，也可从 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 查询参数读取认证信息，并保留 TLS、WebSocket、SNI、ALPN、跳过证书校验、uTLS fingerprint 和 `packet_encoding`/`packet-encoding`/`packetEncoding` 参数同步为 sing-box outbound。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria 窗口、MTU 发现和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound，兼容 `authStr`、`authBase64`、`pass`、`passwd`、`serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`recvWindowConn`、`recvWindow`、`disableMTUDiscovery` 和 `clientFingerprint` 查询别名。
-- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 上下行带宽、TLS 标志、证书 pin、URI 客户端指纹和 sing-box `tls.utls.fingerprint` 参数并同步为 sing-box outbound，兼容 `authStr`、`pass`、`passwd`、`serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`obfsPassword` 和 `clientFingerprint` 查询别名。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria 窗口、MTU 发现和 `tls.utls.fingerprint`/`fp` 参数并同步为 sing-box outbound，兼容 `authStr`、`authBase64`、`pass`、`passwd`、`pwd`、`secret`、`credential`、`accountPassword`、`serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`recvWindowConn`、`recvWindow`、`disableMTUDiscovery` 和 `clientFingerprint` 查询别名。
+- Clash YAML、sing-box JSON 和 URI 导入链路会保留 Hysteria2 上下行带宽、TLS 标志、证书 pin、URI 客户端指纹和 sing-box `tls.utls.fingerprint` 参数并同步为 sing-box outbound，兼容 `authStr`、`pass`、`passwd`、`pwd`、`secret`、`credential`、`accountPassword`、`serverName`、`allowInsecure`、`disableSNI`、`upMbps`、`downMbps`、`obfsPassword` 和 `clientFingerprint` 查询别名。
 - Clash YAML Hysteria/Hysteria2 结构化节点会保留 `token`/`pass`/`passwd` credential 别名、`obfsPassword`、`upMbps`、`downMbps`、`recvWindowConn`、`recvWindow`、`disableMtuDiscovery`、`disableMTUDiscovery`、`serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 等 camelCase 参数，并归一化到 Hysteria/Hysteria2 URI 到 sing-box outbound 生成链路。
-- TUIC URI 可从 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 与 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，并兼容 `congestionControl`、`udpOverStream`、`udpRelayMode`、`zeroRttHandshake`、`heartbeatInterval`、`serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 等常见查询参数别名。
+- TUIC URI 可从 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 与 `password`/`pass`/`passwd`/`pwd`/`psk`/`token`/`secret`/`credential`/`credentials`/`accountPassword` 查询参数读取认证信息，并兼容 `congestionControl`、`udpOverStream`、`udpRelayMode`、`zeroRttHandshake`、`heartbeatInterval`、`serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 等常见查询参数别名。
 - Clash YAML TUIC 结构化节点会保留 credential 别名、`udp-over-stream`/`udpOverStream`、`zero-rtt-handshake`/`zeroRttHandshake`、`heartbeat-interval`/`heartbeatInterval`、`disable-sni`/`disable_sni` 和 `client-fingerprint`/`clientFingerprint` 等参数，并归一化到 TUIC URI 到 sing-box outbound 生成链路。
 - sing-box JSON 和 URI 导入链路会保留 TUIC 跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound。
-- Clash YAML、Quantumult X、Surge、sing-box JSON 和 URI 导入链路会保留 Juicity UUID、密码、`congestion_control`、SNI、跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound；URI 生成侧兼容 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 查询别名。
+- Clash YAML、Quantumult X、Surge、sing-box JSON 和 URI 导入链路会保留 Juicity UUID、密码、`congestion_control`、SNI、跳过证书校验、禁用 SNI、ALPN 和 `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound；URI 生成侧兼容 `uuid`/`id`/`user_id`/`user-id`/`userId`/`userID`/`userid` 与 `password`/`pass`/`passwd`/`pwd`/`psk`/`token`/`secret`/`credential`/`credentials`/`accountPassword` 查询别名。
 - Clash YAML Juicity 结构化节点会保留 `uuid`/`id`/`user-id` credential 别名、`congestionControl`/`congestion-controller`、`skip-cert-verify`、`disable-sni`/`disable_sni`、ALPN 和 `client-fingerprint`/`clientFingerprint` 客户端指纹，并归一化到 Juicity URI 到 sing-box outbound 生成链路。
-- AnyTLS 和 ShadowTLS URI 可从 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息。
+- AnyTLS 和 ShadowTLS URI 可从 `password`/`pass`/`passwd`/`pwd`/`psk`/`token`/`secret`/`credential`/`credentials`/`accountPassword` 查询参数读取认证信息。
 - sing-box JSON 和 URI 导入链路会保留 AnyTLS 会话空闲参数和 `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`idleSessionCheckInterval`、`idleSessionTimeout`、`minIdleSession` 和 `clientFingerprint` 查询别名。
 - sing-box JSON 和 URI 导入链路会保留 ShadowTLS `tls.utls.fingerprint`/`fp` 客户端指纹并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 查询别名。
 - Clash YAML AnyTLS/ShadowTLS 结构化节点会保留 `password`/`pass`/`passwd`/`psk`/`token` credential 别名；AnyTLS 会同步 `idleSessionCheckInterval`、`idleSessionTimeout` 和 `minIdleSession` 等会话空闲参数；两者都会通过公共 TLS helper 保留 `serverName`、`allowInsecure`、`disableSNI`、ALPN 和 `clientFingerprint` 客户端指纹。
@@ -93,7 +93,7 @@
 - Quantumult X SOCKS 节点可保留 `udp=true` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
 - sing-box JSON SOCKS outbound 可保留 `udp`、`udp_relay` 和 `udp-relay` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
 - V2Ray/Xray JSON SOCKS outbound 可保留 `udp`、`udpEnabled`、`udp_enabled`、`udp_relay`、`udp-relay`、`udp_over_tcp`、`udpOverTcp`、`udp-over-tcp` 和 `uot` 标志，结构化订阅导入后会继续进入 SOCKS UDP 转换链路。
-- Shadowsocks URI 可从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryptMethod`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`pwd`/`psk`/`token`/`secret`/`credential`/`accountPassword` 查询参数读取认证信息，并兼容 `pluginOptions` 查询别名。
+- Shadowsocks URI 可从 `method`/`cipher`/`encrypt-method`/`encrypt_method`/`encryptMethod`/`encryption`/`security` 与 `password`/`pass`/`passwd`/`pwd`/`psk`/`token`/`secret`/`credential`/`credentials`/`account_password`/`account-password`/`accountPassword` 查询参数读取认证信息，并兼容 `pluginOptions` 查询别名。
 - Naive、HTTP/HTTPS 和 SOCKS URI 可从 `username`/`user`/`userName`/`accountName`/`login` 与 `password`/`pass`/`passwd`/`pwd`/`accountPassword` 查询参数读取认证信息。
 - SSH URI 可从 `username`/`user`/`userName`/`accountName`/`login` 与 `password`/`pass`/`passwd`/`pwd`/`accountPassword` 查询参数读取认证信息，并兼容 `identity_file`/`key_path`、`privateKey`、`privateKeyPath`、`privateKeyPassphrase`、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 等常见查询参数别名。
 - Clash YAML SSH 结构化节点会保留 `pass`/`passwd` credential 别名，以及 `privateKeyPath`、`privateKeyPassphrase`、`hostKey`、`hostKeyAlgorithms`、`clientVersion` 和 `kexAlgorithm` 等 camelCase 参数，并归一化到 SSH URI 到 sing-box outbound 生成链路。
@@ -102,8 +102,8 @@
 - Tor URI 可兼容 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/重复 `arg` 和 `torrc[Option]` 等常见查询参数别名。
 - Clash YAML Tor 结构化节点会保留 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments` 和嵌套 `torrc` 选项，并归一化到 Tor URI 到 sing-box outbound 生成链路。
 - Surge 和 Quantumult X Tor 结构化节点会保留 `executablePath`、`dataDirectory`/`dataDir`、`extraArgs`/`arguments` 和 `torrc.*`/`torrc[Option]` 选项，并归一化到 Tor URI 到 sing-box outbound 生成链路。
-- Hysteria2/Hy2 URI 可从查询参数读取 `password`、`auth`、`auth_str`、`authStr`、`pass`、`passwd`、`psk` 或 `token` 认证密码。
-- Hysteria v1 URI 可从查询参数读取 `token`、`auth`、`auth_str`、`authStr`、`authBase64`、`pass`、`passwd` 或 `psk` 认证字符串。
+- Hysteria2/Hy2 URI 可从查询参数读取 `password`、`auth`、`auth_str`、`authStr`、`pass`、`passwd`、`pwd`、`psk`、`token`、`secret`、`credential` 或 `accountPassword` 认证密码。
+- Hysteria v1 URI 可从查询参数读取 `token`、`auth`、`auth_str`、`authStr`、`authBase64`、`pass`、`passwd`、`pwd`、`psk`、`secret`、`credential` 或 `accountPassword` 认证字符串。
 - sing-box 服务端配置生成会过滤不可用 Token，避免已撤销、已过期或已超额用户继续进入网关配置。
 - 本地 smoke、API flow、页面截图验收脚本。
 - 远程部署探测、磁盘清理、诊断采集脚本骨架。

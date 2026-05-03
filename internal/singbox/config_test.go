@@ -1806,6 +1806,95 @@ func TestBuildConfigSupportsUUIDQueryAliases(t *testing.T) {
 	}
 }
 
+func TestBuildConfigSupportsSecretCredentialQueryAliases(t *testing.T) {
+	config := BuildConfig(nil, nil, []store.Node{
+		{
+			ID:         203,
+			URI:        "trojan://secret-trojan.example:443?credential=trojan-secret-placeholder&security=tls#trojan-secret",
+			Protocol:   "trojan",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         204,
+			URI:        "tuic://secret-tuic.example:443?userID=00000000-0000-0000-0000-000000000204&secret=tuic-secret-placeholder#tuic-secret",
+			Protocol:   "tuic",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         205,
+			URI:        "juicity://secret-juicity.example:443?id=00000000-0000-0000-0000-000000000205&accountPassword=juicity-account-placeholder#juicity-secret",
+			Protocol:   "juicity",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         206,
+			URI:        "anytls://secret-anytls.example:443?pwd=anytls-pwd-placeholder#anytls-secret",
+			Protocol:   "anytls",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         207,
+			URI:        "shadowtls://secret-shadowtls.example:443?version=3&credentials=shadowtls-credentials-placeholder#shadowtls-secret",
+			Protocol:   "shadowtls",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         208,
+			URI:        "hysteria2://secret-hy2.example:443?account-password=hy2-account-placeholder#hy2-secret",
+			Protocol:   "hysteria2",
+			ServerPort: 443,
+			Status:     "active",
+		},
+		{
+			ID:         209,
+			URI:        "hysteria://secret-hysteria.example:443?credential=hysteria-credential-placeholder#hysteria-secret",
+			Protocol:   "hysteria",
+			ServerPort: 443,
+			Status:     "active",
+		},
+	})
+
+	trojanOutbound := findOutbound(config.Outbounds, "up_203")
+	if trojanOutbound == nil || trojanOutbound["password"] != "trojan-secret-placeholder" {
+		t.Fatalf("unexpected trojan secret alias fields: %+v", trojanOutbound)
+	}
+
+	tuicOutbound := findOutbound(config.Outbounds, "up_204")
+	if tuicOutbound == nil || tuicOutbound["uuid"] != "00000000-0000-0000-0000-000000000204" || tuicOutbound["password"] != "tuic-secret-placeholder" {
+		t.Fatalf("unexpected tuic secret alias fields: %+v", tuicOutbound)
+	}
+
+	juicityOutbound := findOutbound(config.Outbounds, "up_205")
+	if juicityOutbound == nil || juicityOutbound["uuid"] != "00000000-0000-0000-0000-000000000205" || juicityOutbound["password"] != "juicity-account-placeholder" {
+		t.Fatalf("unexpected juicity secret alias fields: %+v", juicityOutbound)
+	}
+
+	anytlsOutbound := findOutbound(config.Outbounds, "up_206")
+	if anytlsOutbound == nil || anytlsOutbound["password"] != "anytls-pwd-placeholder" {
+		t.Fatalf("unexpected anytls secret alias fields: %+v", anytlsOutbound)
+	}
+
+	shadowtlsOutbound := findOutbound(config.Outbounds, "up_207")
+	if shadowtlsOutbound == nil || shadowtlsOutbound["password"] != "shadowtls-credentials-placeholder" {
+		t.Fatalf("unexpected shadowtls secret alias fields: %+v", shadowtlsOutbound)
+	}
+
+	hy2Outbound := findOutbound(config.Outbounds, "up_208")
+	if hy2Outbound == nil || hy2Outbound["password"] != "hy2-account-placeholder" {
+		t.Fatalf("unexpected hysteria2 secret alias fields: %+v", hy2Outbound)
+	}
+
+	hysteriaOutbound := findOutbound(config.Outbounds, "up_209")
+	if hysteriaOutbound == nil || hysteriaOutbound["auth_str"] != "hysteria-credential-placeholder" {
+		t.Fatalf("unexpected hysteria secret alias fields: %+v", hysteriaOutbound)
+	}
+}
+
 func TestBuildConfigSupportsShadowsocksQueryCredentials(t *testing.T) {
 	config := BuildConfig(nil, nil, []store.Node{
 		{

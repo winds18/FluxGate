@@ -376,7 +376,7 @@ func buildTrojanOutbound(node store.Node) (map[string]any, bool) {
 		return nil, false
 	}
 	query := parsed.Query()
-	password := firstNonEmpty(userinfoUsername(parsed.User), query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token"))
+	password := firstNonEmpty(userinfoUsername(parsed.User), querySecretPassword(query))
 	if password == "" {
 		return nil, false
 	}
@@ -724,15 +724,11 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 	query := parsed.Query()
 	password := firstNonEmpty(
 		hysteria2Password(parsed.User),
-		query.Get("password"),
-		query.Get("pass"),
-		query.Get("passwd"),
-		query.Get("psk"),
+		querySecretPassword(query),
 		query.Get("auth"),
 		query.Get("auth_str"),
 		query.Get("auth-str"),
 		query.Get("authStr"),
-		query.Get("token"),
 	)
 	if password == "" {
 		return nil, false
@@ -800,7 +796,7 @@ func buildTUICOutbound(node store.Node) (map[string]any, bool) {
 	uuid, password := tuicCredentials(
 		parsed.User,
 		queryUUID(query),
-		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")),
+		querySecretPassword(query),
 	)
 	if uuid == "" || password == "" {
 		return nil, false
@@ -870,7 +866,7 @@ func buildJuicityOutbound(node store.Node) (map[string]any, bool) {
 	uuid, password := tuicCredentials(
 		parsed.User,
 		queryUUID(query),
-		firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")),
+		querySecretPassword(query),
 	)
 	if uuid == "" || password == "" {
 		return nil, false
@@ -922,7 +918,7 @@ func buildAnyTLSOutbound(node store.Node) (map[string]any, bool) {
 	}
 
 	query := parsed.Query()
-	password := anyTLSPassword(parsed.User, firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")))
+	password := anyTLSPassword(parsed.User, querySecretPassword(query))
 	if password == "" {
 		return nil, false
 	}
@@ -982,7 +978,7 @@ func buildShadowTLSOutbound(node store.Node) (map[string]any, bool) {
 	if version <= 0 {
 		version = 1
 	}
-	password := anyTLSPassword(parsed.User, firstNonEmpty(query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token")))
+	password := anyTLSPassword(parsed.User, querySecretPassword(query))
 	if version >= 2 && password == "" {
 		return nil, false
 	}
@@ -1102,7 +1098,7 @@ func buildHysteriaOutbound(node store.Node) (map[string]any, bool) {
 
 	query := parsed.Query()
 	auth := firstNonEmpty(query.Get("auth"), query.Get("auth_base64"), query.Get("auth-base64"), query.Get("authBase64"))
-	authStr := firstNonEmpty(query.Get("auth_str"), query.Get("auth-str"), query.Get("authStr"), query.Get("password"), query.Get("pass"), query.Get("passwd"), query.Get("psk"), query.Get("token"), parsed.User.Username())
+	authStr := firstNonEmpty(query.Get("auth_str"), query.Get("auth-str"), query.Get("authStr"), querySecretPassword(query), parsed.User.Username())
 	if auth == "" && authStr == "" {
 		return nil, false
 	}
@@ -1962,6 +1958,23 @@ func queryCredentialPassword(query url.Values) string {
 		query.Get("pass"),
 		query.Get("passwd"),
 		query.Get("pwd"),
+		query.Get("account_password"),
+		query.Get("account-password"),
+		query.Get("accountPassword"),
+	)
+}
+
+func querySecretPassword(query url.Values) string {
+	return firstNonEmpty(
+		query.Get("password"),
+		query.Get("pass"),
+		query.Get("passwd"),
+		query.Get("pwd"),
+		query.Get("psk"),
+		query.Get("token"),
+		query.Get("secret"),
+		query.Get("credential"),
+		query.Get("credentials"),
 		query.Get("account_password"),
 		query.Get("account-password"),
 		query.Get("accountPassword"),

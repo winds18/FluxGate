@@ -1683,6 +1683,13 @@ func TestBuildConfigSupportsJuicityOutbound(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         226,
+			URI:        "juicity://juicity-tls-alias.example:443?uuid=00000000-0000-0000-0000-000000000226&password=juicity-tls-placeholder&tlsHost=alias.juicity.example&tlsAllowInsecure=1&tlsDisableSni=1#juicity-tls-alias",
+			Protocol:   "juicity",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	outbound := findOutbound(config.Outbounds, "up_190")
@@ -1706,6 +1713,15 @@ func TestBuildConfigSupportsJuicityOutbound(t *testing.T) {
 	utls, ok := tls["utls"].(map[string]any)
 	if !ok || utls["enabled"] != true || utls["fingerprint"] != "chrome" {
 		t.Fatalf("unexpected juicity utls: %+v", tls["utls"])
+	}
+
+	tlsAliasOutbound := findOutbound(config.Outbounds, "up_226")
+	if tlsAliasOutbound == nil {
+		t.Fatalf("expected juicity TLS alias outbound up_226, got %+v", config.Outbounds)
+	}
+	tlsAlias, ok := tlsAliasOutbound["tls"].(map[string]any)
+	if !ok || tlsAlias["enabled"] != true || tlsAlias["server_name"] != "alias.juicity.example" || tlsAlias["insecure"] != true || tlsAlias["disable_sni"] != true {
+		t.Fatalf("unexpected juicity TLS alias config: %+v", tlsAliasOutbound["tls"])
 	}
 }
 

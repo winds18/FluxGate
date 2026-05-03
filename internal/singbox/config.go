@@ -769,7 +769,7 @@ func buildHysteria2Outbound(node store.Node) (map[string]any, bool) {
 	if queryTLSDisableSNI(query) {
 		tls["disable_sni"] = true
 	}
-	if fingerprint := firstNonEmpty(query.Get("pinSHA256"), query.Get("pin-sha256"), query.Get("fingerprint")); fingerprint != "" {
+	if fingerprint := queryTLSCertificatePublicKeySHA256(query); fingerprint != "" {
 		tls["certificate_public_key_sha256"] = []string{fingerprint}
 	}
 	if fingerprint := firstNonEmpty(query.Get("fp"), query.Get("client-fingerprint"), query.Get("client_fingerprint"), query.Get("clientFingerprint")); fingerprint != "" {
@@ -2103,6 +2103,24 @@ func queryTLSDisableSNI(query url.Values) bool {
 		query.Get("tlsDisableSNI"),
 		query.Get("tlsDisableSni"),
 	))
+}
+
+func queryTLSCertificatePublicKeySHA256(query url.Values) string {
+	return firstNonEmpty(
+		query.Get("pinSHA256"),
+		query.Get("pinSha256"),
+		query.Get("pin-sha256"),
+		query.Get("pin_sha256"),
+		query.Get("certificatePublicKeySHA256"),
+		query.Get("certificatePublicKeySha256"),
+		query.Get("certificate-public-key-sha256"),
+		query.Get("certificate_public_key_sha256"),
+		query.Get("certSHA256"),
+		query.Get("certSha256"),
+		query.Get("cert-sha256"),
+		query.Get("cert_sha256"),
+		query.Get("fingerprint"),
+	)
 }
 
 func socksVersion(scheme string, queryVersion string) string {

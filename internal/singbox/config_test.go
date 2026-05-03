@@ -1978,6 +1978,13 @@ func TestBuildConfigSupportsHysteriaTLSAliasQueries(t *testing.T) {
 			ServerPort: 443,
 			Status:     "active",
 		},
+		{
+			ID:         233,
+			URI:        "hysteria2://hy2-pin-alias.example:443?password=hy2-pin-alias-placeholder&certificatePublicKeySHA256=hy2-pin-placeholder&serverName=pin.hy2.example#hy2-pin-alias",
+			Protocol:   "hysteria2",
+			ServerPort: 443,
+			Status:     "active",
+		},
 	})
 
 	hy2Outbound := findOutbound(config.Outbounds, "up_223")
@@ -1996,6 +2003,19 @@ func TestBuildConfigSupportsHysteriaTLSAliasQueries(t *testing.T) {
 	hysteriaTLS, ok := hysteriaOutbound["tls"].(map[string]any)
 	if !ok || hysteriaTLS["enabled"] != true || hysteriaTLS["server_name"] != "alias.hysteria.example" || hysteriaTLS["insecure"] != true || hysteriaTLS["disable_sni"] != true {
 		t.Fatalf("unexpected hysteria TLS alias config: %+v", hysteriaOutbound["tls"])
+	}
+
+	hy2PinOutbound := findOutbound(config.Outbounds, "up_233")
+	if hy2PinOutbound == nil {
+		t.Fatalf("expected hysteria2 certificate pin alias outbound up_233, got %+v", config.Outbounds)
+	}
+	hy2PinTLS, ok := hy2PinOutbound["tls"].(map[string]any)
+	if !ok || hy2PinTLS["server_name"] != "pin.hy2.example" {
+		t.Fatalf("unexpected hysteria2 certificate pin alias tls: %+v", hy2PinOutbound["tls"])
+	}
+	certificatePins, ok := hy2PinTLS["certificate_public_key_sha256"].([]string)
+	if !ok || len(certificatePins) != 1 || certificatePins[0] != "hy2-pin-placeholder" {
+		t.Fatalf("unexpected hysteria2 certificate pin alias value: %+v", hy2PinTLS["certificate_public_key_sha256"])
 	}
 }
 

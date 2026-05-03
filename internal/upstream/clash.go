@@ -451,13 +451,13 @@ func clashTUICURI(proxy map[string]string) string {
 func clashJuicityURI(proxy map[string]string) string {
 	server := firstMapValue(proxy, "server")
 	port := firstMapValue(proxy, "port")
-	uuid := firstMapValue(proxy, "uuid", "id")
+	uuid := firstMapValue(proxy, "uuid", "id", "user-id", "user_id", "userid")
 	password := firstMapValue(proxy, "password", "passwd", "pass", "token", "psk")
 	if server == "" || port == "" || uuid == "" || password == "" {
 		return ""
 	}
 	values := url.Values{}
-	if congestionControl := firstMapValue(proxy, "congestion-control", "congestion_control", "congestion-controller", "congestion_controller"); congestionControl != "" {
+	if congestionControl := firstMapValue(proxy, "congestion-control", "congestion_control", "congestion-controller", "congestion_controller", "congestioncontrol", "congestioncontroller"); congestionControl != "" {
 		values.Set("congestion_control", congestionControl)
 	}
 	if sni := firstMapValue(proxy, "sni", "servername", "server_name", "serverName"); sni != "" {
@@ -471,6 +471,9 @@ func clashJuicityURI(proxy map[string]string) string {
 	}
 	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure", "allowInsecure", "allow_insecure") {
 		values.Set("insecure", "1")
+	}
+	if boolMapValue(proxy, "disable-sni", "disable_sni") {
+		values.Set("disable_sni", "1")
 	}
 	result := &url.URL{
 		Scheme:   "juicity",

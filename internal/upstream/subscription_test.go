@@ -5329,6 +5329,48 @@ Surge Juicity = juicity, juicity.surge.example.test, 443, 00000000-0000-0000-000
 	}
 }
 
+func TestNormalizeContentClashYAMLJuicityAdvancedOptions(t *testing.T) {
+	raw := `
+proxies:
+  - name: "Clash Juicity Advanced"
+    type: juicity
+    server: juicity-advanced.clash.example.test
+    port: 443
+    user-id: "00000000-0000-0000-0000-000000000124"
+    token: "juicity-token-placeholder"
+    congestionControl: bbr
+    sni: juicity-advanced.clash.example.test
+    alpn: [h3, h2]
+    skip-cert-verify: true
+    disable-sni: true
+    client-fingerprint: chrome
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 Clash Juicity advanced URI, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "juicity://00000000-0000-0000-0000-000000000124:juicity-token-placeholder@juicity-advanced.clash.example.test:443?")
+	for _, want := range []string{
+		"congestion_control=bbr",
+		"sni=juicity-advanced.clash.example.test",
+		"alpn=h3%2Ch2",
+		"insecure=1",
+		"disable_sni=1",
+		"fp=chrome",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Clash Juicity advanced URI to contain %q, got %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#Clash%20Juicity%20Advanced") {
+		t.Fatalf("unexpected Clash Juicity advanced URI fragment: %q", lines[0])
+	}
+}
+
 func TestNormalizeContentSingBoxJSONFieldCaseAliases(t *testing.T) {
 	raw := `{
   "Outbounds": [

@@ -151,6 +151,7 @@
 - Clash YAML TUIC 结构化节点会保留 credential 别名、`udp-over-stream`/`udpOverStream`、`zero-rtt-handshake`/`zeroRttHandshake`、`heartbeat-interval`/`heartbeatInterval`、`disable-sni`/`disable_sni` 和 `client-fingerprint`/`clientFingerprint` 等参数，并归一化到 TUIC URI 到 sing-box outbound 生成链路。
 - sing-box JSON 和 URI 导入链路会保留 TUIC `insecure`/`skip-cert-verify`、`disable_sni`、`alpn`、`tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound。
 - Clash YAML、Quantumult X、Surge、sing-box JSON 和 URI 导入链路会保留 Juicity UUID、密码、`congestion_control`、SNI、跳过证书校验、`disable_sni`、ALPN 和 `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound。
+- Clash YAML Juicity 结构化节点会保留 `uuid`/`id`/`user-id` credential 别名、`congestionControl`/`congestion-controller`、`skip-cert-verify`、`disable-sni`/`disable_sni`、ALPN 和 `client-fingerprint`/`clientFingerprint` 客户端指纹，并归一化到 Juicity URI 到 sing-box outbound 生成链路。
 - AnyTLS 和 ShadowTLS URI 支持从 `password`/`pass`/`passwd`/`psk`/`token` 查询参数读取认证信息，兼容缺少 userinfo 的订阅写法。
 - sing-box JSON 和 URI 导入链路会保留 AnyTLS 会话空闲参数和 `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI`、`idleSessionCheckInterval`、`idleSessionTimeout`、`minIdleSession` 和 `clientFingerprint` 查询别名。
 - sing-box JSON 和 URI 导入链路会保留 ShadowTLS `tls.utls.fingerprint`/`fp` 客户端指纹，并同步为 sing-box outbound，兼容 URI 中 `serverName`、`allowInsecure`、`disableSNI` 和 `clientFingerprint` 查询别名。

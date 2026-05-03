@@ -392,6 +392,9 @@ func clashHysteria2URI(proxy map[string]string) string {
 	if certificatePin := firstMapValue(proxy, "pinSHA256", "pin-sha256", "pin_sha256", "certificate-public-key-sha256", "certificate_public_key_sha256", "fingerprint"); certificatePin != "" {
 		values.Set("pinSHA256", certificatePin)
 	}
+	if fingerprint := firstMapValue(proxy, "fp", "client-fingerprint", "client_fingerprint", "clientFingerprint", "clientfingerprint"); fingerprint != "" {
+		values.Set("fp", fingerprint)
+	}
 	return proxyURL("hysteria2", password, server, port, values, firstMapValue(proxy, "name"))
 }
 
@@ -514,6 +517,12 @@ func clashHysteriaURI(proxy map[string]string) string {
 	}
 	if boolMapValue(proxy, "skip-cert-verify", "skip_cert_verify", "insecure") {
 		values.Set("insecure", "1")
+	}
+	if boolMapValue(proxy, "disable-sni", "disable_sni") {
+		values.Set("disable_sni", "1")
+	}
+	if fingerprint := firstMapValue(proxy, "fp", "fingerprint", "client-fingerprint", "client_fingerprint", "clientFingerprint", "clientfingerprint"); fingerprint != "" {
+		values.Set("fp", fingerprint)
 	}
 	result := &url.URL{
 		Scheme:   "hysteria",

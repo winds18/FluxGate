@@ -2973,6 +2973,45 @@ proxy-groups:
 	}
 }
 
+func TestNormalizeContentClashYAMLPreservesHysteriaClientFingerprint(t *testing.T) {
+	raw := `
+proxies:
+  - name: "Clash HY2 指纹"
+    type: hysteria2
+    server: hy2-fingerprint.clash.example.test
+    port: 443
+    password: "hy2-placeholder"
+    sni: hy2-fingerprint.clash.example.test
+    client-fingerprint: chrome
+  - name: "Clash Hysteria 指纹"
+    type: hysteria
+    server: hysteria-fingerprint.clash.example.test
+    port: 443
+    auth-str: "hysteria-auth"
+    sni: hysteria-fingerprint.clash.example.test
+    disable-sni: true
+    fp: firefox
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 2 {
+		t.Fatalf("expected 2 normalized nodes, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "hysteria2://hy2-placeholder@hy2-fingerprint.clash.example.test:443?")
+	if !strings.Contains(lines[0], "sni=hy2-fingerprint.clash.example.test") || !strings.Contains(lines[0], "fp=chrome") {
+		t.Fatalf("unexpected clash hysteria2 fingerprint URI: %q", lines[0])
+	}
+	assertHasPrefix(t, lines[1], "hysteria://hysteria-auth@hysteria-fingerprint.clash.example.test:443?")
+	if !strings.Contains(lines[1], "sni=hysteria-fingerprint.clash.example.test") ||
+		!strings.Contains(lines[1], "disable_sni=1") ||
+		!strings.Contains(lines[1], "fp=firefox") {
+		t.Fatalf("unexpected clash hysteria fingerprint URI: %q", lines[1])
+	}
+}
+
 func TestNormalizeContentClashYAMLProtocolAliases(t *testing.T) {
 	raw := `
 proxies:

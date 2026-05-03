@@ -3160,6 +3160,53 @@ proxies:
 	}
 }
 
+func TestNormalizeContentClashYAMLNaiveAdvancedAliases(t *testing.T) {
+	raw := `
+proxies:
+  - name: "Clash Naive Advanced"
+    type: naive-quic
+    server: naive-advanced.clash.example.test
+    port: 443
+    user: qa-user
+    pass: "naive-pass-placeholder"
+    serverName: naive-advanced.clash.example.test
+    alpn: h3
+    allowInsecure: true
+    disableSNI: true
+    clientFingerprint: chrome
+    insecureConcurrency: 2
+    udpOverTcp: true
+    quicCongestionControl: bbr
+`
+	got, err := NormalizeContent(raw)
+	if err != nil {
+		t.Fatalf("NormalizeContent returned error: %v", err)
+	}
+	lines := strings.Split(got, "\n")
+	if len(lines) != 1 {
+		t.Fatalf("expected 1 Clash Naive advanced URI, got %d: %q", len(lines), got)
+	}
+	assertHasPrefix(t, lines[0], "naive+quic://qa-user:naive-pass-placeholder@naive-advanced.clash.example.test:443?")
+	for _, want := range []string{
+		"quic=1",
+		"insecure_concurrency=2",
+		"udp_over_tcp=1",
+		"quic_congestion_control=bbr",
+		"sni=naive-advanced.clash.example.test",
+		"alpn=h3",
+		"insecure=1",
+		"disable_sni=1",
+		"fp=chrome",
+	} {
+		if !strings.Contains(lines[0], want) {
+			t.Fatalf("expected Clash Naive advanced URI to contain %q, got %q", want, lines[0])
+		}
+	}
+	if !strings.HasSuffix(lines[0], "#Clash%20Naive%20Advanced") {
+		t.Fatalf("unexpected Clash Naive advanced URI fragment: %q", lines[0])
+	}
+}
+
 func TestNormalizeContentClashYAMLTUICV5Aliases(t *testing.T) {
 	raw := `
 proxies:

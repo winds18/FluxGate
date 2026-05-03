@@ -674,7 +674,7 @@ func clashNaiveURI(proxy map[string]string) string {
 	server := firstMapValue(proxy, "server")
 	port := firstMapValue(proxy, "port")
 	username := firstMapValue(proxy, "username", "user")
-	password := firstMapValue(proxy, "password")
+	password := firstMapValue(proxy, "password", "passwd", "pass")
 	if server == "" || port == "" || username == "" || password == "" {
 		return ""
 	}
@@ -686,13 +686,13 @@ func clashNaiveURI(proxy map[string]string) string {
 		scheme = "naive+quic"
 		values.Set("quic", "1")
 	}
-	if concurrency := firstMapValue(proxy, "insecure-concurrency", "insecure_concurrency"); concurrency != "" {
+	if concurrency := firstMapValue(proxy, "insecure-concurrency", "insecure_concurrency", "insecureconcurrency"); concurrency != "" {
 		values.Set("insecure_concurrency", concurrency)
 	}
-	if boolMapValue(proxy, "udp-over-tcp", "udp_over_tcp", "uot") {
+	if boolMapValue(proxy, "udp-over-tcp", "udp_over_tcp", "udpovertcp", "uot") {
 		values.Set("udp_over_tcp", "1")
 	}
-	if congestionControl := firstMapValue(proxy, "quic-congestion-control", "quic_congestion_control"); congestionControl != "" {
+	if congestionControl := firstMapValue(proxy, "quic-congestion-control", "quic_congestion_control", "quiccongestioncontrol"); congestionControl != "" {
 		values.Set("quic_congestion_control", congestionControl)
 	}
 	appendClashTLSQueryValues(proxy, values)

@@ -130,6 +130,7 @@ const columnLabels = {
   expire_at: "到期时间",
   quota_bytes: "额度",
   used_total: "已用",
+  subscriptions: "订阅地址",
   auth_user: "网关用户",
   token_status: "Token 状态",
   today_total_bytes: "今日",
@@ -349,22 +350,7 @@ async function submitToken(event) {
     expire_days: numberField(form, "expire_days"),
     quota_bytes: quotaMiB * 1024 * 1024,
   });
-  const subscriptions = result.subscriptions || {};
-  const defaultSubscription = subscriptions.default || result.subscription || "";
-  const clashSubscription = subscriptions.clash || `${defaultSubscription}?target=clash`;
-  const singBoxSubscription = subscriptions.sing_box || `${defaultSubscription}?target=sing-box`;
-  tokenResultEl.hidden = false;
-  tokenResultEl.innerHTML = `
-    <strong>订阅地址</strong>
-    <div class="subscription-list">
-      <span>默认</span>
-      <code>${escapeHTML(defaultSubscription)}</code>
-      <span>Clash/Mihomo</span>
-      <code>${escapeHTML(clashSubscription)}</code>
-      <span>sing-box</span>
-      <code>${escapeHTML(singBoxSubscription)}</code>
-    </div>
-  `;
+  showTokenSubscriptionResult(result, "订阅地址");
   tokenForm.reset();
 }
 
@@ -771,6 +757,12 @@ async function handleTokenAction(event) {
   const action = button.dataset.tokenAction;
   statusEl.textContent = "更新 Token 中";
   try {
+    if (action === "copy-subscription") {
+      await copyText(button.dataset.tokenUrl || "");
+      statusEl.textContent = "订阅地址已复制";
+      button.disabled = false;
+      return;
+    }
     if (action === "extend") {
       const input = button.closest("[data-token-action-group]")?.querySelector("[data-token-extend-days]");
       const extendDays = numberInputValue(input, 30);
@@ -785,12 +777,32 @@ async function handleTokenAction(event) {
       await postJSON(`/api/tokens/${id}/revoke`, {});
     } else if (action === "restore") {
       await postJSON(`/api/tokens/${id}/restore`, {});
+    } else if (action === "rotate-subscription") {
+      const result = await postJSON(`/api/tokens/${id}/rotate-subscription`, {});
+      showTokenSubscriptionResult(result, "订阅地址已重置");
     }
     await load();
   } catch (error) {
     statusEl.textContent = "更新失败";
     button.disabled = false;
   }
+}
+
+async function copyText(text) {
+  if (!text) throw new Error("empty text");
+  if (navigator.clipboard?.writeText) {
+    await navigator.clipboard.writeText(text);
+    return;
+  }
+  const textarea = document.createElement("textarea");
+  textarea.value = text;
+  textarea.setAttribute("readonly", "readonly");
+  textarea.style.position = "fixed";
+  textarea.style.left = "-9999px";
+  document.body.appendChild(textarea);
+  textarea.select();
+  document.execCommand("copy");
+  textarea.remove();
 }
 
 async function checkConfig() {
@@ -1544,6 +1556,7 @@ function renderTokens(rows) {
           <th>${labelForColumn("expire_at")}</th>
           <th>${labelForColumn("quota_bytes")}</th>
           <th>${labelForColumn("used_total")}</th>
+          <th>${labelForColumn("subscriptions")}</th>
           <th>${labelForColumn("actions")}</th>
         </tr>
       </thead>
@@ -1560,6 +1573,7 @@ function renderTokens(rows) {
                 <td>${formatCell(row.expire_at, "expire_at")}</td>
                 <td>${formatCell(row.quota_bytes, "quota_bytes")}</td>
                 <td>${formatCell((row.used_upload_bytes || 0) + (row.used_download_bytes || 0), "used_total")}</td>
+                <td>${renderTokenSubscriptions(row)}</td>
                 <td class="table-actions">
                   <span class="token-action-group" data-token-action-group>
                     <input data-token-extend-days="${row.id}" type="number" min="1" value="30" aria-label="续期天数" />
@@ -1570,6 +1584,7 @@ function renderTokens(rows) {
                     <button class="table-button" data-token-action="quota" data-token-id="${row.id}">加额</button>
                   </span>
                   <button class="table-button" data-token-action="restore" data-token-id="${row.id}">恢复</button>
+                  <button class="table-button ghost-button" data-token-action="rotate-subscription" data-token-id="${row.id}">重置订阅</button>
                   <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">撤销</button>
                 </td>
               </tr>
@@ -1578,6 +1593,51 @@ function renderTokens(rows) {
           .join("")}
       </tbody>
     </table>
+  `;
+}
+
+function renderTokenSubscriptions(row) {
+  const subscriptions = row.subscriptions || {};
+  const items = [
+    ["默认", subscriptions.default || row.subscription || ""],
+    ["Clash/Mihomo", subscriptions.clash || ""],
+    ["sing-box", subscriptions.sing_box || ""],
+  ].filter((item) => item[1]);
+  if (!row.subscription_available || items.length === 0) {
+    const message = row.subscription_error || "旧 Token 无法反复显示，可重置订阅";
+    return `<span class="cell-muted">${escapeHTML(message)}</span>`;
+  }
+  return `
+    <div class="token-subscription-list">
+      ${items
+        .map(
+          ([label, url]) => `
+            <span>${escapeHTML(label)}</span>
+            <code>${escapeHTML(url)}</code>
+            <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${row.id}" data-token-url="${escapeHTML(url)}">复制</button>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+}
+
+function showTokenSubscriptionResult(result, title) {
+  const subscriptions = result.subscriptions || {};
+  const defaultSubscription = subscriptions.default || result.subscription || "";
+  const clashSubscription = subscriptions.clash || `${defaultSubscription}?target=clash`;
+  const singBoxSubscription = subscriptions.sing_box || `${defaultSubscription}?target=sing-box`;
+  tokenResultEl.hidden = false;
+  tokenResultEl.innerHTML = `
+    <strong>${escapeHTML(title)}</strong>
+    <div class="subscription-list">
+      <span>默认</span>
+      <code>${escapeHTML(defaultSubscription)}</code>
+      <span>Clash/Mihomo</span>
+      <code>${escapeHTML(clashSubscription)}</code>
+      <span>sing-box</span>
+      <code>${escapeHTML(singBoxSubscription)}</code>
+    </div>
   `;
 }
 

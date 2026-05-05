@@ -90,6 +90,7 @@ type Token struct {
 	ID                int64      `json:"id"`
 	UserID            int64      `json:"user_id"`
 	TokenPrefix       string     `json:"token_prefix"`
+	EncryptedToken    string     `json:"-"`
 	Name              string     `json:"name"`
 	Status            string     `json:"status"`
 	ExpireAt          *time.Time `json:"expire_at,omitempty"`
@@ -116,8 +117,12 @@ type GatewayAccount struct {
 
 type TokenWithAccount struct {
 	Token
-	UserTeamID     *int64         `json:"user_team_id,omitempty"`
-	GatewayAccount GatewayAccount `json:"gateway_account"`
+	UserTeamID            *int64              `json:"user_team_id,omitempty"`
+	Subscription          string              `json:"subscription,omitempty"`
+	Subscriptions         *TokenSubscriptions `json:"subscriptions,omitempty"`
+	SubscriptionAvailable bool                `json:"subscription_available"`
+	SubscriptionError     string              `json:"subscription_error,omitempty"`
+	GatewayAccount        GatewayAccount      `json:"gateway_account"`
 }
 
 type VirtualNode struct {

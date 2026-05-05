@@ -314,10 +314,15 @@ func (s *Store) CreateToken(ctx context.Context, secret, publicBaseURL string, i
 	}
 	defer rollback(tx)
 
+	encryptedToken, err := security.EncryptTokenSecret(secret, plainToken)
+	if err != nil {
+		return CreateTokenResult{}, err
+	}
+
 	result, err := tx.ExecContext(ctx, `
-		INSERT INTO tokens(user_id, token_hash, token_prefix, name, expire_at, quota_bytes)
-		VALUES (?, ?, ?, ?, ?, ?)
-	`, input.UserID, security.TokenHash(secret, plainToken), security.TokenPrefix(plainToken), input.Name, expireAt, input.QuotaBytes)
+		INSERT INTO tokens(user_id, token_hash, token_prefix, encrypted_token, name, expire_at, quota_bytes)
+		VALUES (?, ?, ?, ?, ?, ?, ?)
+	`, input.UserID, security.TokenHash(secret, plainToken), security.TokenPrefix(plainToken), encryptedToken, input.Name, expireAt, input.QuotaBytes)
 	if err != nil {
 		return CreateTokenResult{}, err
 	}
@@ -368,7 +373,7 @@ func tokenSubscriptionURLs(publicBaseURL, plainToken string) TokenSubscriptions 
 
 func (s *Store) GetToken(ctx context.Context, id int64) (Token, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT id, user_id, token_prefix, name, status, expire_at, quota_bytes,
+		SELECT id, user_id, token_prefix, encrypted_token, name, status, expire_at, quota_bytes,
 		       used_upload_bytes, used_download_bytes, last_used_at, created_at, updated_at, revoked_at
 		FROM tokens
 		WHERE id = ?
@@ -378,7 +383,7 @@ func (s *Store) GetToken(ctx context.Context, id int64) (Token, error) {
 
 func (s *Store) TokenByHash(ctx context.Context, tokenHash string) (TokenWithAccount, error) {
 	row := s.db.QueryRowContext(ctx, `
-		SELECT t.id, t.user_id, t.token_prefix, t.name, t.status, t.expire_at, t.quota_bytes,
+		SELECT t.id, t.user_id, t.token_prefix, t.encrypted_token, t.name, t.status, t.expire_at, t.quota_bytes,
 		       t.used_upload_bytes, t.used_download_bytes, t.last_used_at, t.created_at, t.updated_at, t.revoked_at,
 		       u.team_id,
 		       g.id, g.token_id, g.protocol, g.auth_user, g.uuid, g.password, g.status, g.created_at, g.updated_at
@@ -393,7 +398,7 @@ func (s *Store) TokenByHash(ctx context.Context, tokenHash string) (TokenWithAcc
 
 func (s *Store) ListTokens(ctx context.Context) ([]TokenWithAccount, error) {
 	rows, err := s.db.QueryContext(ctx, `
-		SELECT t.id, t.user_id, t.token_prefix, t.name, t.status, t.expire_at, t.quota_bytes,
+		SELECT t.id, t.user_id, t.token_prefix, t.encrypted_token, t.name, t.status, t.expire_at, t.quota_bytes,
 		       t.used_upload_bytes, t.used_download_bytes, t.last_used_at, t.created_at, t.updated_at, t.revoked_at,
 		       u.team_id,
 		       g.id, g.token_id, g.protocol, g.auth_user, g.uuid, g.password, g.status, g.created_at, g.updated_at
@@ -415,6 +420,68 @@ func (s *Store) ListTokens(ctx context.Context) ([]TokenWithAccount, error) {
 		tokens = append(tokens, token)
 	}
 	return tokens, rows.Err()
+}
+
+func (s *Store) ListTokensForAdmin(ctx context.Context, secret, publicBaseURL string) ([]TokenWithAccount, error) {
+	tokens, err := s.ListTokens(ctx)
+	if err != nil {
+		return nil, err
+	}
+	for index := range tokens {
+		attachSubscriptions(secret, publicBaseURL, &tokens[index])
+	}
+	return tokens, nil
+}
+
+func (s *Store) RotateTokenSubscription(ctx context.Context, secret, publicBaseURL string, id int64) (CreateTokenResult, error) {
+	plainToken, err := security.NewToken()
+	if err != nil {
+		return CreateTokenResult{}, err
+	}
+	encryptedToken, err := security.EncryptTokenSecret(secret, plainToken)
+	if err != nil {
+		return CreateTokenResult{}, err
+	}
+	if _, err := s.db.ExecContext(ctx, `
+		UPDATE tokens
+		SET token_hash = ?, token_prefix = ?, encrypted_token = ?, last_used_at = NULL, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, security.TokenHash(secret, plainToken), security.TokenPrefix(plainToken), encryptedToken, id); err != nil {
+		return CreateTokenResult{}, err
+	}
+	token, err := s.GetToken(ctx, id)
+	if err != nil {
+		return CreateTokenResult{}, err
+	}
+	account, err := s.GetGatewayAccountByToken(ctx, id)
+	if err != nil {
+		return CreateTokenResult{}, err
+	}
+	subscriptions := tokenSubscriptionURLs(publicBaseURL, plainToken)
+	return CreateTokenResult{
+		Token:         token,
+		PlainToken:    plainToken,
+		Subscription:  subscriptions.Default,
+		Subscriptions: subscriptions,
+		Account:       account,
+	}, nil
+}
+
+func attachSubscriptions(secret, publicBaseURL string, token *TokenWithAccount) {
+	if strings.TrimSpace(token.EncryptedToken) == "" {
+		token.SubscriptionAvailable = false
+		return
+	}
+	plainToken, err := security.DecryptTokenSecret(secret, token.EncryptedToken)
+	if err != nil {
+		token.SubscriptionAvailable = false
+		token.SubscriptionError = "无法解密订阅密钥"
+		return
+	}
+	subscriptions := tokenSubscriptionURLs(publicBaseURL, plainToken)
+	token.Subscription = subscriptions.Default
+	token.Subscriptions = &subscriptions
+	token.SubscriptionAvailable = true
 }
 
 func (s *Store) RevokeToken(ctx context.Context, id int64) (Token, error) {
@@ -566,6 +633,7 @@ func scanToken(scanner scanner) (Token, error) {
 		&token.ID,
 		&token.UserID,
 		&token.TokenPrefix,
+		&token.EncryptedToken,
 		&token.Name,
 		&token.Status,
 		&expireAt,
@@ -597,6 +665,7 @@ func scanTokenWithAccount(scanner scanner) (TokenWithAccount, error) {
 		&item.ID,
 		&item.UserID,
 		&item.TokenPrefix,
+		&item.EncryptedToken,
 		&item.Name,
 		&item.Status,
 		&expireAt,

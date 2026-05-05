@@ -2,11 +2,15 @@ package store
 
 import (
 	"context"
+	"database/sql"
+	"errors"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/winds18/FluxGate/internal/security"
 )
 
 func openTestStore(t *testing.T) *Store {
@@ -471,6 +475,55 @@ func TestTokenCreation(t *testing.T) {
 	}
 	if result.Subscriptions.SingBox != expectedDefault+"?target=sing-box" {
 		t.Fatalf("unexpected sing-box subscription URL: %s", result.Subscriptions.SingBox)
+	}
+
+	tokens, err := db.ListTokensForAdmin(ctx, "secret", "https://flux.example")
+	if err != nil {
+		t.Fatalf("list admin tokens: %v", err)
+	}
+	if len(tokens) != 1 || !tokens[0].SubscriptionAvailable || tokens[0].Subscriptions == nil {
+		t.Fatalf("expected recoverable subscription on token list: %+v", tokens)
+	}
+	if tokens[0].Subscriptions.Default != expectedDefault {
+		t.Fatalf("unexpected recoverable subscription: %+v", tokens[0].Subscriptions)
+	}
+}
+
+func TestRotateTokenSubscription(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	team, err := db.CreateTeam(ctx, CreateTeamInput{Name: "Rotate"})
+	if err != nil {
+		t.Fatalf("create team: %v", err)
+	}
+	user, err := db.CreateUser(ctx, CreateUserInput{TeamID: &team.ID, Name: "Alice"})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	result, err := db.CreateToken(ctx, "secret", "https://flux.example", CreateTokenInput{
+		UserID:     user.ID,
+		Name:       "Alice",
+		ExpireDays: 30,
+	})
+	if err != nil {
+		t.Fatalf("create token: %v", err)
+	}
+	rotated, err := db.RotateTokenSubscription(ctx, "secret", "https://flux.example", result.Token.ID)
+	if err != nil {
+		t.Fatalf("rotate token subscription: %v", err)
+	}
+	if rotated.PlainToken == "" || rotated.PlainToken == result.PlainToken {
+		t.Fatalf("expected a new plain token after rotate: before=%q after=%q", result.PlainToken, rotated.PlainToken)
+	}
+	if rotated.Subscriptions.Default != "https://flux.example/sub/"+rotated.PlainToken {
+		t.Fatalf("unexpected rotated subscription: %+v", rotated.Subscriptions)
+	}
+	if _, err := db.TokenByHash(ctx, security.TokenHash("secret", result.PlainToken)); !errors.Is(err, sql.ErrNoRows) {
+		t.Fatalf("old subscription token should no longer authenticate: %v", err)
+	}
+	if _, err := db.TokenByHash(ctx, security.TokenHash("secret", rotated.PlainToken)); err != nil {
+		t.Fatalf("new subscription token should authenticate: %v", err)
 	}
 }
 

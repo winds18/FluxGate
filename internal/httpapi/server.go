@@ -85,6 +85,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/tokens", s.handleCreateToken)
 	s.mux.HandleFunc("POST /api/tokens/{id}/revoke", s.handleRevokeToken)
 	s.mux.HandleFunc("POST /api/tokens/{id}/restore", s.handleRestoreToken)
+	s.mux.HandleFunc("POST /api/tokens/{id}/rotate-subscription", s.handleRotateTokenSubscription)
 	s.mux.HandleFunc("POST /api/tokens/{id}/extend", s.handleExtendToken)
 	s.mux.HandleFunc("POST /api/tokens/{id}/quota", s.handleAddTokenQuota)
 
@@ -530,7 +531,7 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListTokens(w http.ResponseWriter, r *http.Request) {
-	tokens, err := s.store.ListTokens(r.Context())
+	tokens, err := s.store.ListTokensForAdmin(r.Context(), s.cfg.TokenSecret, s.cfg.PublicBaseURL)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -562,6 +563,19 @@ func (s *Server) handleRevokeToken(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, token)
+}
+
+func (s *Server) handleRotateTokenSubscription(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	result, err := s.store.RotateTokenSubscription(r.Context(), s.cfg.TokenSecret, s.cfg.PublicBaseURL, id)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
 }
 
 func (s *Server) handleRestoreToken(w http.ResponseWriter, r *http.Request) {

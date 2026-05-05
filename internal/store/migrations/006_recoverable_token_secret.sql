@@ -1,0 +1,1 @@
+ALTER TABLE tokens ADD COLUMN encrypted_token TEXT NOT NULL DEFAULT '';

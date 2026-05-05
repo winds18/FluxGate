@@ -21,7 +21,8 @@
 - 策略 `include_tags` 和 `exclude_tags` 已按 Token > 成员 > 团队优先级生效，会为匹配 Token 生成带 `auth_user` 的 sing-box route rule，限制该 Token 在虚拟节点下可走的上游出口。
 - Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
 - 管理后台 Token 列表支持按行输入自定义续期天数和追加额度 MiB，避免只能使用固定续期/加额步长。
-- 创建 Token 时会返回默认、Clash/Mihomo 和 sing-box 三类订阅地址；管理后台创建结果同步展示，便于直接分发给不同客户端。
+- 创建 Token 时会返回默认、Clash/Mihomo 和 sing-box 三类订阅地址；管理后台创建结果同步展示，Token 列表会加密恢复并反复展示订阅地址，便于后续复制分发给不同客户端。
+- 管理后台 Token 列表支持重置订阅地址；历史旧 Token 如果没有可恢复订阅密钥，会提示重置后重新获取，新地址生成后旧订阅地址立即失效。
 - 上游来源页面创建和列表。
 - 管理后台上游来源支持行内编辑名称、类型、URL、前缀、默认标签和刷新间隔；前缀变更会同步刷新自动命名节点。
 - subscription 类型上游来源可保存 URL 或 raw content，并可手动刷新导入节点。
@@ -201,7 +202,7 @@
 - stats 可插拔轮询调度器已落地，能将采集器返回的 V2Ray counters 转换为流量样本并写入现有用量汇总链路。
 - 真实 sing-box V2Ray gRPC stats 采集器已接入主进程；配置 `SING_BOX_V2RAY_API_ADDR` 后会按 `STATS_POLL_INTERVAL_SECONDS` 轮询并写入现有统计链路。
 - sing-box 服务端配置生成会把 active 上游 outbound tag 写入 V2Ray stats 配置，支持上游出口流量汇总。
-- Token hash 存储，明文只在创建时返回。
+- Token 仍以 hash 作为鉴权主键；订阅密钥额外使用 `TOKEN_SECRET` 派生密钥加密保存，支持管理员后台反复复制订阅地址。
 - 订阅请求日志 Token 路径脱敏。
 - 结构化 JSON 服务日志。
 - 本地验证脚本。
@@ -253,6 +254,7 @@ GET  /api/tokens
 POST /api/tokens
 POST /api/tokens/{id}/revoke
 POST /api/tokens/{id}/restore
+POST /api/tokens/{id}/rotate-subscription
 POST /api/tokens/{id}/extend
 POST /api/tokens/{id}/quota
 

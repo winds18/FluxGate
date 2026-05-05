@@ -213,12 +213,15 @@ GET   /api/tokens/{id}
 PATCH /api/tokens/{id}
 POST  /api/tokens/{id}/revoke
 POST  /api/tokens/{id}/restore
+POST  /api/tokens/{id}/rotate-subscription
 POST  /api/tokens/{id}/extend
 POST  /api/tokens/{id}/quota
 POST  /api/tokens/{id}/rotate-gateway-credential
 ```
 
-`POST /api/tokens` 创建成功时只返回一次明文 Token，并在 `subscriptions` 中同时给出 `default`、`clash` 和 `sing_box` 三类可分发订阅地址；兼容字段 `subscription` 等同于 `subscriptions.default`。
+`POST /api/tokens` 创建成功时会返回明文 Token，并在 `subscriptions` 中同时给出 `default`、`clash` 和 `sing_box` 三类可分发订阅地址；兼容字段 `subscription` 等同于 `subscriptions.default`。后台不会把明文 Token 存成裸值，而是用 `TOKEN_SECRET` 派生密钥加密保存订阅密钥，因此 `GET /api/tokens` 可在管理员会话下反复返回可复制的订阅地址。
+
+`POST /api/tokens/{id}/rotate-subscription` 会重新生成订阅密钥和三类订阅地址，旧订阅地址立即失效；适合历史旧 Token 无法恢复订阅地址，或订阅地址疑似泄露时使用。
 
 ### 2.6 上游来源
 

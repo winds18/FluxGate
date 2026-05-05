@@ -86,11 +86,33 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   const trafficTokenRowCount = await page.locator("#traffic-tokens tbody tr").count();
   const quotaMeterCount = await page.locator("#traffic-tokens .quota-meter").count();
-  const tokenRowCount = await page.locator("#tokens tbody tr").count();
+  const tokenCardCount = await page.locator("#tokens .token-card").count();
+  const tokenRowCount = tokenCardCount || (await page.locator("#tokens tbody tr").count());
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
   const tokenQuotaInputCount = await page.locator("#tokens input[data-token-quota-mib]").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
+  const tokenVisualOverlapCount = await page.evaluate(() => {
+    const intersects = (a, b) =>
+      a.left < b.right - 1 &&
+      a.right > b.left + 1 &&
+      a.top < b.bottom - 1 &&
+      a.bottom > b.top + 1;
+    return Array.from(document.querySelectorAll("#tokens .token-card")).reduce((total, card) => {
+      const boxes = Array.from(card.querySelectorAll("button, input, .token-subscription-item code"))
+        .filter((element) => element.offsetParent !== null)
+        .map((element) => element.getBoundingClientRect())
+        .filter((box) => box.width > 0 && box.height > 0);
+      for (let left = 0; left < boxes.length; left += 1) {
+        for (let right = left + 1; right < boxes.length; right += 1) {
+          if (intersects(boxes[left], boxes[right])) {
+            total += 1;
+          }
+        }
+      }
+      return total;
+    }, 0);
+  });
   let quotaUsageVisible = false;
   if (trafficTokenRowCount > 0) {
     await expect(page.locator("#traffic-tokens .quota-meter").first()).toBeVisible({ timeout: 5000 });
@@ -209,17 +231,22 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.east8TimeSamples = east8TimeSamples;
   state.trafficTokenRowCount = trafficTokenRowCount;
   state.tokenRowCount = tokenRowCount;
+  state.tokenCardCount = tokenCardCount;
   state.quotaMeterCount = quotaMeterCount;
   state.quotaUsageVisible = quotaUsageVisible;
   state.tokenExtendInputCount = tokenExtendInputCount;
   state.tokenQuotaInputCount = tokenQuotaInputCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
+  state.tokenVisualOverlapCount = tokenVisualOverlapCount;
   if (tokenRowCount > 0 && (tokenExtendInputCount !== tokenRowCount || tokenQuotaInputCount !== tokenRowCount)) {
     throw new Error(`token custom controls missing: ${JSON.stringify(state)}`);
   }
   if (tokenRowCount > 0 && tokenRotateSubscriptionCount !== tokenRowCount) {
     throw new Error(`token subscription rotate controls missing: ${JSON.stringify(state)}`);
+  }
+  if (tokenVisualOverlapCount > 0) {
+    throw new Error(`token controls visually overlap: ${JSON.stringify(state)}`);
   }
   const cookies = await context.cookies(baseURL);
   await page.screenshot({ path: screenshotPath, fullPage: true });

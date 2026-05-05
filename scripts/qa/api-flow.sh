@@ -469,8 +469,8 @@ if [[ "$token_restored_status" != "active" ]]; then
   exit 1
 fi
 
-if [[ "$token_subscription_legacy" != "$token_subscription_default" || "$token_subscription_default" != */sub/"$plain_token" ]]; then
-  log "token creation should return a default subscription URL with the plain token"
+if [[ "$token_subscription_legacy" != "$token_subscription_default" || "$token_subscription_default" != "$BASE_URL/sub/$plain_token" ]]; then
+  log "token creation should return a default subscription URL based on the current base URL"
   exit 1
 fi
 

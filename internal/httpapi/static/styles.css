@@ -50,9 +50,6 @@ textarea {
   justify-content: space-between;
   min-height: 72px;
   padding: 14px 28px;
-  position: sticky;
-  top: 0;
-  z-index: 10;
 }
 
 .brand {
@@ -162,16 +159,19 @@ main {
 
 .panel,
 .login-panel {
+  min-width: 0;
   overflow: hidden;
 }
 
 .workflow-grid {
+  align-items: start;
   display: grid;
   gap: 14px;
   grid-template-columns: repeat(12, minmax(0, 1fr));
 }
 
 .form-panel {
+  align-self: start;
   display: grid;
   grid-column: span 4;
 }
@@ -214,6 +214,7 @@ main {
   background: var(--surface-muted);
   border-bottom: 1px solid var(--border-soft);
   display: flex;
+  flex-wrap: wrap;
   gap: 12px;
   justify-content: space-between;
   min-height: 50px;
@@ -277,6 +278,7 @@ button {
   color: #ffffff;
   cursor: pointer;
   display: inline-flex;
+  flex-shrink: 0;
   font-weight: 700;
   justify-content: center;
   letter-spacing: 0;
@@ -668,31 +670,134 @@ td code {
 }
 
 .token-subscription-list {
-  align-items: center;
   display: grid;
-  gap: 6px 8px;
-  grid-template-columns: max-content minmax(220px, 1fr) max-content;
-  min-width: 460px;
+  gap: 8px;
+  min-width: 0;
 }
 
-.token-subscription-list span {
+.token-subscription-item {
+  align-items: center;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: 96px minmax(0, 1fr) max-content;
+  min-width: 0;
+}
+
+.token-subscription-item span {
   color: var(--muted);
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 760;
   white-space: nowrap;
 }
 
-.token-subscription-list code {
+.token-subscription-item code {
   background: #f8fafc;
   border: 1px solid var(--border-soft);
   border-radius: 5px;
   color: #243447;
   display: block;
-  font-size: 11px;
+  font-size: 12px;
   overflow: hidden;
-  padding: 5px 7px;
+  padding: 6px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.token-subscription-empty {
+  background: #fbfdff;
+  border: 1px dashed #d7e0ea;
+  border-radius: 6px;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.4;
+  padding: 10px 12px;
+}
+
+.token-card-list {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.token-card {
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.token-card-heading,
+.token-card-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.token-card-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.token-card-heading span,
+.token-card-section-title,
+.token-card-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.token-card-heading strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 760;
+  overflow-wrap: anywhere;
+}
+
+.token-card-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(136px, 1fr));
+  min-width: 0;
+}
+
+.token-card-field {
+  background: #fbfdff;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.token-card-field strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.token-card-field code {
+  max-width: 100%;
+}
+
+.token-card-subscriptions {
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+}
+
+.token-card-actions {
+  justify-content: flex-start;
 }
 
 .table {
@@ -940,5 +1045,22 @@ td code {
 
   .button-row {
     justify-content: flex-start;
+  }
+
+  .token-subscription-item {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .token-card-actions,
+  .token-action-group {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .token-action-group input,
+  .token-action-group button,
+  .token-card-actions > button {
+    width: 100%;
   }
 }

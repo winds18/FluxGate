@@ -1545,54 +1545,57 @@ function renderTokens(rows) {
     return;
   }
   tokensEl.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>${labelForColumn("id")}</th>
-          <th>${labelForColumn("user_id")}</th>
-          <th>${labelForColumn("token_prefix")}</th>
-          <th>${labelForColumn("name")}</th>
-          <th>${labelForColumn("status")}</th>
-          <th>${labelForColumn("expire_at")}</th>
-          <th>${labelForColumn("quota_bytes")}</th>
-          <th>${labelForColumn("used_total")}</th>
-          <th>${labelForColumn("subscriptions")}</th>
-          <th>${labelForColumn("actions")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows
-          .map(
-            (row) => `
-              <tr>
-                <td>${formatCell(row.id, "id")}</td>
-                <td>${formatCell(row.user_id, "user_id")}</td>
-                <td>${formatCell(row.token_prefix, "token_prefix")}</td>
-                <td>${formatCell(row.name, "name")}</td>
-                <td>${formatCell(row.status, "status")}</td>
-                <td>${formatCell(row.expire_at, "expire_at")}</td>
-                <td>${formatCell(row.quota_bytes, "quota_bytes")}</td>
-                <td>${formatCell((row.used_upload_bytes || 0) + (row.used_download_bytes || 0), "used_total")}</td>
-                <td>${renderTokenSubscriptions(row)}</td>
-                <td class="table-actions">
-                  <span class="token-action-group" data-token-action-group>
-                    <input data-token-extend-days="${row.id}" type="number" min="1" value="30" aria-label="续期天数" />
-                    <button class="table-button" data-token-action="extend" data-token-id="${row.id}">续期</button>
-                  </span>
-                  <span class="token-action-group" data-token-action-group>
-                    <input data-token-quota-mib="${row.id}" type="number" min="1" value="1024" aria-label="追加额度 MiB" />
-                    <button class="table-button" data-token-action="quota" data-token-id="${row.id}">加额</button>
-                  </span>
-                  <button class="table-button" data-token-action="restore" data-token-id="${row.id}">恢复</button>
-                  <button class="table-button ghost-button" data-token-action="rotate-subscription" data-token-id="${row.id}">重置订阅</button>
-                  <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">撤销</button>
-                </td>
-              </tr>
-            `,
-          )
-          .join("")}
-      </tbody>
-    </table>
+    <div class="token-card-list">
+      ${rows.map((row) => renderTokenCard(row)).join("")}
+    </div>
+  `;
+}
+
+function renderTokenCard(row) {
+  return `
+    <article class="token-card" data-token-id="${row.id}">
+      <div class="token-card-heading">
+        <div>
+          <span>Token 前缀</span>
+          <strong>${formatCell(row.token_prefix, "token_prefix")}</strong>
+        </div>
+        ${formatCell(row.status, "status")}
+      </div>
+      <div class="token-card-grid">
+        ${tokenCardField("ID", row.id)}
+        ${tokenCardField("成员 ID", row.user_id)}
+        ${tokenCardField("名称", row.name)}
+        ${tokenCardField("到期时间", row.expire_at, "expire_at")}
+        ${tokenCardField("额度", row.quota_bytes, "quota_bytes")}
+        ${tokenCardField("已用", (row.used_upload_bytes || 0) + (row.used_download_bytes || 0), "used_total")}
+      </div>
+      <div class="token-card-subscriptions">
+        <div class="token-card-section-title">订阅地址</div>
+        ${renderTokenSubscriptions(row)}
+      </div>
+      <div class="token-card-actions">
+        <span class="token-action-group" data-token-action-group>
+          <input data-token-extend-days="${row.id}" type="number" min="1" value="30" aria-label="续期天数" />
+          <button class="table-button" data-token-action="extend" data-token-id="${row.id}">续期</button>
+        </span>
+        <span class="token-action-group" data-token-action-group>
+          <input data-token-quota-mib="${row.id}" type="number" min="1" value="1024" aria-label="追加额度 MiB" />
+          <button class="table-button" data-token-action="quota" data-token-id="${row.id}">加额</button>
+        </span>
+        <button class="table-button" data-token-action="restore" data-token-id="${row.id}">恢复</button>
+        <button class="table-button ghost-button" data-token-action="rotate-subscription" data-token-id="${row.id}">重置订阅</button>
+        <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">撤销</button>
+      </div>
+    </article>
+  `;
+}
+
+function tokenCardField(label, value, column = "") {
+  return `
+    <div class="token-card-field">
+      <span>${escapeHTML(label)}</span>
+      <strong>${formatCell(value, column)}</strong>
+    </div>
   `;
 }
 
@@ -1605,16 +1608,18 @@ function renderTokenSubscriptions(row) {
   ].filter((item) => item[1]);
   if (!row.subscription_available || items.length === 0) {
     const message = row.subscription_error || "旧 Token 无法反复显示，可重置订阅";
-    return `<span class="cell-muted">${escapeHTML(message)}</span>`;
+    return `<div class="token-subscription-empty">${escapeHTML(message)}</div>`;
   }
   return `
     <div class="token-subscription-list">
       ${items
         .map(
           ([label, url]) => `
-            <span>${escapeHTML(label)}</span>
-            <code>${escapeHTML(url)}</code>
-            <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${row.id}" data-token-url="${escapeHTML(url)}">复制</button>
+            <div class="token-subscription-item">
+              <span>${escapeHTML(label)}</span>
+              <code title="${escapeHTML(url)}">${escapeHTML(url)}</code>
+              <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${row.id}" data-token-url="${escapeHTML(url)}">复制</button>
+            </div>
           `,
         )
         .join("")}

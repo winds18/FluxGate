@@ -531,7 +531,7 @@ func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) handleListTokens(w http.ResponseWriter, r *http.Request) {
-	tokens, err := s.store.ListTokensForAdmin(r.Context(), s.cfg.TokenSecret, s.cfg.PublicBaseURL)
+	tokens, err := s.store.ListTokensForAdmin(r.Context(), s.cfg.TokenSecret, s.publicBaseURL(r))
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
@@ -544,7 +544,7 @@ func (s *Server) handleCreateToken(w http.ResponseWriter, r *http.Request) {
 	if !decodeJSON(w, r, &input) {
 		return
 	}
-	result, err := s.store.CreateToken(r.Context(), s.cfg.TokenSecret, s.cfg.PublicBaseURL, input)
+	result, err := s.store.CreateToken(r.Context(), s.cfg.TokenSecret, s.publicBaseURL(r), input)
 	if err != nil {
 		writeStoreError(w, err)
 		return
@@ -570,7 +570,7 @@ func (s *Server) handleRotateTokenSubscription(w http.ResponseWriter, r *http.Re
 	if !ok {
 		return
 	}
-	result, err := s.store.RotateTokenSubscription(r.Context(), s.cfg.TokenSecret, s.cfg.PublicBaseURL, id)
+	result, err := s.store.RotateTokenSubscription(r.Context(), s.cfg.TokenSecret, s.publicBaseURL(r), id)
 	if err != nil {
 		writeStoreError(w, err)
 		return
@@ -933,6 +933,49 @@ func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
 	subscription.SetUserInfoHeader(w.Header(), token)
 	w.Header().Set("content-type", response.ContentType)
 	_, _ = w.Write(response.Body)
+}
+
+func (s *Server) publicBaseURL(r *http.Request) string {
+	host := firstForwardedValue(r.Header.Get("x-forwarded-host"))
+	if host == "" {
+		host = r.Host
+	}
+	if !safePublicHost(host) {
+		return strings.TrimRight(s.cfg.PublicBaseURL, "/")
+	}
+	proto := strings.ToLower(firstForwardedValue(r.Header.Get("x-forwarded-proto")))
+	if proto != "http" && proto != "https" {
+		if r.TLS != nil {
+			proto = "https"
+		} else {
+			proto = "http"
+		}
+	}
+	return proto + "://" + host
+}
+
+func firstForwardedValue(value string) string {
+	if index := strings.Index(value, ","); index >= 0 {
+		value = value[:index]
+	}
+	return strings.TrimSpace(value)
+}
+
+func safePublicHost(host string) bool {
+	if host == "" || strings.ContainsAny(host, "/\\@ \t\r\n") {
+		return false
+	}
+	if strings.Contains(host, ":") {
+		name, port, err := net.SplitHostPort(host)
+		if err != nil || name == "" || port == "" {
+			return false
+		}
+		if _, err := strconv.Atoi(port); err != nil {
+			return false
+		}
+		return true
+	}
+	return true
 }
 
 func inferTarget(userAgent string) string {

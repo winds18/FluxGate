@@ -209,6 +209,7 @@
 - 远程部署探测脚本。
 - 磁盘清理脚本。
 - 诊断采集脚本。
+- 部署后真实可用性收口脚本，可基于已有团队、成员、Token 和上游节点创建缺失的默认虚拟节点与默认策略，校验并发布 sing-box 配置，远程配置存在时会重启 sing-box 数据面。
 - sing-box 当前配置校验并重载脚本，适用于配置文件已由控制面写入但需要数据面重新加载的场景。
 - 推送后远程部署脚本。
 - GitHub Actions Docker 镜像构建工作流，支持 PR 构建验证和分支/tag 推送 GHCR。
@@ -306,6 +307,7 @@ scripts/qa/screenshot.sh
 scripts/qa/local-suite.sh
 scripts/deploy/remote-logs.sh
 scripts/deploy/probe-env.sh
+scripts/deploy/ensure-usable.sh
 scripts/deploy/push-and-deploy.sh
 DRY_RUN=true scripts/deploy/cleanup-disk.sh
 docker compose config
@@ -347,6 +349,7 @@ scripts/qa/readiness.sh http://<lan-host>:<port> 可做真实实例只读就绪�
 - 更多特殊协议 URI 到 sing-box outbound 的转换。
 - 更多真实订阅样本和特殊协议兼容性验证。
 - 手把手使用说明需要随后续功能持续更新。
+- 后续需要把“首次可用性收口”做成管理后台内的初始化向导，减少脚本和页面之间的切换。
 
 ## 5. 当前注意事项
 

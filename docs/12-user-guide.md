@@ -32,6 +32,16 @@ STRICT=true scripts/qa/readiness.sh http://<lan-host>:<port>
 
 就绪检查只读取健康状态、登录状态、概览、团队、成员、Token、来源、节点、虚拟节点、策略和流量摘要，不会修改线上数据。
 
+如果实例已经有团队、成员、Token 和上游节点，但还缺少虚拟节点、默认策略或已发布的 sing-box 配置，可以执行交付收口脚本：
+
+```bash
+scripts/deploy/ensure-usable.sh http://<lan-host>:<port>
+STRICT=true scripts/qa/readiness.sh http://<lan-host>:<port>
+scripts/qa/browser-login.sh http://<lan-host>:<port>
+```
+
+这个脚本会创建缺失的默认虚拟节点和默认可用策略，校验并发布 sing-box 配置；部署配置里有远程主机信息时，还会重启远程 sing-box 容器让配置生效。
+
 ## 2. 管理员登录
 
 1. 打开管理后台地址。
@@ -224,6 +234,7 @@ scripts/qa/public-scan.sh
 
 ```bash
 scripts/qa/local-suite.sh
+scripts/deploy/ensure-usable.sh http://<lan-host>:<port>
 scripts/qa/readiness.sh http://<lan-host>:<port>
 scripts/qa/browser-login.sh http://<lan-host>:<port>
 ```

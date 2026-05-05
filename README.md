@@ -125,6 +125,12 @@ scripts/qa/readiness.sh http://<lan-host>:<port>
 STRICT=true scripts/qa/readiness.sh http://<lan-host>:<port>
 ```
 
+部署后把已有团队、成员、Token 和上游节点收口成可真实体验的网关配置：
+
+```bash
+scripts/deploy/ensure-usable.sh http://<lan-host>:<port>
+```
+
 停止本地服务：
 
 ```bash

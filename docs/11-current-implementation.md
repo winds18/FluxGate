@@ -210,6 +210,7 @@
 - 磁盘清理脚本。
 - 诊断采集脚本。
 - 部署后真实可用性收口脚本，可基于已有团队、成员、Token 和上游节点创建缺失的默认虚拟节点与默认策略，校验并发布 sing-box 配置，远程配置存在时会重启 sing-box 数据面。
+- 部署后真实可用探测脚本，可只读检查控制面核心资源、sing-box 配置入站/用户/上游摘要、局域网网关端口连通性；如提供一次性订阅 URL，还会验证 Clash 和 sing-box 客户端订阅内容包含当前虚拟节点。
 - sing-box 当前配置校验并重载脚本，适用于配置文件已由控制面写入但需要数据面重新加载的场景。
 - 推送后远程部署脚本。
 - GitHub Actions Docker 镜像构建工作流，支持 PR 构建验证和分支/tag 推送 GHCR。
@@ -302,6 +303,7 @@ scripts/qa/public-scan.sh
 scripts/qa/smoke.sh
 scripts/qa/api-flow.sh
 scripts/qa/readiness.sh
+scripts/qa/usable-probe.sh
 scripts/qa/browser-login.sh
 scripts/qa/screenshot.sh
 scripts/qa/local-suite.sh
@@ -320,6 +322,7 @@ KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退�
 scripts/qa/screenshot.sh --keep http://<lan-host>:<port> 可对局域网部署页面保留人工复核截图。
 scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录验收。
 scripts/qa/readiness.sh http://<lan-host>:<port> 可做真实实例只读就绪检查；STRICT=true 会把缺少体验数据视为失败。
+scripts/qa/usable-probe.sh http://<lan-host>:<port> 可做真实实例只读可用性检查，包括 sing-box 配置摘要和局域网网关端口连通。
 ```
 
 截图结论：

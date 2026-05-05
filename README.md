@@ -97,6 +97,7 @@ admin / dev-admin-change-me
 scripts/qa/smoke.sh
 scripts/qa/api-flow.sh
 scripts/qa/readiness.sh
+scripts/qa/usable-probe.sh
 scripts/qa/screenshot.sh
 ```
 
@@ -123,6 +124,7 @@ KEEP_ARTIFACTS=true scripts/qa/local-suite.sh
 ```bash
 scripts/qa/readiness.sh http://<lan-host>:<port>
 STRICT=true scripts/qa/readiness.sh http://<lan-host>:<port>
+scripts/qa/usable-probe.sh http://<lan-host>:<port>
 ```
 
 部署后把已有团队、成员、Token 和上游节点收口成可真实体验的网关配置：

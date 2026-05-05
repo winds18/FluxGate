@@ -37,10 +37,18 @@ STRICT=true scripts/qa/readiness.sh http://<lan-host>:<port>
 ```bash
 scripts/deploy/ensure-usable.sh http://<lan-host>:<port>
 STRICT=true scripts/qa/readiness.sh http://<lan-host>:<port>
+scripts/qa/usable-probe.sh http://<lan-host>:<port>
 scripts/qa/browser-login.sh http://<lan-host>:<port>
 ```
 
 这个脚本会创建缺失的默认虚拟节点和默认可用策略，校验并发布 sing-box 配置；部署配置里有远程主机信息时，还会重启远程 sing-box 容器让配置生效。
+
+`usable-probe` 是只读验收：它会确认后台已有团队、成员、Token、来源、节点、虚拟节点和策略，检查 sing-box 配置至少包含一个入站、一个可用用户和一个上游出口，并探测当前虚拟节点监听端口是否可从局域网连通。系统不会在 Token 创建后再次暴露明文 Token；如果要连同客户端订阅内容一起验收，可以把刚创建 Token 时展示的订阅地址临时传入：
+
+```bash
+FLUXGATE_QA_SUBSCRIPTION_URL='http://<lan-host>:<port>/sub/<token>' \
+  scripts/qa/usable-probe.sh http://<lan-host>:<port>
+```
 
 ## 2. 管理员登录
 
@@ -236,6 +244,7 @@ scripts/qa/public-scan.sh
 scripts/qa/local-suite.sh
 scripts/deploy/ensure-usable.sh http://<lan-host>:<port>
 scripts/qa/readiness.sh http://<lan-host>:<port>
+scripts/qa/usable-probe.sh http://<lan-host>:<port>
 scripts/qa/browser-login.sh http://<lan-host>:<port>
 ```
 

@@ -70,6 +70,7 @@ sourcesEl.addEventListener("click", handleSourceAction);
 nodesEl.addEventListener("click", handleNodeAction);
 nodesEl.addEventListener("submit", handleNodeEditSubmit);
 virtualNodesEl.addEventListener("click", handleVirtualNodeAction);
+policiesEl.addEventListener("click", handlePolicyAction);
 tokensEl.addEventListener("click", handleTokenAction);
 bootstrap();
 
@@ -79,8 +80,10 @@ let appState = {
   sources: [],
   nodes: [],
   virtualNodes: [],
+  policies: [],
   editingSourceID: null,
   editingVirtualNodeID: null,
+  editingPolicyID: null,
   editingNodeID: null,
   expandedNodeRegion: null,
   expandedNodeID: null,
@@ -186,8 +189,10 @@ async function logout() {
     sources: [],
     nodes: [],
     virtualNodes: [],
+    policies: [],
     editingSourceID: null,
     editingVirtualNodeID: null,
+    editingPolicyID: null,
     editingNodeID: null,
     expandedNodeRegion: null,
     expandedNodeID: null,
@@ -230,7 +235,7 @@ async function load() {
       getJSON("/api/traffic/outbounds?days=14"),
       getJSON("/api/traffic/tokens"),
     ]);
-    appState = { ...appState, teams, users, sources, nodes, virtualNodes };
+    appState = { ...appState, teams, users, sources, nodes, virtualNodes, policies };
     renderMetrics(overview);
     renderSelectors();
     renderTable(teamsEl, teams, ["id", "name", "description", "status"]);
@@ -238,7 +243,7 @@ async function load() {
     renderSources(sources);
     renderNodes(nodes);
     renderVirtualNodes(virtualNodes);
-    renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "include_tags", "exclude_tags", "allowed_virtual_nodes", "max_nodes", "status"]);
+    renderPolicies(policies);
     renderTokens(tokens);
     renderTrafficHourly(trafficHourly);
     renderTrafficDaily(trafficDaily);
@@ -491,6 +496,63 @@ async function saveVirtualNode(button) {
 
 function virtualNodeFieldValue(row, name) {
   return String(row.querySelector(`[data-virtual-node-field="${name}"]`)?.value || "").trim();
+}
+
+async function handlePolicyAction(event) {
+  const button = event.target.closest("button[data-policy-action]");
+  if (!button) return;
+  const id = button.dataset.policyId;
+  const action = button.dataset.policyAction;
+  if (action === "edit") {
+    appState.editingPolicyID = Number.parseInt(id || "0", 10);
+    renderPolicies(appState.policies);
+    policiesEl.querySelector(`tr[data-policy-id="${id}"] input[data-policy-field="name"]`)?.focus();
+    return;
+  }
+  if (action === "cancel") {
+    appState.editingPolicyID = null;
+    renderPolicies(appState.policies);
+    return;
+  }
+  if (action === "save") {
+    await savePolicy(button);
+  }
+}
+
+async function savePolicy(button) {
+  const row = button.closest("tr[data-policy-id]");
+  if (!row) return;
+  const id = row.dataset.policyId;
+  const scopeID = Number.parseInt(row.querySelector('[data-policy-field="scope_id"]')?.value || "0", 10);
+  const maxNodes = Number.parseInt(row.querySelector('[data-policy-field="max_nodes"]')?.value || "0", 10);
+  const payload = {
+    name: policyFieldValue(row, "name"),
+    scope_type: policyFieldValue(row, "scope_type") || "team",
+    scope_id: Number.isFinite(scopeID) && scopeID > 0 ? scopeID : null,
+    include_tags: policyFieldValue(row, "include_tags"),
+    exclude_tags: policyFieldValue(row, "exclude_tags"),
+    allowed_virtual_nodes: policyFieldValue(row, "allowed_virtual_nodes"),
+    max_nodes: Number.isFinite(maxNodes) ? maxNodes : 0,
+    status: policyFieldValue(row, "status") || "active",
+  };
+  row.querySelectorAll("button").forEach((item) => {
+    item.disabled = true;
+  });
+  statusEl.textContent = "保存策略中";
+  try {
+    await patchJSON(`/api/policies/${id}`, payload);
+    appState.editingPolicyID = null;
+    await load();
+  } catch (error) {
+    statusEl.textContent = "保存失败";
+    row.querySelectorAll("button").forEach((item) => {
+      item.disabled = false;
+    });
+  }
+}
+
+function policyFieldValue(row, name) {
+  return String(row.querySelector(`[data-policy-field="${name}"]`)?.value || "").trim();
 }
 
 async function handleNodeAction(event) {
@@ -955,6 +1017,93 @@ function virtualNodeStatusSelect(value) {
   const current = String(value || "active");
   return `
     <select class="table-edit-input" data-virtual-node-field="status">
+      <option value="active" ${current === "active" ? "selected" : ""}>active</option>
+      <option value="inactive" ${current === "inactive" ? "selected" : ""}>inactive</option>
+    </select>
+  `;
+}
+
+function renderPolicies(rows) {
+  appState.policies = rows || [];
+  if (!rows || rows.length === 0) {
+    policiesEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  policiesEl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>${labelForColumn("id")}</th>
+          <th>${labelForColumn("name")}</th>
+          <th>${labelForColumn("scope_type")}</th>
+          <th>${labelForColumn("scope_id")}</th>
+          <th>${labelForColumn("include_tags")}</th>
+          <th>${labelForColumn("exclude_tags")}</th>
+          <th>${labelForColumn("allowed_virtual_nodes")}</th>
+          <th>${labelForColumn("max_nodes")}</th>
+          <th>${labelForColumn("status")}</th>
+          <th>${labelForColumn("actions")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((row) => renderPolicyRow(row)).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderPolicyRow(row) {
+  const isEditing = appState.editingPolicyID === row.id;
+  return `
+    <tr data-policy-id="${row.id}" class="${isEditing ? "policy-edit-row" : ""}">
+      <td>${formatCell(row.id, "id")}</td>
+      <td>${isEditing ? policyTextInput(row, "name") : formatCell(row.name, "name")}</td>
+      <td>${isEditing ? policyScopeSelect(row.scope_type) : formatCell(row.scope_type, "scope_type")}</td>
+      <td>${isEditing ? policyScopeIDInput(row) : formatCell(row.scope_id, "scope_id")}</td>
+      <td>${isEditing ? policyTextInput(row, "include_tags", "table-edit-input", "HK, Premium") : formatCell(row.include_tags, "include_tags")}</td>
+      <td>${isEditing ? policyTextInput(row, "exclude_tags", "table-edit-input", "Backup") : formatCell(row.exclude_tags, "exclude_tags")}</td>
+      <td>${isEditing ? policyTextInput(row, "allowed_virtual_nodes", "table-edit-input-wide", "FluxGate-HK, FluxGate-SG") : formatCell(row.allowed_virtual_nodes, "allowed_virtual_nodes")}</td>
+      <td>${isEditing ? policyMaxNodesInput(row) : formatCell(row.max_nodes, "max_nodes")}</td>
+      <td>${isEditing ? policyStatusSelect(row.status) : formatCell(row.status, "status")}</td>
+      <td class="table-actions policy-actions">
+        ${
+          isEditing
+            ? `<button class="table-button" type="button" data-policy-action="save" data-policy-id="${row.id}">保存</button>
+               <button class="table-button ghost-button" type="button" data-policy-action="cancel" data-policy-id="${row.id}">取消</button>`
+            : `<button class="table-button" type="button" data-policy-action="edit" data-policy-id="${row.id}">编辑</button>`
+        }
+      </td>
+    </tr>
+  `;
+}
+
+function policyTextInput(row, field, className = "table-edit-input", placeholder = "") {
+  return `<input class="${className}" data-policy-field="${field}" value="${escapeHTML(String(row[field] || ""))}" placeholder="${escapeHTML(placeholder)}" />`;
+}
+
+function policyScopeIDInput(row) {
+  return `<input class="table-edit-input table-edit-number" data-policy-field="scope_id" type="number" min="1" step="1" value="${escapeHTML(String(row.scope_id || ""))}" />`;
+}
+
+function policyMaxNodesInput(row) {
+  return `<input class="table-edit-input table-edit-number" data-policy-field="max_nodes" type="number" min="0" step="1" value="${escapeHTML(String(row.max_nodes || 0))}" />`;
+}
+
+function policyScopeSelect(value) {
+  const current = String(value || "team");
+  return `
+    <select class="table-edit-input" data-policy-field="scope_type">
+      <option value="team" ${current === "team" ? "selected" : ""}>team</option>
+      <option value="user" ${current === "user" ? "selected" : ""}>user</option>
+      <option value="token" ${current === "token" ? "selected" : ""}>token</option>
+    </select>
+  `;
+}
+
+function policyStatusSelect(value) {
+  const current = String(value || "active");
+  return `
+    <select class="table-edit-input" data-policy-field="status">
       <option value="active" ${current === "active" ? "selected" : ""}>active</option>
       <option value="inactive" ${current === "inactive" ? "selected" : ""}>inactive</option>
     </select>

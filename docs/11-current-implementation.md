@@ -16,7 +16,7 @@
 - 管理 API 登录保护。
 - 会话 Cookie 按实际请求协议设置 Secure，支持 HTTPS 反代和 HTTP 局域网调试。
 - 团队、用户、Token 基础页面创建和列表。
-- 策略基础页面创建和列表。
+- 策略基础页面支持创建、列表和行内编辑名称、范围、标签限制、虚拟节点限制、最大节点数和启停状态。
 - 策略 `allowed_virtual_nodes` 和 `max_nodes` 已按 Token > 成员 > 团队优先级生效，用于限制订阅输出中的可见虚拟节点，并同步约束 sing-box 入站里的用户分配；被策略挡住且没有可用用户的虚拟节点不会生成入站。
 - 策略 `include_tags` 和 `exclude_tags` 已按 Token > 成员 > 团队优先级生效，会为匹配 Token 生成带 `auth_user` 的 sing-box route rule，限制该 Token 在虚拟节点下可走的上游出口。
 - Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
@@ -268,6 +268,7 @@ PATCH /api/virtual-nodes/{id}
 
 GET  /api/policies
 POST /api/policies
+PATCH /api/policies/{id}
 GET  /api/traffic/tokens
 GET  /api/traffic/daily?days=14
 GET  /api/traffic/hourly?hours=24
@@ -325,6 +326,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 - 有节点数据时，浏览器验收会确认节点池先展示地区聚合，进入地区后出现节点卡片。
 - 有节点数据时，浏览器验收会确认节点卡片“编辑”入口可打开行内编辑表单。
 - 有来源数据时，浏览器验收会确认上游来源“编辑”入口可打开行内编辑字段。
+- 有策略数据时，浏览器验收会确认策略“编辑”入口可打开行内编辑字段。
 - 有节点数据时，浏览器验收会确认节点池“详情”入口可展开单节点详情。
 - 浏览器验收会确认 RFC3339 和 SQLite 时间字符串都按东八区展示。
 - 有 Token 流量行时，浏览器验收会确认额度使用率进度条可见。

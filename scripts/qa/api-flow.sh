@@ -63,6 +63,10 @@ policy_scope_id="$(json_value "data.scope_id" <"$OUT_DIR/policy.json")"
 policy_max_nodes="$(json_value "data.max_nodes" <"$OUT_DIR/policy.json")"
 policy_include_tags="$(json_value "data.include_tags" <"$OUT_DIR/policy.json")"
 policy_allowed_virtual_nodes="$(json_value "data.allowed_virtual_nodes" <"$OUT_DIR/policy.json")"
+patch_json "/api/policies/$policy_id" "{\"name\":\"QA 默认策略-已调整\",\"scope_type\":\"team\",\"scope_id\":$team_id,\"include_tags\":\"[\\\"QA-HK\\\"]\",\"exclude_tags\":\"[\\\"Backup\\\"]\",\"allowed_virtual_nodes\":\"[\\\"FluxGate-HK\\\"]\",\"max_nodes\":5,\"status\":\"active\"}" "$OUT_DIR/policy-update.json"
+policy_updated_name="$(json_value "data.name" <"$OUT_DIR/policy-update.json")"
+policy_updated_status="$(json_value "data.status" <"$OUT_DIR/policy-update.json")"
+policy_updated_exclude_tags="$(json_value "data.exclude_tags" <"$OUT_DIR/policy-update.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/policies" -o "$OUT_DIR/policies.json"
 policy_list_count="$(json_value "data.length" <"$OUT_DIR/policies.json")"
 
@@ -318,6 +322,11 @@ fi
 
 if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nodes" != "5" || "$policy_include_tags" != "[\"QA-HK\"]" || "$policy_allowed_virtual_nodes" != "[\"FluxGate-HK\"]" || "$policy_list_count" -lt 1 ]]; then
   log "policy create/list should work: id=$policy_id scope_id=$policy_scope_id team_id=$team_id include_tags=$policy_include_tags allowed_virtual_nodes=$policy_allowed_virtual_nodes max_nodes=$policy_max_nodes list_count=$policy_list_count"
+  exit 1
+fi
+
+if [[ "$policy_updated_name" != "QA 默认策略-已调整" || "$policy_updated_status" != "active" || "$policy_updated_exclude_tags" != "[\"Backup\"]" ]]; then
+  log "policy update should persist editable fields: name=$policy_updated_name status=$policy_updated_status exclude_tags=$policy_updated_exclude_tags"
   exit 1
 fi
 

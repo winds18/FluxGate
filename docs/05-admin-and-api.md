@@ -107,6 +107,7 @@ over_quota
 - 配置 exclude tags
 - 配置可见虚拟节点
 - 配置最大节点数
+- 修改策略名称、范围、标签限制、虚拟节点限制、最大节点数和启停状态
 - `include_tags` 和 `exclude_tags` 当前按 Token > 成员 > 团队优先级限制上游出口，并生成带 `auth_user` 的 sing-box route rule
 - `allowed_virtual_nodes` 当前可按虚拟节点名称或 ID 限制可见虚拟节点
 - `allowed_virtual_nodes` 和 `max_nodes` 当前按 Token > 成员 > 团队优先级限制可见虚拟节点，并同步影响 sing-box 入站用户分配；没有可用用户的受限入站不会生成
@@ -258,9 +259,7 @@ DELETE /api/tags/{id}
 ```text
 GET    /api/policies
 POST   /api/policies
-GET    /api/policies/{id}
 PATCH  /api/policies/{id}
-DELETE /api/policies/{id}
 ```
 
 ### 2.10 虚拟节点

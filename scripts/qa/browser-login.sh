@@ -119,6 +119,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#virtual-nodes button[data-virtual-node-action='cancel']").first().click();
   }
 
+  const policyEditCount = await page.locator("#policies button[data-policy-action='edit']").count();
+  let policyEditFieldsVisible = false;
+  if (policyEditCount > 0) {
+    await page.locator("#policies button[data-policy-action='edit']").first().click();
+    await expect(page.locator('#policies [data-policy-field="name"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#policies [data-policy-field="scope_type"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#policies [data-policy-field="allowed_virtual_nodes"]').first()).toBeVisible({ timeout: 5000 });
+    policyEditFieldsVisible = true;
+    await page.locator("#policies button[data-policy-action='cancel']").first().click();
+  }
+
   const nodeRegionCount = await page.locator("#nodes button[data-node-region-action='open']").count();
   let nodeCardCount = 0;
   if (nodeRegionCount > 0) {
@@ -161,6 +172,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
   state.virtualNodeEditCount = virtualNodeEditCount;
   state.virtualNodeEditFieldsVisible = virtualNodeEditFieldsVisible;
+  state.policyEditCount = policyEditCount;
+  state.policyEditFieldsVisible = policyEditFieldsVisible;
   state.nodeRegionCount = nodeRegionCount;
   state.nodeCardCount = nodeCardCount;
   state.nodeEditCount = nodeEditCount;

@@ -257,6 +257,10 @@ main {
   min-width: 250px;
 }
 
+.policy-actions {
+  min-width: 140px;
+}
+
 .node-actions {
   min-width: 0;
 }
@@ -378,6 +382,10 @@ textarea {
 }
 
 .virtual-node-edit-row td {
+  vertical-align: top;
+}
+
+.policy-edit-row td {
   vertical-align: top;
 }
 

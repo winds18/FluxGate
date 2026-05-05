@@ -456,6 +456,28 @@ func TestPolicyCreation(t *testing.T) {
 		t.Fatalf("unexpected policy list: %+v", policies)
 	}
 
+	updated, err := db.UpdatePolicy(ctx, policy.ID, UpdatePolicyInput{
+		Name:                stringPtr("团队默认策略-已调整"),
+		IncludeTags:         stringPtr("HK, Premium"),
+		ExcludeTags:         stringPtr("Backup"),
+		AllowedVirtualNodes: stringPtr(`["FluxGate-HK"]`),
+		MaxNodes:            int64Ptr(5),
+		Status:              stringPtr("inactive"),
+	})
+	if err != nil {
+		t.Fatalf("update policy: %v", err)
+	}
+	if updated.Name != "团队默认策略-已调整" || updated.IncludeTags != "HK, Premium" || updated.ExcludeTags != "Backup" || updated.AllowedVirtualNodes != `["FluxGate-HK"]` || updated.MaxNodes != 5 || updated.Status != "inactive" {
+		t.Fatalf("unexpected updated policy: %+v", updated)
+	}
+
+	if _, err := db.UpdatePolicy(ctx, policy.ID, UpdatePolicyInput{MaxNodes: int64Ptr(-1)}); err == nil {
+		t.Fatal("negative max_nodes should fail")
+	}
+	if _, err := db.UpdatePolicy(ctx, policy.ID, UpdatePolicyInput{Status: stringPtr("disabled")}); err == nil {
+		t.Fatal("invalid status should fail")
+	}
+
 	overview, err := db.Overview(ctx, "test")
 	if err != nil {
 		t.Fatalf("overview: %v", err)

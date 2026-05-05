@@ -117,6 +117,45 @@ func int64Ptr(value int64) *int64 {
 	return &value
 }
 
+func intPtr(value int) *int {
+	return &value
+}
+
+func TestVirtualNodeUpdateEditableFields(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	node, err := db.CreateVirtualNode(ctx, CreateVirtualNodeInput{
+		Name:           "FluxGate-HK",
+		ListenProtocol: "vless",
+		ListenPort:     8443,
+		TagSelector:    `{"include":["HK"]}`,
+	})
+	if err != nil {
+		t.Fatalf("create virtual node: %v", err)
+	}
+
+	updated, err := db.UpdateVirtualNode(ctx, node.ID, UpdateVirtualNodeInput{
+		Name:        stringPtr("FluxGate-HK-Edited"),
+		ListenPort:  intPtr(9443),
+		TagSelector: stringPtr(`{"include":["HK","Premium"],"exclude":["Low"]}`),
+		Status:      stringPtr("inactive"),
+	})
+	if err != nil {
+		t.Fatalf("update virtual node: %v", err)
+	}
+	if updated.Name != "FluxGate-HK-Edited" || updated.ListenProtocol != "vless" || updated.ListenPort != 9443 || updated.TagSelector != `{"include":["HK","Premium"],"exclude":["Low"]}` || updated.Strategy != "selector" || updated.Status != "inactive" {
+		t.Fatalf("unexpected updated virtual node: %+v", updated)
+	}
+
+	if _, err := db.UpdateVirtualNode(ctx, node.ID, UpdateVirtualNodeInput{TagSelector: stringPtr(`{"include":`)}); err == nil {
+		t.Fatalf("expected invalid tag selector to fail")
+	}
+	if _, err := db.UpdateVirtualNode(ctx, node.ID, UpdateVirtualNodeInput{ListenPort: intPtr(70000)}); err == nil {
+		t.Fatalf("expected invalid listen port to fail")
+	}
+}
+
 func TestImportNodesMarksMissingSubscriptionNodesInactive(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)

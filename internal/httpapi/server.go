@@ -88,6 +88,7 @@ func (s *Server) routes() {
 
 	s.mux.HandleFunc("GET /api/virtual-nodes", s.handleListVirtualNodes)
 	s.mux.HandleFunc("POST /api/virtual-nodes", s.handleCreateVirtualNode)
+	s.mux.HandleFunc("PATCH /api/virtual-nodes/{id}", s.handleUpdateVirtualNode)
 	s.mux.HandleFunc("GET /api/policies", s.handleListPolicies)
 	s.mux.HandleFunc("POST /api/policies", s.handleCreatePolicy)
 	s.mux.HandleFunc("GET /api/traffic/tokens", s.handleListTokenTraffic)
@@ -600,6 +601,23 @@ func (s *Server) handleCreateVirtualNode(w http.ResponseWriter, r *http.Request)
 		return
 	}
 	writeJSON(w, http.StatusCreated, node)
+}
+
+func (s *Server) handleUpdateVirtualNode(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	var input store.UpdateVirtualNodeInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	node, err := s.store.UpdateVirtualNode(r.Context(), id, input)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, node)
 }
 
 func (s *Server) handleListPolicies(w http.ResponseWriter, r *http.Request) {

@@ -118,6 +118,7 @@ over_quota
 - 创建 FluxGate-HK、FluxGate-SG 等展示节点
 - 设置入口协议和端口
 - 绑定上游标签
+- 修改名称、监听端口、标签选择器和启停状态
 - `tag_selector` 当前支持按 `include` / `exclude` 标签生成专属 sing-box selector 和 route rule
 - 选择策略类型
 - 启用/禁用
@@ -267,9 +268,7 @@ DELETE /api/policies/{id}
 ```text
 GET    /api/virtual-nodes
 POST   /api/virtual-nodes
-GET    /api/virtual-nodes/{id}
 PATCH  /api/virtual-nodes/{id}
-DELETE /api/virtual-nodes/{id}
 ```
 
 ### 2.11 sing-box 控制

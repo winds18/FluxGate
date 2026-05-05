@@ -245,6 +245,11 @@ node_reset_name="$(json_value "data.display_name" <"$OUT_DIR/node-reset-name.jso
 node_reset_mode="$(json_value "data.name_mode" <"$OUT_DIR/node-reset-name.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443,"tag_selector":"{\"include\":[\"QA-HK\"]}"}' "$OUT_DIR/virtual-node.json"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-SG","listen_protocol":"vless","listen_port":8444}' "$OUT_DIR/virtual-node-sg.json"
+virtual_sg_id="$(json_value "data.id" <"$OUT_DIR/virtual-node-sg.json")"
+patch_json "/api/virtual-nodes/$virtual_sg_id" '{"name":"FluxGate-SG","listen_protocol":"vless","listen_port":9444,"tag_selector":"{\"include\":[\"SG\"],\"exclude\":[\"Backup\"]}","strategy":"selector","status":"inactive"}' "$OUT_DIR/virtual-node-sg-update.json"
+virtual_sg_updated_port="$(json_value "data.listen_port" <"$OUT_DIR/virtual-node-sg-update.json")"
+virtual_sg_updated_selector="$(json_value "data.tag_selector" <"$OUT_DIR/virtual-node-sg-update.json")"
+virtual_sg_updated_status="$(json_value "data.status" <"$OUT_DIR/virtual-node-sg-update.json")"
 post_json "/api/tokens" "{\"user_id\":$user_id,\"name\":\"QA Token\",\"expire_days\":30,\"quota_bytes\":1048576}" "$OUT_DIR/token.json"
 token_id="$(json_value "data.token.id" <"$OUT_DIR/token.json")"
 plain_token="$(json_value "data.plain_token" <"$OUT_DIR/token.json")"
@@ -313,6 +318,11 @@ fi
 
 if [[ "$policy_id" -lt 1 || "$policy_scope_id" != "$team_id" || "$policy_max_nodes" != "5" || "$policy_include_tags" != "[\"QA-HK\"]" || "$policy_allowed_virtual_nodes" != "[\"FluxGate-HK\"]" || "$policy_list_count" -lt 1 ]]; then
   log "policy create/list should work: id=$policy_id scope_id=$policy_scope_id team_id=$team_id include_tags=$policy_include_tags allowed_virtual_nodes=$policy_allowed_virtual_nodes max_nodes=$policy_max_nodes list_count=$policy_list_count"
+  exit 1
+fi
+
+if [[ "$virtual_sg_updated_port" != "9444" || "$virtual_sg_updated_selector" != "{\"include\":[\"SG\"],\"exclude\":[\"Backup\"]}" || "$virtual_sg_updated_status" != "inactive" ]]; then
+  log "virtual node update should persist editable fields: port=$virtual_sg_updated_port selector=$virtual_sg_updated_selector status=$virtual_sg_updated_status"
   exit 1
 fi
 

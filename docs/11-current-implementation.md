@@ -113,7 +113,7 @@
 - 单节点手动改名保护。
 - 单节点恢复自动命名。
 - 管理后台节点池支持行内编辑节点展示名，并可恢复来源前缀驱动的自动命名。
-- 虚拟节点页面基础创建和列表。
+- 虚拟节点页面支持创建、列表和行内编辑名称、监听协议、监听端口、标签选择器、出口策略和启停状态。
 - 虚拟节点 `tag_selector` 可按上游节点标签生成专属 sing-box selector，并生成入站到该 selector 的 route rule；无匹配上游时会路由到 `block`。
 - Clash/Mihomo 订阅生成。
 - sing-box 客户端订阅生成。
@@ -264,6 +264,7 @@ POST  /api/nodes/{id}/reset-display-name
 
 GET  /api/virtual-nodes
 POST /api/virtual-nodes
+PATCH /api/virtual-nodes/{id}
 
 GET  /api/policies
 POST /api/policies

@@ -69,6 +69,7 @@ tokenForm.addEventListener("submit", submitToken);
 sourcesEl.addEventListener("click", handleSourceAction);
 nodesEl.addEventListener("click", handleNodeAction);
 nodesEl.addEventListener("submit", handleNodeEditSubmit);
+virtualNodesEl.addEventListener("click", handleVirtualNodeAction);
 tokensEl.addEventListener("click", handleTokenAction);
 bootstrap();
 
@@ -79,6 +80,7 @@ let appState = {
   nodes: [],
   virtualNodes: [],
   editingSourceID: null,
+  editingVirtualNodeID: null,
   editingNodeID: null,
   expandedNodeRegion: null,
   expandedNodeID: null,
@@ -110,6 +112,7 @@ const columnLabels = {
   listen_protocol: "监听协议",
   listen_port: "端口",
   tag_selector: "标签选择器",
+  strategy: "出口策略",
   scope_type: "范围",
   scope_id: "范围 ID",
   include_tags: "包含标签",
@@ -184,6 +187,7 @@ async function logout() {
     nodes: [],
     virtualNodes: [],
     editingSourceID: null,
+    editingVirtualNodeID: null,
     editingNodeID: null,
     expandedNodeRegion: null,
     expandedNodeID: null,
@@ -233,7 +237,7 @@ async function load() {
     renderTable(usersEl, users, ["id", "team_id", "name", "email", "status"]);
     renderSources(sources);
     renderNodes(nodes);
-    renderTable(virtualNodesEl, virtualNodes, ["id", "name", "listen_protocol", "listen_port", "tag_selector", "status"]);
+    renderVirtualNodes(virtualNodes);
     renderTable(policiesEl, policies, ["id", "name", "scope_type", "scope_id", "include_tags", "exclude_tags", "allowed_virtual_nodes", "max_nodes", "status"]);
     renderTokens(tokens);
     renderTrafficHourly(trafficHourly);
@@ -433,6 +437,60 @@ async function regenerateSourceNames(button) {
 
 function sourceFieldValue(row, name) {
   return String(row.querySelector(`[data-source-field="${name}"]`)?.value || "").trim();
+}
+
+async function handleVirtualNodeAction(event) {
+  const button = event.target.closest("button[data-virtual-node-action]");
+  if (!button) return;
+  const id = button.dataset.virtualNodeId;
+  const action = button.dataset.virtualNodeAction;
+  if (action === "edit") {
+    appState.editingVirtualNodeID = Number.parseInt(id || "0", 10);
+    renderVirtualNodes(appState.virtualNodes);
+    virtualNodesEl.querySelector(`tr[data-virtual-node-id="${id}"] input[data-virtual-node-field="name"]`)?.focus();
+    return;
+  }
+  if (action === "cancel") {
+    appState.editingVirtualNodeID = null;
+    renderVirtualNodes(appState.virtualNodes);
+    return;
+  }
+  if (action === "save") {
+    await saveVirtualNode(button);
+  }
+}
+
+async function saveVirtualNode(button) {
+  const row = button.closest("tr[data-virtual-node-id]");
+  if (!row) return;
+  const id = row.dataset.virtualNodeId;
+  const listenPort = Number.parseInt(row.querySelector('[data-virtual-node-field="listen_port"]')?.value || "0", 10);
+  const payload = {
+    name: virtualNodeFieldValue(row, "name"),
+    listen_protocol: virtualNodeFieldValue(row, "listen_protocol") || "vless",
+    listen_port: Number.isFinite(listenPort) ? listenPort : 0,
+    tag_selector: virtualNodeFieldValue(row, "tag_selector") || "{}",
+    strategy: virtualNodeFieldValue(row, "strategy") || "selector",
+    status: virtualNodeFieldValue(row, "status") || "active",
+  };
+  row.querySelectorAll("button").forEach((item) => {
+    item.disabled = true;
+  });
+  statusEl.textContent = "保存虚拟节点中";
+  try {
+    await patchJSON(`/api/virtual-nodes/${id}`, payload);
+    appState.editingVirtualNodeID = null;
+    await load();
+  } catch (error) {
+    statusEl.textContent = "保存失败";
+    row.querySelectorAll("button").forEach((item) => {
+      item.disabled = false;
+    });
+  }
+}
+
+function virtualNodeFieldValue(row, name) {
+  return String(row.querySelector(`[data-virtual-node-field="${name}"]`)?.value || "").trim();
 }
 
 async function handleNodeAction(event) {
@@ -813,6 +871,92 @@ function sourceTypeSelect(value) {
     <select class="table-edit-input" data-source-field="type">
       <option value="manual" ${current === "manual" ? "selected" : ""}>manual</option>
       <option value="subscription" ${current === "subscription" ? "selected" : ""}>subscription</option>
+    </select>
+  `;
+}
+
+function renderVirtualNodes(rows) {
+  appState.virtualNodes = rows || [];
+  if (!rows || rows.length === 0) {
+    virtualNodesEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  virtualNodesEl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>${labelForColumn("id")}</th>
+          <th>${labelForColumn("name")}</th>
+          <th>${labelForColumn("listen_protocol")}</th>
+          <th>${labelForColumn("listen_port")}</th>
+          <th>${labelForColumn("tag_selector")}</th>
+          <th>${labelForColumn("strategy")}</th>
+          <th>${labelForColumn("status")}</th>
+          <th>${labelForColumn("actions")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((row) => renderVirtualNodeRow(row)).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderVirtualNodeRow(row) {
+  const isEditing = appState.editingVirtualNodeID === row.id;
+  return `
+    <tr data-virtual-node-id="${row.id}" class="${isEditing ? "virtual-node-edit-row" : ""}">
+      <td>${formatCell(row.id, "id")}</td>
+      <td>${isEditing ? virtualNodeTextInput(row, "name") : formatCell(row.name, "name")}</td>
+      <td>${isEditing ? virtualNodeProtocolSelect(row.listen_protocol) : formatCell(row.listen_protocol, "listen_protocol")}</td>
+      <td>${isEditing ? virtualNodeNumberInput(row, "listen_port") : formatCell(row.listen_port, "listen_port")}</td>
+      <td>${isEditing ? virtualNodeTextInput(row, "tag_selector", "table-edit-input-wide", '{"include":["HK"]}') : formatCell(row.tag_selector, "tag_selector")}</td>
+      <td>${isEditing ? virtualNodeStrategySelect(row.strategy) : formatCell(row.strategy, "strategy")}</td>
+      <td>${isEditing ? virtualNodeStatusSelect(row.status) : formatCell(row.status, "status")}</td>
+      <td class="table-actions virtual-node-actions">
+        ${
+          isEditing
+            ? `<button class="table-button" type="button" data-virtual-node-action="save" data-virtual-node-id="${row.id}">保存</button>
+               <button class="table-button ghost-button" type="button" data-virtual-node-action="cancel" data-virtual-node-id="${row.id}">取消</button>`
+            : `<button class="table-button" type="button" data-virtual-node-action="edit" data-virtual-node-id="${row.id}">编辑</button>`
+        }
+      </td>
+    </tr>
+  `;
+}
+
+function virtualNodeTextInput(row, field, className = "table-edit-input", placeholder = "") {
+  return `<input class="${className}" data-virtual-node-field="${field}" value="${escapeHTML(String(row[field] || ""))}" placeholder="${escapeHTML(placeholder)}" />`;
+}
+
+function virtualNodeNumberInput(row, field) {
+  return `<input class="table-edit-input table-edit-number" data-virtual-node-field="${field}" type="number" min="1" max="65535" step="1" value="${escapeHTML(String(row[field] || 0))}" />`;
+}
+
+function virtualNodeProtocolSelect(value) {
+  const current = String(value || "vless");
+  return `
+    <select class="table-edit-input" data-virtual-node-field="listen_protocol">
+      <option value="vless" ${current === "vless" ? "selected" : ""}>vless</option>
+    </select>
+  `;
+}
+
+function virtualNodeStrategySelect(value) {
+  const current = String(value || "selector");
+  return `
+    <select class="table-edit-input" data-virtual-node-field="strategy">
+      <option value="selector" ${current === "selector" ? "selected" : ""}>selector</option>
+    </select>
+  `;
+}
+
+function virtualNodeStatusSelect(value) {
+  const current = String(value || "active");
+  return `
+    <select class="table-edit-input" data-virtual-node-field="status">
+      <option value="active" ${current === "active" ? "selected" : ""}>active</option>
+      <option value="inactive" ${current === "inactive" ? "selected" : ""}>inactive</option>
     </select>
   `;
 }

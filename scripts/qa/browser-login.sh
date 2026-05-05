@@ -108,6 +108,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#sources button[data-source-action='cancel']").first().click();
   }
 
+  const virtualNodeEditCount = await page.locator("#virtual-nodes button[data-virtual-node-action='edit']").count();
+  let virtualNodeEditFieldsVisible = false;
+  if (virtualNodeEditCount > 0) {
+    await page.locator("#virtual-nodes button[data-virtual-node-action='edit']").first().click();
+    await expect(page.locator('#virtual-nodes [data-virtual-node-field="name"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#virtual-nodes [data-virtual-node-field="listen_port"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#virtual-nodes [data-virtual-node-field="tag_selector"]').first()).toBeVisible({ timeout: 5000 });
+    virtualNodeEditFieldsVisible = true;
+    await page.locator("#virtual-nodes button[data-virtual-node-action='cancel']").first().click();
+  }
+
   const nodeRegionCount = await page.locator("#nodes button[data-node-region-action='open']").count();
   let nodeCardCount = 0;
   if (nodeRegionCount > 0) {
@@ -148,6 +159,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }));
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
+  state.virtualNodeEditCount = virtualNodeEditCount;
+  state.virtualNodeEditFieldsVisible = virtualNodeEditFieldsVisible;
   state.nodeRegionCount = nodeRegionCount;
   state.nodeCardCount = nodeCardCount;
   state.nodeEditCount = nodeEditCount;

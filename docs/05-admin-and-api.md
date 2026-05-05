@@ -34,6 +34,7 @@
 
 - 创建成员
 - 绑定团队
+- 编辑成员姓名、邮箱、备注和团队绑定
 - 启用/禁用成员
 - 查看成员 Token
 - 查看成员流量
@@ -192,9 +193,7 @@ GET  /sub/{token}
 ```text
 GET    /api/teams
 POST   /api/teams
-GET    /api/teams/{id}
 PATCH  /api/teams/{id}
-DELETE /api/teams/{id}
 ```
 
 ### 2.4 用户
@@ -202,9 +201,7 @@ DELETE /api/teams/{id}
 ```text
 GET    /api/users
 POST   /api/users
-GET    /api/users/{id}
 PATCH  /api/users/{id}
-DELETE /api/users/{id}
 ```
 
 ### 2.5 Token

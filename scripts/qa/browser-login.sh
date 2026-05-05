@@ -98,6 +98,27 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     quotaUsageVisible = true;
   }
 
+  const teamEditCount = await page.locator("#teams button[data-team-action='edit']").count();
+  let teamEditFieldsVisible = false;
+  if (teamEditCount > 0) {
+    await page.locator("#teams button[data-team-action='edit']").first().click();
+    await expect(page.locator('#teams [data-team-field="name"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#teams [data-team-field="description"]').first()).toBeVisible({ timeout: 5000 });
+    teamEditFieldsVisible = true;
+    await page.locator("#teams button[data-team-action='cancel']").first().click();
+  }
+
+  const userEditCount = await page.locator("#users button[data-user-action='edit']").count();
+  let userEditFieldsVisible = false;
+  if (userEditCount > 0) {
+    await page.locator("#users button[data-user-action='edit']").first().click();
+    await expect(page.locator('#users [data-user-field="name"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#users [data-user-field="email"]').first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('#users [data-user-field="status"]').first()).toBeVisible({ timeout: 5000 });
+    userEditFieldsVisible = true;
+    await page.locator("#users button[data-user-action='cancel']").first().click();
+  }
+
   const sourceEditCount = await page.locator("#sources button[data-source-action='edit']").count();
   let sourceEditFieldsVisible = false;
   if (sourceEditCount > 0) {
@@ -168,6 +189,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     error: document.querySelector("#login-error")?.textContent,
     url: window.location.href,
   }));
+  state.teamEditCount = teamEditCount;
+  state.teamEditFieldsVisible = teamEditFieldsVisible;
+  state.userEditCount = userEditCount;
+  state.userEditFieldsVisible = userEditFieldsVisible;
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
   state.virtualNodeEditCount = virtualNodeEditCount;

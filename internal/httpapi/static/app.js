@@ -66,6 +66,8 @@ nodeImportForm.addEventListener("submit", submitNodeImport);
 virtualNodeForm.addEventListener("submit", submitVirtualNode);
 policyForm.addEventListener("submit", submitPolicy);
 tokenForm.addEventListener("submit", submitToken);
+teamsEl.addEventListener("click", handleTeamAction);
+usersEl.addEventListener("click", handleUserAction);
 sourcesEl.addEventListener("click", handleSourceAction);
 nodesEl.addEventListener("click", handleNodeAction);
 nodesEl.addEventListener("submit", handleNodeEditSubmit);
@@ -81,6 +83,8 @@ let appState = {
   nodes: [],
   virtualNodes: [],
   policies: [],
+  editingTeamID: null,
+  editingUserID: null,
   editingSourceID: null,
   editingVirtualNodeID: null,
   editingPolicyID: null,
@@ -190,6 +194,8 @@ async function logout() {
     nodes: [],
     virtualNodes: [],
     policies: [],
+    editingTeamID: null,
+    editingUserID: null,
     editingSourceID: null,
     editingVirtualNodeID: null,
     editingPolicyID: null,
@@ -238,8 +244,8 @@ async function load() {
     appState = { ...appState, teams, users, sources, nodes, virtualNodes, policies };
     renderMetrics(overview);
     renderSelectors();
-    renderTable(teamsEl, teams, ["id", "name", "description", "status"]);
-    renderTable(usersEl, users, ["id", "team_id", "name", "email", "status"]);
+    renderTeams(teams);
+    renderUsers(users);
     renderSources(sources);
     renderNodes(nodes);
     renderVirtualNodes(virtualNodes);
@@ -360,6 +366,109 @@ async function submitToken(event) {
     </div>
   `;
   tokenForm.reset();
+}
+
+async function handleTeamAction(event) {
+  const button = event.target.closest("button[data-team-action]");
+  if (!button) return;
+  const id = button.dataset.teamId;
+  const action = button.dataset.teamAction;
+  if (action === "edit") {
+    appState.editingTeamID = Number.parseInt(id || "0", 10);
+    renderTeams(appState.teams);
+    teamsEl.querySelector(`tr[data-team-id="${id}"] input[data-team-field="name"]`)?.focus();
+    return;
+  }
+  if (action === "cancel") {
+    appState.editingTeamID = null;
+    renderTeams(appState.teams);
+    return;
+  }
+  if (action === "save") {
+    await saveTeam(button);
+  }
+}
+
+async function saveTeam(button) {
+  const row = button.closest("tr[data-team-id]");
+  if (!row) return;
+  const id = row.dataset.teamId;
+  const payload = {
+    name: teamFieldValue(row, "name"),
+    description: teamFieldValue(row, "description"),
+    status: teamFieldValue(row, "status") || "active",
+  };
+  row.querySelectorAll("button").forEach((item) => {
+    item.disabled = true;
+  });
+  statusEl.textContent = "保存团队中";
+  try {
+    await patchJSON(`/api/teams/${id}`, payload);
+    appState.editingTeamID = null;
+    await load();
+  } catch (error) {
+    statusEl.textContent = "保存失败";
+    row.querySelectorAll("button").forEach((item) => {
+      item.disabled = false;
+    });
+  }
+}
+
+function teamFieldValue(row, name) {
+  return String(row.querySelector(`[data-team-field="${name}"]`)?.value || "").trim();
+}
+
+async function handleUserAction(event) {
+  const button = event.target.closest("button[data-user-action]");
+  if (!button) return;
+  const id = button.dataset.userId;
+  const action = button.dataset.userAction;
+  if (action === "edit") {
+    appState.editingUserID = Number.parseInt(id || "0", 10);
+    renderUsers(appState.users);
+    usersEl.querySelector(`tr[data-user-id="${id}"] input[data-user-field="name"]`)?.focus();
+    return;
+  }
+  if (action === "cancel") {
+    appState.editingUserID = null;
+    renderUsers(appState.users);
+    return;
+  }
+  if (action === "save") {
+    await saveUser(button);
+  }
+}
+
+async function saveUser(button) {
+  const row = button.closest("tr[data-user-id]");
+  if (!row) return;
+  const id = row.dataset.userId;
+  const teamID = Number.parseInt(row.querySelector('[data-user-field="team_id"]')?.value || "0", 10);
+  const payload = {
+    team_id: Number.isFinite(teamID) && teamID > 0 ? teamID : null,
+    name: userFieldValue(row, "name"),
+    email: userFieldValue(row, "email"),
+    remark: userFieldValue(row, "remark"),
+    status: userFieldValue(row, "status") || "active",
+  };
+  row.querySelectorAll("button").forEach((item) => {
+    item.disabled = true;
+  });
+  statusEl.textContent = "保存成员中";
+  try {
+    await patchJSON(`/api/users/${id}`, payload);
+    appState.editingUserID = null;
+    await load();
+  } catch (error) {
+    statusEl.textContent = "保存失败";
+    row.querySelectorAll("button").forEach((item) => {
+      item.disabled = false;
+    });
+  }
+}
+
+function userFieldValue(row, name) {
+  return String(row.querySelector(`[data-user-field="${name}"]`)?.value || "").trim();
 }
 
 async function handleSourceAction(event) {
@@ -861,6 +970,134 @@ function renderMetrics(data) {
   metricsEl.innerHTML = items
     .map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value ?? 0}</strong></div>`)
     .join("");
+}
+
+function renderTeams(rows) {
+  appState.teams = rows || [];
+  if (!rows || rows.length === 0) {
+    teamsEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  teamsEl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>${labelForColumn("id")}</th>
+          <th>${labelForColumn("name")}</th>
+          <th>${labelForColumn("description")}</th>
+          <th>${labelForColumn("status")}</th>
+          <th>${labelForColumn("actions")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((row) => renderTeamRow(row)).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderTeamRow(row) {
+  const isEditing = appState.editingTeamID === row.id;
+  return `
+    <tr data-team-id="${row.id}" class="${isEditing ? "team-edit-row" : ""}">
+      <td>${formatCell(row.id, "id")}</td>
+      <td>${isEditing ? teamTextInput(row, "name") : formatCell(row.name, "name")}</td>
+      <td>${isEditing ? teamTextInput(row, "description", "table-edit-input-wide") : formatCell(row.description, "description")}</td>
+      <td>${isEditing ? teamStatusSelect(row.status) : formatCell(row.status, "status")}</td>
+      <td class="table-actions compact-actions">
+        ${
+          isEditing
+            ? `<button class="table-button" type="button" data-team-action="save" data-team-id="${row.id}">保存</button>
+               <button class="table-button ghost-button" type="button" data-team-action="cancel" data-team-id="${row.id}">取消</button>`
+            : `<button class="table-button" type="button" data-team-action="edit" data-team-id="${row.id}">编辑</button>`
+        }
+      </td>
+    </tr>
+  `;
+}
+
+function teamTextInput(row, field, className = "table-edit-input") {
+  return `<input class="${className}" data-team-field="${field}" value="${escapeHTML(String(row[field] || ""))}" />`;
+}
+
+function teamStatusSelect(value) {
+  const current = String(value || "active");
+  return `
+    <select class="table-edit-input" data-team-field="status">
+      <option value="active" ${current === "active" ? "selected" : ""}>active</option>
+      <option value="inactive" ${current === "inactive" ? "selected" : ""}>inactive</option>
+    </select>
+  `;
+}
+
+function renderUsers(rows) {
+  appState.users = rows || [];
+  if (!rows || rows.length === 0) {
+    usersEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    return;
+  }
+  usersEl.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th>${labelForColumn("id")}</th>
+          <th>${labelForColumn("team_id")}</th>
+          <th>${labelForColumn("name")}</th>
+          <th>${labelForColumn("email")}</th>
+          <th>${labelForColumn("remark")}</th>
+          <th>${labelForColumn("status")}</th>
+          <th>${labelForColumn("actions")}</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${rows.map((row) => renderUserRow(row)).join("")}
+      </tbody>
+    </table>
+  `;
+}
+
+function renderUserRow(row) {
+  const isEditing = appState.editingUserID === row.id;
+  return `
+    <tr data-user-id="${row.id}" class="${isEditing ? "user-edit-row" : ""}">
+      <td>${formatCell(row.id, "id")}</td>
+      <td>${isEditing ? userTeamSelectInput(row.team_id) : formatCell(row.team_id, "team_id")}</td>
+      <td>${isEditing ? userTextInput(row, "name") : formatCell(row.name, "name")}</td>
+      <td>${isEditing ? userTextInput(row, "email", "table-edit-input-wide") : formatCell(row.email, "email")}</td>
+      <td>${isEditing ? userTextInput(row, "remark", "table-edit-input-wide") : formatCell(row.remark, "remark")}</td>
+      <td>${isEditing ? userStatusSelect(row.status) : formatCell(row.status, "status")}</td>
+      <td class="table-actions compact-actions">
+        ${
+          isEditing
+            ? `<button class="table-button" type="button" data-user-action="save" data-user-id="${row.id}">保存</button>
+               <button class="table-button ghost-button" type="button" data-user-action="cancel" data-user-id="${row.id}">取消</button>`
+            : `<button class="table-button" type="button" data-user-action="edit" data-user-id="${row.id}">编辑</button>`
+        }
+      </td>
+    </tr>
+  `;
+}
+
+function userTextInput(row, field, className = "table-edit-input") {
+  return `<input class="${className}" data-user-field="${field}" value="${escapeHTML(String(row[field] || ""))}" />`;
+}
+
+function userTeamSelectInput(value) {
+  const current = String(value || "");
+  const options = [`<option value="">不绑定团队</option>`].concat(
+    appState.teams.map((team) => `<option value="${team.id}" ${String(team.id) === current ? "selected" : ""}>${escapeHTML(team.name)}</option>`),
+  );
+  return `<select class="table-edit-input" data-user-field="team_id">${options.join("")}</select>`;
+}
+
+function userStatusSelect(value) {
+  const current = String(value || "active");
+  return `
+    <select class="table-edit-input" data-user-field="status">
+      <option value="active" ${current === "active" ? "selected" : ""}>active</option>
+      <option value="inactive" ${current === "inactive" ? "selected" : ""}>inactive</option>
+    </select>
+  `;
 }
 
 function renderSources(rows) {

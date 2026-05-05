@@ -77,8 +77,10 @@ func (s *Server) routes() {
 
 	s.mux.HandleFunc("GET /api/teams", s.handleListTeams)
 	s.mux.HandleFunc("POST /api/teams", s.handleCreateTeam)
+	s.mux.HandleFunc("PATCH /api/teams/{id}", s.handleUpdateTeam)
 	s.mux.HandleFunc("GET /api/users", s.handleListUsers)
 	s.mux.HandleFunc("POST /api/users", s.handleCreateUser)
+	s.mux.HandleFunc("PATCH /api/users/{id}", s.handleUpdateUser)
 	s.mux.HandleFunc("GET /api/tokens", s.handleListTokens)
 	s.mux.HandleFunc("POST /api/tokens", s.handleCreateToken)
 	s.mux.HandleFunc("POST /api/tokens/{id}/revoke", s.handleRevokeToken)
@@ -471,6 +473,23 @@ func (s *Server) handleCreateTeam(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusCreated, team)
 }
 
+func (s *Server) handleUpdateTeam(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	var input store.UpdateTeamInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	team, err := s.store.UpdateTeam(r.Context(), id, input)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, team)
+}
+
 func (s *Server) handleListUsers(w http.ResponseWriter, r *http.Request) {
 	users, err := s.store.ListUsers(r.Context())
 	if err != nil {
@@ -491,6 +510,23 @@ func (s *Server) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusCreated, user)
+}
+
+func (s *Server) handleUpdateUser(w http.ResponseWriter, r *http.Request) {
+	id, ok := parseID(w, r)
+	if !ok {
+		return
+	}
+	var input store.UpdateUserInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	user, err := s.store.UpdateUser(r.Context(), id, input)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, user)
 }
 
 func (s *Server) handleListTokens(w http.ResponseWriter, r *http.Request) {

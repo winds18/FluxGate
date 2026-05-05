@@ -15,11 +15,25 @@ type CreateTeamInput struct {
 	Description string `json:"description"`
 }
 
+type UpdateTeamInput struct {
+	Name        *string `json:"name"`
+	Description *string `json:"description"`
+	Status      *string `json:"status"`
+}
+
 type CreateUserInput struct {
 	TeamID *int64 `json:"team_id"`
 	Name   string `json:"name"`
 	Email  string `json:"email"`
 	Remark string `json:"remark"`
+}
+
+type UpdateUserInput struct {
+	TeamID *int64  `json:"team_id"`
+	Name   *string `json:"name"`
+	Email  *string `json:"email"`
+	Remark *string `json:"remark"`
+	Status *string `json:"status"`
 }
 
 type CreateTokenInput struct {
@@ -44,14 +58,56 @@ type TokenSubscriptions struct {
 }
 
 func (s *Store) CreateTeam(ctx context.Context, input CreateTeamInput) (Team, error) {
+	fields, err := normalizeTeamFields(teamFields{
+		Name:        input.Name,
+		Description: input.Description,
+		Status:      "active",
+	})
+	if err != nil {
+		return Team{}, err
+	}
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO teams(name, description)
-		VALUES (?, ?)
-	`, input.Name, input.Description)
+		INSERT INTO teams(name, description, status)
+		VALUES (?, ?, ?)
+	`, fields.Name, fields.Description, fields.Status)
 	if err != nil {
 		return Team{}, err
 	}
 	id, err := result.LastInsertId()
+	if err != nil {
+		return Team{}, err
+	}
+	return s.GetTeam(ctx, id)
+}
+
+func (s *Store) UpdateTeam(ctx context.Context, id int64, input UpdateTeamInput) (Team, error) {
+	current, err := s.GetTeam(ctx, id)
+	if err != nil {
+		return Team{}, err
+	}
+	fields := teamFields{
+		Name:        current.Name,
+		Description: current.Description,
+		Status:      current.Status,
+	}
+	if input.Name != nil {
+		fields.Name = *input.Name
+	}
+	if input.Description != nil {
+		fields.Description = *input.Description
+	}
+	if input.Status != nil {
+		fields.Status = *input.Status
+	}
+	fields, err = normalizeTeamFields(fields)
+	if err != nil {
+		return Team{}, err
+	}
+	_, err = s.db.ExecContext(ctx, `
+		UPDATE teams
+		SET name = ?, description = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, fields.Name, fields.Description, fields.Status, id)
 	if err != nil {
 		return Team{}, err
 	}
@@ -90,14 +146,66 @@ func (s *Store) ListTeams(ctx context.Context) ([]Team, error) {
 }
 
 func (s *Store) CreateUser(ctx context.Context, input CreateUserInput) (User, error) {
+	fields, err := normalizeUserFields(userFields{
+		TeamID: input.TeamID,
+		Name:   input.Name,
+		Email:  input.Email,
+		Remark: input.Remark,
+		Status: "active",
+	})
+	if err != nil {
+		return User{}, err
+	}
 	result, err := s.db.ExecContext(ctx, `
-		INSERT INTO users(team_id, name, email, remark)
-		VALUES (?, ?, ?, ?)
-	`, input.TeamID, input.Name, input.Email, input.Remark)
+		INSERT INTO users(team_id, name, email, remark, status)
+		VALUES (?, ?, ?, ?, ?)
+	`, fields.TeamID, fields.Name, fields.Email, fields.Remark, fields.Status)
 	if err != nil {
 		return User{}, err
 	}
 	id, err := result.LastInsertId()
+	if err != nil {
+		return User{}, err
+	}
+	return s.GetUser(ctx, id)
+}
+
+func (s *Store) UpdateUser(ctx context.Context, id int64, input UpdateUserInput) (User, error) {
+	current, err := s.GetUser(ctx, id)
+	if err != nil {
+		return User{}, err
+	}
+	fields := userFields{
+		TeamID: current.TeamID,
+		Name:   current.Name,
+		Email:  current.Email,
+		Remark: current.Remark,
+		Status: current.Status,
+	}
+	if input.TeamID != nil {
+		fields.TeamID = input.TeamID
+	}
+	if input.Name != nil {
+		fields.Name = *input.Name
+	}
+	if input.Email != nil {
+		fields.Email = *input.Email
+	}
+	if input.Remark != nil {
+		fields.Remark = *input.Remark
+	}
+	if input.Status != nil {
+		fields.Status = *input.Status
+	}
+	fields, err = normalizeUserFields(fields)
+	if err != nil {
+		return User{}, err
+	}
+	_, err = s.db.ExecContext(ctx, `
+		UPDATE users
+		SET team_id = ?, name = ?, email = ?, remark = ?, status = ?, updated_at = CURRENT_TIMESTAMP
+		WHERE id = ?
+	`, fields.TeamID, fields.Name, fields.Email, fields.Remark, fields.Status, id)
 	if err != nil {
 		return User{}, err
 	}
@@ -133,6 +241,56 @@ func (s *Store) ListUsers(ctx context.Context) ([]User, error) {
 		users = append(users, user)
 	}
 	return users, rows.Err()
+}
+
+type teamFields struct {
+	Name        string
+	Description string
+	Status      string
+}
+
+func normalizeTeamFields(fields teamFields) (teamFields, error) {
+	fields.Name = strings.TrimSpace(fields.Name)
+	fields.Description = strings.TrimSpace(fields.Description)
+	if fields.Name == "" {
+		return teamFields{}, fmt.Errorf("team name is required")
+	}
+	fields.Status = strings.TrimSpace(fields.Status)
+	if fields.Status == "" {
+		fields.Status = "active"
+	}
+	if fields.Status != "active" && fields.Status != "inactive" {
+		return teamFields{}, fmt.Errorf("status must be active or inactive")
+	}
+	return fields, nil
+}
+
+type userFields struct {
+	TeamID *int64
+	Name   string
+	Email  string
+	Remark string
+	Status string
+}
+
+func normalizeUserFields(fields userFields) (userFields, error) {
+	if fields.TeamID != nil && *fields.TeamID <= 0 {
+		return userFields{}, fmt.Errorf("team_id must be greater than 0")
+	}
+	fields.Name = strings.TrimSpace(fields.Name)
+	fields.Email = strings.TrimSpace(fields.Email)
+	fields.Remark = strings.TrimSpace(fields.Remark)
+	if fields.Name == "" {
+		return userFields{}, fmt.Errorf("user name is required")
+	}
+	fields.Status = strings.TrimSpace(fields.Status)
+	if fields.Status == "" {
+		fields.Status = "active"
+	}
+	if fields.Status != "active" && fields.Status != "inactive" {
+		return userFields{}, fmt.Errorf("status must be active or inactive")
+	}
+	return fields, nil
 }
 
 func (s *Store) CreateToken(ctx context.Context, secret, publicBaseURL string, input CreateTokenInput) (CreateTokenResult, error) {

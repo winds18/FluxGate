@@ -57,6 +57,10 @@ curl -fsS -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" \
 
 post_json "/api/teams" '{"name":"QA Team","description":"automated smoke"}' "$OUT_DIR/team.json"
 team_id="$(json_value "data.id" <"$OUT_DIR/team.json")"
+patch_json "/api/teams/$team_id" '{"name":"QA Team Edited","description":"automated smoke edited","status":"active"}' "$OUT_DIR/team-update.json"
+team_updated_name="$(json_value "data.name" <"$OUT_DIR/team-update.json")"
+team_updated_description="$(json_value "data.description" <"$OUT_DIR/team-update.json")"
+team_updated_status="$(json_value "data.status" <"$OUT_DIR/team-update.json")"
 post_json "/api/policies" "{\"name\":\"QA 默认策略\",\"scope_type\":\"team\",\"scope_id\":$team_id,\"include_tags\":\"[\\\"QA-HK\\\"]\",\"allowed_virtual_nodes\":\"[\\\"FluxGate-HK\\\"]\",\"max_nodes\":5}" "$OUT_DIR/policy.json"
 policy_id="$(json_value "data.id" <"$OUT_DIR/policy.json")"
 policy_scope_id="$(json_value "data.scope_id" <"$OUT_DIR/policy.json")"
@@ -72,6 +76,11 @@ policy_list_count="$(json_value "data.length" <"$OUT_DIR/policies.json")"
 
 post_json "/api/users" "{\"team_id\":$team_id,\"name\":\"QA User\",\"email\":\"qa@example.test\"}" "$OUT_DIR/user.json"
 user_id="$(json_value "data.id" <"$OUT_DIR/user.json")"
+patch_json "/api/users/$user_id" "{\"team_id\":$team_id,\"name\":\"QA User Edited\",\"email\":\"qa-edited@example.test\",\"remark\":\"QA remark\",\"status\":\"active\"}" "$OUT_DIR/user-update.json"
+user_updated_name="$(json_value "data.name" <"$OUT_DIR/user-update.json")"
+user_updated_email="$(json_value "data.email" <"$OUT_DIR/user-update.json")"
+user_updated_remark="$(json_value "data.remark" <"$OUT_DIR/user-update.json")"
+user_updated_status="$(json_value "data.status" <"$OUT_DIR/user-update.json")"
 
 post_json "/api/sources" '{"name":"机场A","type":"manual","default_tags":"[\"QA-HK\"]"}' "$OUT_DIR/source-a.json"
 source_a_id="$(json_value "data.id" <"$OUT_DIR/source-a.json")"
@@ -312,6 +321,16 @@ config_restart_skipped="$(json_value "data.skipped" <"$OUT_DIR/sing-box-restart.
 
 if [[ "$source_b_prefix" != '"[机场A-2] "' ]]; then
   log "unexpected auto prefix for duplicate source: $source_b_prefix"
+  exit 1
+fi
+
+if [[ "$team_updated_name" != "QA Team Edited" || "$team_updated_description" != "automated smoke edited" || "$team_updated_status" != "active" ]]; then
+  log "team update should persist editable fields: name=$team_updated_name description=$team_updated_description status=$team_updated_status"
+  exit 1
+fi
+
+if [[ "$user_updated_name" != "QA User Edited" || "$user_updated_email" != "qa-edited@example.test" || "$user_updated_remark" != "QA remark" || "$user_updated_status" != "active" ]]; then
+  log "user update should persist editable fields: name=$user_updated_name email=$user_updated_email remark=$user_updated_remark status=$user_updated_status"
   exit 1
 fi
 

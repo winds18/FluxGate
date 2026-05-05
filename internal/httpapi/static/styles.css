@@ -236,6 +236,10 @@ main {
   min-width: 300px;
 }
 
+.compact-actions {
+  min-width: 140px;
+}
+
 .token-action-group {
   align-items: center;
   background: var(--surface-muted);
@@ -377,6 +381,8 @@ textarea {
   min-width: 180px;
 }
 
+.team-edit-row td,
+.user-edit-row td,
 .source-edit-row td {
   vertical-align: top;
 }

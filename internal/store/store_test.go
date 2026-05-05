@@ -121,6 +121,56 @@ func intPtr(value int) *int {
 	return &value
 }
 
+func TestTeamAndUserUpdateEditableFields(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	team, err := db.CreateTeam(ctx, CreateTeamInput{Name: "Team A", Description: "old"})
+	if err != nil {
+		t.Fatalf("create team: %v", err)
+	}
+	updatedTeam, err := db.UpdateTeam(ctx, team.ID, UpdateTeamInput{
+		Name:        stringPtr("Team B"),
+		Description: stringPtr("new"),
+		Status:      stringPtr("inactive"),
+	})
+	if err != nil {
+		t.Fatalf("update team: %v", err)
+	}
+	if updatedTeam.Name != "Team B" || updatedTeam.Description != "new" || updatedTeam.Status != "inactive" {
+		t.Fatalf("unexpected updated team: %+v", updatedTeam)
+	}
+	if _, err := db.UpdateTeam(ctx, team.ID, UpdateTeamInput{Name: stringPtr("")}); err == nil {
+		t.Fatal("empty team name should fail")
+	}
+	if _, err := db.UpdateTeam(ctx, team.ID, UpdateTeamInput{Status: stringPtr("disabled")}); err == nil {
+		t.Fatal("invalid team status should fail")
+	}
+
+	user, err := db.CreateUser(ctx, CreateUserInput{TeamID: &team.ID, Name: "Alice", Email: "old@example.test", Remark: "old"})
+	if err != nil {
+		t.Fatalf("create user: %v", err)
+	}
+	updatedUser, err := db.UpdateUser(ctx, user.ID, UpdateUserInput{
+		Name:   stringPtr("Alice B"),
+		Email:  stringPtr("new@example.test"),
+		Remark: stringPtr("new"),
+		Status: stringPtr("inactive"),
+	})
+	if err != nil {
+		t.Fatalf("update user: %v", err)
+	}
+	if updatedUser.Name != "Alice B" || updatedUser.Email != "new@example.test" || updatedUser.Remark != "new" || updatedUser.Status != "inactive" || updatedUser.TeamID == nil || *updatedUser.TeamID != team.ID {
+		t.Fatalf("unexpected updated user: %+v", updatedUser)
+	}
+	if _, err := db.UpdateUser(ctx, user.ID, UpdateUserInput{Name: stringPtr("")}); err == nil {
+		t.Fatal("empty user name should fail")
+	}
+	if _, err := db.UpdateUser(ctx, user.ID, UpdateUserInput{TeamID: int64Ptr(0)}); err == nil {
+		t.Fatal("invalid user team_id should fail")
+	}
+}
+
 func TestVirtualNodeUpdateEditableFields(t *testing.T) {
 	ctx := context.Background()
 	db := openTestStore(t)

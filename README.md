@@ -65,6 +65,7 @@ FluxGate 不做真实代理转发，不解密 HTTPS 内容。它可以统计用�
 - [开发规范](docs/09-development-standard.md)
 - [运维与可观测性](docs/10-operations-observability.md)
 - [当前实现状态](docs/11-current-implementation.md)
+- [手把手使用说明](docs/12-user-guide.md)
 
 ## 本地验证
 
@@ -95,6 +96,7 @@ admin / dev-admin-change-me
 ```bash
 scripts/qa/smoke.sh
 scripts/qa/api-flow.sh
+scripts/qa/readiness.sh
 scripts/qa/screenshot.sh
 ```
 
@@ -114,6 +116,13 @@ scripts/qa/public-scan.sh
 
 ```bash
 KEEP_ARTIFACTS=true scripts/qa/local-suite.sh
+```
+
+远程实例只读就绪检查：
+
+```bash
+scripts/qa/readiness.sh http://<lan-host>:<port>
+STRICT=true scripts/qa/readiness.sh http://<lan-host>:<port>
 ```
 
 停止本地服务：

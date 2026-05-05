@@ -223,7 +223,9 @@
 - 部署侧可通过未跟踪配置打开局域网访问，不把真实环境信息提交到公开仓库。
 - 页面截图验收脚本，支持指定目标 URL、保留截图和自定义输出目录。
 - 浏览器登录验收脚本。
+- 只读就绪检查脚本，可在本地或远程实例上检查健康状态、登录、概览、团队、成员、Token、来源、节点、虚拟节点、策略和流量摘要；`STRICT=true` 时缺少体验前置数据会使检查失败。
 - 本地 QA 套件退出自动清理临时产物。
+- 手把手使用说明已落地，覆盖部署初始化、管理员登录、添加上游订阅、节点地区聚合与详情查看、节点/来源编辑、团队/用户/Token 管理、订阅地址分发、流量额度查看、配置发布/回滚、远程运维和常见问题排查。
 
 ## 2. 当前 API 骨架
 
@@ -298,6 +300,7 @@ scripts/db/migrate.sh
 scripts/qa/public-scan.sh
 scripts/qa/smoke.sh
 scripts/qa/api-flow.sh
+scripts/qa/readiness.sh
 scripts/qa/browser-login.sh
 scripts/qa/screenshot.sh
 scripts/qa/local-suite.sh
@@ -314,6 +317,7 @@ docker compose config
 KEEP_ARTIFACTS=true scripts/qa/screenshot.sh 可保留截图；默认测试退出会自动清理截图。
 scripts/qa/screenshot.sh --keep http://<lan-host>:<port> 可对局域网部署页面保留人工复核截图。
 scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录验收。
+scripts/qa/readiness.sh http://<lan-host>:<port> 可做真实实例只读就绪检查；STRICT=true 会把缺少体验数据视为失败。
 ```
 
 截图结论：
@@ -341,8 +345,8 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 
 - 上游订阅更多结构化格式解析。
 - 更多特殊协议 URI 到 sing-box outbound 的转换。
-- 远程服务器实际部署验证，相关连接信息仅保存在本机未跟踪配置中。
-- 当前大版本收尾时交付一份手把手使用说明，覆盖部署初始化、管理员登录、添加上游订阅、节点地区聚合与详情查看、节点/来源编辑、团队/用户/Token 管理、订阅地址分发、流量额度查看、配置发布/回滚、远程运维和常见问题排查。
+- 更多真实订阅样本和特殊协议兼容性验证。
+- 手把手使用说明需要随后续功能持续更新。
 
 ## 5. 当前注意事项
 

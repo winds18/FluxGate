@@ -192,6 +192,27 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
 
   await switchView("access");
+  const sourceCardCount = await page.locator("#sources .source-card").count();
+  const sourceVisualOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#sources .source-card")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(
+        card.querySelectorAll(".source-card-heading, .source-type-badge, .source-card-field, .source-actions"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const sourceEditCount = await page.locator("#sources button[data-source-action='edit']").count();
   let sourceEditFieldsVisible = false;
   if (sourceEditCount > 0) {
@@ -343,6 +364,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.teamEditFieldsVisible = teamEditFieldsVisible;
   state.userEditCount = userEditCount;
   state.userEditFieldsVisible = userEditFieldsVisible;
+  state.sourceCardCount = sourceCardCount;
+  state.sourceVisualOverflowCount = sourceVisualOverflowCount;
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
   state.virtualNodeEditCount = virtualNodeEditCount;
@@ -379,6 +402,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenVisualOverlapCount > 0) {
     throw new Error(`token controls visually overlap: ${JSON.stringify(state)}`);
+  }
+  if (sourceEditCount > 0 && (sourceCardCount !== sourceEditCount || sourceVisualOverflowCount > 0)) {
+    throw new Error(`source cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (nodeVisualOverflowCount > 0) {
     throw new Error(`node cards visually overflow their parent: ${JSON.stringify(state)}`);

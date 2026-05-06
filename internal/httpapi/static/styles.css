@@ -784,10 +784,6 @@ main {
   width: 82px;
 }
 
-.source-actions {
-  min-width: 250px;
-}
-
 .policy-actions {
   min-width: 140px;
 }
@@ -933,6 +929,115 @@ textarea {
 
 .table-edit-number {
   min-width: 108px;
+}
+
+.source-card-list {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.source-card {
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.source-card-heading,
+.source-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.source-card-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.source-card-heading span,
+.source-card-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.source-card-heading strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 780;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.source-type-badge {
+  align-items: center;
+  background: #eef6ff;
+  border: 1px solid #cfe0f2;
+  border-radius: 999px;
+  color: #1d4ed8;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 28px;
+  max-width: 100%;
+  padding: 0 9px;
+  white-space: nowrap;
+}
+
+.source-type-badge select {
+  height: 30px;
+  min-height: 30px;
+  min-width: 140px;
+}
+
+.source-card-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  min-width: 0;
+}
+
+.source-card-field {
+  background: #fbfdff;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.source-card-field strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.4;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.source-card-field-warning {
+  background: var(--warning-bg);
+  border-color: #f0d79d;
+}
+
+.source-actions {
+  justify-content: flex-start;
+}
+
+.source-card input,
+.source-card select {
+  min-width: 0;
 }
 
 .node-browser {
@@ -1758,6 +1863,18 @@ td code {
 
   .button-row {
     justify-content: flex-start;
+  }
+
+  .source-card-heading,
+  .source-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .source-type-badge,
+  .source-actions button {
+    justify-content: center;
+    width: 100%;
   }
 
   .node-filter-bar {

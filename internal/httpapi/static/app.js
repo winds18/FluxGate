@@ -625,7 +625,7 @@ async function handleSourceAction(event) {
   if (action === "edit") {
     appState.editingSourceID = Number.parseInt(id || "0", 10);
     renderSources(appState.sources);
-    sourcesEl.querySelector(`tr[data-source-id="${id}"] input[data-source-field="name"]`)?.focus();
+    sourcesEl.querySelector(`[data-source-id="${id}"] input[data-source-field="name"]`)?.focus();
     return;
   }
   if (action === "cancel") {
@@ -654,7 +654,7 @@ async function handleSourceAction(event) {
 }
 
 async function saveSource(button) {
-  const row = button.closest("tr[data-source-id]");
+  const row = button.closest("[data-source-id]");
   if (!row) return;
   const id = row.dataset.sourceId;
   const refreshInterval = Number.parseInt(row.querySelector('[data-source-field="refresh_interval_minutes"]')?.value || "0", 10);
@@ -1517,42 +1517,32 @@ function renderSources(rows) {
     return;
   }
   sourcesEl.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>${labelForColumn("id")}</th>
-          <th>${labelForColumn("name")}</th>
-          <th>${labelForColumn("type")}</th>
-          <th>${labelForColumn("url")}</th>
-          <th>${labelForColumn("display_prefix")}</th>
-          <th>${labelForColumn("default_tags")}</th>
-          <th>${labelForColumn("refresh_interval_minutes")}</th>
-          <th>${labelForColumn("last_sync_at")}</th>
-          <th>${labelForColumn("last_error")}</th>
-          <th>${labelForColumn("actions")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map((row) => renderSourceRow(row)).join("")}
-      </tbody>
-    </table>
+    <div class="source-card-list">
+      ${rows.map((row) => renderSourceCard(row)).join("")}
+    </div>
   `;
 }
 
-function renderSourceRow(row) {
+function renderSourceCard(row) {
   const isEditing = appState.editingSourceID === row.id;
   return `
-    <tr data-source-id="${row.id}" class="${isEditing ? "source-edit-row" : ""}">
-      <td>${formatCell(row.id, "id")}</td>
-      <td>${isEditing ? sourceTextInput(row, "name") : formatCell(row.name, "name")}</td>
-      <td>${isEditing ? sourceTypeSelect(row.type) : formatCell(row.type, "type")}</td>
-      <td>${isEditing ? sourceTextInput(row, "url", "table-edit-input-wide") : formatCell(row.url, "url")}</td>
-      <td>${isEditing ? sourceTextInput(row, "display_prefix", "table-edit-input", "留空自动") : formatCell(row.display_prefix, "display_prefix")}</td>
-      <td>${isEditing ? sourceTextInput(row, "default_tags", "table-edit-input", "HK, Premium") : formatCell(row.default_tags, "default_tags")}</td>
-      <td>${isEditing ? sourceNumberInput(row, "refresh_interval_minutes") : formatCell(row.refresh_interval_minutes, "refresh_interval_minutes")}</td>
-      <td>${formatCell(row.last_sync_at, "last_sync_at")}</td>
-      <td>${formatCell(row.last_error, "last_error")}</td>
-      <td class="table-actions source-actions">
+    <article class="source-card ${isEditing ? "source-card-editing" : ""}" data-source-id="${row.id}">
+      <div class="source-card-heading">
+        <div>
+          <span>${labelForColumn("id")} ${formatCell(row.id, "id")}</span>
+          <strong>${isEditing ? sourceTextInput(row, "name") : formatCell(row.name, "name")}</strong>
+        </div>
+        <span class="source-type-badge">${isEditing ? sourceTypeSelect(row.type) : formatCell(row.type, "type")}</span>
+      </div>
+      <div class="source-card-grid">
+        ${sourceCardField("url", isEditing ? sourceTextInput(row, "url", "table-edit-input-wide") : formatCell(row.url, "url"))}
+        ${sourceCardField("display_prefix", isEditing ? sourceTextInput(row, "display_prefix", "table-edit-input", "留空自动") : formatCell(row.display_prefix, "display_prefix"))}
+        ${sourceCardField("default_tags", isEditing ? sourceTextInput(row, "default_tags", "table-edit-input", "HK, Premium") : formatCell(row.default_tags, "default_tags"))}
+        ${sourceCardField("refresh_interval_minutes", isEditing ? sourceNumberInput(row, "refresh_interval_minutes") : formatCell(row.refresh_interval_minutes, "refresh_interval_minutes"))}
+        ${sourceCardField("last_sync_at", formatCell(row.last_sync_at, "last_sync_at"))}
+        ${sourceCardField("last_error", formatCell(row.last_error, "last_error"), row.last_error ? "source-card-field-warning" : "")}
+      </div>
+      <div class="table-actions source-actions">
         ${
           isEditing
             ? `<button class="table-button" type="button" data-source-action="save" data-source-id="${row.id}">保存</button>
@@ -1561,8 +1551,17 @@ function renderSourceRow(row) {
         }
         <button class="table-button" type="button" data-source-action="refresh" data-source-id="${row.id}">刷新</button>
         <button class="table-button ghost-button" type="button" data-source-action="regenerate" data-source-id="${row.id}">同步命名</button>
-      </td>
-    </tr>
+      </div>
+    </article>
+  `;
+}
+
+function sourceCardField(label, value, className = "") {
+  return `
+    <div class="source-card-field ${className}">
+      <span>${labelForColumn(label)}</span>
+      <strong>${value}</strong>
+    </div>
   `;
 }
 

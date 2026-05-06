@@ -187,6 +187,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       }, 0);
   });
   const overviewQuickCardCount = await page.locator(".quick-card").count();
+  const overviewQuickCardSymbolCount = await page.locator(".quick-card .quick-card-symbol").count();
+  const overviewQuickCardSymbols = await page
+    .locator(".quick-card .quick-card-symbol")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
   const overviewQuickCardBadgeCount = await page.locator(".quick-card [data-overview-card-count]").count();
   const overviewQuickCardBadgeValues = await page
     .locator(".quick-card [data-overview-card-count]")
@@ -199,7 +203,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       child.bottom > parent.bottom + 1;
     return Array.from(document.querySelectorAll(".quick-card")).reduce((total, card) => {
       const cardBox = card.getBoundingClientRect();
-      const elements = Array.from(card.querySelectorAll(".quick-card-heading, strong, .quick-card-badge"))
+      const elements = Array.from(card.querySelectorAll(".quick-card-heading, .quick-card-symbol, strong, .quick-card-badge"))
         .filter((element) => element.offsetParent !== null);
       for (const element of elements) {
         const box = element.getBoundingClientRect();
@@ -684,6 +688,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewNextStepActionCount = overviewNextStepActionCount;
   state.overviewNextStepOverflowCount = overviewNextStepOverflowCount;
   state.overviewQuickCardCount = overviewQuickCardCount;
+  state.overviewQuickCardSymbolCount = overviewQuickCardSymbolCount;
+  state.overviewQuickCardSymbols = overviewQuickCardSymbols;
   state.overviewQuickCardBadgeCount = overviewQuickCardBadgeCount;
   state.overviewQuickCardBadgeValues = overviewQuickCardBadgeValues;
   state.overviewQuickCardOverflowCount = overviewQuickCardOverflowCount;
@@ -898,8 +904,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (overviewNextStepCardCount !== 1 || overviewNextStepActionCount !== 1 || overviewNextStepOverflowCount > 0) {
     throw new Error(`overview next step action card is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
+  const expectedOverviewQuickCardSymbols = ["源", "点", "身", "运"];
   if (
     overviewQuickCardCount !== 4 ||
+    overviewQuickCardSymbolCount !== 4 ||
+    expectedOverviewQuickCardSymbols.some((symbol, index) => overviewQuickCardSymbols[index] !== symbol) ||
     overviewQuickCardBadgeCount !== 4 ||
     overviewQuickCardOverflowCount > 0 ||
     Object.values(overviewQuickCardBadgeValues).some((value) => !value || value === "--")

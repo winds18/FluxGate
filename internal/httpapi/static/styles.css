@@ -768,8 +768,7 @@ main {
 .quick-card-heading {
   align-items: center;
   display: flex;
-  gap: 10px;
-  justify-content: space-between;
+  gap: 8px;
   min-width: 0;
   width: 100%;
 }
@@ -782,6 +781,7 @@ main {
 }
 
 .quick-card strong {
+  flex: 1 1 auto;
   font-size: 16px;
   font-weight: 780;
   line-height: 1.25;
@@ -796,6 +796,22 @@ main {
   font-size: 13px;
   font-weight: 620;
   line-height: 1.4;
+}
+
+.quick-card .quick-card-symbol {
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 820;
+  height: 30px;
+  justify-content: center;
+  line-height: 1;
+  width: 30px;
 }
 
 .quick-card .quick-card-badge {

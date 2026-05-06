@@ -164,6 +164,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const panelTitleOverflow = {};
   const viewContextChipCounts = {};
   const viewRailButtonCounts = {};
+  const viewRailSymbolCounts = {};
+  const viewRailSymbols = {};
   const viewRailBadgeCounts = {};
   const viewHeaderSymbols = {};
   for (const view of viewNames) {
@@ -173,6 +175,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     viewHeaderSymbols[view] = (await page.locator("#view-symbol").textContent())?.trim();
     viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
     viewRailButtonCounts[view] = await page.locator("#view-rail .view-rail-button").count();
+    viewRailSymbolCounts[view] = await page.locator("#view-rail .view-rail-symbol").count();
+    viewRailSymbols[view] = await page
+      .locator("#view-rail .view-rail-symbol")
+      .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
     viewRailBadgeCounts[view] = await page.locator("#view-rail [data-view-rail-count]").count();
     panelTitleOverflow[view] = await page.evaluate((viewName) => {
       const outside = (child, parent) =>
@@ -757,6 +763,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.panelTitleOverflow = panelTitleOverflow;
   state.viewContextChipCounts = viewContextChipCounts;
   state.viewRailButtonCounts = viewRailButtonCounts;
+  state.viewRailSymbolCounts = viewRailSymbolCounts;
+  state.viewRailSymbols = viewRailSymbols;
   state.viewRailBadgeCounts = viewRailBadgeCounts;
   state.viewHeaderSymbols = viewHeaderSymbols;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
@@ -978,6 +986,23 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const sparseRailView = Object.entries(viewRailButtonCounts).find(([, count]) => count < 1);
   if (sparseRailView || !moduleRailOpensTokenForm) {
     throw new Error(`dashboard module rail is incomplete: ${JSON.stringify(state)}`);
+  }
+  const expectedRailSymbols = {
+    overview: ["概", "闭", "步"],
+    access: ["源", "加", "导"],
+    nodes: ["点", "网", "建"],
+    identity: ["钥", "团", "员", "钥", "团", "员"],
+    policies: ["策", "建"],
+    traffic: ["量", "时", "日", "出"],
+    ops: ["运"],
+  };
+  const railSymbolMismatch = Object.entries(viewRailButtonCounts).find(([view, count]) => {
+    const expected = expectedRailSymbols[view] || [];
+    const actual = viewRailSymbols[view] || [];
+    return count !== viewRailSymbolCounts[view] || expected.some((symbol, index) => actual[index] !== symbol);
+  });
+  if (railSymbolMismatch) {
+    throw new Error(`dashboard module rail symbols are incomplete: ${JSON.stringify(state)}`);
   }
   const railBadgeMismatch = Object.entries(viewRailButtonCounts).find(
     ([view, count]) => count !== viewRailBadgeCounts[view],

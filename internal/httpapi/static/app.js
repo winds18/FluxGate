@@ -1339,12 +1339,44 @@ function updateViewRail() {
 
 function renderViewRailButton([label, target, expand]) {
   const metric = viewRailMetricForTarget(target, expand);
+  const symbol = viewRailSymbolForTarget(label, target, expand);
   return `
     <button class="view-rail-button" type="button" data-view-rail-target="${escapeHTML(target)}" data-view-rail-expand="${expand ? "true" : "false"}">
+      <span class="view-rail-symbol" aria-hidden="true">${escapeHTML(symbol)}</span>
       <span class="view-rail-label">${escapeHTML(label)}</span>
       <span class="view-rail-count" data-view-rail-count>${escapeHTML(metric)}</span>
     </button>
   `;
+}
+
+function viewRailSymbolForTarget(label, target, expand) {
+  const symbols = {
+    metrics: "概",
+    "overview-readiness": "闭",
+    "overview-next-step": "步",
+    sources: "源",
+    "source-form": "加",
+    "node-import-form": "导",
+    nodes: "点",
+    "virtual-nodes": "网",
+    "virtual-node-form": "建",
+    tokens: "钥",
+    teams: "团",
+    users: "员",
+    "token-form": "钥",
+    "team-form": "团",
+    "user-form": "员",
+    policies: "策",
+    "policy-form": "建",
+    "traffic-tokens": "量",
+    "traffic-hourly": "时",
+    "traffic-daily": "日",
+    "traffic-outbounds": "出",
+    "config-check-result": "运",
+  };
+  if (symbols[target]) return symbols[target];
+  if (expand) return "+";
+  return label.slice(0, 1) || "项";
 }
 
 function viewRailMetricForTarget(target, expand) {

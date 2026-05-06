@@ -438,6 +438,22 @@ main {
   padding: 0 10px;
 }
 
+.view-rail-symbol {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 820;
+  height: 20px;
+  justify-content: center;
+  line-height: 1;
+  width: 20px;
+}
+
 .view-rail-label {
   min-width: 0;
   overflow: hidden;

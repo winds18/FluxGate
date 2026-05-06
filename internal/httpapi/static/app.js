@@ -1778,6 +1778,7 @@ function renderSources(rows) {
 
 function renderSourceCard(row) {
   const isEditing = appState.editingSourceID === row.id;
+  const syncSummary = sourceSyncSummary(row);
   return `
     <article class="source-card ${isEditing ? "source-card-editing" : ""}" data-source-id="${row.id}">
       <div class="source-card-heading">
@@ -1786,6 +1787,12 @@ function renderSourceCard(row) {
           <strong>${isEditing ? sourceTextInput(row, "name") : formatCell(row.name, "name")}</strong>
         </div>
         <span class="source-type-badge">${isEditing ? sourceTypeSelect(row.type) : formatCell(row.type, "type")}</span>
+      </div>
+      <div class="source-card-summary" aria-label="来源摘要">
+        ${sourceSummaryChip(formatCell(row.type, "type"), "info")}
+        ${sourceSummaryChip(sourcePrefixSummary(row.display_prefix))}
+        ${sourceSummaryChip(sourceRefreshSummary(row.refresh_interval_minutes))}
+        ${sourceSummaryChip(syncSummary.label, syncSummary.tone)}
       </div>
       <div class="source-card-grid">
         ${sourceCardField("url", isEditing ? sourceTextInput(row, "url", "table-edit-input-wide") : formatCell(row.url, "url"))}
@@ -1807,6 +1814,33 @@ function renderSourceCard(row) {
       </div>
     </article>
   `;
+}
+
+function sourceSummaryChip(content, tone = "") {
+  return `<span class="source-card-summary-chip ${tone ? `source-card-summary-chip-${tone}` : ""}" data-source-summary-chip>${content}</span>`;
+}
+
+function sourcePrefixSummary(value) {
+  const prefix = String(value || "").trim();
+  return prefix ? `前缀 ${escapeHTML(prefix)}` : "自动前缀";
+}
+
+function sourceRefreshSummary(value) {
+  const minutes = Number(value || 0);
+  if (!Number.isFinite(minutes) || minutes <= 0) {
+    return "手动刷新";
+  }
+  return `${formatPlainNumber(minutes)} 分钟刷新`;
+}
+
+function sourceSyncSummary(row) {
+  if (row?.last_error) {
+    return { label: "同步异常", tone: "warning" };
+  }
+  if (row?.last_sync_at) {
+    return { label: "已同步", tone: "success" };
+  }
+  return { label: "待同步", tone: "muted" };
 }
 
 function sourceCardField(label, value, className = "") {

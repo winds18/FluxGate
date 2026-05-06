@@ -1670,6 +1670,57 @@ textarea {
   overflow-wrap: anywhere;
 }
 
+.source-card-summary {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.source-card-summary-chip {
+  align-items: center;
+  background: #f7fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.2;
+  max-width: 100%;
+  min-height: 26px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 9px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.source-card-summary-chip-info {
+  background: #eef6ff;
+  border-color: #cfe0f2;
+  color: #1d4ed8;
+}
+
+.source-card-summary-chip-success {
+  background: var(--success-bg);
+  border-color: #b9e5cf;
+  color: var(--success-text);
+}
+
+.source-card-summary-chip-warning {
+  background: var(--warning-bg);
+  border-color: #f0d79d;
+  color: #92400e;
+}
+
+.source-card-summary-chip-muted {
+  background: #f8fafc;
+  border-color: #dbe5ef;
+  color: #718096;
+}
+
 .source-type-badge {
   align-items: center;
   background: #eef6ff;

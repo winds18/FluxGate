@@ -572,6 +572,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   await switchView("access");
   const sourceCardCount = await page.locator("#sources .source-card").count();
+  const sourceSummaryChipCount = await page.locator("#sources [data-source-summary-chip]").count();
   const sourceVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -581,7 +582,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     return Array.from(document.querySelectorAll("#sources .source-card")).reduce((total, card) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
-        card.querySelectorAll(".source-card-heading, .source-type-badge, .source-card-field, .source-actions"),
+        card.querySelectorAll(
+          ".source-card-heading, .source-card-summary, [data-source-summary-chip], .source-type-badge, .source-card-field, .source-actions",
+        ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
         const box = element.getBoundingClientRect();
@@ -941,6 +944,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.userEditFieldsVisible = userEditFieldsVisible;
   state.identityVisualOverflowCount = identityVisualOverflowCount;
   state.sourceCardCount = sourceCardCount;
+  state.sourceSummaryChipCount = sourceSummaryChipCount;
   state.sourceVisualOverflowCount = sourceVisualOverflowCount;
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
@@ -1080,7 +1084,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`identity cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  if (sourceEditCount > 0 && (sourceCardCount !== sourceEditCount || sourceVisualOverflowCount > 0)) {
+  if (
+    sourceEditCount > 0 &&
+    (sourceCardCount !== sourceEditCount || sourceSummaryChipCount !== sourceCardCount * 4 || sourceVisualOverflowCount > 0)
+  ) {
     throw new Error(`source cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (virtualNodeEditCount > 0 && (virtualNodeCardCount !== virtualNodeEditCount || virtualNodeVisualOverflowCount > 0)) {

@@ -89,7 +89,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const pageHorizontalOverflow = async () =>
     page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - window.innerWidth));
   const dashboardNavCount = await page.locator(".dashboard-sidebar [data-view-nav]").count();
+  const dashboardNavSymbolCount = await page.locator(".dashboard-sidebar .nav-symbol").count();
   const mobileDockCount = await page.locator(".mobile-dock [data-view-nav]").count();
+  const mobileDockSymbolCount = await page.locator(".mobile-dock .mobile-dock-symbol").count();
   const dashboardViewCount = await page.locator("[data-dashboard-view]").count();
   const formDrawerCount = await page.locator("[data-form-drawer]").count();
   const collapsedFormDrawerCount = await page.locator("[data-form-drawer].is-collapsed").count();
@@ -552,7 +554,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     viewTitle: document.querySelector("#view-title")?.textContent,
   }));
   state.dashboardNavCount = dashboardNavCount;
+  state.dashboardNavSymbolCount = dashboardNavSymbolCount;
   state.mobileDockCount = mobileDockCount;
+  state.mobileDockSymbolCount = mobileDockSymbolCount;
   state.dashboardViewCount = dashboardViewCount;
   state.formDrawerCount = formDrawerCount;
   state.collapsedFormDrawerCount = collapsedFormDrawerCount;
@@ -723,7 +727,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`mobile dashboard layout failed: ${JSON.stringify(state)}`);
   }
-  if (dashboardNavCount !== viewNames.length || mobileDockCount !== viewNames.length || dashboardViewCount !== viewNames.length) {
+  if (
+    dashboardNavCount !== viewNames.length ||
+    dashboardNavSymbolCount !== viewNames.length ||
+    mobileDockCount !== viewNames.length ||
+    mobileDockSymbolCount !== viewNames.length ||
+    dashboardViewCount !== viewNames.length
+  ) {
     throw new Error(`dashboard navigation is incomplete: ${JSON.stringify(state)}`);
   }
   if (formDrawerCount !== 7 || collapsedFormDrawerCount !== 7) {

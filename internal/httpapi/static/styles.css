@@ -189,13 +189,14 @@ main {
 }
 
 .nav-item {
-  align-items: start;
+  align-items: center;
   background: transparent;
   border-color: transparent;
   border-radius: 8px;
   color: #d9e2ee;
   display: grid;
-  gap: 3px;
+  gap: 9px;
+  grid-template-columns: 30px minmax(0, 1fr);
   justify-content: stretch;
   min-height: 52px;
   padding: 9px 11px;
@@ -215,10 +216,40 @@ main {
   color: #ffffff;
 }
 
+.nav-symbol {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #dbeafe;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 800;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.nav-item.is-active .nav-symbol {
+  background: var(--accent-soft);
+  border-color: transparent;
+  color: var(--success);
+}
+
+.nav-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
 .nav-label {
   font-size: 14px;
   font-weight: 760;
   line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-item small {
@@ -226,6 +257,10 @@ main {
   font-size: 11px;
   font-weight: 620;
   line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .mobile-dock {
@@ -2543,14 +2578,18 @@ td code {
   }
 
   .mobile-dock button {
+    align-items: center;
     background: transparent;
     border-color: transparent;
     border-radius: 6px;
     color: var(--muted);
+    display: grid;
     font-size: 11px;
     font-weight: 720;
+    gap: 2px;
+    justify-items: center;
     line-height: 1.1;
-    min-height: 36px;
+    min-height: 46px;
     min-width: 0;
     overflow: hidden;
     padding: 0 2px;
@@ -2564,9 +2603,25 @@ td code {
     color: var(--success);
   }
 
+  .mobile-dock-symbol {
+    align-items: center;
+    background: #f1f5f9;
+    border-radius: 6px;
+    display: inline-flex;
+    font-size: 11px;
+    font-weight: 820;
+    height: 20px;
+    justify-content: center;
+    width: 20px;
+  }
+
+  .mobile-dock button.is-active .mobile-dock-symbol {
+    background: #d9f7e9;
+  }
+
   .workspace {
     gap: 14px;
-    padding: 14px 12px 78px;
+    padding: 14px 12px 88px;
   }
 
   .workspace-header {

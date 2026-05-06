@@ -45,44 +45,65 @@
         </div>
         <nav class="side-nav">
           <button class="nav-item" type="button" data-view-nav="overview">
-            <span class="nav-label">概览</span>
-            <small>运行状态</small>
+            <span class="nav-symbol" aria-hidden="true">概</span>
+            <span class="nav-copy">
+              <span class="nav-label">概览</span>
+              <small>运行状态</small>
+            </span>
           </button>
           <button class="nav-item" type="button" data-view-nav="access">
-            <span class="nav-label">接入</span>
-            <small>来源与导入</small>
+            <span class="nav-symbol" aria-hidden="true">源</span>
+            <span class="nav-copy">
+              <span class="nav-label">接入</span>
+              <small>来源与导入</small>
+            </span>
           </button>
           <button class="nav-item" type="button" data-view-nav="nodes">
-            <span class="nav-label">节点</span>
-            <small>地区与网关</small>
+            <span class="nav-symbol" aria-hidden="true">点</span>
+            <span class="nav-copy">
+              <span class="nav-label">节点</span>
+              <small>地区与网关</small>
+            </span>
           </button>
           <button class="nav-item" type="button" data-view-nav="identity">
-            <span class="nav-label">身份</span>
-            <small>团队与 Token</small>
+            <span class="nav-symbol" aria-hidden="true">身</span>
+            <span class="nav-copy">
+              <span class="nav-label">身份</span>
+              <small>团队与 Token</small>
+            </span>
           </button>
           <button class="nav-item" type="button" data-view-nav="policies">
-            <span class="nav-label">策略</span>
-            <small>可见范围</small>
+            <span class="nav-symbol" aria-hidden="true">策</span>
+            <span class="nav-copy">
+              <span class="nav-label">策略</span>
+              <small>可见范围</small>
+            </span>
           </button>
           <button class="nav-item" type="button" data-view-nav="traffic">
-            <span class="nav-label">流量</span>
-            <small>用量统计</small>
+            <span class="nav-symbol" aria-hidden="true">量</span>
+            <span class="nav-copy">
+              <span class="nav-label">流量</span>
+              <small>用量统计</small>
+            </span>
           </button>
           <button class="nav-item" type="button" data-view-nav="ops">
-            <span class="nav-label">运维</span>
-            <small>配置发布</small>
+            <span class="nav-symbol" aria-hidden="true">运</span>
+            <span class="nav-copy">
+              <span class="nav-label">运维</span>
+              <small>配置发布</small>
+            </span>
           </button>
         </nav>
       </aside>
 
       <nav class="mobile-dock" aria-label="移动导航">
-        <button type="button" data-view-nav="overview">概览</button>
-        <button type="button" data-view-nav="access">接入</button>
-        <button type="button" data-view-nav="nodes">节点</button>
-        <button type="button" data-view-nav="identity">身份</button>
-        <button type="button" data-view-nav="policies">策略</button>
-        <button type="button" data-view-nav="traffic">流量</button>
-        <button type="button" data-view-nav="ops">运维</button>
+        <button type="button" data-view-nav="overview"><span class="mobile-dock-symbol" aria-hidden="true">概</span><span>概览</span></button>
+        <button type="button" data-view-nav="access"><span class="mobile-dock-symbol" aria-hidden="true">源</span><span>接入</span></button>
+        <button type="button" data-view-nav="nodes"><span class="mobile-dock-symbol" aria-hidden="true">点</span><span>节点</span></button>
+        <button type="button" data-view-nav="identity"><span class="mobile-dock-symbol" aria-hidden="true">身</span><span>身份</span></button>
+        <button type="button" data-view-nav="policies"><span class="mobile-dock-symbol" aria-hidden="true">策</span><span>策略</span></button>
+        <button type="button" data-view-nav="traffic"><span class="mobile-dock-symbol" aria-hidden="true">量</span><span>流量</span></button>
+        <button type="button" data-view-nav="ops"><span class="mobile-dock-symbol" aria-hidden="true">运</span><span>运维</span></button>
       </nav>
 
       <section class="workspace">

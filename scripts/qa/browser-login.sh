@@ -97,6 +97,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     viewOverflow[view] = await pageHorizontalOverflow();
   }
   await switchView("overview");
+  const overviewReadinessCount = await page.locator("#overview-readiness .readiness-item").count();
+  const overviewNextStepButtonCount = await page.locator("#overview-next-step [data-overview-jump]").count();
 
   const east8TimeSamples = await page.evaluate(() => ({
     rfc3339: typeof formatCell === "function" ? formatCell("2026-04-29T00:00:00Z", "updated_at") : "",
@@ -297,6 +299,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardNavCount = dashboardNavCount;
   state.mobileDockCount = mobileDockCount;
   state.dashboardViewCount = dashboardViewCount;
+  state.overviewReadinessCount = overviewReadinessCount;
+  state.overviewNextStepButtonCount = overviewNextStepButtonCount;
   state.viewOverflow = viewOverflow;
   state.mobileDockVisible = mobileDockVisible;
   state.mobileSidebarVisible = mobileSidebarVisible;
@@ -351,6 +355,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (dashboardNavCount !== viewNames.length || mobileDockCount < 5 || dashboardViewCount !== viewNames.length) {
     throw new Error(`dashboard navigation is incomplete: ${JSON.stringify(state)}`);
+  }
+  if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
+    throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);
   }
   const overflowingView = Object.entries(viewOverflow).find(([, overflow]) => overflow > 2);
   if (overflowingView) {

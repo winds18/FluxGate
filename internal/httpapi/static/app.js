@@ -12,6 +12,8 @@ const loginUsernameEl = document.querySelector("#login-username");
 const loginPasswordEl = document.querySelector("#login-password");
 const logoutEl = document.querySelector("#logout");
 const metricsEl = document.querySelector("#metrics");
+const overviewReadinessEl = document.querySelector("#overview-readiness");
+const overviewNextStepEl = document.querySelector("#overview-next-step");
 const teamsEl = document.querySelector("#teams");
 const usersEl = document.querySelector("#users");
 const sourcesEl = document.querySelector("#sources");
@@ -94,6 +96,11 @@ dashboardNavButtons.forEach((button) => {
 });
 dashboardJumpButtons.forEach((button) => {
   button.addEventListener("click", () => setActiveView(button.dataset.viewJump || "overview"));
+});
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-overview-jump]");
+  if (!button) return;
+  setActiveView(button.dataset.overviewJump || "overview");
 });
 bootstrap();
 
@@ -282,6 +289,7 @@ async function load() {
     ]);
     appState = { ...appState, teams, users, sources, nodes, virtualNodes, policies };
     renderMetrics(overview);
+    renderOverviewReadiness(overview);
     renderSelectors();
     renderTeams(teams);
     renderUsers(users);
@@ -1020,6 +1028,63 @@ function renderMetrics(data) {
   metricsEl.innerHTML = items
     .map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value ?? 0}</strong></div>`)
     .join("");
+}
+
+function renderOverviewReadiness(data) {
+  const checks = [
+    ["接入来源", Number(data.sources || 0) > 0, `${data.sources || 0} 个来源`, "access"],
+    ["节点池", Number(data.nodes || 0) > 0, `${data.nodes || 0} 个节点`, "nodes"],
+    ["虚拟网关", Number(data.virtual_nodes || 0) > 0, `${data.virtual_nodes || 0} 个入口`, "nodes"],
+    ["团队 Token", Number(data.tokens || 0) > 0, `${data.tokens || 0} 个 Token`, "identity"],
+    ["访问策略", Number(data.policies || 0) > 0, `${data.policies || 0} 条策略`, "policies"],
+  ];
+  const readyCount = checks.filter(([, ready]) => ready).length;
+  const firstMissing = checks.find(([, ready]) => !ready);
+  const next = firstMissing
+    ? {
+        title: `补齐${firstMissing[0]}`,
+        description: "补齐后再回到运维模块检查并发布 sing-box 配置，订阅地址才更接近真实客户端体验。",
+        view: firstMissing[3],
+        action: `去${dashboardViewMeta[firstMissing[3]]?.[0] || "处理"}`,
+      }
+    : {
+        title: "闭环已具备真实测试条件",
+        description: "基础数据已齐备，可以发布网关配置，再复制 Clash/Mihomo 或 sing-box 订阅地址做客户端导入验证。",
+        view: "ops",
+        action: "去运维发布",
+      };
+
+  overviewReadinessEl.innerHTML = `
+    <div class="overview-panel-heading">
+      <span>真实测试闭环</span>
+      <strong>${readyCount}/${checks.length}</strong>
+    </div>
+    <div class="readiness-list" data-overview-readiness>
+      ${checks
+        .map(
+          ([label, ready, summary, view]) => `
+            <button class="readiness-item ${ready ? "is-ready" : ""}" type="button" data-overview-jump="${view}">
+              <span class="readiness-dot"></span>
+              <span>
+                <strong>${escapeHTML(label)}</strong>
+                <small>${escapeHTML(summary)}</small>
+              </span>
+            </button>
+          `,
+        )
+        .join("")}
+    </div>
+  `;
+  overviewNextStepEl.innerHTML = `
+    <div class="overview-panel-heading">
+      <span>下一步</span>
+      <strong>${firstMissing ? "待补齐" : "可测试"}</strong>
+    </div>
+    <p>${escapeHTML(next.description)}</p>
+    <button class="primary-link-button" type="button" data-overview-jump="${next.view}">
+      ${escapeHTML(next.action)}
+    </button>
+  `;
 }
 
 function renderTeams(rows) {

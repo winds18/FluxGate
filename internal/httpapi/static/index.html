@@ -413,12 +413,36 @@
                 <h2>sing-box 配置</h2>
                 <span id="config-panel-count" class="panel-count">待补齐</span>
               </div>
-              <div class="button-row">
-                <button id="config-check">检查配置</button>
-                <button id="config-publish">发布配置</button>
-                <button id="config-rollback">回滚配置</button>
-                <button id="config-restart">重启服务</button>
-              </div>
+            </div>
+            <div id="ops-actions" class="ops-action-grid">
+              <article class="ops-action-card">
+                <div>
+                  <span>检查</span>
+                  <strong>配置校验</strong>
+                </div>
+                <button id="config-check" type="button">检查配置</button>
+              </article>
+              <article class="ops-action-card">
+                <div>
+                  <span>发布</span>
+                  <strong>写入网关</strong>
+                </div>
+                <button id="config-publish" type="button">发布配置</button>
+              </article>
+              <article class="ops-action-card">
+                <div>
+                  <span>回滚</span>
+                  <strong>恢复上一版</strong>
+                </div>
+                <button id="config-rollback" type="button">回滚配置</button>
+              </article>
+              <article class="ops-action-card">
+                <div>
+                  <span>重启</span>
+                  <strong>重载服务</strong>
+                </div>
+                <button id="config-restart" type="button">重启服务</button>
+              </article>
             </div>
             <div id="config-check-result" class="result-box" hidden></div>
           </section>

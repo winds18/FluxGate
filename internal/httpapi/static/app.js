@@ -996,15 +996,16 @@ async function checkConfig() {
   statusEl.textContent = "检查配置中";
   try {
     const result = await postJSON("/api/sing-box/config/check", {});
-    configCheckResultEl.hidden = false;
-    configCheckResultEl.innerHTML = `
-      <strong>${result.valid ? "检查通过" : "检查失败"}</strong>
-      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} in=${formatCell(result.inbound_count)} out=${formatCell(result.outbound_count)} upstream=${formatCell(result.upstream_outbound_count)} users=${formatCell(result.user_count)}</code>
-    `;
+    showConfigResult(result.valid ? "检查通过" : "检查失败", result.valid ? "success" : "danger", [
+      ["配置 Hash", escapeHTML(String(result.config_hash || "").slice(0, 12)), true],
+      ["入站", formatCell(result.inbound_count)],
+      ["出口", formatCell(result.outbound_count)],
+      ["上游", formatCell(result.upstream_outbound_count)],
+      ["用户", formatCell(result.user_count)],
+    ]);
     statusEl.textContent = result.valid ? "配置可用" : "配置异常";
   } catch (error) {
-    configCheckResultEl.hidden = false;
-    configCheckResultEl.innerHTML = `<strong>检查失败</strong><code>${escapeHTML(error.message)}</code>`;
+    showConfigResult("检查失败", "danger", [["错误", escapeHTML(error.message), true]]);
     statusEl.textContent = "配置异常";
   } finally {
     configCheckEl.disabled = false;
@@ -1016,16 +1017,17 @@ async function publishConfig() {
   statusEl.textContent = "发布配置中";
   try {
     const result = await postJSON("/api/sing-box/config/publish", {});
-    configCheckResultEl.hidden = false;
-    const restartText = result.restart ? ` restart=${formatRestartResult(result.restart)}` : ` restart=${result.restart_required ? "需要" : "无需"}`;
-    configCheckResultEl.innerHTML = `
-      <strong>${result.published ? "发布完成" : "发布失败"}</strong>
-      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))} previous=${result.previous_saved ? "已保存" : "无"}${restartText} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
-    `;
+    const restartText = result.restart ? formatRestartResult(result.restart) : result.restart_required ? "需要" : "无需";
+    showConfigResult(result.published ? "发布完成" : "发布失败", result.published ? "success" : "danger", [
+      ["配置 Hash", escapeHTML(String(result.config_hash || "").slice(0, 12)), true],
+      ["上版备份", result.previous_saved ? "已保存" : "无"],
+      ["重启", escapeHTML(restartText)],
+      ["出口", formatCell(result.outbound_count)],
+      ["用户", formatCell(result.user_count)],
+    ]);
     statusEl.textContent = result.published && !result.restart_required ? "配置已发布并生效" : result.published ? "配置已发布，需重启 sing-box" : "发布失败";
   } catch (error) {
-    configCheckResultEl.hidden = false;
-    configCheckResultEl.innerHTML = `<strong>发布失败</strong><code>${escapeHTML(error.message)}</code>`;
+    showConfigResult("发布失败", "danger", [["错误", escapeHTML(error.message), true]]);
     statusEl.textContent = "发布失败";
   } finally {
     configPublishEl.disabled = false;
@@ -1037,16 +1039,16 @@ async function rollbackConfig() {
   statusEl.textContent = "回滚配置中";
   try {
     const result = await postJSON("/api/sing-box/config/rollback", {});
-    configCheckResultEl.hidden = false;
-    const restartText = result.restart ? ` restart=${formatRestartResult(result.restart)}` : ` restart=${result.restart_required ? "需要" : "无需"}`;
-    configCheckResultEl.innerHTML = `
-      <strong>${result.rolled_back ? "回滚完成" : "回滚失败"}</strong>
-      <code>hash=${escapeHTML(String(result.config_hash || "").slice(0, 12))}${restartText} out=${formatCell(result.outbound_count)} users=${formatCell(result.user_count)}</code>
-    `;
+    const restartText = result.restart ? formatRestartResult(result.restart) : result.restart_required ? "需要" : "无需";
+    showConfigResult(result.rolled_back ? "回滚完成" : "回滚失败", result.rolled_back ? "success" : "danger", [
+      ["配置 Hash", escapeHTML(String(result.config_hash || "").slice(0, 12)), true],
+      ["重启", escapeHTML(restartText)],
+      ["出口", formatCell(result.outbound_count)],
+      ["用户", formatCell(result.user_count)],
+    ]);
     statusEl.textContent = result.rolled_back && !result.restart_required ? "配置已回滚并生效" : result.rolled_back ? "配置已回滚，需重启 sing-box" : "回滚失败";
   } catch (error) {
-    configCheckResultEl.hidden = false;
-    configCheckResultEl.innerHTML = `<strong>回滚失败</strong><code>${escapeHTML(error.message)}</code>`;
+    showConfigResult("回滚失败", "danger", [["错误", escapeHTML(error.message), true]]);
     statusEl.textContent = "回滚失败";
   } finally {
     configRollbackEl.disabled = false;
@@ -1058,19 +1060,44 @@ async function restartSingBox() {
   statusEl.textContent = "重启服务中";
   try {
     const result = await postJSON("/api/sing-box/restart", {});
-    configCheckResultEl.hidden = false;
-    configCheckResultEl.innerHTML = `
-      <strong>${result.success ? "重启已执行" : result.skipped ? "重启未启用" : "重启失败"}</strong>
-      <code>enabled=${result.enabled ? "true" : "false"} executed=${result.executed ? "true" : "false"} duration_ms=${formatCell(result.duration_ms)} message=${escapeHTML(result.message || "")}</code>
-    `;
+    showConfigResult(result.success ? "重启已执行" : result.skipped ? "重启未启用" : "重启失败", result.success ? "success" : result.skipped ? "warning" : "danger", [
+      ["启用", result.enabled ? "true" : "false"],
+      ["已执行", result.executed ? "true" : "false"],
+      ["耗时", formatCell(result.duration_ms)],
+      ["消息", escapeHTML(result.message || "--"), true],
+    ]);
     statusEl.textContent = result.success ? "服务已重启" : result.skipped ? "重启未启用" : "重启失败";
   } catch (error) {
-    configCheckResultEl.hidden = false;
-    configCheckResultEl.innerHTML = `<strong>重启失败</strong><code>${escapeHTML(error.message)}</code>`;
+    showConfigResult("重启失败", "danger", [["错误", escapeHTML(error.message), true]]);
     statusEl.textContent = "重启失败";
   } finally {
     configRestartEl.disabled = false;
   }
+}
+
+function showConfigResult(title, tone, details) {
+  configCheckResultEl.hidden = false;
+  configCheckResultEl.innerHTML = `
+    <article class="ops-result-card ops-result-${escapeHTML(tone)}">
+      <div class="ops-result-heading">
+        <strong>${escapeHTML(title)}</strong>
+        <span>${formatDateTimeForDisplay(new Date().toISOString())}</span>
+      </div>
+      <div class="ops-result-grid">
+        ${details
+          .map(([label, value, isCode]) => {
+            const content = isCode ? `<code>${value}</code>` : `<strong>${value}</strong>`;
+            return `
+              <div class="ops-result-field">
+                <span>${escapeHTML(label)}</span>
+                ${content}
+              </div>
+            `;
+          })
+          .join("")}
+      </div>
+    </article>
+  `;
 }
 
 function formatRestartResult(result) {

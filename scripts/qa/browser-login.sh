@@ -402,6 +402,33 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     );
   }
 
+  await switchView("ops");
+  const opsActionCardCount = await page.locator("#ops-actions .ops-action-card").count();
+  await page.locator("#config-check").click();
+  await expect(page.locator("#config-check-result .ops-result-card")).toBeVisible({ timeout: 5000 });
+  const opsResultVisible = await page.locator("#config-check-result .ops-result-card").isVisible();
+  const opsResultFieldCount = await page.locator("#config-check-result .ops-result-field").count();
+  const opsVisualOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#ops-actions .ops-action-card, #config-check-result .ops-result-card")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(
+        card.querySelectorAll("button, .ops-result-heading, .ops-result-field, code, strong"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
+
   await page.setViewportSize({ width: 390, height: 844 });
   await switchView("overview");
   const mobileDockVisible = await page.locator(".mobile-dock").isVisible();
@@ -494,6 +521,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
   state.tokenVisualOverlapCount = tokenVisualOverlapCount;
+  state.opsActionCardCount = opsActionCardCount;
+  state.opsResultVisible = opsResultVisible;
+  state.opsResultFieldCount = opsResultFieldCount;
+  state.opsVisualOverflowCount = opsVisualOverflowCount;
   if (tokenRowCount > 0 && (tokenExtendInputCount !== tokenRowCount || tokenQuotaInputCount !== tokenRowCount)) {
     throw new Error(`token custom controls missing: ${JSON.stringify(state)}`);
   }
@@ -534,6 +565,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeDetailCodeOverflowCount > 0) {
     throw new Error(`node detail code blocks overflow horizontally: ${JSON.stringify(state)}`);
+  }
+  if (opsActionCardCount !== 4 || !opsResultVisible || opsResultFieldCount < 4 || opsVisualOverflowCount > 0) {
+    throw new Error(`ops cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (!mobileDockVisible || mobileSidebarVisible || !mobileNodesVisible || mobileOverviewOverflow > 2 || mobileNodesOverflow > 2) {
     throw new Error(`mobile dashboard layout failed: ${JSON.stringify(state)}`);
@@ -579,7 +613,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     consoleMessages,
   };
 
-  if (!state.loginHidden || state.loginVisible || state.appHidden || !state.appVisible || state.status !== "已连接") {
+  if (
+    !state.loginHidden ||
+    state.loginVisible ||
+    state.appHidden ||
+    !state.appVisible ||
+    !["已连接", "配置可用"].includes(state.status)
+  ) {
     throw new Error(JSON.stringify(result, null, 2));
   }
 

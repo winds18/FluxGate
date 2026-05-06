@@ -767,6 +767,55 @@ main {
   min-width: 140px;
 }
 
+.ops-action-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+  min-width: 0;
+  padding: 14px;
+}
+
+.ops-action-card {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  min-width: 0;
+  padding: 14px;
+}
+
+.ops-action-card > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.ops-action-card span,
+.ops-result-heading span,
+.ops-result-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ops-action-card strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 760;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ops-action-card button {
+  min-width: 92px;
+}
+
 .token-action-group {
   align-items: center;
   background: var(--surface-muted);
@@ -1672,8 +1721,70 @@ textarea::placeholder {
   padding: 12px 16px 16px;
 }
 
-.result-box strong {
+.ops-result-card {
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-left: 4px solid var(--primary);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.ops-result-success {
+  border-left-color: var(--success);
+}
+
+.ops-result-warning {
+  border-left-color: var(--warning);
+}
+
+.ops-result-danger {
+  border-left-color: var(--danger);
+}
+
+.ops-result-heading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.ops-result-heading strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 780;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.ops-result-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  min-width: 0;
+}
+
+.ops-result-field {
+  background: #fbfdff;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.ops-result-field strong {
+  color: var(--text);
   font-size: 13px;
+  font-weight: 700;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .result-box code,
@@ -1687,8 +1798,10 @@ td code {
 .result-box code {
   display: block;
   line-height: 1.5;
-  overflow-x: auto;
+  min-width: 0;
+  overflow: hidden;
   padding: 8px 10px;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -2322,6 +2435,20 @@ td code {
 
   .button-row {
     justify-content: flex-start;
+  }
+
+  .ops-action-grid,
+  .ops-result-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-action-card {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .ops-action-card button {
+    width: 100%;
   }
 
   .source-card-heading,

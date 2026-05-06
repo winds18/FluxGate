@@ -79,7 +79,24 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await page.click("#login-form button[type=submit]");
   await expect(page.locator("#login-form")).toBeHidden({ timeout: 10000 });
   await expect(page.locator("#app-view")).toBeVisible({ timeout: 10000 });
-  await page.waitForTimeout(500);
+  await page.waitForFunction(() => {
+    const status = document.querySelector("#status")?.textContent?.trim();
+    return Boolean(status && !["登录中", "已登录", "刷新中"].includes(status));
+  }, null, { timeout: 15000 });
+  const dashboardLoadStatus = (await page.locator("#status").textContent())?.trim();
+  if (dashboardLoadStatus !== "已连接") {
+    const loadDiagnostics = await page.evaluate(() => ({
+      status: document.querySelector("#status")?.textContent?.trim(),
+      metricsText: document.querySelector("#metrics")?.textContent?.trim(),
+    }));
+    throw new Error(
+      `dashboard data did not load: ${JSON.stringify({
+        ...loadDiagnostics,
+        responses,
+        consoleMessages,
+      })}`,
+    );
+  }
 
   const viewNames = ["overview", "access", "nodes", "identity", "policies", "traffic", "ops"];
   const switchView = async (view) => {
@@ -126,6 +143,29 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     viewRailBadgeCounts[view] = await page.locator("#view-rail [data-view-rail-count]").count();
   }
   await switchView("overview");
+  await expect(page.locator("#metrics .metric")).toHaveCount(7, { timeout: 5000 });
+  const overviewMetricCount = await page.locator("#metrics .metric").count();
+  const overviewMetricSymbolCount = await page.locator("#metrics .metric-symbol").count();
+  const overviewMetricValueCount = await page.locator("#metrics .metric-value").count();
+  const overviewMetricOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#metrics .metric")).reduce((total, metric) => {
+      const metricBox = metric.getBoundingClientRect();
+      const elements = Array.from(metric.querySelectorAll(".metric-heading, .metric-symbol, .metric-label, .metric-value"))
+        .filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, metricBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const overviewReadinessCount = await page.locator("#overview-readiness .readiness-item").count();
   const overviewNextStepButtonCount = await page.locator("#overview-next-step [data-overview-jump]").count();
   const overviewNextStepCardCount = await page.locator("#overview-next-step [data-overview-next-step-card]").count();
@@ -634,6 +674,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.viewRailBadgeCounts = viewRailBadgeCounts;
   state.viewHeaderSymbols = viewHeaderSymbols;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
+  state.overviewMetricCount = overviewMetricCount;
+  state.overviewMetricSymbolCount = overviewMetricSymbolCount;
+  state.overviewMetricValueCount = overviewMetricValueCount;
+  state.overviewMetricOverflowCount = overviewMetricOverflowCount;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
   state.overviewNextStepCardCount = overviewNextStepCardCount;
@@ -839,6 +883,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   );
   if (headerSymbolMismatch) {
     throw new Error(`dashboard view header symbol is stale: ${JSON.stringify(state)}`);
+  }
+  if (
+    overviewMetricCount !== 7 ||
+    overviewMetricSymbolCount !== 7 ||
+    overviewMetricValueCount !== 7 ||
+    overviewMetricOverflowCount > 0
+  ) {
+    throw new Error(`overview metric cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);

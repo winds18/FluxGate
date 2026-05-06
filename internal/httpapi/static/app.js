@@ -1230,16 +1230,26 @@ function numberInputValue(input, fallback) {
 
 function renderMetrics(data) {
   const items = [
-    ["团队", data.teams],
-    ["用户", data.users],
-    ["Token", data.tokens],
-    ["来源", data.sources],
-    ["节点", data.nodes],
-    ["虚拟节点", data.virtual_nodes],
-    ["策略", data.policies],
+    ["teams", "团", "团队", data.teams],
+    ["users", "员", "用户", data.users],
+    ["tokens", "令", "Token", data.tokens],
+    ["sources", "源", "来源", data.sources],
+    ["nodes", "点", "节点", data.nodes],
+    ["virtualNodes", "网", "虚拟节点", data.virtual_nodes],
+    ["policies", "策", "策略", data.policies],
   ];
   metricsEl.innerHTML = items
-    .map(([label, value]) => `<div class="metric"><span>${label}</span><strong>${value ?? 0}</strong></div>`)
+    .map(
+      ([key, symbol, label, value]) => `
+        <div class="metric" data-metric-key="${escapeHTML(key)}">
+          <span class="metric-heading">
+            <span class="metric-symbol">${escapeHTML(symbol)}</span>
+            <span class="metric-label">${escapeHTML(label)}</span>
+          </span>
+          <strong class="metric-value">${formatPlainNumber(value ?? 0)}</strong>
+        </div>
+      `,
+    )
     .join("");
 }
 
@@ -2645,7 +2655,7 @@ function formatQuotaUsage(usedBytes, quotaBytes, status = "") {
 }
 
 function escapeHTML(value) {
-  return value.replace(/[&<>"']/g, (char) => {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => {
     switch (char) {
       case "&":
         return "&amp;";

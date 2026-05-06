@@ -503,10 +503,34 @@ main {
 }
 
 .metric {
+  align-content: space-between;
   display: grid;
   gap: 8px;
   min-height: 86px;
+  min-width: 0;
   padding: 14px 16px;
+}
+
+.metric-heading {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  min-width: 0;
+}
+
+.metric-symbol {
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 820;
+  height: 28px;
+  justify-content: center;
+  width: 28px;
 }
 
 .quick-grid,
@@ -805,19 +829,26 @@ main {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
-.metric span {
+.metric-label {
   color: var(--muted);
   display: block;
   font-size: 12px;
   font-weight: 680;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.metric strong {
+.metric-value {
   color: var(--text);
   display: block;
   font-size: 28px;
   font-weight: 760;
   line-height: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .panel,

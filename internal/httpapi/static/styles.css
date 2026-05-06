@@ -571,6 +571,72 @@ main {
   margin: 0;
 }
 
+.next-step-card {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+  padding: 12px;
+}
+
+.next-step-card.is-ready {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+.next-step-card.is-warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+}
+
+.next-step-symbol {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 18px;
+  font-weight: 820;
+  height: 42px;
+  justify-content: center;
+  width: 42px;
+}
+
+.next-step-body {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.next-step-body strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 820;
+  line-height: 1.25;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.next-step-body small {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 640;
+  line-height: 1.45;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.next-step-action {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
 .readiness-list {
   display: grid;
   gap: 8px;

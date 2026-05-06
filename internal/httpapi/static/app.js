@@ -1297,10 +1297,16 @@ function renderOverviewReadiness(data) {
       <span>下一步</span>
       <strong>${firstMissing ? "待补齐" : "可测试"}</strong>
     </div>
-    <p>${escapeHTML(next.description)}</p>
-    <button class="primary-link-button" type="button" data-overview-jump="${next.view}">
-      ${escapeHTML(next.action)}
-    </button>
+    <div class="next-step-card ${firstMissing ? "is-warning" : "is-ready"}" data-overview-next-step-card>
+      <span class="next-step-symbol">${escapeHTML(dashboardViewSymbols[next.view] || "→")}</span>
+      <span class="next-step-body">
+        <strong>${escapeHTML(next.title)}</strong>
+        <small>${escapeHTML(next.description)}</small>
+      </span>
+      <button class="primary-link-button next-step-action" type="button" data-overview-jump="${next.view}">
+        ${escapeHTML(next.action)}
+      </button>
+    </div>
   `;
 }
 

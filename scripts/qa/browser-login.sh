@@ -128,6 +128,24 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await switchView("overview");
   const overviewReadinessCount = await page.locator("#overview-readiness .readiness-item").count();
   const overviewNextStepButtonCount = await page.locator("#overview-next-step [data-overview-jump]").count();
+  const overviewNextStepCardCount = await page.locator("#overview-next-step [data-overview-next-step-card]").count();
+  const overviewNextStepActionCount = await page.locator("#overview-next-step .next-step-action").count();
+  const overviewNextStepOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const card = document.querySelector("#overview-next-step [data-overview-next-step-card]");
+    if (!card) return 1;
+    const cardBox = card.getBoundingClientRect();
+    return Array.from(card.querySelectorAll(".next-step-symbol, .next-step-body, .next-step-action"))
+      .filter((element) => element.offsetParent !== null)
+      .reduce((total, element) => {
+        const box = element.getBoundingClientRect();
+        return box.width > 0 && box.height > 0 && outside(box, cardBox) ? total + 1 : total;
+      }, 0);
+  });
   const overviewQuickCardCount = await page.locator(".quick-card").count();
   const overviewQuickCardBadgeCount = await page.locator(".quick-card [data-overview-card-count]").count();
   const overviewQuickCardBadgeValues = await page
@@ -618,6 +636,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
+  state.overviewNextStepCardCount = overviewNextStepCardCount;
+  state.overviewNextStepActionCount = overviewNextStepActionCount;
+  state.overviewNextStepOverflowCount = overviewNextStepOverflowCount;
   state.overviewQuickCardCount = overviewQuickCardCount;
   state.overviewQuickCardBadgeCount = overviewQuickCardBadgeCount;
   state.overviewQuickCardBadgeValues = overviewQuickCardBadgeValues;
@@ -821,6 +842,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);
+  }
+  if (overviewNextStepCardCount !== 1 || overviewNextStepActionCount !== 1 || overviewNextStepOverflowCount > 0) {
+    throw new Error(`overview next step action card is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (
     overviewQuickCardCount !== 4 ||

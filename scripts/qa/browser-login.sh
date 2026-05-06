@@ -99,8 +99,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - window.innerWidth));
   const dashboardNavCount = await page.locator(".dashboard-sidebar [data-view-nav]").count();
   const dashboardNavSymbolCount = await page.locator(".dashboard-sidebar .nav-symbol").count();
+  const dashboardNavBadgeCount = await page.locator(".dashboard-sidebar [data-view-count]").count();
   const mobileDockCount = await page.locator(".mobile-dock [data-view-nav]").count();
   const mobileDockSymbolCount = await page.locator(".mobile-dock .mobile-dock-symbol").count();
+  const mobileDockBadgeCount = await page.locator(".mobile-dock [data-view-count]").count();
+  let populatedNavBadgeCount = 0;
+  let navBadgeValues = {};
   const dashboardViewCount = await page.locator("[data-dashboard-view]").count();
   const formDrawerCount = await page.locator("[data-form-drawer]").count();
   const collapsedFormDrawerCount = await page.locator("[data-form-drawer].is-collapsed").count();
@@ -545,6 +549,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const mobileOpsOverflow = await pageHorizontalOverflow();
   await page.setViewportSize({ width: 1280, height: 720 });
   await switchView("nodes");
+  populatedNavBadgeCount = await page
+    .locator("[data-view-count]")
+    .evaluateAll((elements) => elements.filter((element) => element.textContent.trim().length > 0 && element.textContent.trim() !== "--").length);
+  navBadgeValues = await page
+    .locator(".dashboard-sidebar [data-view-count]")
+    .evaluateAll((elements) => Object.fromEntries(elements.map((element) => [element.dataset.viewCount, element.textContent.trim()])));
 
   const state = await page.evaluate(() => ({
     loginHidden: document.querySelector("#login-view")?.hidden,
@@ -566,8 +576,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }));
   state.dashboardNavCount = dashboardNavCount;
   state.dashboardNavSymbolCount = dashboardNavSymbolCount;
+  state.dashboardNavBadgeCount = dashboardNavBadgeCount;
   state.mobileDockCount = mobileDockCount;
   state.mobileDockSymbolCount = mobileDockSymbolCount;
+  state.mobileDockBadgeCount = mobileDockBadgeCount;
+  state.populatedNavBadgeCount = populatedNavBadgeCount;
+  state.navBadgeValues = navBadgeValues;
   state.dashboardViewCount = dashboardViewCount;
   state.formDrawerCount = formDrawerCount;
   state.collapsedFormDrawerCount = collapsedFormDrawerCount;
@@ -742,8 +756,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (
     dashboardNavCount !== viewNames.length ||
     dashboardNavSymbolCount !== viewNames.length ||
+    dashboardNavBadgeCount !== viewNames.length ||
     mobileDockCount !== viewNames.length ||
     mobileDockSymbolCount !== viewNames.length ||
+    mobileDockBadgeCount !== viewNames.length ||
+    populatedNavBadgeCount !== viewNames.length * 2 ||
     dashboardViewCount !== viewNames.length
   ) {
     throw new Error(`dashboard navigation is incomplete: ${JSON.stringify(state)}`);

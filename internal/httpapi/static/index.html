@@ -50,6 +50,7 @@
               <span class="nav-label">概览</span>
               <small>运行状态</small>
             </span>
+            <span class="nav-stat" data-view-count="overview">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="access">
             <span class="nav-symbol" aria-hidden="true">源</span>
@@ -57,6 +58,7 @@
               <span class="nav-label">接入</span>
               <small>来源与导入</small>
             </span>
+            <span class="nav-stat" data-view-count="access">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="nodes">
             <span class="nav-symbol" aria-hidden="true">点</span>
@@ -64,6 +66,7 @@
               <span class="nav-label">节点</span>
               <small>地区与网关</small>
             </span>
+            <span class="nav-stat" data-view-count="nodes">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="identity">
             <span class="nav-symbol" aria-hidden="true">身</span>
@@ -71,6 +74,7 @@
               <span class="nav-label">身份</span>
               <small>团队与 Token</small>
             </span>
+            <span class="nav-stat" data-view-count="identity">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="policies">
             <span class="nav-symbol" aria-hidden="true">策</span>
@@ -78,6 +82,7 @@
               <span class="nav-label">策略</span>
               <small>可见范围</small>
             </span>
+            <span class="nav-stat" data-view-count="policies">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="traffic">
             <span class="nav-symbol" aria-hidden="true">量</span>
@@ -85,6 +90,7 @@
               <span class="nav-label">流量</span>
               <small>用量统计</small>
             </span>
+            <span class="nav-stat" data-view-count="traffic">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="ops">
             <span class="nav-symbol" aria-hidden="true">运</span>
@@ -92,18 +98,19 @@
               <span class="nav-label">运维</span>
               <small>配置发布</small>
             </span>
+            <span class="nav-stat" data-view-count="ops">--</span>
           </button>
         </nav>
       </aside>
 
       <nav class="mobile-dock" aria-label="移动导航">
-        <button type="button" data-view-nav="overview"><span class="mobile-dock-symbol" aria-hidden="true">概</span><span>概览</span></button>
-        <button type="button" data-view-nav="access"><span class="mobile-dock-symbol" aria-hidden="true">源</span><span>接入</span></button>
-        <button type="button" data-view-nav="nodes"><span class="mobile-dock-symbol" aria-hidden="true">点</span><span>节点</span></button>
-        <button type="button" data-view-nav="identity"><span class="mobile-dock-symbol" aria-hidden="true">身</span><span>身份</span></button>
-        <button type="button" data-view-nav="policies"><span class="mobile-dock-symbol" aria-hidden="true">策</span><span>策略</span></button>
-        <button type="button" data-view-nav="traffic"><span class="mobile-dock-symbol" aria-hidden="true">量</span><span>流量</span></button>
-        <button type="button" data-view-nav="ops"><span class="mobile-dock-symbol" aria-hidden="true">运</span><span>运维</span></button>
+        <button type="button" data-view-nav="overview"><span class="mobile-dock-symbol" aria-hidden="true">概</span><span>概览</span><span class="mobile-dock-badge" data-view-count="overview">--</span></button>
+        <button type="button" data-view-nav="access"><span class="mobile-dock-symbol" aria-hidden="true">源</span><span>接入</span><span class="mobile-dock-badge" data-view-count="access">--</span></button>
+        <button type="button" data-view-nav="nodes"><span class="mobile-dock-symbol" aria-hidden="true">点</span><span>节点</span><span class="mobile-dock-badge" data-view-count="nodes">--</span></button>
+        <button type="button" data-view-nav="identity"><span class="mobile-dock-symbol" aria-hidden="true">身</span><span>身份</span><span class="mobile-dock-badge" data-view-count="identity">--</span></button>
+        <button type="button" data-view-nav="policies"><span class="mobile-dock-symbol" aria-hidden="true">策</span><span>策略</span><span class="mobile-dock-badge" data-view-count="policies">--</span></button>
+        <button type="button" data-view-nav="traffic"><span class="mobile-dock-symbol" aria-hidden="true">量</span><span>流量</span><span class="mobile-dock-badge" data-view-count="traffic">--</span></button>
+        <button type="button" data-view-nav="ops"><span class="mobile-dock-symbol" aria-hidden="true">运</span><span>运维</span><span class="mobile-dock-badge" data-view-count="ops">--</span></button>
       </nav>
 
       <section class="workspace">

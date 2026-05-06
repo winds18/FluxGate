@@ -8,6 +8,7 @@ const viewContextEl = document.querySelector("#view-context");
 const viewRailEl = document.querySelector("#view-rail");
 const dashboardViewSections = Array.from(document.querySelectorAll("[data-dashboard-view]"));
 const dashboardNavButtons = Array.from(document.querySelectorAll("[data-view-nav]"));
+const dashboardNavCountEls = Array.from(document.querySelectorAll("[data-view-count]"));
 const dashboardJumpButtons = Array.from(document.querySelectorAll("[data-view-jump]"));
 const loginForm = document.querySelector("#login-form");
 const loginErrorEl = document.querySelector("#login-error");
@@ -369,6 +370,7 @@ function setActiveView(view) {
   viewDescriptionEl.textContent = description;
   updateViewContext();
   updateViewRail();
+  updateNavigationCounts();
 }
 
 function setFormDrawerCollapsed(drawer, collapsed) {
@@ -427,6 +429,7 @@ async function load() {
     renderTrafficTokens(trafficTokens);
     updatePanelCounts();
     updateViewContext();
+    updateNavigationCounts();
     statusEl.textContent = "已连接";
   } catch (error) {
     if (error.status === 401) {
@@ -1372,6 +1375,45 @@ function updatePanelCounts() {
   setPanelCount("policies", `${formatPlainNumber(appState.policies.length)} 条`);
   setPanelCount("traffic", `${formatPlainNumber(appState.trafficTokens.length)} Token`);
   setPanelCount("config", configReady ? "就绪" : "待补齐", configReady ? "success" : "warning");
+}
+
+function updateNavigationCounts() {
+  const counts = navigationCounts();
+  dashboardNavCountEls.forEach((element) => {
+    const view = element.dataset.viewCount || "";
+    const value = counts[view] || "0";
+    element.textContent = value;
+    element.classList.toggle("is-empty", value === "0" || value === "0/5" || value === "待检");
+    element.setAttribute("title", `${dashboardViewMeta[view]?.[0] || view}：${value}`);
+  });
+}
+
+function navigationCounts() {
+  const overview = appState.overview || {};
+  const sources = appState.sources || [];
+  const nodes = appState.nodes || [];
+  const virtualNodes = appState.virtualNodes || [];
+  const policies = appState.policies || [];
+  const tokens = appState.tokens || [];
+  const trafficHourly = appState.trafficHourly || [];
+  const trafficDaily = appState.trafficDaily || [];
+  const trafficOutbounds = appState.trafficOutbounds || [];
+  const trafficTokens = appState.trafficTokens || [];
+  const readiness = overviewReadinessChecks(overview);
+  const readyCount = readiness.filter(([, ready]) => ready).length;
+  const activeNodes = countBy(nodes, (row) => row.status === "active");
+  const activeVirtualNodes = countBy(virtualNodes, (row) => row.status === "active");
+  const activeTokens = countBy(tokens, (row) => row.status === "active");
+  const configReady = activeNodes > 0 && activeVirtualNodes > 0 && activeTokens > 0;
+  return {
+    overview: `${readyCount}/${readiness.length}`,
+    access: formatPlainNumber(sources.length),
+    nodes: formatPlainNumber(nodes.length),
+    identity: formatPlainNumber(tokens.length),
+    policies: formatPlainNumber(policies.length),
+    traffic: formatPlainNumber(trafficTokens.length || trafficOutbounds.length || trafficDaily.length || trafficHourly.length),
+    ops: configReady ? "就绪" : "待检",
+  };
 }
 
 function setPanelCount(key, value, tone = "") {

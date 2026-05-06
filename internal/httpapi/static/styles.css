@@ -2211,6 +2211,88 @@ textarea {
   font-size: 12px;
 }
 
+.node-region-summary {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) minmax(0, auto);
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.node-region-summary-symbol {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #d6e8ff;
+  border-radius: 8px;
+  color: #1f5fbf;
+  display: inline-flex;
+  font-size: 18px;
+  font-weight: 820;
+  height: 36px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 0;
+  width: 36px;
+}
+
+.node-region-summary-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.node-region-summary-copy strong,
+.node-region-summary-copy span {
+  display: block;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-region-summary-copy strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 780;
+}
+
+.node-region-summary-copy span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 680;
+}
+
+.node-region-summary-chips {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.node-region-summary-chips span {
+  background: #ffffff;
+  border: 1px solid #dfe7f0;
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.2;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 5px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .node-filter-bar {
   align-items: end;
   background: #fbfdff;
@@ -4073,6 +4155,15 @@ td code {
   .node-filter-bar {
     align-items: stretch;
     grid-template-columns: 1fr;
+  }
+
+  .node-region-summary {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .node-region-summary-chips {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
   }
 
   .node-filter-summary {

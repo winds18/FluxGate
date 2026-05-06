@@ -801,18 +801,50 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let nodeCardChipCount = 0;
   let nodeCardEndpointCount = 0;
   let nodeVisualOverflowCount = 0;
+  let nodeRegionSummaryCount = 0;
+  let nodeRegionSummaryChipCount = 0;
+  let nodeRegionSummaryOverflowCount = 0;
   if (nodeRegionCount > 0) {
     await page.locator("#nodes button[data-node-region-action='open']").first().click();
     await expect(page.locator("#nodes .node-card").first()).toBeVisible({ timeout: 5000 });
+    nodeRegionSummaryCount = await page.locator("#nodes [data-node-region-summary]").count();
+    nodeRegionSummaryChipCount = await page.locator("#nodes [data-node-region-summary-chip]").count();
     nodeCardCount = await page.locator("#nodes .node-card").count();
     nodeCardProtocolSymbolCount = await page.locator("#nodes .node-card-protocol-symbol").count();
     nodeCardChipCount = await page.locator("#nodes [data-node-card-chip]").count();
     nodeCardEndpointCount = await page.locator("#nodes [data-node-card-endpoint]").count();
     await page.evaluate(() => {
+      const summaryTitle = document.querySelector("#nodes [data-node-region-summary] .node-region-summary-copy strong");
+      if (summaryTitle) {
+        summaryTitle.textContent = "🇨🇳中国|香港-联通/移动/广港 IEPL 长地区名称用于摘要验收";
+      }
       const firstTitle = document.querySelector("#nodes .node-card-title");
       if (firstTitle) {
         firstTitle.textContent = "[gougou-joy] 🇦🇷 38阿根廷-联通/移动(AnyTLS)-超长节点名称用于布局验收";
       }
+    });
+    nodeRegionSummaryOverflowCount = await page.evaluate(() => {
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(document.querySelectorAll("#nodes [data-node-region-summary]")).reduce((total, summary) => {
+        const summaryBox = summary.getBoundingClientRect();
+        const elements = Array.from(
+          summary.querySelectorAll(".node-region-summary-symbol, .node-region-summary-copy, .node-region-summary-copy strong, .node-region-summary-copy span, .node-region-summary-chips, [data-node-region-summary-chip]"),
+        ).filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const parent = element.classList.contains("node-region-summary-copy") || element.classList.contains("node-region-summary-chips")
+            ? summaryBox
+            : (element.closest(".node-region-summary-copy") || element.closest(".node-region-summary-chips") || summary).getBoundingClientRect();
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
     });
     nodeVisualOverflowCount = await page.evaluate(() => {
       const outside = (child, parent) =>
@@ -1072,6 +1104,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeRegionBadgeCount = nodeRegionBadgeCount;
   state.nodeRegionStatChipCount = nodeRegionStatChipCount;
   state.nodeRegionOverflowCount = nodeRegionOverflowCount;
+  state.nodeRegionSummaryCount = nodeRegionSummaryCount;
+  state.nodeRegionSummaryChipCount = nodeRegionSummaryChipCount;
+  state.nodeRegionSummaryOverflowCount = nodeRegionSummaryOverflowCount;
   state.nodeCardCount = nodeCardCount;
   state.nodeCardProtocolSymbolCount = nodeCardProtocolSymbolCount;
   state.nodeCardChipCount = nodeCardChipCount;
@@ -1250,6 +1285,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       nodeVisualOverflowCount > 0)
   ) {
     throw new Error(`node cards are incomplete or visually overflow their parent: ${JSON.stringify(state)}`);
+  }
+  if (
+    nodeRegionCount > 0 &&
+    (nodeRegionSummaryCount !== 1 || nodeRegionSummaryChipCount < 4 || nodeRegionSummaryOverflowCount > 0)
+  ) {
+    throw new Error(`node region summary is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (
     nodeRegionCount > 0 &&

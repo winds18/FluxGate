@@ -2299,9 +2299,31 @@ function renderNodeRegion(group, groups, total, matched, totalRegionCount) {
           <span>${formatCell(group.items.length)} 个节点 · 筛选 ${formatCell(matched)} / ${formatCell(total)} · 共 ${formatCell(totalRegionCount)} 个地区</span>
         </div>
       </div>
+      ${renderNodeRegionSummary(group)}
       ${renderNodeFilterBar(total, matched, groups.length)}
       <div class="node-card-grid">
         ${group.items.map((row) => renderNodeCard(row)).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderNodeRegionSummary(group) {
+  const activeCount = group.items.filter((node) => node.status === "active").length;
+  const protocolCount = new Set(group.items.map((node) => node.protocol).filter(Boolean)).size;
+  const sourceCount = new Set(group.items.map((node) => node.source_name || node.source_id).filter(Boolean)).size;
+  return `
+    <div class="node-region-summary" data-node-region-summary>
+      <span class="node-region-summary-symbol" aria-hidden="true">${escapeHTML(regionSymbolForRegion(group.region))}</span>
+      <div class="node-region-summary-copy">
+        <strong>${escapeHTML(group.region)}</strong>
+        <span>本地区节点概况</span>
+      </div>
+      <div class="node-region-summary-chips">
+        <span data-node-region-summary-chip>${formatCell(group.items.length)} 节点</span>
+        <span data-node-region-summary-chip>${formatCell(activeCount)} 可用</span>
+        <span data-node-region-summary-chip>${formatCell(protocolCount)} 协议</span>
+        <span data-node-region-summary-chip>${formatCell(sourceCount)} 来源</span>
       </div>
     </div>
   `;

@@ -265,7 +265,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     }, 0);
   });
   const overviewReadinessCount = await page.locator("#overview-readiness .readiness-item").count();
+  const overviewReadinessIndexCount = await page.locator("#overview-readiness .readiness-index").count();
   const overviewReadinessSymbolCount = await page.locator("#overview-readiness .readiness-symbol").count();
+  const overviewReadinessStateCount = await page.locator("#overview-readiness .readiness-state").count();
+  const overviewReadinessStates = await page
+    .locator("#overview-readiness .readiness-state")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
   const overviewReadinessSymbols = await page
     .locator("#overview-readiness .readiness-symbol")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
@@ -278,7 +283,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     return Array.from(document.querySelectorAll("#overview-readiness .readiness-item")).reduce((total, item) => {
       const itemBox = item.getBoundingClientRect();
       const elements = Array.from(
-        item.querySelectorAll(".readiness-symbol-wrap, .readiness-symbol, .readiness-dot, .readiness-body, strong, small"),
+        item.querySelectorAll(
+          ".readiness-symbol-wrap, .readiness-index, .readiness-symbol, .readiness-dot, .readiness-body, .readiness-title-row, .readiness-state, strong, small",
+        ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
         const box = element.getBoundingClientRect();
@@ -822,7 +829,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewMetricValueCount = overviewMetricValueCount;
   state.overviewMetricOverflowCount = overviewMetricOverflowCount;
   state.overviewReadinessCount = overviewReadinessCount;
+  state.overviewReadinessIndexCount = overviewReadinessIndexCount;
   state.overviewReadinessSymbolCount = overviewReadinessSymbolCount;
+  state.overviewReadinessStateCount = overviewReadinessStateCount;
+  state.overviewReadinessStates = overviewReadinessStates;
   state.overviewReadinessSymbols = overviewReadinessSymbols;
   state.overviewReadinessOverflowCount = overviewReadinessOverflowCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
@@ -1089,7 +1099,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const expectedOverviewReadinessSymbols = ["源", "点", "网", "身", "策"];
   if (
     overviewReadinessCount !== 5 ||
+    overviewReadinessIndexCount !== 5 ||
     overviewReadinessSymbolCount !== 5 ||
+    overviewReadinessStateCount !== 5 ||
+    overviewReadinessStates.some((state) => !["就绪", "待补"].includes(state)) ||
     expectedOverviewReadinessSymbols.some((symbol, index) => overviewReadinessSymbols[index] !== symbol) ||
     overviewReadinessOverflowCount > 0 ||
     overviewNextStepButtonCount !== 1

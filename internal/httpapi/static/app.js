@@ -1297,14 +1297,18 @@ function renderOverviewReadiness(data) {
     <div class="readiness-list" data-overview-readiness>
       ${checks
         .map(
-          ([label, ready, summary, view, symbol]) => `
+          ([label, ready, summary, view, symbol], index) => `
             <button class="readiness-item ${ready ? "is-ready" : ""}" type="button" data-overview-jump="${view}">
               <span class="readiness-symbol-wrap" aria-hidden="true">
+                <span class="readiness-index">${String(index + 1).padStart(2, "0")}</span>
                 <span class="readiness-symbol">${escapeHTML(symbol)}</span>
                 <span class="readiness-dot"></span>
               </span>
               <span class="readiness-body">
-                <strong>${escapeHTML(label)}</strong>
+                <span class="readiness-title-row">
+                  <strong>${escapeHTML(label)}</strong>
+                  <span class="readiness-state">${ready ? "就绪" : "待补"}</span>
+                </span>
                 <small>${escapeHTML(summary)}</small>
               </span>
             </button>

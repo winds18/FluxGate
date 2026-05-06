@@ -2077,11 +2077,23 @@ function renderTokenCard(row) {
       </div>
       <div class="token-card-actions">
         <span class="token-action-group" data-token-action-group>
-          <input data-token-extend-days="${row.id}" type="number" min="1" value="30" aria-label="续期天数" />
+          <label class="token-action-field">
+            <span>续期天数</span>
+            <span class="token-action-input">
+              <input data-token-extend-days="${row.id}" type="number" min="1" value="30" aria-label="续期天数" />
+              <em>天</em>
+            </span>
+          </label>
           <button class="table-button" data-token-action="extend" data-token-id="${row.id}">续期</button>
         </span>
         <span class="token-action-group" data-token-action-group>
-          <input data-token-quota-mib="${row.id}" type="number" min="1" value="1024" aria-label="追加额度 MiB" />
+          <label class="token-action-field">
+            <span>追加额度</span>
+            <span class="token-action-input">
+              <input data-token-quota-mib="${row.id}" type="number" min="1" value="1024" aria-label="追加额度 MiB" />
+              <em>MiB</em>
+            </span>
+          </label>
           <button class="table-button" data-token-action="quota" data-token-id="${row.id}">加额</button>
         </span>
         <button class="table-button" data-token-action="restore" data-token-id="${row.id}">恢复</button>

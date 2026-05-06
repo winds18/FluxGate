@@ -817,20 +817,63 @@ main {
 }
 
 .token-action-group {
-  align-items: center;
+  align-items: end;
   background: var(--surface-muted);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
   display: inline-flex;
-  gap: 6px;
-  padding: 4px;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px;
 }
 
-.token-action-group input {
-  height: 30px;
-  min-height: 30px;
+.token-action-field {
+  color: var(--muted);
+  display: grid;
+  flex: 1 1 112px;
+  font-size: 12px;
+  font-weight: 760;
+  gap: 5px;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.token-action-input {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5df;
+  border-radius: 6px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.token-action-input:focus-within {
+  box-shadow: 0 0 0 3px rgba(23, 105, 224, 0.16);
+  outline: 2px solid transparent;
+}
+
+.token-action-input em {
+  color: var(--muted);
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 760;
+  padding-right: 8px;
+}
+
+.token-action-input input {
+  border: 0;
+  height: 32px;
+  min-height: 32px;
+  min-width: 0;
   padding: 0 8px;
-  width: 82px;
+  width: 100%;
+}
+
+.token-action-input input:focus-visible {
+  box-shadow: none;
+  outline: 0;
 }
 
 .policy-actions {
@@ -2564,6 +2607,11 @@ td code {
   .token-card-actions,
   .token-action-group {
     align-items: stretch;
+    width: 100%;
+  }
+
+  .token-action-field,
+  .token-action-input {
     width: 100%;
   }
 

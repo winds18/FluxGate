@@ -207,6 +207,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenRowCount = tokenCardCount || (await page.locator("#tokens tbody tr").count());
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
   const tokenQuotaInputCount = await page.locator("#tokens input[data-token-quota-mib]").count();
+  const tokenActionFieldCount = await page.locator("#tokens .token-action-field").count();
   const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
@@ -601,6 +602,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.quotaUsageVisible = quotaUsageVisible;
   state.tokenExtendInputCount = tokenExtendInputCount;
   state.tokenQuotaInputCount = tokenQuotaInputCount;
+  state.tokenActionFieldCount = tokenActionFieldCount;
   state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
   state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
@@ -613,6 +615,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsVisualOverflowCount = opsVisualOverflowCount;
   if (tokenRowCount > 0 && (tokenExtendInputCount !== tokenRowCount || tokenQuotaInputCount !== tokenRowCount)) {
     throw new Error(`token custom controls missing: ${JSON.stringify(state)}`);
+  }
+  if (tokenRowCount > 0 && tokenActionFieldCount !== tokenRowCount * 2) {
+    throw new Error(`token action labels missing: ${JSON.stringify(state)}`);
   }
   if (tokenResultSubscriptionItemCount !== 3 || tokenResultVisualOverflowCount > 0) {
     throw new Error(`token subscription result card is incomplete or overflowing: ${JSON.stringify(state)}`);

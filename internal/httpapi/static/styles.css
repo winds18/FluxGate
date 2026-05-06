@@ -2415,6 +2415,26 @@ td code {
   padding: 3px 7px;
 }
 
+.token-subscription-profile {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #dfe7f0;
+  border-radius: 999px;
+  color: #5f6f85;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 760;
+  justify-content: center;
+  line-height: 1.2;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 4px 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  width: fit-content;
+}
+
 .token-subscription-item code {
   background: #f8fafc;
   border: 1px solid var(--border-soft);
@@ -3156,6 +3176,10 @@ td code {
 
   .token-subscription-actions {
     align-items: stretch;
+    width: 100%;
+  }
+
+  .token-subscription-profile {
     width: 100%;
   }
 

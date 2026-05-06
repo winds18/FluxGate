@@ -2360,6 +2360,7 @@ function renderSubscriptionCardList(items, tokenID = "") {
                   <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}" data-button-symbol="⧉" data-copy-label="复制">${buttonLabel("⧉", "复制")}</button>
                 </span>
               </div>
+              <span class="token-subscription-profile" data-token-subscription-profile>${escapeHTML(subscriptionProfileForLabel(label))}</span>
               <code title="${escapeHTML(url)}">${escapeHTML(url)}</code>
             </div>
           `,
@@ -2377,6 +2378,12 @@ function subscriptionKindForLabel(label) {
   if (label === "Clash/Mihomo") return "Mihomo";
   if (label === "sing-box") return "sing-box";
   return "通用";
+}
+
+function subscriptionProfileForLabel(label) {
+  if (label === "Clash/Mihomo") return "YAML · Mihomo";
+  if (label === "sing-box") return "JSON · sing-box";
+  return "URI · 通用";
 }
 
 function showTokenSubscriptionResult(result, title) {

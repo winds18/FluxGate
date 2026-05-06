@@ -249,6 +249,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const nodeEditCount = await page.locator("#nodes button[data-node-action='edit']").count();
   let nodeEditFormVisible = false;
   let nodeDetailVisible = false;
+  let nodeDetailCodeOverflowCount = 0;
   if (nodeEditCount > 0) {
     await page.locator("#nodes button[data-node-action='edit']").first().click();
     await expect(page.locator("#nodes form[data-node-edit-form]").first()).toBeVisible({ timeout: 5000 });
@@ -257,6 +258,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#nodes .node-card-main").first().click();
     await expect(page.locator("#nodes .node-detail-row .detail-code").first()).toBeVisible({ timeout: 5000 });
     nodeDetailVisible = true;
+    nodeDetailCodeOverflowCount = await page.evaluate(() =>
+      Array.from(document.querySelectorAll("#nodes .node-detail-row .detail-code")).filter(
+        (element) => element.scrollWidth > element.clientWidth + 2,
+      ).length,
+    );
   }
 
   await page.setViewportSize({ width: 390, height: 844 });
@@ -313,6 +319,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
   state.nodeDetailVisible = nodeDetailVisible;
+  state.nodeDetailCodeOverflowCount = nodeDetailCodeOverflowCount;
   state.east8TimeSamples = east8TimeSamples;
   state.trafficTokenRowCount = trafficTokenRowCount;
   state.tokenRowCount = tokenRowCount;
@@ -335,6 +342,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeVisualOverflowCount > 0) {
     throw new Error(`node cards visually overflow their parent: ${JSON.stringify(state)}`);
+  }
+  if (nodeDetailCodeOverflowCount > 0) {
+    throw new Error(`node detail code blocks overflow horizontally: ${JSON.stringify(state)}`);
   }
   if (!mobileDockVisible || mobileSidebarVisible || !mobileNodesVisible || mobileOverviewOverflow > 2 || mobileNodesOverflow > 2) {
     throw new Error(`mobile dashboard layout failed: ${JSON.stringify(state)}`);

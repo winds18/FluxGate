@@ -855,9 +855,11 @@ textarea {
 .detail-code {
   display: block;
   max-width: 100%;
-  overflow-x: auto;
+  overflow-wrap: anywhere;
+  overflow-x: hidden;
   padding: 8px 10px;
-  white-space: nowrap;
+  white-space: normal;
+  word-break: break-word;
 }
 
 input::placeholder,

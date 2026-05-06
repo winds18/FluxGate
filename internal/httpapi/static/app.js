@@ -1347,7 +1347,7 @@ function renderOverviewReadiness(data) {
         <small>${escapeHTML(next.description)}</small>
       </span>
       <button class="primary-link-button next-step-action" type="button" data-overview-jump="${next.view}">
-        ${escapeHTML(next.action)}
+        ${buttonLabel("→", next.action)}
       </button>
     </div>
   `;

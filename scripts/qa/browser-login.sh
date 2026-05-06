@@ -74,6 +74,23 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   await page.goto(baseURL, { waitUntil: "domcontentloaded" });
   await page.waitForSelector("#login-form", { state: "visible", timeout: 15000 });
+  const loginButtonSymbolCount = await page.locator('#login-form button[type="submit"] .button-symbol').count();
+  const loginButtonOverflowCount = await page.evaluate(() => {
+    const button = document.querySelector('#login-form button[type="submit"]');
+    if (!button) return 1;
+    const buttonBox = button.getBoundingClientRect();
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(button.querySelectorAll(".button-symbol, .button-label"))
+      .filter((element) => element.offsetParent !== null)
+      .reduce((total, element) => {
+        const box = element.getBoundingClientRect();
+        return box.width > 0 && box.height > 0 && outside(box, buttonBox) ? total + 1 : total;
+      }, 0);
+  });
   await page.fill("#login-username", username);
   await page.fill("#login-password", password);
   await page.click("#login-form button[type=submit]");
@@ -366,6 +383,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const overviewNextStepButtonCount = await page.locator("#overview-next-step [data-overview-jump]").count();
   const overviewNextStepCardCount = await page.locator("#overview-next-step [data-overview-next-step-card]").count();
   const overviewNextStepActionCount = await page.locator("#overview-next-step .next-step-action").count();
+  const overviewNextStepActionSymbolCount = await page.locator("#overview-next-step .next-step-action .button-symbol").count();
   const overviewNextStepOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -375,7 +393,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     const card = document.querySelector("#overview-next-step [data-overview-next-step-card]");
     if (!card) return 1;
     const cardBox = card.getBoundingClientRect();
-    return Array.from(card.querySelectorAll(".next-step-symbol, .next-step-body, .next-step-action"))
+    return Array.from(card.querySelectorAll(".next-step-symbol, .next-step-body, .next-step-action, .next-step-action .button-symbol, .next-step-action .button-label"))
       .filter((element) => element.offsetParent !== null)
       .reduce((total, element) => {
         const box = element.getBoundingClientRect();
@@ -1159,6 +1177,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.formDrawerSymbolCount = formDrawerSymbolCount;
   state.formDrawerToggleSymbolCount = formDrawerToggleSymbolCount;
   state.formSubmitButtonSymbolCount = formSubmitButtonSymbolCount;
+  state.loginButtonSymbolCount = loginButtonSymbolCount;
+  state.loginButtonOverflowCount = loginButtonOverflowCount;
   state.refreshButtonSymbolCount = refreshButtonSymbolCount;
   state.refreshButtonOverflowCount = refreshButtonOverflowCount;
   state.logoutButtonSymbolCount = logoutButtonSymbolCount;
@@ -1194,6 +1214,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
   state.overviewNextStepCardCount = overviewNextStepCardCount;
   state.overviewNextStepActionCount = overviewNextStepActionCount;
+  state.overviewNextStepActionSymbolCount = overviewNextStepActionSymbolCount;
   state.overviewNextStepOverflowCount = overviewNextStepOverflowCount;
   state.overviewQuickCardCount = overviewQuickCardCount;
   state.overviewQuickCardSymbolCount = overviewQuickCardSymbolCount;
@@ -1531,6 +1552,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     formDrawerSymbolCount !== 7 ||
     formDrawerToggleSymbolCount !== 7 ||
     formSubmitButtonSymbolCount !== 7 ||
+    loginButtonSymbolCount !== 1 ||
+    loginButtonOverflowCount > 0 ||
     refreshButtonSymbolCount !== 1 ||
     logoutButtonSymbolCount !== 1 ||
     refreshButtonOverflowCount > 0 ||
@@ -1615,7 +1638,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);
   }
-  if (overviewNextStepCardCount !== 1 || overviewNextStepActionCount !== 1 || overviewNextStepOverflowCount > 0) {
+  if (
+    overviewNextStepCardCount !== 1 ||
+    overviewNextStepActionCount !== 1 ||
+    overviewNextStepActionSymbolCount !== 1 ||
+    overviewNextStepOverflowCount > 0
+  ) {
     throw new Error(`overview next step action card is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   const expectedOverviewQuickCardSymbols = ["源", "点", "身", "运"];

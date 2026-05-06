@@ -830,9 +830,12 @@ main {
   display: inline-flex;
   font-size: 14px;
   font-weight: 780;
+  gap: 6px;
   justify-content: center;
   min-height: 40px;
+  min-width: 0;
   padding: 0 16px;
+  max-width: 100%;
   width: fit-content;
 }
 
@@ -1097,6 +1100,12 @@ main {
   gap: 6px;
   max-width: 100%;
   min-width: 92px;
+}
+
+.login-panel button[type="submit"] {
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .token-form-grid {

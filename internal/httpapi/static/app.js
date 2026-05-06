@@ -98,6 +98,15 @@ dashboardJumpButtons.forEach((button) => {
   button.addEventListener("click", () => setActiveView(button.dataset.viewJump || "overview"));
 });
 document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-form-drawer-toggle]");
+  if (!button) return;
+  const drawer = button.closest("[data-form-drawer]");
+  if (!drawer) return;
+  const nextCollapsed = !drawer.classList.contains("is-collapsed");
+  drawer.classList.toggle("is-collapsed", nextCollapsed);
+  button.textContent = nextCollapsed ? "展开" : "收起";
+});
+document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-overview-jump]");
   if (!button) return;
   setActiveView(button.dataset.overviewJump || "overview");

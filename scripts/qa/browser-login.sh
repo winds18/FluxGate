@@ -91,6 +91,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const dashboardNavCount = await page.locator(".dashboard-sidebar [data-view-nav]").count();
   const mobileDockCount = await page.locator(".mobile-dock [data-view-nav]").count();
   const dashboardViewCount = await page.locator("[data-dashboard-view]").count();
+  const formDrawerCount = await page.locator("[data-form-drawer]").count();
+  const collapsedFormDrawerCount = await page.locator("[data-form-drawer].is-collapsed").count();
   const viewOverflow = {};
   for (const view of viewNames) {
     await switchView(view);
@@ -299,6 +301,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardNavCount = dashboardNavCount;
   state.mobileDockCount = mobileDockCount;
   state.dashboardViewCount = dashboardViewCount;
+  state.formDrawerCount = formDrawerCount;
+  state.collapsedFormDrawerCount = collapsedFormDrawerCount;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
   state.viewOverflow = viewOverflow;
@@ -355,6 +359,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (dashboardNavCount !== viewNames.length || mobileDockCount < 5 || dashboardViewCount !== viewNames.length) {
     throw new Error(`dashboard navigation is incomplete: ${JSON.stringify(state)}`);
+  }
+  if (formDrawerCount !== 7 || collapsedFormDrawerCount !== 7) {
+    throw new Error(`form drawers should be collapsed by default: ${JSON.stringify(state)}`);
   }
   if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);

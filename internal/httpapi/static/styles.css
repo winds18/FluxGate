@@ -541,6 +541,45 @@ main {
   grid-column: span 2;
 }
 
+.form-drawer {
+  gap: 0;
+}
+
+.form-drawer .panel-header {
+  border-bottom: 0;
+}
+
+.form-drawer .form-body,
+.form-drawer .result-box {
+  border-top: 1px solid var(--border-soft);
+}
+
+.form-drawer.is-collapsed .form-body,
+.form-drawer.is-collapsed .result-box {
+  display: none;
+}
+
+.drawer-toggle {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 13px;
+  font-weight: 760;
+  justify-content: center;
+  min-height: 34px;
+  padding: 0 12px;
+  white-space: nowrap;
+}
+
+.drawer-toggle:hover {
+  border-color: #c7d4df;
+  color: var(--text);
+}
+
 .form-body {
   align-content: start;
   display: grid;

@@ -607,6 +607,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   await switchView("nodes");
   const virtualNodeCardCount = await page.locator("#virtual-nodes .virtual-node-card").count();
+  const virtualNodeSummaryChipCount = await page.locator("#virtual-nodes [data-virtual-node-summary-chip]").count();
   const virtualNodeVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -616,7 +617,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     return Array.from(document.querySelectorAll("#virtual-nodes .virtual-node-card")).reduce((total, card) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
-        card.querySelectorAll(".virtual-node-card-heading, .virtual-node-listen-badge, .virtual-node-card-field, .virtual-node-actions"),
+        card.querySelectorAll(
+          ".virtual-node-card-heading, .virtual-node-card-summary, [data-virtual-node-summary-chip], .virtual-node-listen-badge, .virtual-node-card-field, .virtual-node-actions",
+        ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
         const box = element.getBoundingClientRect();
@@ -949,6 +952,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
   state.virtualNodeCardCount = virtualNodeCardCount;
+  state.virtualNodeSummaryChipCount = virtualNodeSummaryChipCount;
   state.virtualNodeVisualOverflowCount = virtualNodeVisualOverflowCount;
   state.virtualNodeEditCount = virtualNodeEditCount;
   state.virtualNodeEditFieldsVisible = virtualNodeEditFieldsVisible;
@@ -1090,7 +1094,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`source cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  if (virtualNodeEditCount > 0 && (virtualNodeCardCount !== virtualNodeEditCount || virtualNodeVisualOverflowCount > 0)) {
+  if (
+    virtualNodeEditCount > 0 &&
+    (virtualNodeCardCount !== virtualNodeEditCount ||
+      virtualNodeSummaryChipCount !== virtualNodeCardCount * 4 ||
+      virtualNodeVisualOverflowCount > 0)
+  ) {
     throw new Error(`virtual node cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (policyEditCount > 0 && (policyCardCount !== policyEditCount || policyVisualOverflowCount > 0)) {

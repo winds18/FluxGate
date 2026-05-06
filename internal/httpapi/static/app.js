@@ -1886,6 +1886,7 @@ function renderVirtualNodes(rows) {
 function renderVirtualNodeCard(row) {
   const isEditing = appState.editingVirtualNodeID === row.id;
   const listenSummary = `${row.listen_protocol || "vless"}:${row.listen_port || "--"}`;
+  const statusSummary = virtualNodeStatusSummary(row.status);
   return `
     <article class="virtual-node-card ${isEditing ? "virtual-node-card-editing" : ""}" data-virtual-node-id="${row.id}">
       <div class="virtual-node-card-heading">
@@ -1894,6 +1895,12 @@ function renderVirtualNodeCard(row) {
           <strong>${isEditing ? virtualNodeTextInput(row, "name") : formatCell(row.name, "name")}</strong>
         </div>
         <span class="virtual-node-listen-badge">${escapeHTML(listenSummary)}</span>
+      </div>
+      <div class="virtual-node-card-summary" aria-label="虚拟网关摘要">
+        ${virtualNodeSummaryChip(`监听 ${escapeHTML(listenSummary)}`, "info")}
+        ${virtualNodeSummaryChip(virtualNodeStrategySummary(row.strategy))}
+        ${virtualNodeSummaryChip(statusSummary.label, statusSummary.tone)}
+        ${virtualNodeSummaryChip(virtualNodeTagSummary(row.tag_selector))}
       </div>
       <div class="virtual-node-card-grid">
         ${virtualNodeCardField("listen_protocol", isEditing ? virtualNodeProtocolSelect(row.listen_protocol) : formatCell(row.listen_protocol, "listen_protocol"))}
@@ -1912,6 +1919,26 @@ function renderVirtualNodeCard(row) {
       </div>
     </article>
   `;
+}
+
+function virtualNodeSummaryChip(content, tone = "") {
+  return `<span class="virtual-node-card-summary-chip ${tone ? `virtual-node-card-summary-chip-${tone}` : ""}" data-virtual-node-summary-chip>${content}</span>`;
+}
+
+function virtualNodeStrategySummary(value) {
+  return `策略 ${escapeHTML(String(value || "selector"))}`;
+}
+
+function virtualNodeStatusSummary(value) {
+  const status = String(value || "active");
+  return {
+    label: escapeHTML(status),
+    tone: status === "active" ? "success" : "muted",
+  };
+}
+
+function virtualNodeTagSummary(value) {
+  return String(value || "").trim() ? "标签筛选" : "全部节点";
 }
 
 function virtualNodeCardField(label, value, className = "") {

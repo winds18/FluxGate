@@ -2329,6 +2329,7 @@ function renderNodeCard(row) {
   const isEditing = appState.editingNodeID === row.id;
   const isExpanded = appState.expandedNodeID === row.id;
   const detail = isExpanded ? appState.nodeDetail || row : null;
+  const endpoint = nodeEndpointLabel(row);
   return `
     <article class="node-card ${isExpanded ? "node-card-expanded" : ""}" data-node-id="${row.id}">
       <button class="node-card-main" type="button" data-node-action="detail" data-node-id="${row.id}">
@@ -2344,6 +2345,10 @@ function renderNodeCard(row) {
           <span class="node-card-chip" data-node-card-chip>${formatCell(row.protocol, "protocol")}</span>
           <span class="node-card-chip" data-node-card-chip>${labelForColumn("name_mode")}：${formatCell(row.name_mode, "name_mode")}</span>
         </span>
+        <span class="node-card-endpoint" data-node-card-endpoint>
+          <span aria-hidden="true">端</span>
+          <code>${escapeHTML(endpoint)}</code>
+        </span>
         <span class="node-card-tags">${formatCell(row.tags, "tags")}</span>
       </button>
       ${isEditing ? renderNodeEditForm(row) : ""}
@@ -2358,6 +2363,15 @@ function renderNodeCard(row) {
       ${detail ? renderNodeDetailPanel(detail) : ""}
     </article>
   `;
+}
+
+function nodeEndpointLabel(row) {
+  const server = String(row?.server || "").trim();
+  const port = String(row?.server_port || "").trim();
+  if (server && port) return `${server}:${port}`;
+  if (server) return server;
+  if (port) return `:${port}`;
+  return "未配置服务端";
 }
 
 function nodeProtocolSymbol(protocol) {

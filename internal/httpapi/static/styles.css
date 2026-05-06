@@ -1822,6 +1822,32 @@ td code {
   min-width: 0;
 }
 
+.token-result-card {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.token-result-heading {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.token-result-heading strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 760;
+  line-height: 1.35;
+}
+
+.token-result-heading span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
 .token-subscription-list {
   display: grid;
   gap: 8px;

@@ -167,6 +167,42 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await expect(page.locator("#token-form")).not.toHaveClass(/is-collapsed/, { timeout: 5000 });
     moduleRailOpensTokenForm = true;
   }
+  await page.evaluate(() => {
+    if (typeof showTokenSubscriptionResult !== "function") return;
+    showTokenSubscriptionResult(
+      {
+        id: 999,
+        subscription: "https://fluxgate.example.test/sub/fg_browser_qa_default_subscription_token",
+        subscriptions: {
+          clash: "https://fluxgate.example.test/sub/fg_browser_qa_default_subscription_token?target=clash",
+          sing_box: "https://fluxgate.example.test/sub/fg_browser_qa_default_subscription_token?target=sing-box",
+        },
+      },
+      "订阅地址预览",
+    );
+  });
+  await expect(page.locator("#token-result .token-result-card")).toBeVisible({ timeout: 5000 });
+  const tokenResultSubscriptionItemCount = await page.locator("#token-result .token-subscription-item").count();
+  const tokenResultVisualOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const resultCard = document.querySelector("#token-result .token-result-card");
+    if (!resultCard) return 1;
+    const resultBox = resultCard.getBoundingClientRect();
+    return Array.from(
+      resultCard.querySelectorAll(".token-result-heading, .token-subscription-item, .token-subscription-heading, code, button"),
+    ).reduce((total, element) => {
+      if (element.offsetParent === null) return total;
+      const box = element.getBoundingClientRect();
+      if (box.width > 0 && box.height > 0 && outside(box, resultBox)) {
+        return total + 1;
+      }
+      return total;
+    }, 0);
+  });
   const tokenCardCount = await page.locator("#tokens .token-card").count();
   const tokenRowCount = tokenCardCount || (await page.locator("#tokens tbody tr").count());
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
@@ -551,6 +587,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.trafficVisualOverflowCount = trafficVisualOverflowCount;
   state.tokenRowCount = tokenRowCount;
   state.tokenCardCount = tokenCardCount;
+  state.tokenResultSubscriptionItemCount = tokenResultSubscriptionItemCount;
+  state.tokenResultVisualOverflowCount = tokenResultVisualOverflowCount;
   state.quotaMeterCount = quotaMeterCount;
   state.quotaUsageVisible = quotaUsageVisible;
   state.tokenExtendInputCount = tokenExtendInputCount;
@@ -566,6 +604,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsVisualOverflowCount = opsVisualOverflowCount;
   if (tokenRowCount > 0 && (tokenExtendInputCount !== tokenRowCount || tokenQuotaInputCount !== tokenRowCount)) {
     throw new Error(`token custom controls missing: ${JSON.stringify(state)}`);
+  }
+  if (tokenResultSubscriptionItemCount !== 3 || tokenResultVisualOverflowCount > 0) {
+    throw new Error(`token subscription result card is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (tokenRowCount > 0 && tokenRotateSubscriptionCount !== tokenRowCount) {
     throw new Error(`token subscription rotate controls missing: ${JSON.stringify(state)}`);

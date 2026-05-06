@@ -2100,6 +2100,10 @@ function renderTokenSubscriptions(row) {
     const message = row.subscription_error || "旧 Token 无法反复显示，可重置订阅";
     return `<div class="token-subscription-empty">${escapeHTML(message)}</div>`;
   }
+  return renderSubscriptionCardList(items, row.id);
+}
+
+function renderSubscriptionCardList(items, tokenID = "") {
   return `
     <div class="token-subscription-list">
       ${items
@@ -2108,7 +2112,7 @@ function renderTokenSubscriptions(row) {
             <div class="token-subscription-item">
               <div class="token-subscription-heading">
                 <span>${escapeHTML(label)}</span>
-                <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${row.id}" data-token-url="${escapeHTML(url)}">复制</button>
+                <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}">复制</button>
               </div>
               <code title="${escapeHTML(url)}">${escapeHTML(url)}</code>
             </div>
@@ -2124,16 +2128,19 @@ function showTokenSubscriptionResult(result, title) {
   const defaultSubscription = subscriptions.default || result.subscription || "";
   const clashSubscription = subscriptions.clash || `${defaultSubscription}?target=clash`;
   const singBoxSubscription = subscriptions.sing_box || `${defaultSubscription}?target=sing-box`;
+  const items = [
+    ["默认", defaultSubscription],
+    ["Clash/Mihomo", clashSubscription],
+    ["sing-box", singBoxSubscription],
+  ].filter((item) => item[1]);
   tokenResultEl.hidden = false;
   tokenResultEl.innerHTML = `
-    <strong>${escapeHTML(title)}</strong>
-    <div class="subscription-list">
-      <span>默认</span>
-      <code>${escapeHTML(defaultSubscription)}</code>
-      <span>Clash/Mihomo</span>
-      <code>${escapeHTML(clashSubscription)}</code>
-      <span>sing-box</span>
-      <code>${escapeHTML(singBoxSubscription)}</code>
+    <div class="token-result-card">
+      <div class="token-result-heading">
+        <strong>${escapeHTML(title)}</strong>
+        <span>复制后可直接导入对应客户端</span>
+      </div>
+      ${items.length > 0 ? renderSubscriptionCardList(items, result.id || result.token_id || "") : `<div class="token-subscription-empty">暂无可显示的订阅地址</div>`}
     </div>
   `;
 }

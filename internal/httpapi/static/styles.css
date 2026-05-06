@@ -1152,6 +1152,118 @@ textarea {
   min-width: 0;
 }
 
+.policy-card-list {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.policy-card {
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.policy-card-heading,
+.policy-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.policy-card-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.policy-card-heading span,
+.policy-card-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.policy-card-heading strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 780;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.policy-scope-badge {
+  align-items: center;
+  background: #f3f6fb;
+  border: 1px solid #d8e0ec;
+  border-radius: 999px;
+  color: #334155;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 28px;
+  max-width: 100%;
+  padding: 0 9px;
+  white-space: nowrap;
+}
+
+.policy-card-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  min-width: 0;
+}
+
+.policy-card-field {
+  background: #fbfdff;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.policy-card-field-wide {
+  grid-column: 1 / -1;
+}
+
+.policy-card-field strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.4;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.policy-card-field strong code {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 6px;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.policy-actions {
+  justify-content: flex-start;
+}
+
+.policy-card input,
+.policy-card select {
+  min-width: 0;
+}
+
 .node-browser {
   display: grid;
   gap: 14px;
@@ -1980,7 +2092,9 @@ td code {
   .source-card-heading,
   .source-actions,
   .virtual-node-card-heading,
-  .virtual-node-actions {
+  .virtual-node-actions,
+  .policy-card-heading,
+  .policy-actions {
     align-items: stretch;
     flex-direction: column;
   }
@@ -1988,7 +2102,9 @@ td code {
   .source-type-badge,
   .source-actions button,
   .virtual-node-listen-badge,
-  .virtual-node-actions button {
+  .virtual-node-actions button,
+  .policy-scope-badge,
+  .policy-actions button {
     justify-content: center;
     width: 100%;
   }

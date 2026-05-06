@@ -761,7 +761,7 @@ async function handlePolicyAction(event) {
   if (action === "edit") {
     appState.editingPolicyID = Number.parseInt(id || "0", 10);
     renderPolicies(appState.policies);
-    policiesEl.querySelector(`tr[data-policy-id="${id}"] input[data-policy-field="name"]`)?.focus();
+    policiesEl.querySelector(`[data-policy-id="${id}"] input[data-policy-field="name"]`)?.focus();
     return;
   }
   if (action === "cancel") {
@@ -775,7 +775,7 @@ async function handlePolicyAction(event) {
 }
 
 async function savePolicy(button) {
-  const row = button.closest("tr[data-policy-id]");
+  const row = button.closest("[data-policy-id]");
   if (!row) return;
   const id = row.dataset.policyId;
   const scopeID = Number.parseInt(row.querySelector('[data-policy-field="scope_id"]')?.value || "0", 10);
@@ -1679,50 +1679,51 @@ function renderPolicies(rows) {
     return;
   }
   policiesEl.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>${labelForColumn("id")}</th>
-          <th>${labelForColumn("name")}</th>
-          <th>${labelForColumn("scope_type")}</th>
-          <th>${labelForColumn("scope_id")}</th>
-          <th>${labelForColumn("include_tags")}</th>
-          <th>${labelForColumn("exclude_tags")}</th>
-          <th>${labelForColumn("allowed_virtual_nodes")}</th>
-          <th>${labelForColumn("max_nodes")}</th>
-          <th>${labelForColumn("status")}</th>
-          <th>${labelForColumn("actions")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map((row) => renderPolicyRow(row)).join("")}
-      </tbody>
-    </table>
+    <div class="policy-card-list">
+      ${rows.map((row) => renderPolicyCard(row)).join("")}
+    </div>
   `;
 }
 
-function renderPolicyRow(row) {
+function renderPolicyCard(row) {
   const isEditing = appState.editingPolicyID === row.id;
+  const scopeSummary = `${row.scope_type || "team"} #${row.scope_id || "--"}`;
   return `
-    <tr data-policy-id="${row.id}" class="${isEditing ? "policy-edit-row" : ""}">
-      <td>${formatCell(row.id, "id")}</td>
-      <td>${isEditing ? policyTextInput(row, "name") : formatCell(row.name, "name")}</td>
-      <td>${isEditing ? policyScopeSelect(row.scope_type) : formatCell(row.scope_type, "scope_type")}</td>
-      <td>${isEditing ? policyScopeIDInput(row) : formatCell(row.scope_id, "scope_id")}</td>
-      <td>${isEditing ? policyTextInput(row, "include_tags", "table-edit-input", "HK, Premium") : formatCell(row.include_tags, "include_tags")}</td>
-      <td>${isEditing ? policyTextInput(row, "exclude_tags", "table-edit-input", "Backup") : formatCell(row.exclude_tags, "exclude_tags")}</td>
-      <td>${isEditing ? policyTextInput(row, "allowed_virtual_nodes", "table-edit-input-wide", "FluxGate-HK, FluxGate-SG") : formatCell(row.allowed_virtual_nodes, "allowed_virtual_nodes")}</td>
-      <td>${isEditing ? policyMaxNodesInput(row) : formatCell(row.max_nodes, "max_nodes")}</td>
-      <td>${isEditing ? policyStatusSelect(row.status) : formatCell(row.status, "status")}</td>
-      <td class="table-actions policy-actions">
+    <article class="policy-card ${isEditing ? "policy-card-editing" : ""}" data-policy-id="${row.id}">
+      <div class="policy-card-heading">
+        <div>
+          <span>${labelForColumn("id")} ${formatCell(row.id, "id")}</span>
+          <strong>${isEditing ? policyTextInput(row, "name") : formatCell(row.name, "name")}</strong>
+        </div>
+        <span class="policy-scope-badge">${escapeHTML(scopeSummary)}</span>
+      </div>
+      <div class="policy-card-grid">
+        ${policyCardField("scope_type", isEditing ? policyScopeSelect(row.scope_type) : formatCell(row.scope_type, "scope_type"))}
+        ${policyCardField("scope_id", isEditing ? policyScopeIDInput(row) : formatCell(row.scope_id, "scope_id"))}
+        ${policyCardField("max_nodes", isEditing ? policyMaxNodesInput(row) : formatCell(row.max_nodes, "max_nodes"))}
+        ${policyCardField("status", isEditing ? policyStatusSelect(row.status) : formatCell(row.status, "status"))}
+        ${policyCardField("include_tags", isEditing ? policyTextInput(row, "include_tags", "table-edit-input", "HK, Premium") : formatCell(row.include_tags, "include_tags"))}
+        ${policyCardField("exclude_tags", isEditing ? policyTextInput(row, "exclude_tags", "table-edit-input", "Backup") : formatCell(row.exclude_tags, "exclude_tags"))}
+        ${policyCardField("allowed_virtual_nodes", isEditing ? policyTextInput(row, "allowed_virtual_nodes", "table-edit-input-wide", "FluxGate-HK, FluxGate-SG") : formatCell(row.allowed_virtual_nodes, "allowed_virtual_nodes"), "policy-card-field-wide")}
+      </div>
+      <div class="table-actions policy-actions">
         ${
           isEditing
             ? `<button class="table-button" type="button" data-policy-action="save" data-policy-id="${row.id}">保存</button>
                <button class="table-button ghost-button" type="button" data-policy-action="cancel" data-policy-id="${row.id}">取消</button>`
             : `<button class="table-button" type="button" data-policy-action="edit" data-policy-id="${row.id}">编辑</button>`
         }
-      </td>
-    </tr>
+      </div>
+    </article>
+  `;
+}
+
+function policyCardField(label, value, className = "") {
+  return `
+    <div class="policy-card-field ${className}">
+      <span>${labelForColumn(label)}</span>
+      <strong>${value}</strong>
+    </div>
   `;
 }
 

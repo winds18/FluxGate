@@ -257,6 +257,27 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
 
   await switchView("policies");
+  const policyCardCount = await page.locator("#policies .policy-card").count();
+  const policyVisualOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#policies .policy-card")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(
+        card.querySelectorAll(".policy-card-heading, .policy-scope-badge, .policy-card-field, .policy-actions"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const policyEditCount = await page.locator("#policies button[data-policy-action='edit']").count();
   let policyEditFieldsVisible = false;
   if (policyEditCount > 0) {
@@ -393,6 +414,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.virtualNodeVisualOverflowCount = virtualNodeVisualOverflowCount;
   state.virtualNodeEditCount = virtualNodeEditCount;
   state.virtualNodeEditFieldsVisible = virtualNodeEditFieldsVisible;
+  state.policyCardCount = policyCardCount;
+  state.policyVisualOverflowCount = policyVisualOverflowCount;
   state.policyEditCount = policyEditCount;
   state.policyEditFieldsVisible = policyEditFieldsVisible;
   state.nodeSearchVisible = nodeSearchVisible;
@@ -431,6 +454,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (virtualNodeEditCount > 0 && (virtualNodeCardCount !== virtualNodeEditCount || virtualNodeVisualOverflowCount > 0)) {
     throw new Error(`virtual node cards are incomplete or overflowing: ${JSON.stringify(state)}`);
+  }
+  if (policyEditCount > 0 && (policyCardCount !== policyEditCount || policyVisualOverflowCount > 0)) {
+    throw new Error(`policy cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (nodeVisualOverflowCount > 0) {
     throw new Error(`node cards visually overflow their parent: ${JSON.stringify(state)}`);

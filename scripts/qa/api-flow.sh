@@ -270,6 +270,7 @@ token_subscription_legacy="$(json_value "data.subscription || ''" <"$OUT_DIR/tok
 token_subscription_default="$(json_value "data.subscriptions?.default || ''" <"$OUT_DIR/token.json")"
 token_subscription_clash="$(json_value "data.subscriptions?.clash || ''" <"$OUT_DIR/token.json")"
 token_subscription_sing_box="$(json_value "data.subscriptions?.sing_box || ''" <"$OUT_DIR/token.json")"
+expected_gateway_host="$(node -e 'const u = new URL(process.argv[1]); process.stdout.write(u.hostname)' "$BASE_URL")"
 run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/traffic/tokens" -o "$OUT_DIR/traffic-tokens.json"
 traffic_token_count="$(json_value "data.length" <"$OUT_DIR/traffic-tokens.json")"
 traffic_token_used="$(json_value "data.find((row) => row.token_id === $token_id)?.used_total_bytes ?? -1" <"$OUT_DIR/traffic-tokens.json")"
@@ -486,6 +487,16 @@ fi
 
 if ! grep -q 'FluxGate-HK' "$OUT_DIR/subscription.yaml"; then
   log "subscription missing FluxGate-HK"
+  exit 1
+fi
+
+if ! grep -Fq "server: $expected_gateway_host" "$OUT_DIR/subscription.yaml"; then
+  log "subscription should expose the current request host as Mihomo gateway server: expected $expected_gateway_host"
+  exit 1
+fi
+
+if grep -Fq 'gateway.example.com' "$OUT_DIR/subscription.yaml"; then
+  log "subscription should not expose placeholder gateway.example.com"
   exit 1
 fi
 

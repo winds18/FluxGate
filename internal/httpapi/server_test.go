@@ -36,3 +36,35 @@ func TestPublicBaseURLFallsBackForUnsafeHost(t *testing.T) {
 		t.Fatalf("public base URL mismatch: got %q want %q", got, want)
 	}
 }
+
+func TestPublicGatewayHostUsesCurrentRequestHostWithoutManagementPort(t *testing.T) {
+	server := &Server{cfg: config.Config{GatewayHost: "gateway.example.com"}}
+	request := httptest.NewRequest("GET", "http://192.168.66.10:18080/sub/token?target=clash", nil)
+
+	if got, want := server.publicGatewayHost(request), "192.168.66.10"; got != want {
+		t.Fatalf("public gateway host mismatch: got %q want %q", got, want)
+	}
+}
+
+func TestPublicGatewayHostUsesForwardedHost(t *testing.T) {
+	server := &Server{cfg: config.Config{GatewayHost: "gateway.example.com"}}
+	request := httptest.NewRequest("GET", "http://127.0.0.1:8080/sub/token?target=clash", nil)
+	request.Header.Set("x-forwarded-host", "fluxgate.shimo.proxy.nbyitian.top")
+
+	if got, want := server.publicGatewayHost(request), "fluxgate.shimo.proxy.nbyitian.top"; got != want {
+		t.Fatalf("public gateway host mismatch: got %q want %q", got, want)
+	}
+}
+
+func TestPublicGatewayHostFallsBackToConfiguredGatewayHost(t *testing.T) {
+	server := &Server{cfg: config.Config{
+		GatewayHost:   "edge.example.com",
+		PublicBaseURL: "https://configured.example/",
+	}}
+	request := httptest.NewRequest("GET", "http://127.0.0.1:8080/sub/token?target=clash", nil)
+	request.Host = "bad.example/@token"
+
+	if got, want := server.publicGatewayHost(request), "edge.example.com"; got != want {
+		t.Fatalf("public gateway host mismatch: got %q want %q", got, want)
+	}
+}

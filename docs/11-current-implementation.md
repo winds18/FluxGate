@@ -22,6 +22,7 @@
 - Token 支持续期、追加额度、撤销和恢复，并同步 gateway account 状态。
 - 管理后台 Token 列表支持按行输入自定义续期天数和追加额度 MiB，避免只能使用固定续期/加额步长。
 - 创建 Token 时会返回默认、Clash/Mihomo 和 sing-box 三类订阅地址；地址优先基于当前管理后台访问 Host / `X-Forwarded-*` 头生成，管理后台创建结果同步展示，Token 列表会加密恢复并反复展示订阅地址，便于后续复制分发给不同客户端。
+- 订阅内容里的 Clash/Mihomo `server` 和 sing-box outbound `server` 会优先使用当前订阅请求 Host 并去掉管理端口，端口仍来自虚拟节点监听端口；请求 Host 不安全时才回退到 `GATEWAY_HOST` 或 `PUBLIC_BASE_URL` 主机名，避免真实客户端拿到 `gateway.example.com` 模板占位域名。
 - 管理后台 Token 列表支持重置订阅地址；历史旧 Token 如果没有可恢复订阅密钥，会提示重置后重新获取，新地址生成后旧订阅地址立即失效。
 - 上游来源页面创建和列表。
 - 管理后台上游来源支持行内编辑名称、类型、URL、前缀、默认标签和刷新间隔；前缀变更会同步刷新自动命名节点。

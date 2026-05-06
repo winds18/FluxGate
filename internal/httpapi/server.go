@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -922,7 +923,7 @@ func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
 	}
 	response, err := subscription.Build(subscription.Request{
 		Target:        target,
-		GatewayHost:   s.cfg.GatewayHost,
+		GatewayHost:   s.publicGatewayHost(r),
 		PublicBaseURL: s.cfg.PublicBaseURL,
 	}, token, virtualNodes)
 	if err != nil {
@@ -936,10 +937,7 @@ func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
 }
 
 func (s *Server) publicBaseURL(r *http.Request) string {
-	host := firstForwardedValue(r.Header.Get("x-forwarded-host"))
-	if host == "" {
-		host = r.Host
-	}
+	host := publicRequestHost(r)
 	if !safePublicHost(host) {
 		return strings.TrimRight(s.cfg.PublicBaseURL, "/")
 	}
@@ -952,6 +950,50 @@ func (s *Server) publicBaseURL(r *http.Request) string {
 		}
 	}
 	return proto + "://" + host
+}
+
+func (s *Server) publicGatewayHost(r *http.Request) string {
+	if host := hostWithoutPort(publicRequestHost(r)); host != "" {
+		return host
+	}
+	if host := hostWithoutPort(s.cfg.GatewayHost); host != "" {
+		return host
+	}
+	if host := publicURLHost(s.cfg.PublicBaseURL); host != "" {
+		return host
+	}
+	return strings.TrimSpace(s.cfg.GatewayHost)
+}
+
+func publicRequestHost(r *http.Request) string {
+	host := firstForwardedValue(r.Header.Get("x-forwarded-host"))
+	if host == "" {
+		host = r.Host
+	}
+	return strings.TrimSpace(host)
+}
+
+func hostWithoutPort(host string) string {
+	host = strings.TrimSpace(host)
+	if !safePublicHost(host) {
+		return ""
+	}
+	if strings.Contains(host, ":") {
+		name, _, err := net.SplitHostPort(host)
+		if err != nil {
+			return ""
+		}
+		return strings.Trim(name, "[]")
+	}
+	return strings.Trim(host, "[]")
+}
+
+func publicURLHost(rawURL string) string {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return ""
+	}
+	return hostWithoutPort(parsed.Host)
 }
 
 func firstForwardedValue(value string) string {

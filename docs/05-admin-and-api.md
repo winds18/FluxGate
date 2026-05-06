@@ -219,7 +219,7 @@ POST  /api/tokens/{id}/quota
 POST  /api/tokens/{id}/rotate-gateway-credential
 ```
 
-`POST /api/tokens` 创建成功时会返回明文 Token，并在 `subscriptions` 中同时给出 `default`、`clash` 和 `sing_box` 三类可分发订阅地址；兼容字段 `subscription` 等同于 `subscriptions.default`。订阅地址的协议、域名和端口优先来自当前管理后台请求的 Host / `X-Forwarded-*` 头，因此通过 `http://192.168.66.10:18080` 登录后台时，后台会生成同域名的订阅地址；如果请求 Host 不安全才回退到 `PUBLIC_BASE_URL`。后台不会把明文 Token 存成裸值，而是用 `TOKEN_SECRET` 派生密钥加密保存订阅密钥，因此 `GET /api/tokens` 可在管理员会话下反复返回可复制的订阅地址。
+`POST /api/tokens` 创建成功时会返回明文 Token，并在 `subscriptions` 中同时给出 `default`、`clash` 和 `sing_box` 三类可分发订阅地址；兼容字段 `subscription` 等同于 `subscriptions.default`。订阅地址的协议、域名和端口优先来自当前管理后台请求的 Host / `X-Forwarded-*` 头，因此通过 `http://192.168.66.10:18080` 登录后台时，后台会生成同域名的订阅地址；如果请求 Host 不安全才回退到 `PUBLIC_BASE_URL`。订阅内容里的 Clash/Mihomo `server` 和 sing-box outbound `server` 会优先使用当前订阅请求 Host 并去掉管理端口，端口仍来自虚拟节点监听端口；只有请求 Host 不安全时才回退到 `GATEWAY_HOST` 或 `PUBLIC_BASE_URL` 的主机名，避免把 `gateway.example.com` 这类模板占位域名分发给真实客户端。后台不会把明文 Token 存成裸值，而是用 `TOKEN_SECRET` 派生密钥加密保存订阅密钥，因此 `GET /api/tokens` 可在管理员会话下反复返回可复制的订阅地址。
 
 `POST /api/tokens/{id}/rotate-subscription` 会重新生成订阅密钥和三类订阅地址，旧订阅地址立即失效；适合历史旧 Token 无法恢复订阅地址，或订阅地址疑似泄露时使用。
 

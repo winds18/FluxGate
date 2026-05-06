@@ -2377,10 +2377,10 @@ function renderNodeCard(row) {
       <div class="table-actions node-actions">
         ${
           isEditing
-            ? `<button class="table-button ghost-button" type="button" data-node-action="cancel" data-node-id="${row.id}">取消</button>`
-            : `<button class="table-button" type="button" data-node-action="edit" data-node-id="${row.id}">编辑</button>`
+            ? `<button class="table-button ghost-button" type="button" data-node-action="cancel" data-node-id="${row.id}">${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-node-action="edit" data-node-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
         }
-        <button class="table-button ghost-button" type="button" data-node-action="reset-name" data-node-id="${row.id}" ${row.name_mode === "auto" ? "disabled" : ""}>恢复自动</button>
+        <button class="table-button ghost-button" type="button" data-node-action="reset-name" data-node-id="${row.id}" ${row.name_mode === "auto" ? "disabled" : ""}>${buttonLabel("↺", "恢复自动")}</button>
       </div>
       ${detail ? renderNodeDetailPanel(detail) : ""}
     </article>

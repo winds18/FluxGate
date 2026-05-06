@@ -800,6 +800,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let nodeCardProtocolSymbolCount = 0;
   let nodeCardChipCount = 0;
   let nodeCardEndpointCount = 0;
+  let nodeActionButtonSymbolCount = 0;
   let nodeVisualOverflowCount = 0;
   let nodeRegionSummaryCount = 0;
   let nodeRegionSummaryChipCount = 0;
@@ -813,6 +814,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     nodeCardProtocolSymbolCount = await page.locator("#nodes .node-card-protocol-symbol").count();
     nodeCardChipCount = await page.locator("#nodes [data-node-card-chip]").count();
     nodeCardEndpointCount = await page.locator("#nodes [data-node-card-endpoint]").count();
+    nodeActionButtonSymbolCount = await page.locator("#nodes .node-actions .button-symbol").count();
     await page.evaluate(() => {
       const summaryTitle = document.querySelector("#nodes [data-node-region-summary] .node-region-summary-copy strong");
       if (summaryTitle) {
@@ -855,11 +857,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return Array.from(document.querySelectorAll("#nodes .node-card")).reduce((total, card) => {
         const cardBox = card.getBoundingClientRect();
         const elements = Array.from(
-          card.querySelectorAll(".node-card-main, .node-card-heading, .node-card-protocol-symbol, .node-card-copy, .node-card-title, .node-card-subtitle, .node-card-tags, .node-card-chip-row, [data-node-card-chip], .node-card-endpoint, .node-card-endpoint span, .node-card-endpoint code, .node-actions"),
+          card.querySelectorAll(".node-card-main, .node-card-heading, .node-card-protocol-symbol, .node-card-copy, .node-card-title, .node-card-subtitle, .node-card-tags, .node-card-chip-row, [data-node-card-chip], .node-card-endpoint, .node-card-endpoint span, .node-card-endpoint code, .node-actions, .node-actions button, .node-actions .button-symbol, .node-actions .button-label"),
         ).filter((element) => element.offsetParent !== null);
         for (const element of elements) {
           const parent = element.classList.contains("node-card-main") || element.classList.contains("node-actions")
             ? cardBox
+            : element.matches(".node-actions button")
+              ? (element.closest(".node-actions") || card).getBoundingClientRect()
+            : element.closest(".node-actions")
+              ? (element.closest("button") || element.closest(".node-actions") || card).getBoundingClientRect()
             : element.classList.contains("node-card-endpoint")
               ? (element.closest(".node-card-main") || card).getBoundingClientRect()
               : (element.closest(".node-card-heading") ||
@@ -1111,6 +1117,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeCardProtocolSymbolCount = nodeCardProtocolSymbolCount;
   state.nodeCardChipCount = nodeCardChipCount;
   state.nodeCardEndpointCount = nodeCardEndpointCount;
+  state.nodeActionButtonSymbolCount = nodeActionButtonSymbolCount;
   state.nodeVisualOverflowCount = nodeVisualOverflowCount;
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
@@ -1282,6 +1289,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (nodeCardProtocolSymbolCount !== nodeCardCount ||
       nodeCardChipCount !== nodeCardCount * 3 ||
       nodeCardEndpointCount !== nodeCardCount ||
+      nodeActionButtonSymbolCount !== nodeCardCount * 2 ||
       nodeVisualOverflowCount > 0)
   ) {
     throw new Error(`node cards are incomplete or visually overflow their parent: ${JSON.stringify(state)}`);

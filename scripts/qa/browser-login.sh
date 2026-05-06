@@ -210,6 +210,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
+  let tokenCopyFeedbackVisible = false;
+  if (tokenSubscriptionCopyCount > 0) {
+    const firstCopyButton = page.locator("#tokens button[data-token-action='copy-subscription']").first();
+    await firstCopyButton.click();
+    await expect(firstCopyButton).toHaveText("已复制", { timeout: 5000 });
+    await expect(page.locator("#status")).toContainText("订阅地址已复制", { timeout: 5000 });
+    tokenCopyFeedbackVisible = true;
+  }
   const tokenVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -595,6 +603,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenQuotaInputCount = tokenQuotaInputCount;
   state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
+  state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
   state.tokenVisualOverflowCount = tokenVisualOverflowCount;
   state.tokenVisualOverlapCount = tokenVisualOverlapCount;
@@ -613,6 +622,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenSubscriptionCopyCount > 0 && tokenSubscriptionItemCount !== tokenSubscriptionCopyCount) {
     throw new Error(`token subscription cards are incomplete: ${JSON.stringify(state)}`);
+  }
+  if (tokenSubscriptionCopyCount > 0 && !tokenCopyFeedbackVisible) {
+    throw new Error(`token subscription copy feedback missing: ${JSON.stringify(state)}`);
   }
   if (tokenVisualOverflowCount > 0 || tokenVisualOverlapCount > 0) {
     throw new Error(`token controls visually overflow or overlap: ${JSON.stringify(state)}`);

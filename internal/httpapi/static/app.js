@@ -946,6 +946,18 @@ async function handleTokenAction(event) {
     if (action === "copy-subscription") {
       await copyText(button.dataset.tokenUrl || "");
       statusEl.textContent = "订阅地址已复制";
+      button.dataset.copyLabel = button.dataset.copyLabel || button.textContent.trim() || "复制";
+      button.textContent = "已复制";
+      button.classList.add("is-copied");
+      button.setAttribute("aria-label", "订阅地址已复制");
+      window.setTimeout(() => {
+        if (!button.isConnected) {
+          return;
+        }
+        button.textContent = button.dataset.copyLabel || "复制";
+        button.classList.remove("is-copied");
+        button.removeAttribute("aria-label");
+      }, 1600);
       button.disabled = false;
       return;
     }

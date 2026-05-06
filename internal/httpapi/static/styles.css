@@ -907,6 +907,12 @@ button:disabled {
   color: var(--text);
 }
 
+.table-button.is-copied {
+  background: var(--success-bg);
+  border-color: #b9e5d4;
+  color: var(--success);
+}
+
 .login-panel {
   display: grid;
   gap: 14px;

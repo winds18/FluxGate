@@ -2032,6 +2032,11 @@ textarea {
   justify-content: flex-start;
 }
 
+.virtual-node-actions .table-button {
+  flex: 1 1 96px;
+  min-width: 0;
+}
+
 .virtual-node-card input,
 .virtual-node-card select {
   min-width: 0;
@@ -2187,6 +2192,11 @@ textarea {
 
 .policy-actions {
   justify-content: flex-start;
+}
+
+.policy-actions .table-button {
+  flex: 1 1 96px;
+  min-width: 0;
 }
 
 .policy-card input,

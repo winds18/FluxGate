@@ -705,6 +705,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await switchView("nodes");
   const virtualNodeCardCount = await page.locator("#virtual-nodes .virtual-node-card").count();
   const virtualNodeSummaryChipCount = await page.locator("#virtual-nodes [data-virtual-node-summary-chip]").count();
+  const virtualNodeActionButtonSymbolCount = await page.locator("#virtual-nodes .virtual-node-actions .button-symbol").count();
   const virtualNodeVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -715,12 +716,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".virtual-node-card-heading, .virtual-node-card-summary, [data-virtual-node-summary-chip], .virtual-node-listen-badge, .virtual-node-card-field, .virtual-node-actions",
+          ".virtual-node-card-heading, .virtual-node-card-summary, [data-virtual-node-summary-chip], .virtual-node-listen-badge, .virtual-node-card-field, .virtual-node-actions, .virtual-node-actions button, .virtual-node-actions .button-symbol, .virtual-node-actions .button-label",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
+        const parent = element.matches(".virtual-node-actions button")
+          ? (element.closest(".virtual-node-actions") || card).getBoundingClientRect()
+          : element.closest(".virtual-node-actions") && !element.classList.contains("virtual-node-actions")
+            ? (element.closest("button") || element.closest(".virtual-node-actions") || card).getBoundingClientRect()
+            : cardBox;
         const box = element.getBoundingClientRect();
-        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
           total += 1;
         }
       }
@@ -741,6 +747,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await switchView("policies");
   const policyCardCount = await page.locator("#policies .policy-card").count();
   const policySummaryChipCount = await page.locator("#policies [data-policy-summary-chip]").count();
+  const policyActionButtonSymbolCount = await page.locator("#policies .policy-actions .button-symbol").count();
   const policyVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -751,12 +758,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".policy-card-heading, .policy-card-summary, [data-policy-summary-chip], .policy-scope-badge, .policy-card-field, .policy-actions",
+          ".policy-card-heading, .policy-card-summary, [data-policy-summary-chip], .policy-scope-badge, .policy-card-field, .policy-actions, .policy-actions button, .policy-actions .button-symbol, .policy-actions .button-label",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
+        const parent = element.matches(".policy-actions button")
+          ? (element.closest(".policy-actions") || card).getBoundingClientRect()
+          : element.closest(".policy-actions") && !element.classList.contains("policy-actions")
+            ? (element.closest("button") || element.closest(".policy-actions") || card).getBoundingClientRect()
+            : cardBox;
         const box = element.getBoundingClientRect();
-        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
           total += 1;
         }
       }
@@ -1115,11 +1127,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
   state.virtualNodeCardCount = virtualNodeCardCount;
   state.virtualNodeSummaryChipCount = virtualNodeSummaryChipCount;
+  state.virtualNodeActionButtonSymbolCount = virtualNodeActionButtonSymbolCount;
   state.virtualNodeVisualOverflowCount = virtualNodeVisualOverflowCount;
   state.virtualNodeEditCount = virtualNodeEditCount;
   state.virtualNodeEditFieldsVisible = virtualNodeEditFieldsVisible;
   state.policyCardCount = policyCardCount;
   state.policySummaryChipCount = policySummaryChipCount;
+  state.policyActionButtonSymbolCount = policyActionButtonSymbolCount;
   state.policyVisualOverflowCount = policyVisualOverflowCount;
   state.policyEditCount = policyEditCount;
   state.policyEditFieldsVisible = policyEditFieldsVisible;
@@ -1301,13 +1315,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     virtualNodeEditCount > 0 &&
     (virtualNodeCardCount !== virtualNodeEditCount ||
       virtualNodeSummaryChipCount !== virtualNodeCardCount * 4 ||
+      virtualNodeActionButtonSymbolCount !== virtualNodeCardCount ||
       virtualNodeVisualOverflowCount > 0)
   ) {
     throw new Error(`virtual node cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (
     policyEditCount > 0 &&
-    (policyCardCount !== policyEditCount || policySummaryChipCount !== policyCardCount * 4 || policyVisualOverflowCount > 0)
+    (policyCardCount !== policyEditCount ||
+      policySummaryChipCount !== policyCardCount * 4 ||
+      policyActionButtonSymbolCount !== policyCardCount ||
+      policyVisualOverflowCount > 0)
   ) {
     throw new Error(`policy cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }

@@ -1973,9 +1973,9 @@ function renderVirtualNodeCard(row) {
       <div class="table-actions virtual-node-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-virtual-node-action="save" data-virtual-node-id="${row.id}">保存</button>
-               <button class="table-button ghost-button" type="button" data-virtual-node-action="cancel" data-virtual-node-id="${row.id}">取消</button>`
-            : `<button class="table-button" type="button" data-virtual-node-action="edit" data-virtual-node-id="${row.id}">编辑</button>`
+            ? `<button class="table-button" type="button" data-virtual-node-action="save" data-virtual-node-id="${row.id}">${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-virtual-node-action="cancel" data-virtual-node-id="${row.id}">${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-virtual-node-action="edit" data-virtual-node-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
         }
       </div>
     </article>
@@ -2091,9 +2091,9 @@ function renderPolicyCard(row) {
       <div class="table-actions policy-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-policy-action="save" data-policy-id="${row.id}">保存</button>
-               <button class="table-button ghost-button" type="button" data-policy-action="cancel" data-policy-id="${row.id}">取消</button>`
-            : `<button class="table-button" type="button" data-policy-action="edit" data-policy-id="${row.id}">编辑</button>`
+            ? `<button class="table-button" type="button" data-policy-action="save" data-policy-id="${row.id}">${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-policy-action="cancel" data-policy-id="${row.id}">${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-policy-action="edit" data-policy-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
         }
       </div>
     </article>

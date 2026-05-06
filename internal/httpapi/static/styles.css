@@ -265,6 +265,66 @@ main {
   line-height: 1.35;
 }
 
+.view-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 7px;
+  min-width: 0;
+}
+
+.context-chip {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  display: inline-grid;
+  gap: 7px;
+  grid-template-columns: max-content minmax(0, max-content);
+  min-height: 30px;
+  min-width: 0;
+  padding: 0 9px;
+}
+
+.context-chip span,
+.context-chip strong {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.context-chip span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 720;
+}
+
+.context-chip strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.context-chip-success {
+  background: var(--success-bg);
+  border-color: #b9e5d4;
+}
+
+.context-chip-success strong {
+  color: var(--success);
+}
+
+.context-chip-warning {
+  background: var(--warning-bg);
+  border-color: #f0d79d;
+}
+
+.context-chip-warning strong {
+  color: var(--warning);
+}
+
 .eyebrow {
   color: var(--accent);
   font-size: 12px;
@@ -1514,6 +1574,19 @@ td code {
   .workspace-header {
     align-items: flex-start;
     flex-direction: column;
+  }
+
+  .workspace-header > div:first-child {
+    width: 100%;
+  }
+
+  .view-context {
+    width: 100%;
+  }
+
+  .context-chip {
+    flex: 1 1 calc(50% - 7px);
+    justify-content: space-between;
   }
 
   .workspace-actions,

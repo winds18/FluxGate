@@ -3,6 +3,7 @@ const loginView = document.querySelector("#login-view");
 const appView = document.querySelector("#app-view");
 const viewTitleEl = document.querySelector("#view-title");
 const viewDescriptionEl = document.querySelector("#view-description");
+const viewContextEl = document.querySelector("#view-context");
 const dashboardViewSections = Array.from(document.querySelectorAll("[data-dashboard-view]"));
 const dashboardNavButtons = Array.from(document.querySelectorAll("[data-view-nav]"));
 const dashboardJumpButtons = Array.from(document.querySelectorAll("[data-view-jump]"));
@@ -114,12 +115,18 @@ document.addEventListener("click", (event) => {
 bootstrap();
 
 let appState = {
+  overview: {},
   teams: [],
   users: [],
   sources: [],
   nodes: [],
   virtualNodes: [],
   policies: [],
+  tokens: [],
+  trafficHourly: [],
+  trafficDaily: [],
+  trafficOutbounds: [],
+  trafficTokens: [],
   editingTeamID: null,
   editingUserID: null,
   editingSourceID: null,
@@ -226,12 +233,18 @@ async function login(event) {
 async function logout() {
   await fetch("/api/auth/logout", { method: "POST" });
   appState = {
+    overview: {},
     teams: [],
     users: [],
     sources: [],
     nodes: [],
     virtualNodes: [],
     policies: [],
+    tokens: [],
+    trafficHourly: [],
+    trafficDaily: [],
+    trafficOutbounds: [],
+    trafficTokens: [],
     editingTeamID: null,
     editingUserID: null,
     editingSourceID: null,
@@ -277,6 +290,7 @@ function setActiveView(view) {
   const [title, description] = dashboardViewMeta[nextView];
   viewTitleEl.textContent = title;
   viewDescriptionEl.textContent = description;
+  updateViewContext();
 }
 
 async function load() {
@@ -296,7 +310,21 @@ async function load() {
       getJSON("/api/traffic/outbounds?days=14"),
       getJSON("/api/traffic/tokens"),
     ]);
-    appState = { ...appState, teams, users, sources, nodes, virtualNodes, policies };
+    appState = {
+      ...appState,
+      overview,
+      teams,
+      users,
+      sources,
+      nodes,
+      virtualNodes,
+      policies,
+      tokens,
+      trafficHourly,
+      trafficDaily,
+      trafficOutbounds,
+      trafficTokens,
+    };
     renderMetrics(overview);
     renderOverviewReadiness(overview);
     renderSelectors();
@@ -311,6 +339,7 @@ async function load() {
     renderTrafficDaily(trafficDaily);
     renderTrafficOutbounds(trafficOutbounds);
     renderTrafficTokens(trafficTokens);
+    updateViewContext();
     statusEl.textContent = "已连接";
   } catch (error) {
     if (error.status === 401) {
@@ -1039,14 +1068,18 @@ function renderMetrics(data) {
     .join("");
 }
 
-function renderOverviewReadiness(data) {
-  const checks = [
+function overviewReadinessChecks(data) {
+  return [
     ["接入来源", Number(data.sources || 0) > 0, `${data.sources || 0} 个来源`, "access"],
     ["节点池", Number(data.nodes || 0) > 0, `${data.nodes || 0} 个节点`, "nodes"],
     ["虚拟网关", Number(data.virtual_nodes || 0) > 0, `${data.virtual_nodes || 0} 个入口`, "nodes"],
     ["团队 Token", Number(data.tokens || 0) > 0, `${data.tokens || 0} 个 Token`, "identity"],
     ["访问策略", Number(data.policies || 0) > 0, `${data.policies || 0} 条策略`, "policies"],
   ];
+}
+
+function renderOverviewReadiness(data) {
+  const checks = overviewReadinessChecks(data);
   const readyCount = checks.filter(([, ready]) => ready).length;
   const firstMissing = checks.find(([, ready]) => !ready);
   const next = firstMissing
@@ -1094,6 +1127,110 @@ function renderOverviewReadiness(data) {
       ${escapeHTML(next.action)}
     </button>
   `;
+}
+
+function updateViewContext() {
+  if (!viewContextEl) return;
+  const items = viewContextItems(activeDashboardView);
+  viewContextEl.hidden = items.length === 0;
+  viewContextEl.innerHTML = items.map(renderContextChip).join("");
+}
+
+function viewContextItems(view) {
+  const overview = appState.overview || {};
+  const sources = appState.sources || [];
+  const nodes = appState.nodes || [];
+  const virtualNodes = appState.virtualNodes || [];
+  const teams = appState.teams || [];
+  const users = appState.users || [];
+  const policies = appState.policies || [];
+  const tokens = appState.tokens || [];
+  const trafficHourly = appState.trafficHourly || [];
+  const trafficDaily = appState.trafficDaily || [];
+  const trafficOutbounds = appState.trafficOutbounds || [];
+  const trafficTokens = appState.trafficTokens || [];
+  const activeNodes = countBy(nodes, (row) => row.status === "active");
+  const activeTokens = countBy(tokens, (row) => row.status === "active");
+  const activePolicies = countBy(policies, (row) => row.status === "active");
+  const readiness = overviewReadinessChecks(overview);
+  const readyCount = readiness.filter(([, ready]) => ready).length;
+
+  if (view === "access") {
+    const subscriptionSources = countBy(sources, (row) => row.type === "subscription");
+    const erroredSources = countBy(sources, (row) => row.last_error);
+    return [
+      contextItem("来源", sources.length),
+      contextItem("订阅源", subscriptionSources),
+      contextItem("异常", erroredSources, erroredSources > 0 ? "warning" : "success"),
+    ];
+  }
+  if (view === "nodes") {
+    const regions = groupNodesByRegion(nodes).length;
+    return [
+      contextItem("地区", regions),
+      contextItem("节点", nodes.length),
+      contextItem("可用", activeNodes, activeNodes > 0 ? "success" : "warning"),
+      contextItem("虚拟网关", virtualNodes.length, virtualNodes.length > 0 ? "success" : "warning"),
+    ];
+  }
+  if (view === "identity") {
+    return [
+      contextItem("团队", teams.length),
+      contextItem("成员", users.length),
+      contextItem("Token", tokens.length),
+      contextItem("有效", activeTokens, activeTokens > 0 ? "success" : "warning"),
+    ];
+  }
+  if (view === "policies") {
+    const constrainedPolicies = countBy(
+      policies,
+      (row) => row.allowed_virtual_nodes || row.include_tags || row.exclude_tags || Number(row.max_nodes || 0) > 0,
+    );
+    return [
+      contextItem("策略", policies.length),
+      contextItem("生效", activePolicies, activePolicies > 0 ? "success" : "warning"),
+      contextItem("限制项", constrainedPolicies),
+    ];
+  }
+  if (view === "traffic") {
+    return [
+      contextItem("24h 样本", trafficHourly.length),
+      contextItem("14天样本", trafficDaily.length),
+      contextItem("Token 用量", trafficTokens.length),
+      contextItem("出口摘要", trafficOutbounds.length),
+    ];
+  }
+  if (view === "ops") {
+    return [
+      contextItem("虚拟网关", virtualNodes.length, virtualNodes.length > 0 ? "success" : "warning"),
+      contextItem("活跃 Token", activeTokens, activeTokens > 0 ? "success" : "warning"),
+      contextItem("可用节点", activeNodes, activeNodes > 0 ? "success" : "warning"),
+    ];
+  }
+  return [
+    contextItem("闭环", `${readyCount}/${readiness.length}`, readyCount === readiness.length ? "success" : "warning"),
+    contextItem("节点", Number(overview.nodes || nodes.length || 0)),
+    contextItem("Token", Number(overview.tokens || tokens.length || 0)),
+    contextItem("策略", Number(overview.policies || policies.length || 0)),
+  ];
+}
+
+function contextItem(label, value, tone = "") {
+  return { label, value, tone };
+}
+
+function renderContextChip(item) {
+  const toneClass = item.tone ? ` context-chip-${item.tone}` : "";
+  return `
+    <span class="context-chip${toneClass}">
+      <span>${escapeHTML(item.label)}</span>
+      <strong>${escapeHTML(String(item.value ?? 0))}</strong>
+    </span>
+  `;
+}
+
+function countBy(rows, predicate) {
+  return (rows || []).filter(predicate).length;
 }
 
 function renderTeams(rows) {
@@ -1652,6 +1789,7 @@ function renderNodeEditForm(row) {
 }
 
 function renderTokens(rows) {
+  appState.tokens = rows || [];
   if (!rows || rows.length === 0) {
     tokensEl.innerHTML = `<div class="empty">暂无数据</div>`;
     return;

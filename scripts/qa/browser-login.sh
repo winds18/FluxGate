@@ -94,9 +94,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const formDrawerCount = await page.locator("[data-form-drawer]").count();
   const collapsedFormDrawerCount = await page.locator("[data-form-drawer].is-collapsed").count();
   const viewOverflow = {};
+  const viewContextChipCounts = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
+    viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
   }
   await switchView("overview");
   const overviewReadinessCount = await page.locator("#overview-readiness .readiness-item").count();
@@ -303,6 +305,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardViewCount = dashboardViewCount;
   state.formDrawerCount = formDrawerCount;
   state.collapsedFormDrawerCount = collapsedFormDrawerCount;
+  state.viewContextChipCounts = viewContextChipCounts;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
   state.viewOverflow = viewOverflow;
@@ -362,6 +365,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (formDrawerCount !== 7 || collapsedFormDrawerCount !== 7) {
     throw new Error(`form drawers should be collapsed by default: ${JSON.stringify(state)}`);
+  }
+  const sparseContextView = Object.entries(viewContextChipCounts).find(([, count]) => count < 3);
+  if (sparseContextView) {
+    throw new Error(`dashboard view context is incomplete: ${JSON.stringify(state)}`);
   }
   if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);

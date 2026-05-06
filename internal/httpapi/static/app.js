@@ -2463,6 +2463,9 @@ function renderTokens(rows) {
 
 function renderTokenCard(row) {
   const usedBytes = (row.used_upload_bytes || 0) + (row.used_download_bytes || 0);
+  const statusSummary = tokenStatusSummary(row.status);
+  const expirySummary = tokenExpirySummary(row.expire_at);
+  const quotaSummary = tokenQuotaSummary(usedBytes, row.quota_bytes, row.status);
   return `
     <article class="token-card" data-token-id="${row.id}">
       <div class="token-card-heading">
@@ -2471,6 +2474,12 @@ function renderTokenCard(row) {
           <strong>${formatCell(row.token_prefix, "token_prefix")}</strong>
         </div>
         ${formatCell(row.status, "status")}
+      </div>
+      <div class="token-card-summary" aria-label="Token 摘要">
+        ${tokenSummaryChip(statusSummary.label, statusSummary.tone)}
+        ${tokenSummaryChip(tokenUserSummary(row.user_id), "info")}
+        ${tokenSummaryChip(expirySummary.label, expirySummary.tone)}
+        ${tokenSummaryChip(quotaSummary.label, quotaSummary.tone)}
       </div>
       <div class="token-card-grid">
         ${tokenCardField("ID", row.id)}
@@ -2520,6 +2529,63 @@ function renderTokenCard(row) {
       </div>
     </article>
   `;
+}
+
+function tokenSummaryChip(content, tone = "") {
+  return `<span class="token-card-summary-chip ${tone ? `token-card-summary-chip-${tone}` : ""}" data-token-summary-chip>${escapeHTML(content)}</span>`;
+}
+
+function tokenStatusSummary(value) {
+  const status = String(value || "active");
+  const normalized = status.toLowerCase();
+  let tone = "muted";
+  if (normalized === "active") {
+    tone = "success";
+  } else if (normalized === "expired" || normalized === "over_quota") {
+    tone = "warning";
+  } else if (normalized === "revoked" || normalized === "disabled") {
+    tone = "danger";
+  }
+  return { label: status, tone };
+}
+
+function tokenUserSummary(userID) {
+  if (!userID) return "未绑定成员";
+  const user = (appState.users || []).find((item) => String(item.id) === String(userID));
+  return user ? user.name : `成员 #${userID}`;
+}
+
+function tokenExpirySummary(value) {
+  const date = parseDisplayTime(value);
+  if (!date) {
+    return { label: "无到期", tone: "muted" };
+  }
+  const diffMs = date.getTime() - Date.now();
+  if (diffMs <= 0) {
+    return { label: "已到期", tone: "danger" };
+  }
+  const days = Math.ceil(diffMs / 86400000);
+  return {
+    label: days <= 7 ? `${formatPlainNumber(days)} 天内到期` : `${formatPlainNumber(days)} 天到期`,
+    tone: days <= 7 ? "warning" : "success",
+  };
+}
+
+function tokenQuotaSummary(usedBytes, quotaBytes, status = "") {
+  const quota = Number(quotaBytes || 0);
+  if (quota <= 0) {
+    return { label: "不限额度", tone: "info" };
+  }
+  const used = Math.max(0, Number(usedBytes || 0));
+  const ratio = used / quota;
+  const percent = Math.round(ratio * 1000) / 10;
+  if (String(status || "").toLowerCase() === "over_quota" || ratio >= 1) {
+    return { label: "额度用尽", tone: "danger" };
+  }
+  return {
+    label: `${percent.toFixed(1)}% 已用`,
+    tone: ratio >= 0.8 ? "warning" : "success",
+  };
 }
 
 function tokenCardField(label, value, column = "") {

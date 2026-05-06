@@ -456,6 +456,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenCommandGroupCount = await page.locator("#tokens [data-token-command-group]").count();
   const tokenActionButtonSymbolCount = await page.locator("#tokens .token-card-actions .button-symbol").count();
   const tokenQuotaMeterCount = await page.locator("#tokens [data-token-quota-meter] .quota-meter").count();
+  const tokenSummaryChipCount = await page.locator("#tokens [data-token-summary-chip]").count();
   const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
   const tokenSubscriptionKindCount = await page.locator("#tokens [data-token-subscription-kind]").count();
   const tokenSubscriptionProfileCount = await page.locator("#tokens [data-token-subscription-profile]").count();
@@ -487,7 +488,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".token-card-heading, .token-card-field, .token-card-meter, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, .token-card-actions",
+          ".token-card-heading, .token-card-summary, [data-token-summary-chip], .token-card-field, .token-card-meter, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, .token-card-actions",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
@@ -1015,6 +1016,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenCommandGroupCount = tokenCommandGroupCount;
   state.tokenActionButtonSymbolCount = tokenActionButtonSymbolCount;
   state.tokenQuotaMeterCount = tokenQuotaMeterCount;
+  state.tokenSummaryChipCount = tokenSummaryChipCount;
   state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
   state.tokenSubscriptionKindCount = tokenSubscriptionKindCount;
   state.tokenSubscriptionProfileCount = tokenSubscriptionProfileCount;
@@ -1043,6 +1045,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenRowCount > 0 && tokenQuotaMeterCount !== tokenRowCount) {
     throw new Error(`token quota meters missing: ${JSON.stringify(state)}`);
+  }
+  if (tokenRowCount > 0 && tokenSummaryChipCount !== tokenRowCount * 4) {
+    throw new Error(`token summary chips missing: ${JSON.stringify(state)}`);
   }
   if (
     tokenResultSubscriptionItemCount !== 3 ||

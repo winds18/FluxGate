@@ -2156,7 +2156,10 @@ function renderSubscriptionCardList(items, tokenID = "") {
             <div class="token-subscription-item">
               <div class="token-subscription-heading">
                 <span>${escapeHTML(label)}</span>
-                <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}">复制</button>
+                <span class="token-subscription-actions">
+                  <a class="table-button ghost-button link-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-token-subscription-link>打开</a>
+                  <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}">复制</button>
+                </span>
               </div>
               <code title="${escapeHTML(url)}">${escapeHTML(url)}</code>
             </div>

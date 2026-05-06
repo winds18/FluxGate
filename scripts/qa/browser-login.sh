@@ -183,6 +183,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   });
   await expect(page.locator("#token-result .token-result-card")).toBeVisible({ timeout: 5000 });
   const tokenResultSubscriptionItemCount = await page.locator("#token-result .token-subscription-item").count();
+  const tokenResultSubscriptionOpenCount = await page.locator("#token-result a[data-token-subscription-link]").count();
   const tokenResultVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -193,7 +194,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     if (!resultCard) return 1;
     const resultBox = resultCard.getBoundingClientRect();
     return Array.from(
-      resultCard.querySelectorAll(".token-result-heading, .token-subscription-item, .token-subscription-heading, code, button"),
+      resultCard.querySelectorAll(".token-result-heading, .token-subscription-item, .token-subscription-heading, code, button, a"),
     ).reduce((total, element) => {
       if (element.offsetParent === null) return total;
       const box = element.getBoundingClientRect();
@@ -210,6 +211,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenActionFieldCount = await page.locator("#tokens .token-action-field").count();
   const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
+  const tokenSubscriptionOpenCount = await page.locator("#tokens a[data-token-subscription-link]").count();
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
   let tokenCopyFeedbackVisible = false;
   if (tokenSubscriptionCopyCount > 0) {
@@ -248,7 +250,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       a.top < b.bottom - 1 &&
       a.bottom > b.top + 1;
     return Array.from(document.querySelectorAll("#tokens .token-card")).reduce((total, card) => {
-      const boxes = Array.from(card.querySelectorAll("button, input, .token-subscription-item code"))
+      const boxes = Array.from(card.querySelectorAll("button, a, input, .token-subscription-item code"))
         .filter((element) => element.offsetParent !== null)
         .map((element) => element.getBoundingClientRect())
         .filter((box) => box.width > 0 && box.height > 0);
@@ -608,6 +610,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenRowCount = tokenRowCount;
   state.tokenCardCount = tokenCardCount;
   state.tokenResultSubscriptionItemCount = tokenResultSubscriptionItemCount;
+  state.tokenResultSubscriptionOpenCount = tokenResultSubscriptionOpenCount;
   state.tokenResultVisualOverflowCount = tokenResultVisualOverflowCount;
   state.quotaMeterCount = quotaMeterCount;
   state.quotaUsageVisible = quotaUsageVisible;
@@ -616,6 +619,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenActionFieldCount = tokenActionFieldCount;
   state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
+  state.tokenSubscriptionOpenCount = tokenSubscriptionOpenCount;
   state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
   state.tokenVisualOverflowCount = tokenVisualOverflowCount;
@@ -630,13 +634,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (tokenRowCount > 0 && tokenActionFieldCount !== tokenRowCount * 2) {
     throw new Error(`token action labels missing: ${JSON.stringify(state)}`);
   }
-  if (tokenResultSubscriptionItemCount !== 3 || tokenResultVisualOverflowCount > 0) {
+  if (tokenResultSubscriptionItemCount !== 3 || tokenResultSubscriptionOpenCount !== 3 || tokenResultVisualOverflowCount > 0) {
     throw new Error(`token subscription result card is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (tokenRowCount > 0 && tokenRotateSubscriptionCount !== tokenRowCount) {
     throw new Error(`token subscription rotate controls missing: ${JSON.stringify(state)}`);
   }
-  if (tokenSubscriptionCopyCount > 0 && tokenSubscriptionItemCount !== tokenSubscriptionCopyCount) {
+  if (
+    tokenSubscriptionCopyCount > 0 &&
+    (tokenSubscriptionItemCount !== tokenSubscriptionCopyCount || tokenSubscriptionOpenCount !== tokenSubscriptionCopyCount)
+  ) {
     throw new Error(`token subscription cards are incomplete: ${JSON.stringify(state)}`);
   }
   if (tokenSubscriptionCopyCount > 0 && !tokenCopyFeedbackVisible) {

@@ -905,6 +905,22 @@ button {
   white-space: nowrap;
 }
 
+a.link-button {
+  align-items: center;
+  border-radius: 6px;
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-weight: 700;
+  justify-content: center;
+  letter-spacing: 0;
+  line-height: 1;
+  min-height: 30px;
+  padding: 0 10px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
 button:hover {
   background: var(--primary-hover);
   border-color: var(--primary-hover);
@@ -1936,7 +1952,7 @@ td code {
   min-width: 0;
 }
 
-.token-subscription-item span {
+.token-subscription-heading > span:not(.token-subscription-actions) {
   color: var(--muted);
   font-size: 12px;
   font-weight: 760;
@@ -1962,7 +1978,17 @@ td code {
   width: 100%;
 }
 
-.token-subscription-heading button {
+.token-subscription-actions {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.token-subscription-heading button,
+.token-subscription-heading a {
   flex: 0 0 auto;
 }
 
@@ -2615,7 +2641,13 @@ td code {
     flex-direction: column;
   }
 
-  .token-subscription-heading button {
+  .token-subscription-actions {
+    align-items: stretch;
+    width: 100%;
+  }
+
+  .token-subscription-heading button,
+  .token-subscription-heading a {
     width: 100%;
   }
 

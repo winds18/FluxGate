@@ -522,7 +522,7 @@ async function handleTeamAction(event) {
   if (action === "edit") {
     appState.editingTeamID = Number.parseInt(id || "0", 10);
     renderTeams(appState.teams);
-    teamsEl.querySelector(`tr[data-team-id="${id}"] input[data-team-field="name"]`)?.focus();
+    teamsEl.querySelector(`[data-team-id="${id}"] input[data-team-field="name"]`)?.focus();
     return;
   }
   if (action === "cancel") {
@@ -536,7 +536,7 @@ async function handleTeamAction(event) {
 }
 
 async function saveTeam(button) {
-  const row = button.closest("tr[data-team-id]");
+  const row = button.closest("[data-team-id]");
   if (!row) return;
   const id = row.dataset.teamId;
   const payload = {
@@ -572,7 +572,7 @@ async function handleUserAction(event) {
   if (action === "edit") {
     appState.editingUserID = Number.parseInt(id || "0", 10);
     renderUsers(appState.users);
-    usersEl.querySelector(`tr[data-user-id="${id}"] input[data-user-field="name"]`)?.focus();
+    usersEl.querySelector(`[data-user-id="${id}"] input[data-user-field="name"]`)?.focus();
     return;
   }
   if (action === "cancel") {
@@ -586,7 +586,7 @@ async function handleUserAction(event) {
 }
 
 async function saveUser(button) {
-  const row = button.closest("tr[data-user-id]");
+  const row = button.closest("[data-user-id]");
   if (!row) return;
   const id = row.dataset.userId;
   const teamID = Number.parseInt(row.querySelector('[data-user-field="team_id"]')?.value || "0", 10);
@@ -1389,40 +1389,36 @@ function renderTeams(rows) {
     return;
   }
   teamsEl.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>${labelForColumn("id")}</th>
-          <th>${labelForColumn("name")}</th>
-          <th>${labelForColumn("description")}</th>
-          <th>${labelForColumn("status")}</th>
-          <th>${labelForColumn("actions")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map((row) => renderTeamRow(row)).join("")}
-      </tbody>
-    </table>
+    <div class="identity-card-list">
+      ${rows.map((row) => renderTeamCard(row)).join("")}
+    </div>
   `;
 }
 
-function renderTeamRow(row) {
+function renderTeamCard(row) {
   const isEditing = appState.editingTeamID === row.id;
   return `
-    <tr data-team-id="${row.id}" class="${isEditing ? "team-edit-row" : ""}">
-      <td>${formatCell(row.id, "id")}</td>
-      <td>${isEditing ? teamTextInput(row, "name") : formatCell(row.name, "name")}</td>
-      <td>${isEditing ? teamTextInput(row, "description", "table-edit-input-wide") : formatCell(row.description, "description")}</td>
-      <td>${isEditing ? teamStatusSelect(row.status) : formatCell(row.status, "status")}</td>
-      <td class="table-actions compact-actions">
+    <article class="identity-card ${isEditing ? "identity-card-editing" : ""}" data-team-id="${row.id}">
+      <div class="identity-card-heading">
+        <div>
+          <span>${labelForColumn("id")} ${formatCell(row.id, "id")}</span>
+          <strong>${isEditing ? teamTextInput(row, "name") : formatCell(row.name, "name")}</strong>
+        </div>
+        <span class="identity-card-badge">${formatCell(row.status, "status")}</span>
+      </div>
+      <div class="identity-card-grid">
+        ${identityCardField("description", isEditing ? teamTextInput(row, "description", "table-edit-input-wide") : formatCell(row.description, "description"), "identity-card-field-wide")}
+        ${identityCardField("status", isEditing ? teamStatusSelect(row.status) : formatCell(row.status, "status"))}
+      </div>
+      <div class="table-actions identity-card-actions compact-actions">
         ${
           isEditing
             ? `<button class="table-button" type="button" data-team-action="save" data-team-id="${row.id}">保存</button>
                <button class="table-button ghost-button" type="button" data-team-action="cancel" data-team-id="${row.id}">取消</button>`
             : `<button class="table-button" type="button" data-team-action="edit" data-team-id="${row.id}">编辑</button>`
         }
-      </td>
-    </tr>
+      </div>
+    </article>
   `;
 }
 
@@ -1447,44 +1443,48 @@ function renderUsers(rows) {
     return;
   }
   usersEl.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>${labelForColumn("id")}</th>
-          <th>${labelForColumn("team_id")}</th>
-          <th>${labelForColumn("name")}</th>
-          <th>${labelForColumn("email")}</th>
-          <th>${labelForColumn("remark")}</th>
-          <th>${labelForColumn("status")}</th>
-          <th>${labelForColumn("actions")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map((row) => renderUserRow(row)).join("")}
-      </tbody>
-    </table>
+    <div class="identity-card-list">
+      ${rows.map((row) => renderUserCard(row)).join("")}
+    </div>
   `;
 }
 
-function renderUserRow(row) {
+function renderUserCard(row) {
   const isEditing = appState.editingUserID === row.id;
+  const teamLabel = teamLabelForID(row.team_id);
   return `
-    <tr data-user-id="${row.id}" class="${isEditing ? "user-edit-row" : ""}">
-      <td>${formatCell(row.id, "id")}</td>
-      <td>${isEditing ? userTeamSelectInput(row.team_id) : formatCell(row.team_id, "team_id")}</td>
-      <td>${isEditing ? userTextInput(row, "name") : formatCell(row.name, "name")}</td>
-      <td>${isEditing ? userTextInput(row, "email", "table-edit-input-wide") : formatCell(row.email, "email")}</td>
-      <td>${isEditing ? userTextInput(row, "remark", "table-edit-input-wide") : formatCell(row.remark, "remark")}</td>
-      <td>${isEditing ? userStatusSelect(row.status) : formatCell(row.status, "status")}</td>
-      <td class="table-actions compact-actions">
+    <article class="identity-card ${isEditing ? "identity-card-editing" : ""}" data-user-id="${row.id}">
+      <div class="identity-card-heading">
+        <div>
+          <span>${labelForColumn("id")} ${formatCell(row.id, "id")}</span>
+          <strong>${isEditing ? userTextInput(row, "name") : formatCell(row.name, "name")}</strong>
+        </div>
+        <span class="identity-card-badge">${escapeHTML(teamLabel)}</span>
+      </div>
+      <div class="identity-card-grid">
+        ${identityCardField("team_id", isEditing ? userTeamSelectInput(row.team_id) : formatCell(row.team_id, "team_id"))}
+        ${identityCardField("email", isEditing ? userTextInput(row, "email", "table-edit-input-wide") : formatCell(row.email, "email"), "identity-card-field-wide")}
+        ${identityCardField("remark", isEditing ? userTextInput(row, "remark", "table-edit-input-wide") : formatCell(row.remark, "remark"), "identity-card-field-wide")}
+        ${identityCardField("status", isEditing ? userStatusSelect(row.status) : formatCell(row.status, "status"))}
+      </div>
+      <div class="table-actions identity-card-actions compact-actions">
         ${
           isEditing
             ? `<button class="table-button" type="button" data-user-action="save" data-user-id="${row.id}">保存</button>
                <button class="table-button ghost-button" type="button" data-user-action="cancel" data-user-id="${row.id}">取消</button>`
             : `<button class="table-button" type="button" data-user-action="edit" data-user-id="${row.id}">编辑</button>`
         }
-      </td>
-    </tr>
+      </div>
+    </article>
+  `;
+}
+
+function identityCardField(label, value, className = "") {
+  return `
+    <div class="identity-card-field ${className}">
+      <span>${labelForColumn(label)}</span>
+      <strong>${value}</strong>
+    </div>
   `;
 }
 
@@ -1498,6 +1498,12 @@ function userTeamSelectInput(value) {
     appState.teams.map((team) => `<option value="${team.id}" ${String(team.id) === current ? "selected" : ""}>${escapeHTML(team.name)}</option>`),
   );
   return `<select class="table-edit-input" data-user-field="team_id">${options.join("")}</select>`;
+}
+
+function teamLabelForID(value) {
+  if (!value) return "未绑定团队";
+  const team = (appState.teams || []).find((item) => String(item.id) === String(value));
+  return team ? team.name : `团队 #${value}`;
 }
 
 function userStatusSelect(value) {

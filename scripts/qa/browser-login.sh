@@ -170,6 +170,28 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     }, 0);
   });
 
+  const teamCardCount = await page.locator("#teams .identity-card").count();
+  const userCardCount = await page.locator("#users .identity-card").count();
+  const identityVisualOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#teams .identity-card, #users .identity-card")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(
+        card.querySelectorAll(".identity-card-heading, .identity-card-badge, .identity-card-field, .identity-card-actions"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const teamEditCount = await page.locator("#teams button[data-team-action='edit']").count();
   let teamEditFieldsVisible = false;
   if (teamEditCount > 0) {
@@ -402,10 +424,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileOverviewOverflow = mobileOverviewOverflow;
   state.mobileNodesVisible = mobileNodesVisible;
   state.mobileNodesOverflow = mobileNodesOverflow;
+  state.teamCardCount = teamCardCount;
   state.teamEditCount = teamEditCount;
   state.teamEditFieldsVisible = teamEditFieldsVisible;
+  state.userCardCount = userCardCount;
   state.userEditCount = userEditCount;
   state.userEditFieldsVisible = userEditFieldsVisible;
+  state.identityVisualOverflowCount = identityVisualOverflowCount;
   state.sourceCardCount = sourceCardCount;
   state.sourceVisualOverflowCount = sourceVisualOverflowCount;
   state.sourceEditCount = sourceEditCount;
@@ -448,6 +473,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenVisualOverlapCount > 0) {
     throw new Error(`token controls visually overlap: ${JSON.stringify(state)}`);
+  }
+  if (
+    (teamEditCount > 0 && teamCardCount !== teamEditCount) ||
+    (userEditCount > 0 && userCardCount !== userEditCount) ||
+    identityVisualOverflowCount > 0
+  ) {
+    throw new Error(`identity cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (sourceEditCount > 0 && (sourceCardCount !== sourceEditCount || sourceVisualOverflowCount > 0)) {
     throw new Error(`source cards are incomplete or overflowing: ${JSON.stringify(state)}`);

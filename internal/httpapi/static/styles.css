@@ -931,6 +931,124 @@ textarea {
   min-width: 108px;
 }
 
+.identity-card-list {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.identity-card {
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.identity-card-heading,
+.identity-card-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.identity-card-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.identity-card-heading span,
+.identity-card-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
+.identity-card-heading strong {
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 780;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.identity-card-badge {
+  align-items: center;
+  background: #f3f6fb;
+  border: 1px solid #d8e0ec;
+  border-radius: 999px;
+  color: #334155;
+  display: inline-flex;
+  font-size: 12px;
+  font-weight: 800;
+  min-height: 28px;
+  max-width: 100%;
+  padding: 0 9px;
+  white-space: nowrap;
+}
+
+.identity-card-badge .status-badge {
+  border: 0;
+  min-height: 24px;
+  padding: 0;
+}
+
+.identity-card-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  min-width: 0;
+}
+
+.identity-card-field {
+  background: #fbfdff;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.identity-card-field-wide {
+  grid-column: 1 / -1;
+}
+
+.identity-card-field strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.4;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.identity-card-field strong code {
+  display: inline-block;
+  max-width: 100%;
+  overflow: hidden;
+  padding: 2px 6px;
+  text-overflow: ellipsis;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.identity-card-actions {
+  justify-content: flex-start;
+}
+
+.identity-card input,
+.identity-card select {
+  min-width: 0;
+}
+
 .source-card-list {
   display: grid;
   gap: 12px;
@@ -2091,6 +2209,8 @@ td code {
 
   .source-card-heading,
   .source-actions,
+  .identity-card-heading,
+  .identity-card-actions,
   .virtual-node-card-heading,
   .virtual-node-actions,
   .policy-card-heading,
@@ -2101,6 +2221,8 @@ td code {
 
   .source-type-badge,
   .source-actions button,
+  .identity-card-badge,
+  .identity-card-actions button,
   .virtual-node-listen-badge,
   .virtual-node-actions button,
   .policy-scope-badge,

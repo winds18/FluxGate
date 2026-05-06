@@ -2247,6 +2247,21 @@ function renderNodeDetailPanel(node) {
   return `
     <div class="node-detail-row">
       <div class="node-detail-panel">
+        <div class="node-detail-summary">
+          <div class="node-detail-summary-title">
+            <span class="node-card-protocol-symbol" aria-hidden="true">${escapeHTML(nodeProtocolSymbol(node.protocol))}</span>
+            <div>
+              <strong>${escapeHTML(node.display_name || node.raw_name || `节点 ${node.id}`)}</strong>
+              <span>${escapeHTML(node.source_name || "未知来源")}</span>
+            </div>
+          </div>
+          <div class="node-detail-summary-chips">
+            <span data-node-detail-chip>${formatStatus(node.status)}</span>
+            <span data-node-detail-chip>${formatCell(node.protocol, "protocol")}</span>
+            <span data-node-detail-chip>${formatCell(node.region || "其他", "region")}</span>
+            <span data-node-detail-chip>${formatCell(node.server, "server")}:${formatCell(node.server_port, "server_port")}</span>
+          </div>
+        </div>
         <div class="detail-grid">
           ${nodeDetailItem("id", node.id)}
           ${nodeDetailItem("source_id", node.source_id)}

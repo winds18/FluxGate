@@ -748,6 +748,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const nodeEditCount = await page.locator("#nodes button[data-node-action='edit']").count();
   let nodeEditFormVisible = false;
   let nodeDetailVisible = false;
+  let nodeDetailSummaryVisible = false;
+  let nodeDetailChipCount = 0;
+  let nodeDetailSummaryOverflowCount = 0;
   let nodeDetailCodeOverflowCount = 0;
   let nodeDetailCopyVisible = false;
   let nodeDetailCopyFeedbackVisible = false;
@@ -759,6 +762,32 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#nodes .node-card-main").first().click();
     await expect(page.locator("#nodes .node-detail-row .detail-code").first()).toBeVisible({ timeout: 5000 });
     nodeDetailVisible = true;
+    await expect(page.locator("#nodes .node-detail-summary").first()).toBeVisible({ timeout: 5000 });
+    nodeDetailSummaryVisible = true;
+    nodeDetailChipCount = await page.locator("#nodes [data-node-detail-chip]").count();
+    nodeDetailSummaryOverflowCount = await page.evaluate(() => {
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(document.querySelectorAll("#nodes .node-detail-summary")).reduce((total, summary) => {
+        const summaryBox = summary.getBoundingClientRect();
+        const elements = Array.from(
+          summary.querySelectorAll(".node-detail-summary-title, .node-card-protocol-symbol, strong, .node-detail-summary-title span, .node-detail-summary-chips, [data-node-detail-chip]"),
+        ).filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const parent = element.classList.contains("node-detail-summary-title") || element.classList.contains("node-detail-summary-chips")
+            ? summaryBox
+            : (element.closest(".node-detail-summary-title") || element.closest(".node-detail-summary-chips") || summary).getBoundingClientRect();
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
+    });
     const nodeDetailCopyButton = page.locator("#nodes button[data-node-action='copy-uri']").first();
     await expect(nodeDetailCopyButton).toBeVisible({ timeout: 5000 });
     nodeDetailCopyVisible = true;
@@ -939,6 +968,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
   state.nodeDetailVisible = nodeDetailVisible;
+  state.nodeDetailSummaryVisible = nodeDetailSummaryVisible;
+  state.nodeDetailChipCount = nodeDetailChipCount;
+  state.nodeDetailSummaryOverflowCount = nodeDetailSummaryOverflowCount;
   state.nodeDetailCopyVisible = nodeDetailCopyVisible;
   state.nodeDetailCopyFeedbackVisible = nodeDetailCopyFeedbackVisible;
   state.nodeDetailCodeOverflowCount = nodeDetailCodeOverflowCount;
@@ -1077,6 +1109,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeDetailCodeOverflowCount > 0) {
     throw new Error(`node detail code blocks overflow horizontally: ${JSON.stringify(state)}`);
+  }
+  if (nodeDetailVisible && (!nodeDetailSummaryVisible || nodeDetailChipCount < 4 || nodeDetailSummaryOverflowCount > 0)) {
+    throw new Error(`node detail summary is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (nodeDetailVisible && (!nodeDetailCopyVisible || !nodeDetailCopyFeedbackVisible)) {
     throw new Error(`node detail copy feedback missing: ${JSON.stringify(state)}`);

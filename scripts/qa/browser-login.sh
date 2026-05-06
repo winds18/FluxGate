@@ -227,6 +227,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
 
   await switchView("nodes");
+  const nodeSearchVisible = await page.locator("#nodes [data-node-filter]").first().isVisible();
+  await page.fill("#nodes [data-node-filter]", "香港");
+  await page.waitForTimeout(100);
+  const nodeFilteredRegionCount = await page.locator("#nodes button[data-node-region-action='open']").count();
+  const nodeFilterValue = await page.locator("#nodes [data-node-filter]").first().inputValue();
+  await page.locator("#nodes button[data-node-filter-action='clear']").first().click();
+  await expect(page.locator("#nodes [data-node-filter]").first()).toHaveValue("", { timeout: 5000 });
+  const nodeSearchClears = (await page.locator("#nodes [data-node-filter]").first().inputValue()) === "";
   const nodeRegionCount = await page.locator("#nodes button[data-node-region-action='open']").count();
   let nodeCardCount = 0;
   let nodeVisualOverflowCount = 0;
@@ -341,6 +349,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.virtualNodeEditFieldsVisible = virtualNodeEditFieldsVisible;
   state.policyEditCount = policyEditCount;
   state.policyEditFieldsVisible = policyEditFieldsVisible;
+  state.nodeSearchVisible = nodeSearchVisible;
+  state.nodeFilterValue = nodeFilterValue;
+  state.nodeFilteredRegionCount = nodeFilteredRegionCount;
+  state.nodeSearchClears = nodeSearchClears;
   state.nodeRegionCount = nodeRegionCount;
   state.nodeCardCount = nodeCardCount;
   state.nodeVisualOverflowCount = nodeVisualOverflowCount;
@@ -370,6 +382,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeVisualOverflowCount > 0) {
     throw new Error(`node cards visually overflow their parent: ${JSON.stringify(state)}`);
+  }
+  if (!nodeSearchVisible || nodeFilterValue !== "香港" || nodeFilteredRegionCount < 1 || !nodeSearchClears) {
+    throw new Error(`node search filter failed: ${JSON.stringify(state)}`);
   }
   if (nodeDetailCodeOverflowCount > 0) {
     throw new Error(`node detail code blocks overflow horizontally: ${JSON.stringify(state)}`);

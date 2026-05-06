@@ -138,6 +138,7 @@ teamsEl.addEventListener("click", handleTeamAction);
 usersEl.addEventListener("click", handleUserAction);
 sourcesEl.addEventListener("click", handleSourceAction);
 nodesEl.addEventListener("click", handleNodeAction);
+nodesEl.addEventListener("input", handleNodeFilterInput);
 nodesEl.addEventListener("submit", handleNodeEditSubmit);
 virtualNodesEl.addEventListener("click", handleVirtualNodeAction);
 policiesEl.addEventListener("click", handlePolicyAction);
@@ -199,6 +200,7 @@ let appState = {
   expandedNodeRegion: null,
   expandedNodeID: null,
   nodeDetail: null,
+  nodeFilter: "",
 };
 
 const columnLabels = {
@@ -317,6 +319,7 @@ async function logout() {
     expandedNodeRegion: null,
     expandedNodeID: null,
     nodeDetail: null,
+    nodeFilter: "",
   };
   tokenResultEl.hidden = true;
   tokenResultEl.textContent = "";
@@ -808,6 +811,16 @@ function policyFieldValue(row, name) {
 }
 
 async function handleNodeAction(event) {
+  const filterButton = event.target.closest("button[data-node-filter-action]");
+  if (filterButton) {
+    appState.nodeFilter = "";
+    appState.editingNodeID = null;
+    appState.expandedNodeID = null;
+    appState.nodeDetail = null;
+    renderNodes(appState.nodes);
+    nodesEl.querySelector("[data-node-filter]")?.focus();
+    return;
+  }
   const regionButton = event.target.closest("button[data-node-region-action]");
   if (regionButton) {
     const action = regionButton.dataset.nodeRegionAction;
@@ -880,6 +893,22 @@ async function handleNodeAction(event) {
   } catch (error) {
     statusEl.textContent = "恢复失败";
     button.disabled = false;
+  }
+}
+
+function handleNodeFilterInput(event) {
+  const input = event.target.closest("[data-node-filter]");
+  if (!input) return;
+  appState.nodeFilter = input.value;
+  appState.editingNodeID = null;
+  appState.expandedNodeID = null;
+  appState.nodeDetail = null;
+  renderNodes(appState.nodes);
+  const nextInput = nodesEl.querySelector("[data-node-filter]");
+  if (nextInput) {
+    const cursorPosition = nextInput.value.length;
+    nextInput.focus();
+    nextInput.setSelectionRange(cursorPosition, cursorPosition);
   }
 }
 
@@ -1734,7 +1763,8 @@ function renderNodes(rows) {
     nodesEl.innerHTML = `<div class="empty">暂无数据</div>`;
     return;
   }
-  const groups = groupNodesByRegion(rows);
+  const filteredRows = filterNodesByQuery(rows, appState.nodeFilter);
+  const groups = groupNodesByRegion(filteredRows);
   const selectedGroup = groups.find((group) => group.region === appState.expandedNodeRegion);
   if (appState.expandedNodeRegion && !selectedGroup) {
     appState.expandedNodeRegion = null;
@@ -1742,7 +1772,11 @@ function renderNodes(rows) {
     appState.expandedNodeID = null;
     appState.nodeDetail = null;
   }
-  nodesEl.innerHTML = appState.expandedNodeRegion && selectedGroup ? renderNodeRegion(selectedGroup, groups) : renderNodeRegions(groups);
+  const totalGroups = groupNodesByRegion(rows);
+  nodesEl.innerHTML =
+    appState.expandedNodeRegion && selectedGroup
+      ? renderNodeRegion(selectedGroup, groups, rows.length, filteredRows.length, totalGroups.length)
+      : renderNodeRegions(groups, rows.length, filteredRows.length);
 }
 
 function groupNodesByRegion(rows) {
@@ -1768,19 +1802,50 @@ function normalizedNodeRegion(row) {
   return region || "其他";
 }
 
-function renderNodeRegions(groups) {
-  const total = groups.reduce((sum, group) => sum + group.items.length, 0);
+function filterNodesByQuery(rows, query) {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return rows || [];
+  return (rows || []).filter((row) => nodeSearchText(row).includes(normalizedQuery));
+}
+
+function nodeSearchText(row) {
+  const fields = [
+    row.id,
+    normalizedNodeRegion(row),
+    row.display_name,
+    row.raw_name,
+    row.source_name,
+    row.protocol,
+    row.server,
+    row.server_port,
+    row.status,
+    row.name_mode,
+    Array.isArray(row.tags) ? row.tags.join(" ") : row.tags,
+  ];
+  return normalizeSearchText(fields.filter((field) => field !== null && field !== undefined).join(" "));
+}
+
+function normalizeSearchText(value) {
+  return String(value || "")
+    .trim()
+    .toLocaleLowerCase("zh-CN");
+}
+
+function renderNodeRegions(groups, total, matched) {
   return `
     <div class="node-browser" data-node-view="regions">
       <div class="node-browser-header">
         <div>
           <strong>地区聚合</strong>
-          <span>${formatCell(total)} 个节点 · ${formatCell(groups.length)} 个地区</span>
+          <span>${formatCell(matched)} / ${formatCell(total)} 个节点 · ${formatCell(groups.length)} 个地区</span>
         </div>
       </div>
-      <div class="node-region-grid">
-        ${groups.map((group) => renderNodeRegionCard(group)).join("")}
-      </div>
+      ${renderNodeFilterBar(total, matched, groups.length)}
+      ${
+        groups.length > 0
+          ? `<div class="node-region-grid">${groups.map((group) => renderNodeRegionCard(group)).join("")}</div>`
+          : `<div class="empty">没有匹配的节点</div>`
+      }
     </div>
   `;
 }
@@ -1798,19 +1863,38 @@ function renderNodeRegionCard(group) {
   `;
 }
 
-function renderNodeRegion(group, groups) {
+function renderNodeRegion(group, groups, total, matched, totalRegionCount) {
   return `
     <div class="node-browser" data-node-view="cards" data-node-region="${escapeHTML(group.region)}">
       <div class="node-browser-header">
         <button class="table-button ghost-button" type="button" data-node-region-action="back">返回地区</button>
         <div>
           <strong>${escapeHTML(group.region)}</strong>
-          <span>${formatCell(group.items.length)} 个节点 · 共 ${formatCell(groups.length)} 个地区</span>
+          <span>${formatCell(group.items.length)} 个节点 · 筛选 ${formatCell(matched)} / ${formatCell(total)} · 共 ${formatCell(totalRegionCount)} 个地区</span>
         </div>
       </div>
+      ${renderNodeFilterBar(total, matched, groups.length)}
       <div class="node-card-grid">
         ${group.items.map((row) => renderNodeCard(row)).join("")}
       </div>
+    </div>
+  `;
+}
+
+function renderNodeFilterBar(total, matched, regionCount) {
+  const query = String(appState.nodeFilter || "");
+  const hasQuery = normalizeSearchText(query) !== "";
+  return `
+    <div class="node-filter-bar">
+      <label>
+        <span>搜索节点</span>
+        <input data-node-filter value="${escapeHTML(query)}" placeholder="地区、节点名、协议、来源、标签或服务器" autocomplete="off" />
+      </label>
+      <div class="node-filter-summary">
+        <strong>${formatCell(matched)}</strong>
+        <span>/ ${formatCell(total)} 节点 · ${formatCell(regionCount)} 地区</span>
+      </div>
+      <button class="table-button ghost-button" type="button" data-node-filter-action="clear" ${hasQuery ? "" : "disabled"}>清空</button>
     </div>
   `;
 }

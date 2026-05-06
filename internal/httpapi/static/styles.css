@@ -967,6 +967,52 @@ textarea {
   font-size: 12px;
 }
 
+.node-filter-bar {
+  align-items: end;
+  background: #fbfdff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(220px, 1fr) max-content max-content;
+  min-width: 0;
+  padding: 10px;
+}
+
+.node-filter-bar label {
+  color: var(--muted);
+  display: grid;
+  font-size: 12px;
+  font-weight: 760;
+  gap: 6px;
+  min-width: 0;
+}
+
+.node-filter-summary {
+  align-items: baseline;
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  color: var(--muted);
+  display: inline-flex;
+  gap: 5px;
+  min-height: 40px;
+  min-width: 0;
+  padding: 0 10px;
+  white-space: nowrap;
+}
+
+.node-filter-summary strong {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 820;
+}
+
+.node-filter-summary span {
+  font-size: 12px;
+  font-weight: 720;
+}
+
 .node-region-grid,
 .node-card-grid {
   display: grid;
@@ -1712,6 +1758,20 @@ td code {
 
   .button-row {
     justify-content: flex-start;
+  }
+
+  .node-filter-bar {
+    align-items: stretch;
+    grid-template-columns: 1fr;
+  }
+
+  .node-filter-summary {
+    justify-content: space-between;
+    white-space: normal;
+  }
+
+  .node-filter-bar button {
+    width: 100%;
   }
 
   .token-subscription-item {

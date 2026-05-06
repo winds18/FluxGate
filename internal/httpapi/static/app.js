@@ -379,7 +379,7 @@ function setFormDrawerCollapsed(drawer, collapsed) {
   drawer.classList.toggle("is-collapsed", collapsed);
   const toggle = drawer.querySelector("[data-form-drawer-toggle]");
   if (toggle) {
-    toggle.textContent = collapsed ? "展开" : "收起";
+    toggle.innerHTML = buttonLabel(collapsed ? "+" : "−", collapsed ? "展开" : "收起");
   }
 }
 

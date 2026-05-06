@@ -126,6 +126,25 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const formDrawerCount = await page.locator("[data-form-drawer]").count();
   const collapsedFormDrawerCount = await page.locator("[data-form-drawer].is-collapsed").count();
   const formDrawerSymbolCount = await page.locator("[data-form-drawer] .drawer-symbol").count();
+  const formDrawerToggleSymbolCount = await page.locator("[data-form-drawer] [data-form-drawer-toggle] .button-symbol").count();
+  const formSubmitButtonSymbolCount = await page.locator('[data-form-drawer] button[type="submit"] .button-symbol').count();
+  const refreshButtonSymbolCount = await page.locator("#refresh .button-symbol").count();
+  const refreshButtonOverflowCount = await page.evaluate(() => {
+    const button = document.querySelector("#refresh");
+    if (!button) return 1;
+    const parent = button.getBoundingClientRect();
+    const outside = (child) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(button.querySelectorAll(".button-symbol, .button-label"))
+      .filter((element) => element.offsetParent !== null)
+      .reduce((total, element) => {
+        const box = element.getBoundingClientRect();
+        return total + (box.width > 0 && box.height > 0 && outside(box) ? 1 : 0);
+      }, 0);
+  });
   const formDrawerSymbols = await page
     .locator("[data-form-drawer] .drawer-symbol")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
@@ -139,12 +158,37 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       .filter((header) => header.offsetParent !== null)
       .reduce((total, header) => {
         const headerBox = header.getBoundingClientRect();
-        const elements = Array.from(header.querySelectorAll(".drawer-title, .drawer-symbol, h2, .drawer-toggle")).filter(
+        const elements = Array.from(
+          header.querySelectorAll(".drawer-title, .drawer-symbol, h2, .drawer-toggle, .drawer-toggle .button-symbol, .drawer-toggle .button-label"),
+        ).filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const parent = element.closest(".drawer-toggle") && !element.classList.contains("drawer-toggle")
+            ? element.closest(".drawer-toggle").getBoundingClientRect()
+            : headerBox;
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
+  });
+  const visibleFormSubmitOverflow = async () => page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll('[data-form-drawer] button[type="submit"]'))
+      .filter((button) => button.offsetParent !== null)
+      .reduce((total, button) => {
+        const buttonBox = button.getBoundingClientRect();
+        const elements = Array.from(button.querySelectorAll(".button-symbol, .button-label")).filter(
           (element) => element.offsetParent !== null,
         );
         for (const element of elements) {
           const box = element.getBoundingClientRect();
-          if (box.width > 0 && box.height > 0 && outside(box, headerBox)) {
+          if (box.width > 0 && box.height > 0 && outside(box, buttonBox)) {
             total += 1;
           }
         }
@@ -161,6 +205,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
   const viewOverflow = {};
   const formDrawerHeaderOverflow = {};
+  const formSubmitOverflow = {};
   const panelTitleOverflow = {};
   const viewContextChipCounts = {};
   const viewContextOverflow = {};
@@ -174,6 +219,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
     formDrawerHeaderOverflow[view] = await visibleFormDrawerHeaderOverflow();
+    formSubmitOverflow[view] = await visibleFormSubmitOverflow();
     viewHeaderSymbols[view] = (await page.locator("#view-symbol").textContent())?.trim();
     viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
     viewContextOverflow[view] = await page.evaluate(() => {
@@ -1062,8 +1108,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.formDrawerCount = formDrawerCount;
   state.collapsedFormDrawerCount = collapsedFormDrawerCount;
   state.formDrawerSymbolCount = formDrawerSymbolCount;
+  state.formDrawerToggleSymbolCount = formDrawerToggleSymbolCount;
+  state.formSubmitButtonSymbolCount = formSubmitButtonSymbolCount;
+  state.refreshButtonSymbolCount = refreshButtonSymbolCount;
+  state.refreshButtonOverflowCount = refreshButtonOverflowCount;
   state.formDrawerSymbols = formDrawerSymbols;
   state.formDrawerHeaderOverflow = formDrawerHeaderOverflow;
+  state.formSubmitOverflow = formSubmitOverflow;
   state.panelCountCount = panelCountCount;
   state.populatedPanelCountCount = populatedPanelCountCount;
   state.panelSymbolCount = panelSymbolCount;
@@ -1410,12 +1461,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   const expectedFormDrawerSymbols = ["源", "导", "网", "团", "员", "钥", "策"];
   const overflowingFormDrawerHeader = Object.entries(formDrawerHeaderOverflow).find(([, overflow]) => overflow > 0);
+  const overflowingFormSubmit = Object.entries(formSubmitOverflow).find(([, overflow]) => overflow > 0);
   if (
     formDrawerCount !== 7 ||
     collapsedFormDrawerCount !== 7 ||
     formDrawerSymbolCount !== 7 ||
+    formDrawerToggleSymbolCount !== 7 ||
+    formSubmitButtonSymbolCount !== 7 ||
+    refreshButtonSymbolCount !== 1 ||
+    refreshButtonOverflowCount > 0 ||
     expectedFormDrawerSymbols.some((symbol, index) => formDrawerSymbols[index] !== symbol) ||
-    overflowingFormDrawerHeader
+    overflowingFormDrawerHeader ||
+    overflowingFormSubmit
   ) {
     throw new Error(`form drawers should be collapsed and visually stable by default: ${JSON.stringify(state)}`);
   }

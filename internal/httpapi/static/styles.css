@@ -1053,8 +1053,11 @@ main {
   display: inline-flex;
   font-size: 13px;
   font-weight: 760;
+  gap: 6px;
   justify-content: center;
+  max-width: 100%;
   min-height: 34px;
+  min-width: 0;
   padding: 0 12px;
   white-space: nowrap;
 }
@@ -1084,6 +1087,8 @@ main {
 
 .form-body button[type="submit"] {
   align-self: end;
+  gap: 6px;
+  max-width: 100%;
   min-width: 92px;
 }
 

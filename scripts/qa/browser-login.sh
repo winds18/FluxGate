@@ -128,6 +128,30 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await switchView("overview");
   const overviewReadinessCount = await page.locator("#overview-readiness .readiness-item").count();
   const overviewNextStepButtonCount = await page.locator("#overview-next-step [data-overview-jump]").count();
+  const overviewQuickCardCount = await page.locator(".quick-card").count();
+  const overviewQuickCardBadgeCount = await page.locator(".quick-card [data-overview-card-count]").count();
+  const overviewQuickCardBadgeValues = await page
+    .locator(".quick-card [data-overview-card-count]")
+    .evaluateAll((elements) => Object.fromEntries(elements.map((element) => [element.dataset.overviewCardCount, element.textContent.trim()])));
+  const overviewQuickCardOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll(".quick-card")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(card.querySelectorAll(".quick-card-heading, strong, .quick-card-badge"))
+        .filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
 
   const east8TimeSamples = await page.evaluate(() => ({
     rfc3339: typeof formatCell === "function" ? formatCell("2026-04-29T00:00:00Z", "updated_at") : "",
@@ -594,6 +618,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
+  state.overviewQuickCardCount = overviewQuickCardCount;
+  state.overviewQuickCardBadgeCount = overviewQuickCardBadgeCount;
+  state.overviewQuickCardBadgeValues = overviewQuickCardBadgeValues;
+  state.overviewQuickCardOverflowCount = overviewQuickCardOverflowCount;
   state.viewOverflow = viewOverflow;
   state.mobileDockVisible = mobileDockVisible;
   state.mobileSidebarVisible = mobileSidebarVisible;
@@ -793,6 +821,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);
+  }
+  if (
+    overviewQuickCardCount !== 4 ||
+    overviewQuickCardBadgeCount !== 4 ||
+    overviewQuickCardOverflowCount > 0 ||
+    Object.values(overviewQuickCardBadgeValues).some((value) => !value || value === "--")
+  ) {
+    throw new Error(`overview quick cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   const overflowingView = Object.entries(viewOverflow).find(([, overflow]) => overflow > 2);
   if (overflowingView) {

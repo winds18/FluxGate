@@ -10,6 +10,7 @@ const dashboardViewSections = Array.from(document.querySelectorAll("[data-dashbo
 const dashboardNavButtons = Array.from(document.querySelectorAll("[data-view-nav]"));
 const dashboardNavCountEls = Array.from(document.querySelectorAll("[data-view-count]"));
 const dashboardJumpButtons = Array.from(document.querySelectorAll("[data-view-jump]"));
+const overviewCardCountEls = Array.from(document.querySelectorAll("[data-overview-card-count]"));
 const loginForm = document.querySelector("#login-form");
 const loginErrorEl = document.querySelector("#login-error");
 const loginUsernameEl = document.querySelector("#login-username");
@@ -371,6 +372,7 @@ function setActiveView(view) {
   updateViewContext();
   updateViewRail();
   updateNavigationCounts();
+  updateOverviewCardCounts();
 }
 
 function setFormDrawerCollapsed(drawer, collapsed) {
@@ -430,6 +432,7 @@ async function load() {
     updatePanelCounts();
     updateViewContext();
     updateNavigationCounts();
+    updateOverviewCardCounts();
     statusEl.textContent = "已连接";
   } catch (error) {
     if (error.status === 401) {
@@ -1386,6 +1389,44 @@ function updateNavigationCounts() {
     element.classList.toggle("is-empty", value === "0" || value === "0/5" || value === "待检");
     element.setAttribute("title", `${dashboardViewMeta[view]?.[0] || view}：${value}`);
   });
+}
+
+function updateOverviewCardCounts() {
+  const counts = overviewCardCounts();
+  overviewCardCountEls.forEach((element) => {
+    const key = element.dataset.overviewCardCount || "";
+    const value = counts[key] || "0";
+    element.textContent = value;
+    element.classList.toggle("is-empty", value === "0" || value === "待检");
+    element.setAttribute("title", `${overviewCardCountLabel(key)}：${value}`);
+  });
+}
+
+function overviewCardCounts() {
+  const sources = appState.sources || [];
+  const nodes = appState.nodes || [];
+  const virtualNodes = appState.virtualNodes || [];
+  const tokens = appState.tokens || [];
+  const activeNodes = countBy(nodes, (row) => row.status === "active");
+  const activeVirtualNodes = countBy(virtualNodes, (row) => row.status === "active");
+  const activeTokens = countBy(tokens, (row) => row.status === "active");
+  const configReady = activeNodes > 0 && activeVirtualNodes > 0 && activeTokens > 0;
+  return {
+    access: `${formatPlainNumber(sources.length)} 来源`,
+    nodes: `${formatPlainNumber(groupNodesByRegion(nodes).length)} 地区`,
+    identity: `${formatPlainNumber(tokens.length)} Token`,
+    ops: configReady ? "就绪" : "待检",
+  };
+}
+
+function overviewCardCountLabel(key) {
+  const labels = {
+    access: "接入来源",
+    nodes: "节点池",
+    identity: "分发订阅",
+    ops: "发布网关",
+  };
+  return labels[key] || key;
 }
 
 function navigationCounts() {

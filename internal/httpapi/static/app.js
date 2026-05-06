@@ -2106,9 +2106,11 @@ function renderTokenSubscriptions(row) {
         .map(
           ([label, url]) => `
             <div class="token-subscription-item">
-              <span>${escapeHTML(label)}</span>
+              <div class="token-subscription-heading">
+                <span>${escapeHTML(label)}</span>
+                <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${row.id}" data-token-url="${escapeHTML(url)}">复制</button>
+              </div>
               <code title="${escapeHTML(url)}">${escapeHTML(url)}</code>
-              <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${row.id}" data-token-url="${escapeHTML(url)}">复制</button>
             </div>
           `,
         )

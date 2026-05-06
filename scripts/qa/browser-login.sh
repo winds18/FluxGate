@@ -171,8 +171,31 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenRowCount = tokenCardCount || (await page.locator("#tokens tbody tr").count());
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
   const tokenQuotaInputCount = await page.locator("#tokens input[data-token-quota-mib]").count();
+  const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
+  const tokenVisualOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#tokens .token-card")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(
+        card.querySelectorAll(
+          ".token-card-heading, .token-card-field, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-card-actions",
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const tokenVisualOverlapCount = await page.evaluate(() => {
     const intersects = (a, b) =>
       a.left < b.right - 1 &&
@@ -532,8 +555,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.quotaUsageVisible = quotaUsageVisible;
   state.tokenExtendInputCount = tokenExtendInputCount;
   state.tokenQuotaInputCount = tokenQuotaInputCount;
+  state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
+  state.tokenVisualOverflowCount = tokenVisualOverflowCount;
   state.tokenVisualOverlapCount = tokenVisualOverlapCount;
   state.opsActionCardCount = opsActionCardCount;
   state.opsResultVisible = opsResultVisible;
@@ -545,8 +570,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (tokenRowCount > 0 && tokenRotateSubscriptionCount !== tokenRowCount) {
     throw new Error(`token subscription rotate controls missing: ${JSON.stringify(state)}`);
   }
-  if (tokenVisualOverlapCount > 0) {
-    throw new Error(`token controls visually overlap: ${JSON.stringify(state)}`);
+  if (tokenSubscriptionCopyCount > 0 && tokenSubscriptionItemCount !== tokenSubscriptionCopyCount) {
+    throw new Error(`token subscription cards are incomplete: ${JSON.stringify(state)}`);
+  }
+  if (tokenVisualOverflowCount > 0 || tokenVisualOverlapCount > 0) {
+    throw new Error(`token controls visually overflow or overlap: ${JSON.stringify(state)}`);
   }
   if (
     (trafficTokenRowCount > 0 && trafficTokenCardCount !== trafficTokenRowCount) ||

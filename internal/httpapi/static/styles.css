@@ -1829,10 +1829,20 @@ td code {
 }
 
 .token-subscription-item {
-  align-items: center;
+  background: #fbfdff;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
   display: grid;
   gap: 8px;
-  grid-template-columns: 96px minmax(0, 1fr) max-content;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.token-subscription-heading {
+  align-items: center;
+  display: flex;
+  gap: 8px;
+  justify-content: space-between;
   min-width: 0;
 }
 
@@ -1840,6 +1850,9 @@ td code {
   color: var(--muted);
   font-size: 12px;
   font-weight: 760;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
 
@@ -1850,10 +1863,17 @@ td code {
   color: #243447;
   display: block;
   font-size: 12px;
+  max-width: 100%;
+  min-width: 0;
   overflow: hidden;
   padding: 6px 8px;
   text-overflow: ellipsis;
   white-space: nowrap;
+  width: 100%;
+}
+
+.token-subscription-heading button {
+  flex: 0 0 auto;
 }
 
 .token-subscription-empty {
@@ -2498,7 +2518,15 @@ td code {
 
   .token-subscription-item {
     align-items: stretch;
-    grid-template-columns: 1fr;
+  }
+
+  .token-subscription-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .token-subscription-heading button {
+    width: 100%;
   }
 
   .token-card-actions,

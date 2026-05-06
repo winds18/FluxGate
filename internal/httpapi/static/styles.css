@@ -3360,10 +3360,62 @@ td code {
   max-width: 100%;
 }
 
-.token-card-subscriptions {
+.token-card-subscriptions,
+.token-card-control {
   display: grid;
   gap: 8px;
   min-width: 0;
+}
+
+.token-card-section-heading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  min-width: 0;
+}
+
+.token-card-section-symbol {
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #cfe0f2;
+  border-radius: 7px;
+  color: #1d4ed8;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 850;
+  height: 22px;
+  justify-content: center;
+  line-height: 1;
+  width: 22px;
+}
+
+.token-card-section-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.token-card-section-meta {
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: 999px;
+  color: var(--muted);
+  display: inline-flex;
+  flex: 0 1 auto;
+  font-size: 11px;
+  font-weight: 780;
+  line-height: 1;
+  max-width: 100%;
+  min-height: 22px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 0 8px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .token-card-meter {

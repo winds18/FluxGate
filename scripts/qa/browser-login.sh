@@ -645,6 +645,29 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenActionFieldCount = await page.locator("#tokens .token-action-field").count();
   const tokenCommandGroupCount = await page.locator("#tokens [data-token-command-group]").count();
   const tokenActionButtonSymbolCount = await page.locator("#tokens .token-card-actions .button-symbol").count();
+  const tokenSectionHeadingCount = await page.locator("#tokens [data-token-section-heading]").count();
+  const tokenSectionSymbolCount = await page.locator("#tokens [data-token-section-symbol]").count();
+  const tokenSectionMetaCount = await page.locator("#tokens .token-card-section-meta").count();
+  const tokenSectionOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#tokens [data-token-section-heading]")).reduce((total, heading) => {
+      const headingBox = heading.getBoundingClientRect();
+      const elements = Array.from(
+        heading.querySelectorAll(".token-card-section-symbol, .token-card-section-title, .token-card-section-meta"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, headingBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const tokenQuotaMeterCount = await page.locator("#tokens [data-token-quota-meter] .quota-meter").count();
   const tokenSummaryChipCount = await page.locator("#tokens [data-token-summary-chip]").count();
   const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
@@ -678,7 +701,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".token-card-heading, .token-card-summary, [data-token-summary-chip], .token-card-field, .token-card-meter, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, .token-card-actions",
+          ".token-card-heading, .token-card-summary, [data-token-summary-chip], .token-card-field, .token-card-section-heading, .token-card-section-symbol, .token-card-section-title, .token-card-section-meta, .token-card-meter, .token-card-subscriptions, .token-card-control, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, .token-card-actions",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
@@ -1328,6 +1351,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenActionFieldCount = tokenActionFieldCount;
   state.tokenCommandGroupCount = tokenCommandGroupCount;
   state.tokenActionButtonSymbolCount = tokenActionButtonSymbolCount;
+  state.tokenSectionHeadingCount = tokenSectionHeadingCount;
+  state.tokenSectionSymbolCount = tokenSectionSymbolCount;
+  state.tokenSectionMetaCount = tokenSectionMetaCount;
+  state.tokenSectionOverflowCount = tokenSectionOverflowCount;
   state.tokenQuotaMeterCount = tokenQuotaMeterCount;
   state.tokenSummaryChipCount = tokenSummaryChipCount;
   state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
@@ -1360,6 +1387,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenRowCount > 0 && (tokenCommandGroupCount !== tokenRowCount || tokenActionButtonSymbolCount < tokenRowCount * 5)) {
     throw new Error(`token action panels missing symbols or command groups: ${JSON.stringify(state)}`);
+  }
+  if (
+    tokenRowCount > 0 &&
+    (tokenSectionHeadingCount !== tokenRowCount * 3 ||
+      tokenSectionSymbolCount !== tokenRowCount * 3 ||
+      tokenSectionMetaCount !== tokenRowCount * 3 ||
+      tokenSectionOverflowCount > 0)
+  ) {
+    throw new Error(`token section headings are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (tokenRowCount > 0 && tokenQuotaMeterCount !== tokenRowCount) {
     throw new Error(`token quota meters missing: ${JSON.stringify(state)}`);

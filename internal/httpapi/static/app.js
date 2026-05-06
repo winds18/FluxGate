@@ -2556,44 +2556,57 @@ function renderTokenCard(row) {
         ${tokenCardField("已用", usedBytes, "used_total")}
       </div>
       <div class="token-card-meter" data-token-quota-meter>
-        <div class="token-card-section-title">额度使用率</div>
+        ${tokenCardSectionHeading("额", "额度使用率", quotaSummary.label)}
         ${formatQuotaUsage(usedBytes, row.quota_bytes, row.status)}
       </div>
       <div class="token-card-subscriptions">
-        <div class="token-card-section-title">订阅地址</div>
+        ${tokenCardSectionHeading("订", "订阅地址", "通用 · Mihomo · sing-box")}
         ${renderTokenSubscriptions(row)}
       </div>
-      <div class="token-card-actions">
-        <span class="token-action-group" data-token-action-group>
-          <label class="token-action-field">
-            <span>续期天数</span>
-            <span class="token-action-input">
-              <input data-token-extend-days="${row.id}" type="number" min="1" value="30" aria-label="续期天数" />
-              <em>天</em>
-            </span>
-          </label>
-          <button class="table-button" data-token-action="extend" data-token-id="${row.id}">${buttonLabel("+", "续期")}</button>
-        </span>
-        <span class="token-action-group" data-token-action-group>
-          <label class="token-action-field">
-            <span>追加额度</span>
-            <span class="token-action-input">
-              <input data-token-quota-mib="${row.id}" type="number" min="1" value="1024" aria-label="追加额度 MiB" />
-              <em>MiB</em>
-            </span>
-          </label>
-          <button class="table-button" data-token-action="quota" data-token-id="${row.id}">${buttonLabel("+", "加额")}</button>
-        </span>
-        <span class="token-command-group" data-token-command-group>
-          <span class="token-command-label">状态控制</span>
-          <span class="token-command-buttons">
-            <button class="table-button" data-token-action="restore" data-token-id="${row.id}">${buttonLabel("↺", "恢复")}</button>
-            <button class="table-button ghost-button" data-token-action="rotate-subscription" data-token-id="${row.id}">${buttonLabel("⧉", "重置订阅")}</button>
-            <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">${buttonLabel("!", "撤销")}</button>
+      <div class="token-card-control">
+        ${tokenCardSectionHeading("控", "Token 操作", "续期 · 加额 · 状态")}
+        <div class="token-card-actions">
+          <span class="token-action-group" data-token-action-group>
+            <label class="token-action-field">
+              <span>续期天数</span>
+              <span class="token-action-input">
+                <input data-token-extend-days="${row.id}" type="number" min="1" value="30" aria-label="续期天数" />
+                <em>天</em>
+              </span>
+            </label>
+            <button class="table-button" data-token-action="extend" data-token-id="${row.id}">${buttonLabel("+", "续期")}</button>
           </span>
-        </span>
+          <span class="token-action-group" data-token-action-group>
+            <label class="token-action-field">
+              <span>追加额度</span>
+              <span class="token-action-input">
+                <input data-token-quota-mib="${row.id}" type="number" min="1" value="1024" aria-label="追加额度 MiB" />
+                <em>MiB</em>
+              </span>
+            </label>
+            <button class="table-button" data-token-action="quota" data-token-id="${row.id}">${buttonLabel("+", "加额")}</button>
+          </span>
+          <span class="token-command-group" data-token-command-group>
+            <span class="token-command-label">状态控制</span>
+            <span class="token-command-buttons">
+              <button class="table-button" data-token-action="restore" data-token-id="${row.id}">${buttonLabel("↺", "恢复")}</button>
+              <button class="table-button ghost-button" data-token-action="rotate-subscription" data-token-id="${row.id}">${buttonLabel("⧉", "重置订阅")}</button>
+              <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">${buttonLabel("!", "撤销")}</button>
+            </span>
+          </span>
+        </div>
       </div>
     </article>
+  `;
+}
+
+function tokenCardSectionHeading(symbol, title, meta = "") {
+  return `
+    <div class="token-card-section-heading" data-token-section-heading>
+      <span class="token-card-section-symbol" data-token-section-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="token-card-section-title">${escapeHTML(title)}</span>
+      ${meta ? `<span class="token-card-section-meta">${escapeHTML(meta)}</span>` : ""}
+    </div>
   `;
 }
 

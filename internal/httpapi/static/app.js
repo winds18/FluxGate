@@ -1697,9 +1697,9 @@ function renderTeamCard(row) {
       <div class="table-actions identity-card-actions compact-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-team-action="save" data-team-id="${row.id}">保存</button>
-               <button class="table-button ghost-button" type="button" data-team-action="cancel" data-team-id="${row.id}">取消</button>`
-            : `<button class="table-button" type="button" data-team-action="edit" data-team-id="${row.id}">编辑</button>`
+            ? `<button class="table-button" type="button" data-team-action="save" data-team-id="${row.id}">${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-team-action="cancel" data-team-id="${row.id}">${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-team-action="edit" data-team-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
         }
       </div>
     </article>
@@ -1761,9 +1761,9 @@ function renderUserCard(row) {
       <div class="table-actions identity-card-actions compact-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-user-action="save" data-user-id="${row.id}">保存</button>
-               <button class="table-button ghost-button" type="button" data-user-action="cancel" data-user-id="${row.id}">取消</button>`
-            : `<button class="table-button" type="button" data-user-action="edit" data-user-id="${row.id}">编辑</button>`
+            ? `<button class="table-button" type="button" data-user-action="save" data-user-id="${row.id}">${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-user-action="cancel" data-user-id="${row.id}">${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-user-action="edit" data-user-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
         }
       </div>
     </article>

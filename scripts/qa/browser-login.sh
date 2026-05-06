@@ -610,6 +610,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const teamCardCount = await page.locator("#teams .identity-card").count();
   const userCardCount = await page.locator("#users .identity-card").count();
   const identitySummaryChipCount = await page.locator('[data-dashboard-view="identity"] [data-identity-summary-chip]').count();
+  const identityActionButtonSymbolCount = await page
+    .locator("#teams .identity-card-actions .button-symbol, #users .identity-card-actions .button-symbol")
+    .count();
   const identityVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -620,12 +623,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".identity-card-heading, .identity-card-summary, [data-identity-summary-chip], .identity-card-badge, .identity-card-field, .identity-card-actions",
+          ".identity-card-heading, .identity-card-summary, [data-identity-summary-chip], .identity-card-badge, .identity-card-field, .identity-card-actions, .identity-card-actions button, .identity-card-actions .button-symbol, .identity-card-actions .button-label",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
+        const parent = element.matches(".identity-card-actions button")
+          ? (element.closest(".identity-card-actions") || card).getBoundingClientRect()
+          : element.closest(".identity-card-actions") && !element.classList.contains("identity-card-actions")
+            ? (element.closest("button") || element.closest(".identity-card-actions") || card).getBoundingClientRect()
+            : cardBox;
         const box = element.getBoundingClientRect();
-        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
           total += 1;
         }
       }
@@ -1097,6 +1105,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.userEditCount = userEditCount;
   state.userEditFieldsVisible = userEditFieldsVisible;
   state.identitySummaryChipCount = identitySummaryChipCount;
+  state.identityActionButtonSymbolCount = identityActionButtonSymbolCount;
   state.identityVisualOverflowCount = identityVisualOverflowCount;
   state.sourceCardCount = sourceCardCount;
   state.sourceSummaryChipCount = sourceSummaryChipCount;
@@ -1274,6 +1283,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (teamEditCount > 0 && teamCardCount !== teamEditCount) ||
     (userEditCount > 0 && userCardCount !== userEditCount) ||
     identitySummaryChipCount !== (teamCardCount + userCardCount) * 4 ||
+    identityActionButtonSymbolCount !== teamCardCount + userCardCount ||
     identityVisualOverflowCount > 0
   ) {
     throw new Error(`identity cards are incomplete or overflowing: ${JSON.stringify(state)}`);

@@ -1705,6 +1705,11 @@ textarea {
   justify-content: flex-start;
 }
 
+.identity-card-actions .table-button {
+  flex: 1 1 96px;
+  min-width: 0;
+}
+
 .identity-card input,
 .identity-card select {
   min-width: 0;

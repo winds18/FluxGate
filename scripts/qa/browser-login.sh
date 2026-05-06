@@ -224,6 +224,27 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
 
   await switchView("nodes");
+  const virtualNodeCardCount = await page.locator("#virtual-nodes .virtual-node-card").count();
+  const virtualNodeVisualOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#virtual-nodes .virtual-node-card")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(
+        card.querySelectorAll(".virtual-node-card-heading, .virtual-node-listen-badge, .virtual-node-card-field, .virtual-node-actions"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const virtualNodeEditCount = await page.locator("#virtual-nodes button[data-virtual-node-action='edit']").count();
   let virtualNodeEditFieldsVisible = false;
   if (virtualNodeEditCount > 0) {
@@ -368,6 +389,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.sourceVisualOverflowCount = sourceVisualOverflowCount;
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
+  state.virtualNodeCardCount = virtualNodeCardCount;
+  state.virtualNodeVisualOverflowCount = virtualNodeVisualOverflowCount;
   state.virtualNodeEditCount = virtualNodeEditCount;
   state.virtualNodeEditFieldsVisible = virtualNodeEditFieldsVisible;
   state.policyEditCount = policyEditCount;
@@ -405,6 +428,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (sourceEditCount > 0 && (sourceCardCount !== sourceEditCount || sourceVisualOverflowCount > 0)) {
     throw new Error(`source cards are incomplete or overflowing: ${JSON.stringify(state)}`);
+  }
+  if (virtualNodeEditCount > 0 && (virtualNodeCardCount !== virtualNodeEditCount || virtualNodeVisualOverflowCount > 0)) {
+    throw new Error(`virtual node cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (nodeVisualOverflowCount > 0) {
     throw new Error(`node cards visually overflow their parent: ${JSON.stringify(state)}`);

@@ -707,7 +707,7 @@ async function handleVirtualNodeAction(event) {
   if (action === "edit") {
     appState.editingVirtualNodeID = Number.parseInt(id || "0", 10);
     renderVirtualNodes(appState.virtualNodes);
-    virtualNodesEl.querySelector(`tr[data-virtual-node-id="${id}"] input[data-virtual-node-field="name"]`)?.focus();
+    virtualNodesEl.querySelector(`[data-virtual-node-id="${id}"] input[data-virtual-node-field="name"]`)?.focus();
     return;
   }
   if (action === "cancel") {
@@ -721,7 +721,7 @@ async function handleVirtualNodeAction(event) {
 }
 
 async function saveVirtualNode(button) {
-  const row = button.closest("tr[data-virtual-node-id]");
+  const row = button.closest("[data-virtual-node-id]");
   if (!row) return;
   const id = row.dataset.virtualNodeId;
   const listenPort = Number.parseInt(row.querySelector('[data-virtual-node-field="listen_port"]')?.value || "0", 10);
@@ -1590,46 +1590,49 @@ function renderVirtualNodes(rows) {
     return;
   }
   virtualNodesEl.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>${labelForColumn("id")}</th>
-          <th>${labelForColumn("name")}</th>
-          <th>${labelForColumn("listen_protocol")}</th>
-          <th>${labelForColumn("listen_port")}</th>
-          <th>${labelForColumn("tag_selector")}</th>
-          <th>${labelForColumn("strategy")}</th>
-          <th>${labelForColumn("status")}</th>
-          <th>${labelForColumn("actions")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows.map((row) => renderVirtualNodeRow(row)).join("")}
-      </tbody>
-    </table>
+    <div class="virtual-node-card-list">
+      ${rows.map((row) => renderVirtualNodeCard(row)).join("")}
+    </div>
   `;
 }
 
-function renderVirtualNodeRow(row) {
+function renderVirtualNodeCard(row) {
   const isEditing = appState.editingVirtualNodeID === row.id;
+  const listenSummary = `${row.listen_protocol || "vless"}:${row.listen_port || "--"}`;
   return `
-    <tr data-virtual-node-id="${row.id}" class="${isEditing ? "virtual-node-edit-row" : ""}">
-      <td>${formatCell(row.id, "id")}</td>
-      <td>${isEditing ? virtualNodeTextInput(row, "name") : formatCell(row.name, "name")}</td>
-      <td>${isEditing ? virtualNodeProtocolSelect(row.listen_protocol) : formatCell(row.listen_protocol, "listen_protocol")}</td>
-      <td>${isEditing ? virtualNodeNumberInput(row, "listen_port") : formatCell(row.listen_port, "listen_port")}</td>
-      <td>${isEditing ? virtualNodeTextInput(row, "tag_selector", "table-edit-input-wide", '{"include":["HK"]}') : formatCell(row.tag_selector, "tag_selector")}</td>
-      <td>${isEditing ? virtualNodeStrategySelect(row.strategy) : formatCell(row.strategy, "strategy")}</td>
-      <td>${isEditing ? virtualNodeStatusSelect(row.status) : formatCell(row.status, "status")}</td>
-      <td class="table-actions virtual-node-actions">
+    <article class="virtual-node-card ${isEditing ? "virtual-node-card-editing" : ""}" data-virtual-node-id="${row.id}">
+      <div class="virtual-node-card-heading">
+        <div>
+          <span>${labelForColumn("id")} ${formatCell(row.id, "id")}</span>
+          <strong>${isEditing ? virtualNodeTextInput(row, "name") : formatCell(row.name, "name")}</strong>
+        </div>
+        <span class="virtual-node-listen-badge">${escapeHTML(listenSummary)}</span>
+      </div>
+      <div class="virtual-node-card-grid">
+        ${virtualNodeCardField("listen_protocol", isEditing ? virtualNodeProtocolSelect(row.listen_protocol) : formatCell(row.listen_protocol, "listen_protocol"))}
+        ${virtualNodeCardField("listen_port", isEditing ? virtualNodeNumberInput(row, "listen_port") : formatCell(row.listen_port, "listen_port"))}
+        ${virtualNodeCardField("strategy", isEditing ? virtualNodeStrategySelect(row.strategy) : formatCell(row.strategy, "strategy"))}
+        ${virtualNodeCardField("status", isEditing ? virtualNodeStatusSelect(row.status) : formatCell(row.status, "status"))}
+        ${virtualNodeCardField("tag_selector", isEditing ? virtualNodeTextInput(row, "tag_selector", "table-edit-input-wide", '{"include":["HK"]}') : formatCell(row.tag_selector, "tag_selector"), "virtual-node-card-field-wide")}
+      </div>
+      <div class="table-actions virtual-node-actions">
         ${
           isEditing
             ? `<button class="table-button" type="button" data-virtual-node-action="save" data-virtual-node-id="${row.id}">保存</button>
                <button class="table-button ghost-button" type="button" data-virtual-node-action="cancel" data-virtual-node-id="${row.id}">取消</button>`
             : `<button class="table-button" type="button" data-virtual-node-action="edit" data-virtual-node-id="${row.id}">编辑</button>`
         }
-      </td>
-    </tr>
+      </div>
+    </article>
+  `;
+}
+
+function virtualNodeCardField(label, value, className = "") {
+  return `
+    <div class="virtual-node-card-field ${className}">
+      <span>${labelForColumn(label)}</span>
+      <strong>${value}</strong>
+    </div>
   `;
 }
 

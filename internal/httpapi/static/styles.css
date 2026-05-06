@@ -1865,6 +1865,11 @@ textarea {
   justify-content: flex-start;
 }
 
+.source-actions .table-button {
+  flex: 1 1 108px;
+  min-width: 0;
+}
+
 .source-card input,
 .source-card select {
   min-width: 0;

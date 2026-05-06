@@ -1866,12 +1866,12 @@ function renderSourceCard(row) {
       <div class="table-actions source-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-source-action="save" data-source-id="${row.id}">保存</button>
-               <button class="table-button ghost-button" type="button" data-source-action="cancel" data-source-id="${row.id}">取消</button>`
-            : `<button class="table-button" type="button" data-source-action="edit" data-source-id="${row.id}">编辑</button>`
+            ? `<button class="table-button" type="button" data-source-action="save" data-source-id="${row.id}">${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-source-action="cancel" data-source-id="${row.id}">${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-source-action="edit" data-source-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
         }
-        <button class="table-button" type="button" data-source-action="refresh" data-source-id="${row.id}">刷新</button>
-        <button class="table-button ghost-button" type="button" data-source-action="regenerate" data-source-id="${row.id}">同步命名</button>
+        <button class="table-button" type="button" data-source-action="refresh" data-source-id="${row.id}">${buttonLabel("↻", "刷新")}</button>
+        <button class="table-button ghost-button" type="button" data-source-action="regenerate" data-source-id="${row.id}">${buttonLabel("↺", "同步命名")}</button>
       </div>
     </article>
   `;

@@ -656,6 +656,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await switchView("access");
   const sourceCardCount = await page.locator("#sources .source-card").count();
   const sourceSummaryChipCount = await page.locator("#sources [data-source-summary-chip]").count();
+  const sourceActionButtonSymbolCount = await page.locator("#sources .source-actions .button-symbol").count();
   const sourceVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -666,12 +667,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".source-card-heading, .source-card-summary, [data-source-summary-chip], .source-type-badge, .source-card-field, .source-actions",
+          ".source-card-heading, .source-card-summary, [data-source-summary-chip], .source-type-badge, .source-card-field, .source-actions, .source-actions button, .source-actions .button-symbol, .source-actions .button-label",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
+        const parent = element.matches(".source-actions button")
+          ? (element.closest(".source-actions") || card).getBoundingClientRect()
+          : element.closest(".source-actions") && !element.classList.contains("source-actions")
+            ? (element.closest("button") || element.closest(".source-actions") || card).getBoundingClientRect()
+            : cardBox;
         const box = element.getBoundingClientRect();
-        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
           total += 1;
         }
       }
@@ -1094,6 +1100,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.identityVisualOverflowCount = identityVisualOverflowCount;
   state.sourceCardCount = sourceCardCount;
   state.sourceSummaryChipCount = sourceSummaryChipCount;
+  state.sourceActionButtonSymbolCount = sourceActionButtonSymbolCount;
   state.sourceVisualOverflowCount = sourceVisualOverflowCount;
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
@@ -1273,7 +1280,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (
     sourceEditCount > 0 &&
-    (sourceCardCount !== sourceEditCount || sourceSummaryChipCount !== sourceCardCount * 4 || sourceVisualOverflowCount > 0)
+    (sourceCardCount !== sourceEditCount ||
+      sourceSummaryChipCount !== sourceCardCount * 4 ||
+      sourceActionButtonSymbolCount !== sourceCardCount * 3 ||
+      sourceVisualOverflowCount > 0)
   ) {
     throw new Error(`source cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }

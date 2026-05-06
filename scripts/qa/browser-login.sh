@@ -129,6 +129,27 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const formDrawerToggleSymbolCount = await page.locator("[data-form-drawer] [data-form-drawer-toggle] .button-symbol").count();
   const formSubmitButtonSymbolCount = await page.locator('[data-form-drawer] button[type="submit"] .button-symbol').count();
   const refreshButtonSymbolCount = await page.locator("#refresh .button-symbol").count();
+  const logoutButtonSymbolCount = await page.locator("#logout .button-symbol").count();
+  const topbarButtonOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll(".topbar-actions button")).reduce((total, button) => {
+      const buttonBox = button.getBoundingClientRect();
+      const elements = Array.from(button.querySelectorAll(".button-symbol, .button-label")).filter(
+        (element) => element.offsetParent !== null,
+      );
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, buttonBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const refreshButtonOverflowCount = await page.evaluate(() => {
     const button = document.querySelector("#refresh");
     if (!button) return 1;
@@ -996,10 +1017,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let nodeDetailCodeOverflowCount = 0;
   let nodeDetailCopyVisible = false;
   let nodeDetailCopyFeedbackVisible = false;
+  let nodeEditSaveSymbolCount = 0;
   if (nodeEditCount > 0) {
     await page.locator("#nodes button[data-node-action='edit']").first().click();
     await expect(page.locator("#nodes form[data-node-edit-form]").first()).toBeVisible({ timeout: 5000 });
     nodeEditFormVisible = true;
+    nodeEditSaveSymbolCount = await page.locator("#nodes form[data-node-edit-form] button[type='submit'] .button-symbol").count();
     await page.locator("#nodes button[data-node-action='cancel']").first().click();
     await page.locator("#nodes .node-card-main").first().click();
     await expect(page.locator("#nodes .node-detail-row .detail-code").first()).toBeVisible({ timeout: 5000 });
@@ -1138,6 +1161,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.formSubmitButtonSymbolCount = formSubmitButtonSymbolCount;
   state.refreshButtonSymbolCount = refreshButtonSymbolCount;
   state.refreshButtonOverflowCount = refreshButtonOverflowCount;
+  state.logoutButtonSymbolCount = logoutButtonSymbolCount;
+  state.topbarButtonOverflowCount = topbarButtonOverflowCount;
   state.formDrawerSymbols = formDrawerSymbols;
   state.formDrawerHeaderOverflow = formDrawerHeaderOverflow;
   state.formSubmitOverflow = formSubmitOverflow;
@@ -1242,6 +1267,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeDetailCopyVisible = nodeDetailCopyVisible;
   state.nodeDetailCopyFeedbackVisible = nodeDetailCopyFeedbackVisible;
   state.nodeDetailCodeOverflowCount = nodeDetailCodeOverflowCount;
+  state.nodeEditSaveSymbolCount = nodeEditSaveSymbolCount;
   state.east8TimeSamples = east8TimeSamples;
   state.trafficTokenRowCount = trafficTokenRowCount;
   state.trafficTokenCardCount = trafficTokenCardCount;
@@ -1448,6 +1474,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (nodeDetailCodeOverflowCount > 0) {
     throw new Error(`node detail code blocks overflow horizontally: ${JSON.stringify(state)}`);
   }
+  if (nodeEditCount > 0 && nodeEditSaveSymbolCount < 1) {
+    throw new Error(`node edit save action is missing symbol: ${JSON.stringify(state)}`);
+  }
   if (nodeDetailVisible && (!nodeDetailSummaryVisible || nodeDetailChipCount < 4 || nodeDetailSummaryOverflowCount > 0)) {
     throw new Error(`node detail summary is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
@@ -1503,7 +1532,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     formDrawerToggleSymbolCount !== 7 ||
     formSubmitButtonSymbolCount !== 7 ||
     refreshButtonSymbolCount !== 1 ||
+    logoutButtonSymbolCount !== 1 ||
     refreshButtonOverflowCount > 0 ||
+    topbarButtonOverflowCount > 0 ||
     expectedFormDrawerSymbols.some((symbol, index) => formDrawerSymbols[index] !== symbol) ||
     overflowingFormDrawerHeader ||
     overflowingFormSubmit

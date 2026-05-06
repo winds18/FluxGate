@@ -68,6 +68,13 @@ textarea {
   align-items: center;
   display: flex;
   gap: 10px;
+  min-width: 0;
+}
+
+.topbar-actions button {
+  gap: 6px;
+  max-width: 100%;
+  min-width: 0;
 }
 
 h1,

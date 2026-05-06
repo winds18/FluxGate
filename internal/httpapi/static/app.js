@@ -2509,7 +2509,7 @@ function renderNodeEditForm(row) {
   return `
     <form class="inline-edit-form" data-node-edit-form data-node-id="${row.id}">
       <input name="display_name" value="${escapeHTML(row.display_name || "")}" required />
-      <button class="table-button" type="submit">保存</button>
+      <button class="table-button" type="submit">${buttonLabel("✓", "保存")}</button>
     </form>
   `;
 }

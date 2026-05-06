@@ -1644,6 +1644,7 @@ function renderTeams(rows) {
 
 function renderTeamCard(row) {
   const isEditing = appState.editingTeamID === row.id;
+  const statusSummary = identityStatusSummary(row.status);
   return `
     <article class="identity-card ${isEditing ? "identity-card-editing" : ""}" data-team-id="${row.id}">
       <div class="identity-card-heading">
@@ -1652,6 +1653,12 @@ function renderTeamCard(row) {
           <strong>${isEditing ? teamTextInput(row, "name") : formatCell(row.name, "name")}</strong>
         </div>
         <span class="identity-card-badge">${formatCell(row.status, "status")}</span>
+      </div>
+      <div class="identity-card-summary" aria-label="团队摘要">
+        ${identitySummaryChip("团队", "info")}
+        ${identitySummaryChip(statusSummary.label, statusSummary.tone)}
+        ${identitySummaryChip(teamMemberSummary(row.id))}
+        ${identitySummaryChip(row.description ? "有备注" : "无备注")}
       </div>
       <div class="identity-card-grid">
         ${identityCardField("description", isEditing ? teamTextInput(row, "description", "table-edit-input-wide") : formatCell(row.description, "description"), "identity-card-field-wide")}
@@ -1699,6 +1706,7 @@ function renderUsers(rows) {
 function renderUserCard(row) {
   const isEditing = appState.editingUserID === row.id;
   const teamLabel = teamLabelForID(row.team_id);
+  const statusSummary = identityStatusSummary(row.status);
   return `
     <article class="identity-card ${isEditing ? "identity-card-editing" : ""}" data-user-id="${row.id}">
       <div class="identity-card-heading">
@@ -1707,6 +1715,12 @@ function renderUserCard(row) {
           <strong>${isEditing ? userTextInput(row, "name") : formatCell(row.name, "name")}</strong>
         </div>
         <span class="identity-card-badge">${escapeHTML(teamLabel)}</span>
+      </div>
+      <div class="identity-card-summary" aria-label="成员摘要">
+        ${identitySummaryChip(escapeHTML(teamLabel), "info")}
+        ${identitySummaryChip(statusSummary.label, statusSummary.tone)}
+        ${identitySummaryChip(row.email ? "有邮箱" : "无邮箱")}
+        ${identitySummaryChip(row.remark ? "有备注" : "无备注")}
       </div>
       <div class="identity-card-grid">
         ${identityCardField("team_id", isEditing ? userTeamSelectInput(row.team_id) : formatCell(row.team_id, "team_id"))}
@@ -1724,6 +1738,23 @@ function renderUserCard(row) {
       </div>
     </article>
   `;
+}
+
+function identitySummaryChip(content, tone = "") {
+  return `<span class="identity-card-summary-chip ${tone ? `identity-card-summary-chip-${tone}` : ""}" data-identity-summary-chip>${content}</span>`;
+}
+
+function identityStatusSummary(value) {
+  const status = String(value || "active");
+  return {
+    label: escapeHTML(status),
+    tone: status === "active" ? "success" : "muted",
+  };
+}
+
+function teamMemberSummary(teamID) {
+  const memberCount = countBy(appState.users || [], (user) => Number(user.team_id) === Number(teamID));
+  return `${formatPlainNumber(memberCount)} 成员`;
 }
 
 function identityCardField(label, value, className = "") {

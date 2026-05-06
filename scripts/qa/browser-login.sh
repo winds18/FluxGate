@@ -529,6 +529,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   const teamCardCount = await page.locator("#teams .identity-card").count();
   const userCardCount = await page.locator("#users .identity-card").count();
+  const identitySummaryChipCount = await page.locator('[data-dashboard-view="identity"] [data-identity-summary-chip]').count();
   const identityVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -538,7 +539,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     return Array.from(document.querySelectorAll("#teams .identity-card, #users .identity-card")).reduce((total, card) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
-        card.querySelectorAll(".identity-card-heading, .identity-card-badge, .identity-card-field, .identity-card-actions"),
+        card.querySelectorAll(
+          ".identity-card-heading, .identity-card-summary, [data-identity-summary-chip], .identity-card-badge, .identity-card-field, .identity-card-actions",
+        ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
         const box = element.getBoundingClientRect();
@@ -948,6 +951,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.userCardCount = userCardCount;
   state.userEditCount = userEditCount;
   state.userEditFieldsVisible = userEditFieldsVisible;
+  state.identitySummaryChipCount = identitySummaryChipCount;
   state.identityVisualOverflowCount = identityVisualOverflowCount;
   state.sourceCardCount = sourceCardCount;
   state.sourceSummaryChipCount = sourceSummaryChipCount;
@@ -1088,6 +1092,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (
     (teamEditCount > 0 && teamCardCount !== teamEditCount) ||
     (userEditCount > 0 && userCardCount !== userEditCount) ||
+    identitySummaryChipCount !== (teamCardCount + userCardCount) * 4 ||
     identityVisualOverflowCount > 0
   ) {
     throw new Error(`identity cards are incomplete or overflowing: ${JSON.stringify(state)}`);

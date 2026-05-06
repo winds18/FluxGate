@@ -177,10 +177,40 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   const nodeRegionCount = await page.locator("#nodes button[data-node-region-action='open']").count();
   let nodeCardCount = 0;
+  let nodeVisualOverflowCount = 0;
   if (nodeRegionCount > 0) {
     await page.locator("#nodes button[data-node-region-action='open']").first().click();
     await expect(page.locator("#nodes .node-card").first()).toBeVisible({ timeout: 5000 });
     nodeCardCount = await page.locator("#nodes .node-card").count();
+    await page.evaluate(() => {
+      const firstTitle = document.querySelector("#nodes .node-card-title");
+      if (firstTitle) {
+        firstTitle.textContent = "[gougou-joy] 🇦🇷 38阿根廷-联通/移动(AnyTLS)-超长节点名称用于布局验收";
+      }
+    });
+    nodeVisualOverflowCount = await page.evaluate(() => {
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(document.querySelectorAll("#nodes .node-card")).reduce((total, card) => {
+        const cardBox = card.getBoundingClientRect();
+        const elements = Array.from(
+          card.querySelectorAll(".node-card-main, .node-card-title, .node-card-subtitle, .node-card-tags, .node-card-meta, .node-actions"),
+        ).filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const parent = element.classList.contains("node-card-main") || element.classList.contains("node-actions")
+            ? cardBox
+            : (element.closest(".node-card-main") || card).getBoundingClientRect();
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
+    });
   }
 
   const nodeEditCount = await page.locator("#nodes button[data-node-action='edit']").count();
@@ -225,6 +255,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.policyEditFieldsVisible = policyEditFieldsVisible;
   state.nodeRegionCount = nodeRegionCount;
   state.nodeCardCount = nodeCardCount;
+  state.nodeVisualOverflowCount = nodeVisualOverflowCount;
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
   state.nodeDetailVisible = nodeDetailVisible;
@@ -247,6 +278,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenVisualOverlapCount > 0) {
     throw new Error(`token controls visually overlap: ${JSON.stringify(state)}`);
+  }
+  if (nodeVisualOverflowCount > 0) {
+    throw new Error(`node cards visually overflow their parent: ${JSON.stringify(state)}`);
   }
   const cookies = await context.cookies(baseURL);
   await page.screenshot({ path: screenshotPath, fullPage: true });

@@ -846,6 +846,19 @@ async function handleNodeAction(event) {
   const id = Number.parseInt(button.dataset.nodeId || "0", 10);
   if (!id) return;
   const action = button.dataset.nodeAction;
+  if (action === "copy-uri") {
+    button.disabled = true;
+    try {
+      await copyText(button.dataset.nodeUri || "");
+      statusEl.textContent = "节点 URI 已复制";
+      showCopyFeedback(button, "已复制", "复制 URI");
+      button.disabled = false;
+    } catch (error) {
+      statusEl.textContent = "复制失败";
+      button.disabled = false;
+    }
+    return;
+  }
   if (action === "edit") {
     appState.editingNodeID = id;
     appState.expandedNodeID = null;
@@ -946,18 +959,7 @@ async function handleTokenAction(event) {
     if (action === "copy-subscription") {
       await copyText(button.dataset.tokenUrl || "");
       statusEl.textContent = "订阅地址已复制";
-      button.dataset.copyLabel = button.dataset.copyLabel || button.textContent.trim() || "复制";
-      button.textContent = "已复制";
-      button.classList.add("is-copied");
-      button.setAttribute("aria-label", "订阅地址已复制");
-      window.setTimeout(() => {
-        if (!button.isConnected) {
-          return;
-        }
-        button.textContent = button.dataset.copyLabel || "复制";
-        button.classList.remove("is-copied");
-        button.removeAttribute("aria-label");
-      }, 1600);
+      showCopyFeedback(button, "已复制", "复制");
       button.disabled = false;
       return;
     }
@@ -1001,6 +1003,21 @@ async function copyText(text) {
   textarea.select();
   document.execCommand("copy");
   textarea.remove();
+}
+
+function showCopyFeedback(button, label, fallbackLabel = "复制") {
+  button.dataset.copyLabel = button.dataset.copyLabel || button.textContent.trim() || fallbackLabel;
+  button.textContent = label;
+  button.classList.add("is-copied");
+  button.setAttribute("aria-label", label);
+  window.setTimeout(() => {
+    if (!button.isConnected) {
+      return;
+    }
+    button.textContent = button.dataset.copyLabel || fallbackLabel;
+    button.classList.remove("is-copied");
+    button.removeAttribute("aria-label");
+  }, 1600);
 }
 
 async function checkConfig() {
@@ -2001,7 +2018,10 @@ function renderNodeDetailPanel(node) {
           ${nodeDetailItem("uri_hash", node.uri_hash)}
         </div>
         <div class="detail-item detail-item-wide">
-          <span>${labelForColumn("uri")}</span>
+          <div class="detail-item-heading">
+            <span>${labelForColumn("uri")}</span>
+            <button class="table-button ghost-button" type="button" data-node-action="copy-uri" data-node-id="${escapeHTML(String(node.id || ""))}" data-node-uri="${escapeHTML(String(node.uri || ""))}">复制 URI</button>
+          </div>
           <code class="detail-code">${escapeHTML(String(node.uri || ""))}</code>
         </div>
       </div>

@@ -1730,6 +1730,21 @@ textarea {
   font-weight: 760;
 }
 
+.detail-item-heading {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: space-between;
+  min-width: 0;
+}
+
+.detail-item-heading span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+}
+
 .detail-item strong {
   color: var(--text);
   font-size: 13px;

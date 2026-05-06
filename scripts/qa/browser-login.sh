@@ -455,6 +455,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let nodeEditFormVisible = false;
   let nodeDetailVisible = false;
   let nodeDetailCodeOverflowCount = 0;
+  let nodeDetailCopyVisible = false;
+  let nodeDetailCopyFeedbackVisible = false;
   if (nodeEditCount > 0) {
     await page.locator("#nodes button[data-node-action='edit']").first().click();
     await expect(page.locator("#nodes form[data-node-edit-form]").first()).toBeVisible({ timeout: 5000 });
@@ -463,6 +465,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#nodes .node-card-main").first().click();
     await expect(page.locator("#nodes .node-detail-row .detail-code").first()).toBeVisible({ timeout: 5000 });
     nodeDetailVisible = true;
+    const nodeDetailCopyButton = page.locator("#nodes button[data-node-action='copy-uri']").first();
+    await expect(nodeDetailCopyButton).toBeVisible({ timeout: 5000 });
+    nodeDetailCopyVisible = true;
+    await nodeDetailCopyButton.click();
+    await expect(nodeDetailCopyButton).toHaveText("已复制", { timeout: 5000 });
+    await expect(page.locator("#status")).toContainText("节点 URI 已复制", { timeout: 5000 });
+    nodeDetailCopyFeedbackVisible = true;
     nodeDetailCodeOverflowCount = await page.evaluate(() =>
       Array.from(document.querySelectorAll("#nodes .node-detail-row .detail-code")).filter(
         (element) => element.scrollWidth > element.clientWidth + 2,
@@ -587,6 +596,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
   state.nodeDetailVisible = nodeDetailVisible;
+  state.nodeDetailCopyVisible = nodeDetailCopyVisible;
+  state.nodeDetailCopyFeedbackVisible = nodeDetailCopyFeedbackVisible;
   state.nodeDetailCodeOverflowCount = nodeDetailCodeOverflowCount;
   state.east8TimeSamples = east8TimeSamples;
   state.trafficTokenRowCount = trafficTokenRowCount;
@@ -665,6 +676,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeDetailCodeOverflowCount > 0) {
     throw new Error(`node detail code blocks overflow horizontally: ${JSON.stringify(state)}`);
+  }
+  if (nodeDetailVisible && (!nodeDetailCopyVisible || !nodeDetailCopyFeedbackVisible)) {
+    throw new Error(`node detail copy feedback missing: ${JSON.stringify(state)}`);
   }
   if (opsActionCardCount !== 4 || !opsResultVisible || opsResultFieldCount < 4 || opsVisualOverflowCount > 0) {
     throw new Error(`ops cards are incomplete or overflowing: ${JSON.stringify(state)}`);

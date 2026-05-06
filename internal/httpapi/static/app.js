@@ -1,6 +1,11 @@
 const statusEl = document.querySelector("#status");
 const loginView = document.querySelector("#login-view");
 const appView = document.querySelector("#app-view");
+const viewTitleEl = document.querySelector("#view-title");
+const viewDescriptionEl = document.querySelector("#view-description");
+const dashboardViewSections = Array.from(document.querySelectorAll("[data-dashboard-view]"));
+const dashboardNavButtons = Array.from(document.querySelectorAll("[data-view-nav]"));
+const dashboardJumpButtons = Array.from(document.querySelectorAll("[data-view-jump]"));
 const loginForm = document.querySelector("#login-form");
 const loginErrorEl = document.querySelector("#login-error");
 const loginUsernameEl = document.querySelector("#login-username");
@@ -51,6 +56,16 @@ const displayHourFormatter = new Intl.DateTimeFormat("zh-CN", {
   hour: "2-digit",
   hourCycle: "h23",
 });
+const dashboardViewMeta = {
+  overview: ["概览", "运行状态、资源规模和下一步入口"],
+  access: ["接入", "维护上游来源、刷新订阅和导入节点"],
+  nodes: ["节点", "按地区聚合节点，查看详情并维护虚拟网关"],
+  identity: ["身份", "管理团队、成员、Token 和可复制订阅地址"],
+  policies: ["策略", "控制 Token、成员和团队可见的节点范围"],
+  traffic: ["流量", "查看用量、额度消耗和上游出口流量"],
+  ops: ["运维", "检查、发布、回滚并重启 sing-box 配置"],
+};
+let activeDashboardView = "overview";
 
 refreshEl.addEventListener("click", load);
 configCheckEl.addEventListener("click", checkConfig);
@@ -74,6 +89,12 @@ nodesEl.addEventListener("submit", handleNodeEditSubmit);
 virtualNodesEl.addEventListener("click", handleVirtualNodeAction);
 policiesEl.addEventListener("click", handlePolicyAction);
 tokensEl.addEventListener("click", handleTokenAction);
+dashboardNavButtons.forEach((button) => {
+  button.addEventListener("click", () => setActiveView(button.dataset.viewNav || "overview"));
+});
+dashboardJumpButtons.forEach((button) => {
+  button.addEventListener("click", () => setActiveView(button.dataset.viewJump || "overview"));
+});
 bootstrap();
 
 let appState = {
@@ -223,6 +244,23 @@ function showApp() {
   appView.hidden = false;
   logoutEl.hidden = false;
   statusEl.textContent = "已登录";
+  setActiveView(activeDashboardView);
+}
+
+function setActiveView(view) {
+  const nextView = dashboardViewMeta[view] ? view : "overview";
+  activeDashboardView = nextView;
+  dashboardViewSections.forEach((section) => {
+    section.hidden = section.dataset.dashboardView !== nextView;
+  });
+  dashboardNavButtons.forEach((button) => {
+    const isActive = button.dataset.viewNav === nextView;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-current", isActive ? "page" : "false");
+  });
+  const [title, description] = dashboardViewMeta[nextView];
+  viewTitleEl.textContent = title;
+  viewDescriptionEl.textContent = description;
 }
 
 async function load() {

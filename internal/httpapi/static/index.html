@@ -35,256 +35,354 @@
     </main>
 
     <main id="app-view" class="app-shell" hidden>
-      <section class="metrics" id="metrics"></section>
-
-      <section class="panel">
-        <div class="panel-header">
-          <h2>sing-box 配置</h2>
-          <div class="button-row">
-            <button id="config-check">检查配置</button>
-            <button id="config-publish">发布配置</button>
-            <button id="config-rollback">回滚配置</button>
-            <button id="config-restart">重启服务</button>
+      <aside class="dashboard-sidebar" aria-label="主导航">
+        <div class="sidebar-brand">
+          <span class="sidebar-mark">FG</span>
+          <div>
+            <strong>FluxGate</strong>
+            <small>控制面板</small>
           </div>
         </div>
-        <div id="config-check-result" class="result-box" hidden></div>
-      </section>
+        <nav class="side-nav">
+          <button class="nav-item" type="button" data-view-nav="overview">
+            <span class="nav-label">概览</span>
+            <small>运行状态</small>
+          </button>
+          <button class="nav-item" type="button" data-view-nav="access">
+            <span class="nav-label">接入</span>
+            <small>来源与导入</small>
+          </button>
+          <button class="nav-item" type="button" data-view-nav="nodes">
+            <span class="nav-label">节点</span>
+            <small>地区与网关</small>
+          </button>
+          <button class="nav-item" type="button" data-view-nav="identity">
+            <span class="nav-label">身份</span>
+            <small>团队与 Token</small>
+          </button>
+          <button class="nav-item" type="button" data-view-nav="policies">
+            <span class="nav-label">策略</span>
+            <small>可见范围</small>
+          </button>
+          <button class="nav-item" type="button" data-view-nav="traffic">
+            <span class="nav-label">流量</span>
+            <small>用量统计</small>
+          </button>
+          <button class="nav-item" type="button" data-view-nav="ops">
+            <span class="nav-label">运维</span>
+            <small>配置发布</small>
+          </button>
+        </nav>
+      </aside>
 
-      <section class="workflow-grid">
-        <form id="team-form" class="panel form-panel">
-          <div class="panel-header">
-            <h2>创建团队</h2>
-          </div>
-          <div class="form-body">
-            <label>
-              名称
-              <input name="name" required />
-            </label>
-            <label>
-              备注
-              <input name="description" />
-            </label>
-            <button type="submit">创建</button>
-          </div>
-        </form>
+      <nav class="mobile-dock" aria-label="移动导航">
+        <button type="button" data-view-nav="overview">概览</button>
+        <button type="button" data-view-nav="access">接入</button>
+        <button type="button" data-view-nav="nodes">节点</button>
+        <button type="button" data-view-nav="identity">身份</button>
+        <button type="button" data-view-nav="traffic">流量</button>
+      </nav>
 
-        <form id="user-form" class="panel form-panel">
-          <div class="panel-header">
-            <h2>创建成员</h2>
+      <section class="workspace">
+        <div class="workspace-header">
+          <div>
+            <p class="eyebrow">控制台</p>
+            <h2 id="view-title">概览</h2>
+            <p id="view-description">运行状态、资源规模和下一步入口</p>
           </div>
-          <div class="form-body">
-            <label>
-              团队
-              <select id="user-team" name="team_id"></select>
-            </label>
-            <label>
-              姓名
-              <input name="name" required />
-            </label>
-            <label>
-              邮箱
-              <input name="email" type="email" />
-            </label>
-            <button type="submit">创建</button>
+          <div class="workspace-actions">
+            <button id="refresh" class="ghost-button" type="button">刷新</button>
           </div>
-        </form>
-
-        <form id="source-form" class="panel form-panel">
-          <div class="panel-header">
-            <h2>添加来源</h2>
-          </div>
-          <div class="form-body">
-            <label>
-              名称
-              <input name="name" required />
-            </label>
-            <label>
-              类型
-              <select name="type">
-                <option value="manual">manual</option>
-                <option value="subscription">subscription</option>
-              </select>
-            </label>
-            <label>
-              URL
-              <input name="url" type="url" />
-            </label>
-            <label>
-              刷新间隔分钟
-              <input name="refresh_interval_minutes" type="number" min="0" step="1" value="0" />
-            </label>
-            <label>
-              默认标签
-              <input name="default_tags" placeholder="HK, Premium" />
-            </label>
-            <button type="submit">添加</button>
-          </div>
-        </form>
-
-        <form id="node-import-form" class="panel form-panel span-2">
-          <div class="panel-header">
-            <h2>导入节点</h2>
-          </div>
-          <div class="form-body">
-            <label>
-              来源
-              <select id="node-source" name="source_id" required></select>
-            </label>
-            <label>
-              节点内容
-              <textarea name="content" rows="3" required></textarea>
-            </label>
-            <button type="submit">导入</button>
-          </div>
-        </form>
-
-        <form id="virtual-node-form" class="panel form-panel">
-          <div class="panel-header">
-            <h2>创建虚拟节点</h2>
-          </div>
-          <div class="form-body">
-            <label>
-              名称
-              <input name="name" placeholder="FluxGate-HK" required />
-            </label>
-            <label>
-              端口
-              <input name="listen_port" type="number" min="1" max="65535" value="8443" required />
-            </label>
-            <label>
-              上游标签选择器
-              <input name="tag_selector" placeholder='{"include":["HK"]}' />
-            </label>
-            <button type="submit">创建</button>
-          </div>
-        </form>
-
-        <form id="policy-form" class="panel form-panel">
-          <div class="panel-header">
-            <h2>创建策略</h2>
-          </div>
-          <div class="form-body">
-            <label>
-              名称
-              <input name="name" required />
-            </label>
-            <label>
-              范围
-              <select name="scope_type">
-                <option value="team">团队</option>
-                <option value="user">成员</option>
-                <option value="token">Token</option>
-              </select>
-            </label>
-            <label>
-              范围 ID
-              <input name="scope_id" type="number" min="1" />
-            </label>
-            <label>
-              最大节点数
-              <input name="max_nodes" type="number" min="0" value="0" />
-            </label>
-            <label>
-              允许虚拟节点
-              <input name="allowed_virtual_nodes" placeholder="FluxGate-HK, FluxGate-SG" />
-            </label>
-            <label>
-              包含标签
-              <input name="include_tags" placeholder="HK, Premium" />
-            </label>
-            <label>
-              排除标签
-              <input name="exclude_tags" placeholder="Backup" />
-            </label>
-            <button type="submit">创建</button>
-          </div>
-        </form>
-
-        <form id="token-form" class="panel form-panel span-2">
-          <div class="panel-header">
-            <h2>创建 Token</h2>
-          </div>
-          <div class="form-body token-form-grid">
-            <label>
-              成员
-              <select id="token-user" name="user_id" required></select>
-            </label>
-            <label>
-              名称
-              <input name="name" />
-            </label>
-            <label>
-              有效天数
-              <input name="expire_days" type="number" min="0" value="30" />
-            </label>
-            <label>
-              流量额度 MiB
-              <input name="quota_mib" type="number" min="0" value="1024" />
-            </label>
-            <button type="submit">创建</button>
-          </div>
-          <div id="token-result" class="result-box" hidden></div>
-        </form>
-      </section>
-
-      <section class="panel">
-        <div class="panel-header">
-          <h2>上游来源</h2>
-          <button id="refresh">刷新</button>
         </div>
-        <div id="sources" class="table"></div>
-      </section>
 
-      <section class="panel">
-        <div class="panel-header">
-          <h2>节点池</h2>
-        </div>
-        <div id="nodes" class="table"></div>
-      </section>
+        <section class="dashboard-view" data-dashboard-view="overview">
+          <section class="metrics" id="metrics"></section>
+          <section class="quick-grid">
+            <button class="quick-card" type="button" data-view-jump="access">
+              <strong>接入来源</strong>
+              <span>维护机场订阅、手动导入节点</span>
+            </button>
+            <button class="quick-card" type="button" data-view-jump="nodes">
+              <strong>节点池</strong>
+              <span>按地区查看节点、编辑展示名</span>
+            </button>
+            <button class="quick-card" type="button" data-view-jump="identity">
+              <strong>分发订阅</strong>
+              <span>创建成员 Token、复制客户端地址</span>
+            </button>
+            <button class="quick-card" type="button" data-view-jump="ops">
+              <strong>发布网关</strong>
+              <span>检查、发布并重载 sing-box 配置</span>
+            </button>
+          </section>
+        </section>
 
-      <section class="panel">
-        <div class="panel-header">
-          <h2>团队</h2>
-        </div>
-        <div id="teams" class="table"></div>
-      </section>
+        <section class="dashboard-view" data-dashboard-view="access" hidden>
+          <section class="action-grid">
+            <form id="source-form" class="panel form-panel">
+              <div class="panel-header">
+                <h2>添加来源</h2>
+              </div>
+              <div class="form-body">
+                <label>
+                  名称
+                  <input name="name" required />
+                </label>
+                <label>
+                  类型
+                  <select name="type">
+                    <option value="manual">manual</option>
+                    <option value="subscription">subscription</option>
+                  </select>
+                </label>
+                <label>
+                  URL
+                  <input name="url" type="url" />
+                </label>
+                <label>
+                  刷新间隔分钟
+                  <input name="refresh_interval_minutes" type="number" min="0" step="1" value="0" />
+                </label>
+                <label>
+                  默认标签
+                  <input name="default_tags" placeholder="HK, Premium" />
+                </label>
+                <button type="submit">添加</button>
+              </div>
+            </form>
 
-      <section class="panel">
-        <div class="panel-header">
-          <h2>成员</h2>
-        </div>
-        <div id="users" class="table"></div>
-      </section>
+            <form id="node-import-form" class="panel form-panel wide-panel">
+              <div class="panel-header">
+                <h2>导入节点</h2>
+              </div>
+              <div class="form-body">
+                <label>
+                  来源
+                  <select id="node-source" name="source_id" required></select>
+                </label>
+                <label>
+                  节点内容
+                  <textarea name="content" rows="3" required></textarea>
+                </label>
+                <button type="submit">导入</button>
+              </div>
+            </form>
+          </section>
 
-      <section class="panel">
-        <div class="panel-header">
-          <h2>虚拟节点</h2>
-        </div>
-        <div id="virtual-nodes" class="table"></div>
-      </section>
+          <section class="panel">
+            <div class="panel-header">
+              <h2>上游来源</h2>
+            </div>
+            <div id="sources" class="table"></div>
+          </section>
+        </section>
 
-      <section class="panel">
-        <div class="panel-header">
-          <h2>策略</h2>
-        </div>
-        <div id="policies" class="table"></div>
-      </section>
+        <section class="dashboard-view" data-dashboard-view="nodes" hidden>
+          <section class="action-grid">
+            <form id="virtual-node-form" class="panel form-panel">
+              <div class="panel-header">
+                <h2>创建虚拟节点</h2>
+              </div>
+              <div class="form-body">
+                <label>
+                  名称
+                  <input name="name" placeholder="FluxGate-HK" required />
+                </label>
+                <label>
+                  端口
+                  <input name="listen_port" type="number" min="1" max="65535" value="8443" required />
+                </label>
+                <label>
+                  上游标签选择器
+                  <input name="tag_selector" placeholder='{"include":["HK"]}' />
+                </label>
+                <button type="submit">创建</button>
+              </div>
+            </form>
+          </section>
 
-      <section class="panel">
-        <div class="panel-header">
-          <h2>Token</h2>
-        </div>
-        <div id="tokens" class="table"></div>
-      </section>
+          <section class="panel">
+            <div class="panel-header">
+              <h2>节点池</h2>
+            </div>
+            <div id="nodes" class="table"></div>
+          </section>
 
-      <section class="panel">
-        <div class="panel-header">
-          <h2>流量统计</h2>
-        </div>
-        <div id="traffic-hourly" class="traffic-chart"></div>
-        <div id="traffic-daily" class="traffic-chart"></div>
-        <div id="traffic-outbounds" class="table"></div>
-        <div id="traffic-tokens" class="table"></div>
+          <section class="panel">
+            <div class="panel-header">
+              <h2>虚拟节点</h2>
+            </div>
+            <div id="virtual-nodes" class="table"></div>
+          </section>
+        </section>
+
+        <section class="dashboard-view" data-dashboard-view="identity" hidden>
+          <section class="action-grid">
+            <form id="team-form" class="panel form-panel">
+              <div class="panel-header">
+                <h2>创建团队</h2>
+              </div>
+              <div class="form-body">
+                <label>
+                  名称
+                  <input name="name" required />
+                </label>
+                <label>
+                  备注
+                  <input name="description" />
+                </label>
+                <button type="submit">创建</button>
+              </div>
+            </form>
+
+            <form id="user-form" class="panel form-panel">
+              <div class="panel-header">
+                <h2>创建成员</h2>
+              </div>
+              <div class="form-body">
+                <label>
+                  团队
+                  <select id="user-team" name="team_id"></select>
+                </label>
+                <label>
+                  姓名
+                  <input name="name" required />
+                </label>
+                <label>
+                  邮箱
+                  <input name="email" type="email" />
+                </label>
+                <button type="submit">创建</button>
+              </div>
+            </form>
+
+            <form id="token-form" class="panel form-panel wide-panel">
+              <div class="panel-header">
+                <h2>创建 Token</h2>
+              </div>
+              <div class="form-body token-form-grid">
+                <label>
+                  成员
+                  <select id="token-user" name="user_id" required></select>
+                </label>
+                <label>
+                  名称
+                  <input name="name" />
+                </label>
+                <label>
+                  有效天数
+                  <input name="expire_days" type="number" min="0" value="30" />
+                </label>
+                <label>
+                  流量额度 MiB
+                  <input name="quota_mib" type="number" min="0" value="1024" />
+                </label>
+                <button type="submit">创建</button>
+              </div>
+              <div id="token-result" class="result-box" hidden></div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>团队</h2>
+            </div>
+            <div id="teams" class="table"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>成员</h2>
+            </div>
+            <div id="users" class="table"></div>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>Token</h2>
+            </div>
+            <div id="tokens" class="table"></div>
+          </section>
+        </section>
+
+        <section class="dashboard-view" data-dashboard-view="policies" hidden>
+          <section class="action-grid">
+            <form id="policy-form" class="panel form-panel wide-panel">
+              <div class="panel-header">
+                <h2>创建策略</h2>
+              </div>
+              <div class="form-body">
+                <label>
+                  名称
+                  <input name="name" required />
+                </label>
+                <label>
+                  范围
+                  <select name="scope_type">
+                    <option value="team">团队</option>
+                    <option value="user">成员</option>
+                    <option value="token">Token</option>
+                  </select>
+                </label>
+                <label>
+                  范围 ID
+                  <input name="scope_id" type="number" min="1" />
+                </label>
+                <label>
+                  最大节点数
+                  <input name="max_nodes" type="number" min="0" value="0" />
+                </label>
+                <label>
+                  允许虚拟节点
+                  <input name="allowed_virtual_nodes" placeholder="FluxGate-HK, FluxGate-SG" />
+                </label>
+                <label>
+                  包含标签
+                  <input name="include_tags" placeholder="HK, Premium" />
+                </label>
+                <label>
+                  排除标签
+                  <input name="exclude_tags" placeholder="Backup" />
+                </label>
+                <button type="submit">创建</button>
+              </div>
+            </form>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>策略</h2>
+            </div>
+            <div id="policies" class="table"></div>
+          </section>
+        </section>
+
+        <section class="dashboard-view" data-dashboard-view="traffic" hidden>
+          <section class="panel">
+            <div class="panel-header">
+              <h2>流量统计</h2>
+            </div>
+            <div id="traffic-hourly" class="traffic-chart"></div>
+            <div id="traffic-daily" class="traffic-chart"></div>
+            <div id="traffic-outbounds" class="table"></div>
+            <div id="traffic-tokens" class="table"></div>
+          </section>
+        </section>
+
+        <section class="dashboard-view" data-dashboard-view="ops" hidden>
+          <section class="panel">
+            <div class="panel-header">
+              <h2>sing-box 配置</h2>
+              <div class="button-row">
+                <button id="config-check">检查配置</button>
+                <button id="config-publish">发布配置</button>
+                <button id="config-rollback">回滚配置</button>
+                <button id="config-restart">重启服务</button>
+              </div>
+            </div>
+            <div id="config-check-result" class="result-box" hidden></div>
+          </section>
+        </section>
       </section>
     </main>
 

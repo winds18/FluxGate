@@ -72,6 +72,32 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await expect(page.locator("#app-view")).toBeVisible({ timeout: 10000 });
   await page.waitForTimeout(500);
 
+  const viewNames = ["overview", "access", "nodes", "identity", "policies", "traffic", "ops"];
+  const switchView = async (view) => {
+    const sidebarButton = page.locator(`.dashboard-sidebar [data-view-nav="${view}"]`).first();
+    if (await sidebarButton.isVisible()) {
+      await sidebarButton.click();
+    } else {
+      await page.locator(`.mobile-dock [data-view-nav="${view}"]`).first().click();
+    }
+    await expect(page.locator(`[data-dashboard-view="${view}"]`)).toBeVisible({ timeout: 5000 });
+    const activeNavCount = await page.locator(`[data-view-nav="${view}"].is-active`).count();
+    if (activeNavCount === 0) {
+      throw new Error(`active navigation missing for ${view}`);
+    }
+  };
+  const pageHorizontalOverflow = async () =>
+    page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - window.innerWidth));
+  const dashboardNavCount = await page.locator(".dashboard-sidebar [data-view-nav]").count();
+  const mobileDockCount = await page.locator(".mobile-dock [data-view-nav]").count();
+  const dashboardViewCount = await page.locator("[data-dashboard-view]").count();
+  const viewOverflow = {};
+  for (const view of viewNames) {
+    await switchView(view);
+    viewOverflow[view] = await pageHorizontalOverflow();
+  }
+  await switchView("overview");
+
   const east8TimeSamples = await page.evaluate(() => ({
     rfc3339: typeof formatCell === "function" ? formatCell("2026-04-29T00:00:00Z", "updated_at") : "",
     sqlite: typeof formatCell === "function" ? formatCell("2026-04-29 00:00:00", "created_at") : "",
@@ -84,8 +110,19 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`east8 time display failed: ${JSON.stringify(east8TimeSamples)}`);
   }
+  await switchView("traffic");
   const trafficTokenRowCount = await page.locator("#traffic-tokens tbody tr").count();
   const quotaMeterCount = await page.locator("#traffic-tokens .quota-meter").count();
+  let quotaUsageVisible = false;
+  if (trafficTokenRowCount > 0) {
+    await expect(page.locator("#traffic-tokens .quota-meter").first()).toBeVisible({ timeout: 5000 });
+    if (quotaMeterCount !== trafficTokenRowCount) {
+      throw new Error(`quota meter count mismatch: rows=${trafficTokenRowCount} meters=${quotaMeterCount}`);
+    }
+    quotaUsageVisible = true;
+  }
+
+  await switchView("identity");
   const tokenCardCount = await page.locator("#tokens .token-card").count();
   const tokenRowCount = tokenCardCount || (await page.locator("#tokens tbody tr").count());
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
@@ -113,14 +150,6 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return total;
     }, 0);
   });
-  let quotaUsageVisible = false;
-  if (trafficTokenRowCount > 0) {
-    await expect(page.locator("#traffic-tokens .quota-meter").first()).toBeVisible({ timeout: 5000 });
-    if (quotaMeterCount !== trafficTokenRowCount) {
-      throw new Error(`quota meter count mismatch: rows=${trafficTokenRowCount} meters=${quotaMeterCount}`);
-    }
-    quotaUsageVisible = true;
-  }
 
   const teamEditCount = await page.locator("#teams button[data-team-action='edit']").count();
   let teamEditFieldsVisible = false;
@@ -143,6 +172,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#users button[data-user-action='cancel']").first().click();
   }
 
+  await switchView("access");
   const sourceEditCount = await page.locator("#sources button[data-source-action='edit']").count();
   let sourceEditFieldsVisible = false;
   if (sourceEditCount > 0) {
@@ -153,6 +183,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#sources button[data-source-action='cancel']").first().click();
   }
 
+  await switchView("nodes");
   const virtualNodeEditCount = await page.locator("#virtual-nodes button[data-virtual-node-action='edit']").count();
   let virtualNodeEditFieldsVisible = false;
   if (virtualNodeEditCount > 0) {
@@ -164,6 +195,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#virtual-nodes button[data-virtual-node-action='cancel']").first().click();
   }
 
+  await switchView("policies");
   const policyEditCount = await page.locator("#policies button[data-policy-action='edit']").count();
   let policyEditFieldsVisible = false;
   if (policyEditCount > 0) {
@@ -175,6 +207,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.locator("#policies button[data-policy-action='cancel']").first().click();
   }
 
+  await switchView("nodes");
   const nodeRegionCount = await page.locator("#nodes button[data-node-region-action='open']").count();
   let nodeCardCount = 0;
   let nodeVisualOverflowCount = 0;
@@ -226,6 +259,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     nodeDetailVisible = true;
   }
 
+  await page.setViewportSize({ width: 390, height: 844 });
+  await switchView("overview");
+  const mobileDockVisible = await page.locator(".mobile-dock").isVisible();
+  const mobileSidebarVisible = await page.locator(".dashboard-sidebar").isVisible();
+  const mobileOverviewOverflow = await pageHorizontalOverflow();
+  await switchView("nodes");
+  const mobileNodesVisible = await page.locator('[data-dashboard-view="nodes"]').isVisible();
+  const mobileNodesOverflow = await pageHorizontalOverflow();
+  await page.setViewportSize({ width: 1280, height: 720 });
+  await switchView("nodes");
+
   const state = await page.evaluate(() => ({
     loginHidden: document.querySelector("#login-view")?.hidden,
     appHidden: document.querySelector("#app-view")?.hidden,
@@ -242,7 +286,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     status: document.querySelector("#status")?.textContent,
     error: document.querySelector("#login-error")?.textContent,
     url: window.location.href,
+    viewTitle: document.querySelector("#view-title")?.textContent,
   }));
+  state.dashboardNavCount = dashboardNavCount;
+  state.mobileDockCount = mobileDockCount;
+  state.dashboardViewCount = dashboardViewCount;
+  state.viewOverflow = viewOverflow;
+  state.mobileDockVisible = mobileDockVisible;
+  state.mobileSidebarVisible = mobileSidebarVisible;
+  state.mobileOverviewOverflow = mobileOverviewOverflow;
+  state.mobileNodesVisible = mobileNodesVisible;
+  state.mobileNodesOverflow = mobileNodesOverflow;
   state.teamEditCount = teamEditCount;
   state.teamEditFieldsVisible = teamEditFieldsVisible;
   state.userEditCount = userEditCount;
@@ -281,6 +335,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeVisualOverflowCount > 0) {
     throw new Error(`node cards visually overflow their parent: ${JSON.stringify(state)}`);
+  }
+  if (!mobileDockVisible || mobileSidebarVisible || !mobileNodesVisible || mobileOverviewOverflow > 2 || mobileNodesOverflow > 2) {
+    throw new Error(`mobile dashboard layout failed: ${JSON.stringify(state)}`);
+  }
+  if (dashboardNavCount !== viewNames.length || mobileDockCount < 5 || dashboardViewCount !== viewNames.length) {
+    throw new Error(`dashboard navigation is incomplete: ${JSON.stringify(state)}`);
+  }
+  const overflowingView = Object.entries(viewOverflow).find(([, overflow]) => overflow > 2);
+  if (overflowingView) {
+    throw new Error(`dashboard view creates page horizontal overflow: ${JSON.stringify(state)}`);
   }
   const cookies = await context.cookies(baseURL);
   await page.screenshot({ path: screenshotPath, fullPage: true });

@@ -412,6 +412,32 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const quotaMeterCount = await page.locator("#traffic-tokens .quota-meter").count();
   const trafficTokenSummaryChipCount = await page.locator("#traffic-tokens [data-traffic-summary-chip]").count();
   const trafficOutboundSummaryChipCount = await page.locator("#traffic-outbounds [data-traffic-summary-chip]").count();
+  const trafficSectionCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-card-section]').count();
+  const trafficSectionSymbolCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-section-symbol]').count();
+  const trafficSectionBadgeCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-section-count]').count();
+  const trafficSectionHeaderOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll('[data-dashboard-view="traffic"] .traffic-card-section-heading')).reduce(
+      (total, heading) => {
+        const headingBox = heading.getBoundingClientRect();
+        const elements = Array.from(
+          heading.querySelectorAll(".traffic-card-section-symbol, .traffic-card-section-title, .traffic-card-section-count"),
+        ).filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, headingBox)) {
+            total += 1;
+          }
+        }
+        return total;
+      },
+      0,
+    );
+  });
   const trafficChartPanelCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-chart-panel]').count();
   const trafficChartSymbolCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-chart-symbol]').count();
   const trafficChartSummaryChipCount = await page
@@ -1223,6 +1249,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.trafficOutboundCardCount = trafficOutboundCardCount;
   state.trafficTokenSummaryChipCount = trafficTokenSummaryChipCount;
   state.trafficOutboundSummaryChipCount = trafficOutboundSummaryChipCount;
+  state.trafficSectionCount = trafficSectionCount;
+  state.trafficSectionSymbolCount = trafficSectionSymbolCount;
+  state.trafficSectionBadgeCount = trafficSectionBadgeCount;
+  state.trafficSectionHeaderOverflowCount = trafficSectionHeaderOverflowCount;
   state.trafficChartPanelCount = trafficChartPanelCount;
   state.trafficChartSymbolCount = trafficChartSymbolCount;
   state.trafficChartSummaryChipCount = trafficChartSummaryChipCount;
@@ -1333,6 +1363,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (trafficOutboundRowCount > 0 && trafficOutboundCardCount !== trafficOutboundRowCount) ||
     (trafficTokenCardCount > 0 && trafficTokenSummaryChipCount !== trafficTokenCardCount * 4) ||
     (trafficOutboundCardCount > 0 && trafficOutboundSummaryChipCount !== trafficOutboundCardCount * 4) ||
+    trafficSectionCount !== 2 ||
+    trafficSectionSymbolCount !== 2 ||
+    trafficSectionBadgeCount !== 2 ||
+    trafficSectionHeaderOverflowCount > 0 ||
     trafficChartPanelCount !== 2 ||
     trafficChartSymbolCount !== 2 ||
     trafficChartSummaryChipCount !== 6 ||

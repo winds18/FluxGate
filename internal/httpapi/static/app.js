@@ -2758,12 +2758,17 @@ function showTokenSubscriptionResult(result, title) {
 
 function renderTrafficTokens(rows) {
   if (!rows || rows.length === 0) {
-    trafficTokensEl.innerHTML = emptyState("钥", "暂无 Token 用量", "有 Token 订阅访问或网关流量后会显示用量");
+    trafficTokensEl.innerHTML = `
+      <div class="traffic-card-section" data-traffic-card-section>
+        ${trafficSectionHeader("钥", "Token 用量", 0, "按团队 Token 聚合订阅与网关流量")}
+        ${emptyState("钥", "暂无 Token 用量", "有 Token 订阅访问或网关流量后会显示用量")}
+      </div>
+    `;
     return;
   }
   trafficTokensEl.innerHTML = `
-    <div class="traffic-card-section">
-      <div class="traffic-card-section-title">Token 用量</div>
+    <div class="traffic-card-section" data-traffic-card-section>
+      ${trafficSectionHeader("钥", "Token 用量", rows.length, "按团队 Token 聚合订阅与网关流量")}
       <div class="traffic-card-list traffic-token-card-list">
         ${rows.map((row) => renderTrafficTokenCard(row)).join("")}
       </div>
@@ -2773,15 +2778,33 @@ function renderTrafficTokens(rows) {
 
 function renderTrafficOutbounds(rows) {
   if (!rows || rows.length === 0) {
-    trafficOutboundsEl.innerHTML = emptyState("出", "暂无出口流量", "sing-box 网关产生真实流量后会按上游出口聚合");
+    trafficOutboundsEl.innerHTML = `
+      <div class="traffic-card-section" data-traffic-card-section>
+        ${trafficSectionHeader("出", "出口摘要", 0, "按上游节点出口聚合真实转发流量")}
+        ${emptyState("出", "暂无出口流量", "sing-box 网关产生真实流量后会按上游出口聚合")}
+      </div>
+    `;
     return;
   }
   trafficOutboundsEl.innerHTML = `
-    <div class="traffic-card-section">
-      <div class="traffic-card-section-title">出口摘要</div>
+    <div class="traffic-card-section" data-traffic-card-section>
+      ${trafficSectionHeader("出", "出口摘要", rows.length, "按上游节点出口聚合真实转发流量")}
       <div class="traffic-card-list traffic-outbound-card-list">
         ${rows.map((row) => renderTrafficOutboundCard(row)).join("")}
       </div>
+    </div>
+  `;
+}
+
+function trafficSectionHeader(symbol, title, count, hint) {
+  return `
+    <div class="traffic-card-section-heading">
+      <span class="traffic-card-section-symbol" data-traffic-section-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="traffic-card-section-title">
+        <strong>${escapeHTML(title)}</strong>
+        <span>${escapeHTML(hint)}</span>
+      </span>
+      <span class="traffic-card-section-count" data-traffic-section-count>${formatPlainNumber(count)}</span>
     </div>
   `;
 }

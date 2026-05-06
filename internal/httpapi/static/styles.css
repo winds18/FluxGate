@@ -2415,7 +2415,17 @@ td code {
   padding: 3px 7px;
 }
 
-.token-subscription-profile {
+.token-subscription-meta {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.token-subscription-profile,
+.token-subscription-origin {
   align-items: center;
   background: #f8fafc;
   border: 1px solid #dfe7f0;
@@ -2433,6 +2443,12 @@ td code {
   text-overflow: ellipsis;
   white-space: nowrap;
   width: fit-content;
+}
+
+.token-subscription-origin {
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+  color: #167044;
 }
 
 .token-subscription-item code {
@@ -3179,7 +3195,13 @@ td code {
     width: 100%;
   }
 
-  .token-subscription-profile {
+  .token-subscription-meta {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .token-subscription-profile,
+  .token-subscription-origin {
     width: 100%;
   }
 

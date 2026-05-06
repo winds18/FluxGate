@@ -2360,7 +2360,10 @@ function renderSubscriptionCardList(items, tokenID = "") {
                   <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}" data-button-symbol="⧉" data-copy-label="复制">${buttonLabel("⧉", "复制")}</button>
                 </span>
               </div>
-              <span class="token-subscription-profile" data-token-subscription-profile>${escapeHTML(subscriptionProfileForLabel(label))}</span>
+              <span class="token-subscription-meta">
+                <span class="token-subscription-profile" data-token-subscription-profile>${escapeHTML(subscriptionProfileForLabel(label))}</span>
+                <span class="token-subscription-origin" data-token-subscription-origin>${escapeHTML(subscriptionOriginForURL(url))}</span>
+              </span>
               <code title="${escapeHTML(url)}">${escapeHTML(url)}</code>
             </div>
           `,
@@ -2384,6 +2387,17 @@ function subscriptionProfileForLabel(label) {
   if (label === "Clash/Mihomo") return "YAML · Mihomo";
   if (label === "sing-box") return "JSON · sing-box";
   return "URI · 通用";
+}
+
+function subscriptionOriginForURL(url) {
+  try {
+    const parsed = new URL(url, window.location.href);
+    if (!parsed.host) return "相对地址";
+    if (parsed.host === window.location.host) return "当前访问域名";
+    return "配置域名";
+  } catch {
+    return "地址待确认";
+  }
 }
 
 function showTokenSubscriptionResult(result, title) {

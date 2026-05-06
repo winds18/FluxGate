@@ -422,6 +422,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenResultSubscriptionProfiles = await page
     .locator("#token-result [data-token-subscription-profile]")
     .allTextContents();
+  const tokenResultSubscriptionOriginCount = await page.locator("#token-result [data-token-subscription-origin]").count();
+  const tokenResultSubscriptionOrigins = await page
+    .locator("#token-result [data-token-subscription-origin]")
+    .allTextContents();
   const tokenResultSubscriptionOpenCount = await page.locator("#token-result a[data-token-subscription-link]").count();
   const tokenResultSubscriptionActionSymbolCount = await page.locator("#token-result .token-subscription-actions .button-symbol").count();
   const tokenResultVisualOverflowCount = await page.evaluate(() => {
@@ -434,7 +438,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     if (!resultCard) return 1;
     const resultBox = resultCard.getBoundingClientRect();
     return Array.from(
-      resultCard.querySelectorAll(".token-result-heading, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-profile, code, button, a"),
+      resultCard.querySelectorAll(".token-result-heading, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, code, button, a"),
     ).reduce((total, element) => {
       if (element.offsetParent === null) return total;
       const box = element.getBoundingClientRect();
@@ -453,6 +457,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
   const tokenSubscriptionKindCount = await page.locator("#tokens [data-token-subscription-kind]").count();
   const tokenSubscriptionProfileCount = await page.locator("#tokens [data-token-subscription-profile]").count();
+  const tokenSubscriptionOriginCount = await page.locator("#tokens [data-token-subscription-origin]").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
   const tokenSubscriptionOpenCount = await page.locator("#tokens a[data-token-subscription-link]").count();
   const tokenSubscriptionActionSymbolCount = await page.locator("#tokens .token-subscription-actions .button-symbol").count();
@@ -480,7 +485,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".token-card-heading, .token-card-field, .token-card-meter, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-profile, .token-card-actions",
+          ".token-card-heading, .token-card-field, .token-card-meter, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, .token-card-actions",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
@@ -905,6 +910,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenResultSubscriptionKindCount = tokenResultSubscriptionKindCount;
   state.tokenResultSubscriptionProfileCount = tokenResultSubscriptionProfileCount;
   state.tokenResultSubscriptionProfiles = tokenResultSubscriptionProfiles;
+  state.tokenResultSubscriptionOriginCount = tokenResultSubscriptionOriginCount;
+  state.tokenResultSubscriptionOrigins = tokenResultSubscriptionOrigins;
   state.tokenResultSubscriptionOpenCount = tokenResultSubscriptionOpenCount;
   state.tokenResultSubscriptionActionSymbolCount = tokenResultSubscriptionActionSymbolCount;
   state.tokenResultVisualOverflowCount = tokenResultVisualOverflowCount;
@@ -917,6 +924,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
   state.tokenSubscriptionKindCount = tokenSubscriptionKindCount;
   state.tokenSubscriptionProfileCount = tokenSubscriptionProfileCount;
+  state.tokenSubscriptionOriginCount = tokenSubscriptionOriginCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
   state.tokenSubscriptionOpenCount = tokenSubscriptionOpenCount;
   state.tokenSubscriptionActionSymbolCount = tokenSubscriptionActionSymbolCount;
@@ -942,9 +950,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     tokenResultSubscriptionItemCount !== 3 ||
     tokenResultSubscriptionKindCount !== 3 ||
     tokenResultSubscriptionProfileCount !== 3 ||
+    tokenResultSubscriptionOriginCount !== 3 ||
     ["URI · 通用", "YAML · Mihomo", "JSON · sing-box"].some(
       (profile, index) => tokenResultSubscriptionProfiles[index] !== profile,
     ) ||
+    tokenResultSubscriptionOrigins.some((origin) => !["当前访问域名", "配置域名", "相对地址"].includes(origin)) ||
     tokenResultSubscriptionOpenCount !== 3 ||
     tokenResultSubscriptionActionSymbolCount !== 6 ||
     tokenResultVisualOverflowCount > 0
@@ -959,6 +969,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (tokenSubscriptionItemCount !== tokenSubscriptionCopyCount ||
       tokenSubscriptionKindCount !== tokenSubscriptionCopyCount ||
       tokenSubscriptionProfileCount !== tokenSubscriptionCopyCount ||
+      tokenSubscriptionOriginCount !== tokenSubscriptionCopyCount ||
       tokenSubscriptionOpenCount !== tokenSubscriptionCopyCount ||
       tokenSubscriptionActionSymbolCount !== tokenSubscriptionCopyCount * 2)
   ) {

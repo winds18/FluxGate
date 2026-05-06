@@ -2050,9 +2050,10 @@ textarea {
   border-radius: 8px;
   color: var(--text);
   display: grid;
-  gap: 8px;
+  gap: 12px;
   justify-content: stretch;
-  min-height: 116px;
+  min-height: 128px;
+  min-width: 0;
   padding: 14px;
   text-align: left;
   width: 100%;
@@ -2065,22 +2066,93 @@ textarea {
   color: var(--text);
 }
 
+.node-region-heading {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.node-region-symbol {
+  align-items: center;
+  background: #eef6ff;
+  border: 1px solid #d6e8ff;
+  border-radius: 8px;
+  color: #1f5fbf;
+  display: inline-flex;
+  font-size: 20px;
+  font-weight: 820;
+  height: 42px;
+  justify-content: center;
+  line-height: 1;
+  min-width: 0;
+  width: 42px;
+}
+
+.node-region-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
 .node-region-name {
   color: var(--muted);
+  display: block;
   font-size: 12px;
   font-weight: 760;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .node-region-card strong {
+  display: block;
   font-size: 22px;
   font-weight: 760;
   line-height: 1.15;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
-.node-region-card span:last-child {
-  color: var(--muted);
+.node-region-badge,
+.node-region-stats span {
+  border-radius: 999px;
+  display: inline-flex;
   font-size: 12px;
-  line-height: 1.35;
+  font-weight: 760;
+  line-height: 1.2;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-region-badge {
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  color: #167044;
+  justify-content: center;
+  max-width: 92px;
+  padding: 5px 8px;
+}
+
+.node-region-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.node-region-stats span {
+  background: #f8fafc;
+  border: 1px solid #dfe7f0;
+  color: var(--muted);
+  padding: 5px 8px;
 }
 
 .node-card-grid {

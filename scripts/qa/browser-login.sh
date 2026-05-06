@@ -678,6 +678,32 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await expect(page.locator("#nodes [data-node-filter]").first()).toHaveValue("", { timeout: 5000 });
   const nodeSearchClears = (await page.locator("#nodes [data-node-filter]").first().inputValue()) === "";
   const nodeRegionCount = await page.locator("#nodes button[data-node-region-action='open']").count();
+  const nodeRegionSymbolCount = await page.locator("#nodes .node-region-symbol").count();
+  const nodeRegionBadgeCount = await page.locator("#nodes .node-region-badge").count();
+  const nodeRegionStatChipCount = await page.locator("#nodes [data-node-region-stat]").count();
+  const nodeRegionOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#nodes .node-region-card")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(
+        card.querySelectorAll(".node-region-heading, .node-region-symbol, .node-region-copy, .node-region-name, strong, .node-region-badge, .node-region-stats, [data-node-region-stat]"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const parent = element.classList.contains("node-region-heading") || element.classList.contains("node-region-stats")
+          ? cardBox
+          : (element.closest(".node-region-heading") || element.closest(".node-region-stats") || card).getBoundingClientRect();
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   let nodeCardCount = 0;
   let nodeVisualOverflowCount = 0;
   if (nodeRegionCount > 0) {
@@ -898,6 +924,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeFilteredRegionCount = nodeFilteredRegionCount;
   state.nodeSearchClears = nodeSearchClears;
   state.nodeRegionCount = nodeRegionCount;
+  state.nodeRegionSymbolCount = nodeRegionSymbolCount;
+  state.nodeRegionBadgeCount = nodeRegionBadgeCount;
+  state.nodeRegionStatChipCount = nodeRegionStatChipCount;
+  state.nodeRegionOverflowCount = nodeRegionOverflowCount;
   state.nodeCardCount = nodeCardCount;
   state.nodeVisualOverflowCount = nodeVisualOverflowCount;
   state.nodeEditCount = nodeEditCount;
@@ -1023,6 +1053,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeVisualOverflowCount > 0) {
     throw new Error(`node cards visually overflow their parent: ${JSON.stringify(state)}`);
+  }
+  if (
+    nodeRegionCount > 0 &&
+    (nodeRegionSymbolCount !== nodeRegionCount ||
+      nodeRegionBadgeCount !== nodeRegionCount ||
+      nodeRegionStatChipCount !== nodeRegionCount * 2 ||
+      nodeRegionOverflowCount > 0)
+  ) {
+    throw new Error(`node region cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (!nodeSearchVisible || nodeFilterValue !== "香港" || nodeFilteredRegionCount < 1 || !nodeSearchClears) {
     throw new Error(`node search filter failed: ${JSON.stringify(state)}`);

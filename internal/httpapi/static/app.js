@@ -2112,11 +2112,28 @@ function renderNodeRegionCard(group) {
   const sourceCount = new Set(group.items.map((node) => node.source_name || node.source_id).filter(Boolean)).size;
   return `
     <button class="node-region-card" type="button" data-node-region-action="open" data-node-region="${escapeHTML(group.region)}">
-      <span class="node-region-name">${escapeHTML(group.region)}</span>
-      <strong>${formatCell(group.items.length)} 个节点</strong>
-      <span>${formatCell(activeCount)} 可用 · ${formatCell(protocolCount)} 协议 · ${formatCell(sourceCount)} 来源</span>
+      <span class="node-region-heading">
+        <span class="node-region-symbol" aria-hidden="true">${escapeHTML(regionSymbolForRegion(group.region))}</span>
+        <span class="node-region-copy">
+          <span class="node-region-name">${escapeHTML(group.region)}</span>
+          <strong>${formatCell(group.items.length)} 个节点</strong>
+        </span>
+        <span class="node-region-badge">${formatCell(activeCount)} 可用</span>
+      </span>
+      <span class="node-region-stats">
+        <span data-node-region-stat>${formatCell(protocolCount)} 协议</span>
+        <span data-node-region-stat>${formatCell(sourceCount)} 来源</span>
+      </span>
     </button>
   `;
+}
+
+function regionSymbolForRegion(region) {
+  const text = String(region || "其他").trim() || "其他";
+  const flag = text.match(/[\u{1f1e6}-\u{1f1ff}]{2}/u);
+  if (flag) return flag[0];
+  const regionName = text.includes("|") ? text.split("|").pop().trim() : text;
+  return regionName.slice(0, 1) || "区";
 }
 
 function renderNodeRegion(group, groups, total, matched, totalRegionCount) {

@@ -705,11 +705,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     }, 0);
   });
   let nodeCardCount = 0;
+  let nodeCardProtocolSymbolCount = 0;
+  let nodeCardChipCount = 0;
   let nodeVisualOverflowCount = 0;
   if (nodeRegionCount > 0) {
     await page.locator("#nodes button[data-node-region-action='open']").first().click();
     await expect(page.locator("#nodes .node-card").first()).toBeVisible({ timeout: 5000 });
     nodeCardCount = await page.locator("#nodes .node-card").count();
+    nodeCardProtocolSymbolCount = await page.locator("#nodes .node-card-protocol-symbol").count();
+    nodeCardChipCount = await page.locator("#nodes [data-node-card-chip]").count();
     await page.evaluate(() => {
       const firstTitle = document.querySelector("#nodes .node-card-title");
       if (firstTitle) {
@@ -725,12 +729,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return Array.from(document.querySelectorAll("#nodes .node-card")).reduce((total, card) => {
         const cardBox = card.getBoundingClientRect();
         const elements = Array.from(
-          card.querySelectorAll(".node-card-main, .node-card-title, .node-card-subtitle, .node-card-tags, .node-card-meta, .node-actions"),
+          card.querySelectorAll(".node-card-main, .node-card-heading, .node-card-protocol-symbol, .node-card-copy, .node-card-title, .node-card-subtitle, .node-card-tags, .node-card-chip-row, [data-node-card-chip], .node-actions"),
         ).filter((element) => element.offsetParent !== null);
         for (const element of elements) {
           const parent = element.classList.contains("node-card-main") || element.classList.contains("node-actions")
             ? cardBox
-            : (element.closest(".node-card-main") || card).getBoundingClientRect();
+            : (element.closest(".node-card-heading") || element.closest(".node-card-chip-row") || element.closest(".node-card-main") || card).getBoundingClientRect();
           const box = element.getBoundingClientRect();
           if (box.width > 0 && box.height > 0 && outside(box, parent)) {
             total += 1;
@@ -929,6 +933,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeRegionStatChipCount = nodeRegionStatChipCount;
   state.nodeRegionOverflowCount = nodeRegionOverflowCount;
   state.nodeCardCount = nodeCardCount;
+  state.nodeCardProtocolSymbolCount = nodeCardProtocolSymbolCount;
+  state.nodeCardChipCount = nodeCardChipCount;
   state.nodeVisualOverflowCount = nodeVisualOverflowCount;
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
@@ -1051,8 +1057,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (policyEditCount > 0 && (policyCardCount !== policyEditCount || policyVisualOverflowCount > 0)) {
     throw new Error(`policy cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  if (nodeVisualOverflowCount > 0) {
-    throw new Error(`node cards visually overflow their parent: ${JSON.stringify(state)}`);
+  if (
+    nodeCardCount > 0 &&
+    (nodeCardProtocolSymbolCount !== nodeCardCount || nodeCardChipCount !== nodeCardCount * 3 || nodeVisualOverflowCount > 0)
+  ) {
+    throw new Error(`node cards are incomplete or visually overflow their parent: ${JSON.stringify(state)}`);
   }
   if (
     nodeRegionCount > 0 &&

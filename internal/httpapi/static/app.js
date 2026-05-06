@@ -2179,11 +2179,17 @@ function renderNodeCard(row) {
   return `
     <article class="node-card ${isExpanded ? "node-card-expanded" : ""}" data-node-id="${row.id}">
       <button class="node-card-main" type="button" data-node-action="detail" data-node-id="${row.id}">
-        <span class="node-card-title">${escapeHTML(row.display_name || row.raw_name || `节点 ${row.id}`)}</span>
-        <span class="node-card-subtitle">${escapeHTML(row.source_name || "未知来源")} · ${escapeHTML(row.protocol || "--")}</span>
-        <span class="node-card-meta">
-          <span>${formatStatus(row.status)}</span>
-          <span>${labelForColumn("name_mode")}：${formatCell(row.name_mode, "name_mode")}</span>
+        <span class="node-card-heading">
+          <span class="node-card-protocol-symbol" aria-hidden="true">${escapeHTML(nodeProtocolSymbol(row.protocol))}</span>
+          <span class="node-card-copy">
+            <span class="node-card-title">${escapeHTML(row.display_name || row.raw_name || `节点 ${row.id}`)}</span>
+            <span class="node-card-subtitle">${escapeHTML(row.source_name || "未知来源")}</span>
+          </span>
+        </span>
+        <span class="node-card-chip-row">
+          <span class="node-card-chip" data-node-card-chip>${formatStatus(row.status)}</span>
+          <span class="node-card-chip" data-node-card-chip>${formatCell(row.protocol, "protocol")}</span>
+          <span class="node-card-chip" data-node-card-chip>${labelForColumn("name_mode")}：${formatCell(row.name_mode, "name_mode")}</span>
         </span>
         <span class="node-card-tags">${formatCell(row.tags, "tags")}</span>
       </button>
@@ -2199,6 +2205,42 @@ function renderNodeCard(row) {
       ${detail ? renderNodeDetailPanel(detail) : ""}
     </article>
   `;
+}
+
+function nodeProtocolSymbol(protocol) {
+  const normalized = String(protocol || "")
+    .trim()
+    .replace(/[^a-z0-9+]/gi, "")
+    .toUpperCase();
+  const symbols = {
+    VLESS: "VL",
+    VMESS: "VM",
+    TROJAN: "TR",
+    SHADOWSOCKS: "SS",
+    SS: "SS",
+    HYSTERIA2: "H2",
+    HY2: "H2",
+    HYSTERIA: "HY",
+    TUIC: "TU",
+    JUICITY: "JU",
+    ANYTLS: "AT",
+    SHADOWTLS: "ST",
+    NAIVE: "NV",
+    HTTP: "HT",
+    HTTPS: "HS",
+    SOCKS: "SO",
+    SOCKS5: "S5",
+    SSH: "SH",
+    WIREGUARD: "WG",
+    TOR: "TO",
+    DIRECT: "直",
+    FREEDOM: "直",
+    BLOCK: "拦",
+    BLACKHOLE: "拦",
+    REJECT: "拦",
+    DNS: "DN",
+  };
+  return symbols[normalized] || normalized.slice(0, 2) || "--";
 }
 
 function renderNodeDetailPanel(node) {

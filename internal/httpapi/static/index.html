@@ -495,32 +495,52 @@
             </div>
             <div id="ops-actions" class="ops-action-grid">
               <article class="ops-action-card">
-                <div>
+                <span class="ops-action-symbol" aria-hidden="true">检</span>
+                <div class="ops-action-copy">
                   <span>检查</span>
                   <strong>配置校验</strong>
+                  <span class="ops-action-chip" data-ops-action-chip>预检配置</span>
                 </div>
-                <button id="config-check" type="button">检查配置</button>
+                <button id="config-check" type="button">
+                  <span class="button-symbol" aria-hidden="true">检</span>
+                  <span class="button-label">检查配置</span>
+                </button>
               </article>
               <article class="ops-action-card">
-                <div>
+                <span class="ops-action-symbol" aria-hidden="true">发</span>
+                <div class="ops-action-copy">
                   <span>发布</span>
                   <strong>写入网关</strong>
+                  <span class="ops-action-chip" data-ops-action-chip>生成配置</span>
                 </div>
-                <button id="config-publish" type="button">发布配置</button>
+                <button id="config-publish" type="button">
+                  <span class="button-symbol" aria-hidden="true">发</span>
+                  <span class="button-label">发布配置</span>
+                </button>
               </article>
               <article class="ops-action-card">
-                <div>
+                <span class="ops-action-symbol" aria-hidden="true">回</span>
+                <div class="ops-action-copy">
                   <span>回滚</span>
                   <strong>恢复上一版</strong>
+                  <span class="ops-action-chip" data-ops-action-chip>保留备份</span>
                 </div>
-                <button id="config-rollback" type="button">回滚配置</button>
+                <button id="config-rollback" type="button">
+                  <span class="button-symbol" aria-hidden="true">回</span>
+                  <span class="button-label">回滚配置</span>
+                </button>
               </article>
               <article class="ops-action-card">
-                <div>
+                <span class="ops-action-symbol" aria-hidden="true">启</span>
+                <div class="ops-action-copy">
                   <span>重启</span>
                   <strong>重载服务</strong>
+                  <span class="ops-action-chip" data-ops-action-chip>受控执行</span>
                 </div>
-                <button id="config-restart" type="button">重启服务</button>
+                <button id="config-restart" type="button">
+                  <span class="button-symbol" aria-hidden="true">启</span>
+                  <span class="button-label">重启服务</span>
+                </button>
               </article>
             </div>
             <div id="config-check-result" class="result-box" hidden></div>

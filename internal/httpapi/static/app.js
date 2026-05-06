@@ -1134,8 +1134,12 @@ function showConfigResult(title, tone, details) {
   configCheckResultEl.innerHTML = `
     <article class="ops-result-card ops-result-${escapeHTML(tone)}">
       <div class="ops-result-heading">
-        <strong>${escapeHTML(title)}</strong>
-        <span>${formatDateTimeForDisplay(new Date().toISOString())}</span>
+        <span class="ops-result-symbol ops-result-symbol-${escapeHTML(tone)}" aria-hidden="true">${opsResultSymbol(tone)}</span>
+        <div class="ops-result-title">
+          <strong>${escapeHTML(title)}</strong>
+          <span class="ops-result-chip ops-result-chip-${escapeHTML(tone)}" data-ops-result-chip>${opsResultToneLabel(tone)}</span>
+        </div>
+        <span class="ops-result-time">${formatDateTimeForDisplay(new Date().toISOString())}</span>
       </div>
       <div class="ops-result-grid">
         ${details
@@ -1152,6 +1156,20 @@ function showConfigResult(title, tone, details) {
       </div>
     </article>
   `;
+}
+
+function opsResultSymbol(tone) {
+  if (tone === "success") return "通";
+  if (tone === "warning") return "待";
+  if (tone === "danger") return "警";
+  return "运";
+}
+
+function opsResultToneLabel(tone) {
+  if (tone === "success") return "已通过";
+  if (tone === "warning") return "需处理";
+  if (tone === "danger") return "异常";
+  return "结果";
 }
 
 function formatRestartResult(result) {

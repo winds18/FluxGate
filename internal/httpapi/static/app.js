@@ -2721,6 +2721,7 @@ function renderTrafficOutbounds(rows) {
 }
 
 function renderTrafficTokenCard(row) {
+  const statusSummary = tokenStatusSummary(row.token_status);
   return `
     <article class="traffic-card traffic-token-card" data-traffic-token-id="${escapeHTML(row.token_id || "")}">
       <div class="traffic-card-heading">
@@ -2729,6 +2730,12 @@ function renderTrafficTokenCard(row) {
           <strong>${formatCell(row.auth_user, "auth_user")}</strong>
         </div>
         ${formatCell(row.token_status, "token_status")}
+      </div>
+      <div class="traffic-card-summary" aria-label="Token 用量摘要">
+        ${trafficSummaryChip(statusSummary.label, statusSummary.tone)}
+        ${trafficSummaryChip(`成员 #${row.user_id || "--"}`, "info")}
+        ${trafficSummaryChip(`今日 ${formatBytes(row.today_total_bytes)}`)}
+        ${trafficSummaryChip(`本月 ${formatBytes(row.month_total_bytes)}`)}
       </div>
       <div class="traffic-card-meter">
         ${formatQuotaUsage(row.used_total_bytes, row.quota_bytes, row.token_status)}
@@ -2757,6 +2764,12 @@ function renderTrafficOutboundCard(row) {
         </div>
         <code title="${escapeHTML(row.outbound_tag || "")}">${formatCell(row.outbound_tag, "outbound_tag")}</code>
       </div>
+      <div class="traffic-card-summary" aria-label="出口摘要">
+        ${trafficSummaryChip(trafficSourceSummary(row.source_name), "info")}
+        ${trafficSummaryChip(`上传 ${formatBytes(row.upload_bytes)}`)}
+        ${trafficSummaryChip(`下载 ${formatBytes(row.download_bytes)}`)}
+        ${trafficSummaryChip(`总量 ${formatBytes(row.total_bytes)}`, trafficTotalTone(row.total_bytes))}
+      </div>
       <div class="traffic-card-grid">
         ${trafficCardField("节点 ID", row.upstream_node_id, "upstream_node_id")}
         ${trafficCardField("上传", row.upload_bytes, "upload_bytes")}
@@ -2766,6 +2779,18 @@ function renderTrafficOutboundCard(row) {
       </div>
     </article>
   `;
+}
+
+function trafficSummaryChip(content, tone = "") {
+  return `<span class="traffic-card-summary-chip ${tone ? `traffic-card-summary-chip-${tone}` : ""}" data-traffic-summary-chip>${escapeHTML(content)}</span>`;
+}
+
+function trafficSourceSummary(value) {
+  return value ? String(value) : "未知来源";
+}
+
+function trafficTotalTone(value) {
+  return Number(value || 0) > 0 ? "success" : "muted";
 }
 
 function trafficCardField(label, value, column = "") {

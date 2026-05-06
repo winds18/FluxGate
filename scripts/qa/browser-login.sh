@@ -364,6 +364,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const trafficOutboundCardCount = await page.locator("#traffic-outbounds .traffic-outbound-card").count();
   const trafficOutboundRowCount = trafficOutboundCardCount || trafficOutboundTableRowCount;
   const quotaMeterCount = await page.locator("#traffic-tokens .quota-meter").count();
+  const trafficTokenSummaryChipCount = await page.locator("#traffic-tokens [data-traffic-summary-chip]").count();
+  const trafficOutboundSummaryChipCount = await page.locator("#traffic-outbounds [data-traffic-summary-chip]").count();
   const trafficVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -373,7 +375,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     return Array.from(document.querySelectorAll("#traffic-tokens .traffic-card, #traffic-outbounds .traffic-card")).reduce((total, card) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
-        card.querySelectorAll(".traffic-card-heading, .traffic-card-meter, .traffic-card-field"),
+        card.querySelectorAll(
+          ".traffic-card-heading, .traffic-card-heading > code, .traffic-card-summary, [data-traffic-summary-chip], .traffic-card-meter, .traffic-card-field",
+        ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
         const box = element.getBoundingClientRect();
@@ -996,6 +1000,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.trafficTokenCardCount = trafficTokenCardCount;
   state.trafficOutboundRowCount = trafficOutboundRowCount;
   state.trafficOutboundCardCount = trafficOutboundCardCount;
+  state.trafficTokenSummaryChipCount = trafficTokenSummaryChipCount;
+  state.trafficOutboundSummaryChipCount = trafficOutboundSummaryChipCount;
   state.trafficVisualOverflowCount = trafficVisualOverflowCount;
   state.tokenRowCount = tokenRowCount;
   state.tokenCardCount = tokenCardCount;
@@ -1090,6 +1096,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (
     (trafficTokenRowCount > 0 && trafficTokenCardCount !== trafficTokenRowCount) ||
     (trafficOutboundRowCount > 0 && trafficOutboundCardCount !== trafficOutboundRowCount) ||
+    (trafficTokenCardCount > 0 && trafficTokenSummaryChipCount !== trafficTokenCardCount * 4) ||
+    (trafficOutboundCardCount > 0 && trafficOutboundSummaryChipCount !== trafficOutboundCardCount * 4) ||
     trafficVisualOverflowCount > 0
   ) {
     throw new Error(`traffic cards are incomplete or overflowing: ${JSON.stringify(state)}`);

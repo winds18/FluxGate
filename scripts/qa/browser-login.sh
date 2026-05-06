@@ -123,13 +123,38 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`east8 time display failed: ${JSON.stringify(east8TimeSamples)}`);
   }
   await switchView("traffic");
-  const trafficTokenRowCount = await page.locator("#traffic-tokens tbody tr").count();
+  const trafficTokenTableRowCount = await page.locator("#traffic-tokens tbody tr").count();
+  const trafficTokenCardCount = await page.locator("#traffic-tokens .traffic-token-card").count();
+  const trafficTokenRowCount = trafficTokenCardCount || trafficTokenTableRowCount;
+  const trafficOutboundTableRowCount = await page.locator("#traffic-outbounds tbody tr").count();
+  const trafficOutboundCardCount = await page.locator("#traffic-outbounds .traffic-outbound-card").count();
+  const trafficOutboundRowCount = trafficOutboundCardCount || trafficOutboundTableRowCount;
   const quotaMeterCount = await page.locator("#traffic-tokens .quota-meter").count();
+  const trafficVisualOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#traffic-tokens .traffic-card, #traffic-outbounds .traffic-card")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(
+        card.querySelectorAll(".traffic-card-heading, .traffic-card-meter, .traffic-card-field"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   let quotaUsageVisible = false;
   if (trafficTokenRowCount > 0) {
     await expect(page.locator("#traffic-tokens .quota-meter").first()).toBeVisible({ timeout: 5000 });
     if (quotaMeterCount !== trafficTokenRowCount) {
-      throw new Error(`quota meter count mismatch: rows=${trafficTokenRowCount} meters=${quotaMeterCount}`);
+      throw new Error(`quota meter count mismatch: cards=${trafficTokenRowCount} meters=${quotaMeterCount}`);
     }
     quotaUsageVisible = true;
   }
@@ -456,6 +481,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeDetailCodeOverflowCount = nodeDetailCodeOverflowCount;
   state.east8TimeSamples = east8TimeSamples;
   state.trafficTokenRowCount = trafficTokenRowCount;
+  state.trafficTokenCardCount = trafficTokenCardCount;
+  state.trafficOutboundRowCount = trafficOutboundRowCount;
+  state.trafficOutboundCardCount = trafficOutboundCardCount;
+  state.trafficVisualOverflowCount = trafficVisualOverflowCount;
   state.tokenRowCount = tokenRowCount;
   state.tokenCardCount = tokenCardCount;
   state.quotaMeterCount = quotaMeterCount;
@@ -473,6 +502,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenVisualOverlapCount > 0) {
     throw new Error(`token controls visually overlap: ${JSON.stringify(state)}`);
+  }
+  if (
+    (trafficTokenRowCount > 0 && trafficTokenCardCount !== trafficTokenRowCount) ||
+    (trafficOutboundRowCount > 0 && trafficOutboundCardCount !== trafficOutboundRowCount) ||
+    trafficVisualOverflowCount > 0
+  ) {
+    throw new Error(`traffic cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (
     (teamEditCount > 0 && teamCardCount !== teamEditCount) ||

@@ -2115,46 +2115,12 @@ function renderTrafficTokens(rows) {
     return;
   }
   trafficTokensEl.innerHTML = `
-    <table>
-      <thead>
-        <tr>
-          <th>${labelForColumn("token_id")}</th>
-          <th>${labelForColumn("user_id")}</th>
-          <th>${labelForColumn("auth_user")}</th>
-          <th>${labelForColumn("token_status")}</th>
-          <th>${labelForColumn("today_total_bytes")}</th>
-          <th>${labelForColumn("month_total_bytes")}</th>
-          <th>${labelForColumn("used_upload_bytes")}</th>
-          <th>${labelForColumn("used_download_bytes")}</th>
-          <th>${labelForColumn("used_total_bytes")}</th>
-          <th>${labelForColumn("quota_bytes")}</th>
-          <th>${labelForColumn("quota_usage")}</th>
-          <th>${labelForColumn("updated_at")}</th>
-        </tr>
-      </thead>
-      <tbody>
-        ${rows
-          .map(
-            (row) => `
-              <tr>
-                <td>${formatCell(row.token_id, "token_id")}</td>
-                <td>${formatCell(row.user_id, "user_id")}</td>
-                <td>${formatCell(row.auth_user, "auth_user")}</td>
-                <td>${formatCell(row.token_status, "token_status")}</td>
-                <td>${formatCell(row.today_total_bytes, "today_total_bytes")}</td>
-                <td>${formatCell(row.month_total_bytes, "month_total_bytes")}</td>
-                <td>${formatCell(row.used_upload_bytes, "used_upload_bytes")}</td>
-                <td>${formatCell(row.used_download_bytes, "used_download_bytes")}</td>
-                <td>${formatCell(row.used_total_bytes, "used_total_bytes")}</td>
-                <td>${formatCell(row.quota_bytes, "quota_bytes")}</td>
-                <td>${formatQuotaUsage(row.used_total_bytes, row.quota_bytes, row.token_status)}</td>
-                <td>${formatCell(row.updated_at, "updated_at")}</td>
-              </tr>
-            `,
-          )
-          .join("")}
-      </tbody>
-    </table>
+    <div class="traffic-card-section">
+      <div class="traffic-card-section-title">Token 用量</div>
+      <div class="traffic-card-list traffic-token-card-list">
+        ${rows.map((row) => renderTrafficTokenCard(row)).join("")}
+      </div>
+    </div>
   `;
 }
 
@@ -2163,16 +2129,71 @@ function renderTrafficOutbounds(rows) {
     trafficOutboundsEl.innerHTML = `<div class="empty">暂无数据</div>`;
     return;
   }
-  renderTable(trafficOutboundsEl, rows, [
-    "outbound_tag",
-    "upstream_node_id",
-    "node_name",
-    "source_name",
-    "upload_bytes",
-    "download_bytes",
-    "total_bytes",
-    "updated_at",
-  ]);
+  trafficOutboundsEl.innerHTML = `
+    <div class="traffic-card-section">
+      <div class="traffic-card-section-title">出口摘要</div>
+      <div class="traffic-card-list traffic-outbound-card-list">
+        ${rows.map((row) => renderTrafficOutboundCard(row)).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderTrafficTokenCard(row) {
+  return `
+    <article class="traffic-card traffic-token-card" data-traffic-token-id="${escapeHTML(row.token_id || "")}">
+      <div class="traffic-card-heading">
+        <div>
+          <span>Token #${formatCell(row.token_id, "token_id")}</span>
+          <strong>${formatCell(row.auth_user, "auth_user")}</strong>
+        </div>
+        ${formatCell(row.token_status, "token_status")}
+      </div>
+      <div class="traffic-card-meter">
+        ${formatQuotaUsage(row.used_total_bytes, row.quota_bytes, row.token_status)}
+      </div>
+      <div class="traffic-card-grid">
+        ${trafficCardField("成员 ID", row.user_id, "user_id")}
+        ${trafficCardField("今日", row.today_total_bytes, "today_total_bytes")}
+        ${trafficCardField("本月", row.month_total_bytes, "month_total_bytes")}
+        ${trafficCardField("累计上传", row.used_upload_bytes, "used_upload_bytes")}
+        ${trafficCardField("累计下载", row.used_download_bytes, "used_download_bytes")}
+        ${trafficCardField("累计总量", row.used_total_bytes, "used_total_bytes")}
+        ${trafficCardField("额度", row.quota_bytes, "quota_bytes")}
+        ${trafficCardField("更新时间", row.updated_at, "updated_at")}
+      </div>
+    </article>
+  `;
+}
+
+function renderTrafficOutboundCard(row) {
+  return `
+    <article class="traffic-card traffic-outbound-card" data-traffic-outbound="${escapeHTML(row.outbound_tag || "")}">
+      <div class="traffic-card-heading">
+        <div>
+          <span>${formatCell(row.source_name, "source_name")}</span>
+          <strong>${formatCell(row.node_name, "node_name")}</strong>
+        </div>
+        <code title="${escapeHTML(row.outbound_tag || "")}">${formatCell(row.outbound_tag, "outbound_tag")}</code>
+      </div>
+      <div class="traffic-card-grid">
+        ${trafficCardField("节点 ID", row.upstream_node_id, "upstream_node_id")}
+        ${trafficCardField("上传", row.upload_bytes, "upload_bytes")}
+        ${trafficCardField("下载", row.download_bytes, "download_bytes")}
+        ${trafficCardField("总量", row.total_bytes, "total_bytes")}
+        ${trafficCardField("更新时间", row.updated_at, "updated_at")}
+      </div>
+    </article>
+  `;
+}
+
+function trafficCardField(label, value, column = "") {
+  return `
+    <div class="traffic-card-field">
+      <span>${escapeHTML(label)}</span>
+      <strong>${formatCell(value, column)}</strong>
+    </div>
+  `;
 }
 
 function renderTrafficDaily(rows) {

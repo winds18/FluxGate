@@ -1952,6 +1952,123 @@ td code {
   min-width: 1080px;
 }
 
+.traffic-card-section {
+  border-top: 1px solid var(--border-soft);
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.traffic-card-section-title {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0;
+}
+
+.traffic-card-list {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  min-width: 0;
+}
+
+.traffic-token-card-list {
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+}
+
+.traffic-card {
+  background: #ffffff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 12px;
+  min-width: 0;
+  padding: 14px;
+}
+
+.traffic-card-heading {
+  align-items: start;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  min-width: 0;
+}
+
+.traffic-card-heading > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.traffic-card-heading span,
+.traffic-card-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.traffic-card-heading strong {
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 760;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.traffic-card-heading > code {
+  background: #f8fafc;
+  border: 1px solid var(--border-soft);
+  border-radius: 5px;
+  color: #243447;
+  display: block;
+  font-size: 12px;
+  max-width: 168px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 5px 7px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.traffic-card-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  min-width: 0;
+}
+
+.traffic-card-field {
+  background: #fbfdff;
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  display: grid;
+  gap: 5px;
+  min-width: 0;
+  padding: 9px 10px;
+}
+
+.traffic-card-field strong {
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 680;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.traffic-card-meter {
+  min-width: 0;
+}
+
+.traffic-card-meter .quota-meter {
+  min-width: 0;
+}
+
 .traffic-day {
   align-items: center;
   display: grid;
@@ -2259,6 +2376,23 @@ td code {
   .token-action-group input,
   .token-action-group button,
   .token-card-actions > button {
+    width: 100%;
+  }
+
+  .traffic-card-list,
+  .traffic-token-card-list,
+  .traffic-card-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .traffic-card-heading {
+    grid-template-columns: 1fr;
+  }
+
+  .traffic-card-heading > code,
+  .traffic-card-heading .status-badge {
+    justify-content: center;
+    max-width: none;
     width: 100%;
   }
 }

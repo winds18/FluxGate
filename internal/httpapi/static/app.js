@@ -2074,6 +2074,7 @@ function renderTokens(rows) {
 }
 
 function renderTokenCard(row) {
+  const usedBytes = (row.used_upload_bytes || 0) + (row.used_download_bytes || 0);
   return `
     <article class="token-card" data-token-id="${row.id}">
       <div class="token-card-heading">
@@ -2089,7 +2090,11 @@ function renderTokenCard(row) {
         ${tokenCardField("名称", row.name)}
         ${tokenCardField("到期时间", row.expire_at, "expire_at")}
         ${tokenCardField("额度", row.quota_bytes, "quota_bytes")}
-        ${tokenCardField("已用", (row.used_upload_bytes || 0) + (row.used_download_bytes || 0), "used_total")}
+        ${tokenCardField("已用", usedBytes, "used_total")}
+      </div>
+      <div class="token-card-meter" data-token-quota-meter>
+        <div class="token-card-section-title">额度使用率</div>
+        ${formatQuotaUsage(usedBytes, row.quota_bytes, row.status)}
       </div>
       <div class="token-card-subscriptions">
         <div class="token-card-section-title">订阅地址</div>

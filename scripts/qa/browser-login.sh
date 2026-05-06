@@ -209,6 +209,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
   const tokenQuotaInputCount = await page.locator("#tokens input[data-token-quota-mib]").count();
   const tokenActionFieldCount = await page.locator("#tokens .token-action-field").count();
+  const tokenQuotaMeterCount = await page.locator("#tokens [data-token-quota-meter] .quota-meter").count();
   const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
   const tokenSubscriptionOpenCount = await page.locator("#tokens a[data-token-subscription-link]").count();
@@ -231,7 +232,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".token-card-heading, .token-card-field, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-card-actions",
+          ".token-card-heading, .token-card-field, .token-card-meter, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-card-actions",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
@@ -617,6 +618,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenExtendInputCount = tokenExtendInputCount;
   state.tokenQuotaInputCount = tokenQuotaInputCount;
   state.tokenActionFieldCount = tokenActionFieldCount;
+  state.tokenQuotaMeterCount = tokenQuotaMeterCount;
   state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
   state.tokenSubscriptionOpenCount = tokenSubscriptionOpenCount;
@@ -633,6 +635,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenRowCount > 0 && tokenActionFieldCount !== tokenRowCount * 2) {
     throw new Error(`token action labels missing: ${JSON.stringify(state)}`);
+  }
+  if (tokenRowCount > 0 && tokenQuotaMeterCount !== tokenRowCount) {
+    throw new Error(`token quota meters missing: ${JSON.stringify(state)}`);
   }
   if (tokenResultSubscriptionItemCount !== 3 || tokenResultSubscriptionOpenCount !== 3 || tokenResultVisualOverflowCount > 0) {
     throw new Error(`token subscription result card is incomplete or overflowing: ${JSON.stringify(state)}`);

@@ -801,6 +801,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let nodeCardChipCount = 0;
   let nodeCardEndpointCount = 0;
   let nodeActionButtonSymbolCount = 0;
+  let nodeControlButtonSymbolCount = 0;
   let nodeVisualOverflowCount = 0;
   let nodeRegionSummaryCount = 0;
   let nodeRegionSummaryChipCount = 0;
@@ -815,6 +816,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     nodeCardChipCount = await page.locator("#nodes [data-node-card-chip]").count();
     nodeCardEndpointCount = await page.locator("#nodes [data-node-card-endpoint]").count();
     nodeActionButtonSymbolCount = await page.locator("#nodes .node-actions .button-symbol").count();
+    nodeControlButtonSymbolCount = await page
+      .locator(
+        "#nodes button[data-node-region-action='back'] .button-symbol, #nodes button[data-node-filter-action='clear'] .button-symbol",
+      )
+      .count();
     await page.evaluate(() => {
       const summaryTitle = document.querySelector("#nodes [data-node-region-summary] .node-region-summary-copy strong");
       if (summaryTitle) {
@@ -1118,6 +1124,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeCardChipCount = nodeCardChipCount;
   state.nodeCardEndpointCount = nodeCardEndpointCount;
   state.nodeActionButtonSymbolCount = nodeActionButtonSymbolCount;
+  state.nodeControlButtonSymbolCount = nodeControlButtonSymbolCount;
   state.nodeVisualOverflowCount = nodeVisualOverflowCount;
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
@@ -1299,6 +1306,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (nodeRegionSummaryCount !== 1 || nodeRegionSummaryChipCount < 4 || nodeRegionSummaryOverflowCount > 0)
   ) {
     throw new Error(`node region summary is incomplete or overflowing: ${JSON.stringify(state)}`);
+  }
+  if (nodeRegionCount > 0 && nodeControlButtonSymbolCount !== 2) {
+    throw new Error(`node browser controls are missing action symbols: ${JSON.stringify(state)}`);
   }
   if (
     nodeRegionCount > 0 &&

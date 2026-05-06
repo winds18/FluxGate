@@ -2293,7 +2293,7 @@ function renderNodeRegion(group, groups, total, matched, totalRegionCount) {
   return `
     <div class="node-browser" data-node-view="cards" data-node-region="${escapeHTML(group.region)}">
       <div class="node-browser-header">
-        <button class="table-button ghost-button" type="button" data-node-region-action="back">返回地区</button>
+        <button class="table-button ghost-button" type="button" data-node-region-action="back">${buttonLabel("←", "返回地区")}</button>
         <div>
           <strong>${escapeHTML(group.region)}</strong>
           <span>${formatCell(group.items.length)} 个节点 · 筛选 ${formatCell(matched)} / ${formatCell(total)} · 共 ${formatCell(totalRegionCount)} 个地区</span>
@@ -2342,7 +2342,7 @@ function renderNodeFilterBar(total, matched, regionCount) {
         <strong>${formatCell(matched)}</strong>
         <span>/ ${formatCell(total)} 节点 · ${formatCell(regionCount)} 地区</span>
       </div>
-      <button class="table-button ghost-button" type="button" data-node-filter-action="clear" ${hasQuery ? "" : "disabled"}>清空</button>
+      <button class="table-button ghost-button" type="button" data-node-filter-action="clear" ${hasQuery ? "" : "disabled"}>${buttonLabel("×", "清空")}</button>
     </div>
   `;
 }

@@ -167,6 +167,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const viewRailSymbolCounts = {};
   const viewRailSymbols = {};
   const viewRailBadgeCounts = {};
+  const viewRailOverflow = {};
   const viewHeaderSymbols = {};
   for (const view of viewNames) {
     await switchView(view);
@@ -180,6 +181,26 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       .locator("#view-rail .view-rail-symbol")
       .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
     viewRailBadgeCounts[view] = await page.locator("#view-rail [data-view-rail-count]").count();
+    viewRailOverflow[view] = await page.evaluate(() => {
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(document.querySelectorAll("#view-rail .view-rail-button")).reduce((total, button) => {
+        const buttonBox = button.getBoundingClientRect();
+        const elements = Array.from(button.querySelectorAll(".view-rail-symbol, .view-rail-label, .view-rail-count")).filter(
+          (element) => element.offsetParent !== null,
+        );
+        for (const element of elements) {
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, buttonBox)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
+    });
     panelTitleOverflow[view] = await page.evaluate((viewName) => {
       const outside = (child, parent) =>
         child.left < parent.left - 1 ||
@@ -766,6 +787,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.viewRailSymbolCounts = viewRailSymbolCounts;
   state.viewRailSymbols = viewRailSymbols;
   state.viewRailBadgeCounts = viewRailBadgeCounts;
+  state.viewRailOverflow = viewRailOverflow;
   state.viewHeaderSymbols = viewHeaderSymbols;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewMetricCount = overviewMetricCount;
@@ -1003,6 +1025,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   });
   if (railSymbolMismatch) {
     throw new Error(`dashboard module rail symbols are incomplete: ${JSON.stringify(state)}`);
+  }
+  const overflowingRailView = Object.entries(viewRailOverflow).find(([, overflow]) => overflow > 0);
+  if (overflowingRailView) {
+    throw new Error(`dashboard module rail elements overflow: ${JSON.stringify(state)}`);
   }
   const railBadgeMismatch = Object.entries(viewRailButtonCounts).find(
     ([view, count]) => count !== viewRailBadgeCounts[view],

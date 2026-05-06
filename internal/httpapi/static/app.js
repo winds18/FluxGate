@@ -2002,6 +2002,7 @@ function renderPolicies(rows) {
 function renderPolicyCard(row) {
   const isEditing = appState.editingPolicyID === row.id;
   const scopeSummary = `${row.scope_type || "team"} #${row.scope_id || "--"}`;
+  const statusSummary = policyStatusSummary(row.status);
   return `
     <article class="policy-card ${isEditing ? "policy-card-editing" : ""}" data-policy-id="${row.id}">
       <div class="policy-card-heading">
@@ -2010,6 +2011,12 @@ function renderPolicyCard(row) {
           <strong>${isEditing ? policyTextInput(row, "name") : formatCell(row.name, "name")}</strong>
         </div>
         <span class="policy-scope-badge">${escapeHTML(scopeSummary)}</span>
+      </div>
+      <div class="policy-card-summary" aria-label="策略摘要">
+        ${policySummaryChip(`作用域 ${escapeHTML(scopeSummary)}`, "info")}
+        ${policySummaryChip(policyMaxNodesSummary(row.max_nodes))}
+        ${policySummaryChip(statusSummary.label, statusSummary.tone)}
+        ${policySummaryChip(policyVirtualNodesSummary(row.allowed_virtual_nodes))}
       </div>
       <div class="policy-card-grid">
         ${policyCardField("scope_type", isEditing ? policyScopeSelect(row.scope_type) : formatCell(row.scope_type, "scope_type"))}
@@ -2030,6 +2037,30 @@ function renderPolicyCard(row) {
       </div>
     </article>
   `;
+}
+
+function policySummaryChip(content, tone = "") {
+  return `<span class="policy-card-summary-chip ${tone ? `policy-card-summary-chip-${tone}` : ""}" data-policy-summary-chip>${content}</span>`;
+}
+
+function policyMaxNodesSummary(value) {
+  const maxNodes = Number(value || 0);
+  if (!Number.isFinite(maxNodes) || maxNodes <= 0) {
+    return "不限节点";
+  }
+  return `最多 ${formatPlainNumber(maxNodes)} 节点`;
+}
+
+function policyStatusSummary(value) {
+  const status = String(value || "active");
+  return {
+    label: escapeHTML(status),
+    tone: status === "active" ? "success" : "muted",
+  };
+}
+
+function policyVirtualNodesSummary(value) {
+  return String(value || "").trim() ? "指定网关" : "全部网关";
 }
 
 function policyCardField(label, value, className = "") {

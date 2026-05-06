@@ -643,6 +643,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   await switchView("policies");
   const policyCardCount = await page.locator("#policies .policy-card").count();
+  const policySummaryChipCount = await page.locator("#policies [data-policy-summary-chip]").count();
   const policyVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -652,7 +653,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     return Array.from(document.querySelectorAll("#policies .policy-card")).reduce((total, card) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
-        card.querySelectorAll(".policy-card-heading, .policy-scope-badge, .policy-card-field, .policy-actions"),
+        card.querySelectorAll(
+          ".policy-card-heading, .policy-card-summary, [data-policy-summary-chip], .policy-scope-badge, .policy-card-field, .policy-actions",
+        ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
         const box = element.getBoundingClientRect();
@@ -957,6 +960,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.virtualNodeEditCount = virtualNodeEditCount;
   state.virtualNodeEditFieldsVisible = virtualNodeEditFieldsVisible;
   state.policyCardCount = policyCardCount;
+  state.policySummaryChipCount = policySummaryChipCount;
   state.policyVisualOverflowCount = policyVisualOverflowCount;
   state.policyEditCount = policyEditCount;
   state.policyEditFieldsVisible = policyEditFieldsVisible;
@@ -1102,7 +1106,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`virtual node cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  if (policyEditCount > 0 && (policyCardCount !== policyEditCount || policyVisualOverflowCount > 0)) {
+  if (
+    policyEditCount > 0 &&
+    (policyCardCount !== policyEditCount || policySummaryChipCount !== policyCardCount * 4 || policyVisualOverflowCount > 0)
+  ) {
     throw new Error(`policy cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (

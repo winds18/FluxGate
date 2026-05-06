@@ -2757,12 +2757,17 @@ function showTokenSubscriptionResult(result, title) {
     ["Clash/Mihomo", clashSubscription],
     ["sing-box", singBoxSubscription],
   ].filter((item) => item[1]);
+  const formatCount = `${formatPlainNumber(items.length)} 格式`;
   tokenResultEl.hidden = false;
   tokenResultEl.innerHTML = `
     <div class="token-result-card">
-      <div class="token-result-heading">
-        <strong>${escapeHTML(title)}</strong>
-        <span>复制后可直接导入对应客户端</span>
+      <div class="token-result-heading" data-token-result-heading>
+        <span class="token-result-symbol" data-token-result-symbol aria-hidden="true">订</span>
+        <span class="token-result-copy">
+          <strong>${escapeHTML(title)}</strong>
+          <span>复制后可直接导入对应客户端</span>
+        </span>
+        <span class="token-result-meta" data-token-result-meta>${escapeHTML(formatCount)}</span>
       </div>
       ${items.length > 0 ? renderSubscriptionCardList(items, result.id || result.token_id || "") : `<div class="token-subscription-empty">暂无可显示的订阅地址</div>`}
     </div>

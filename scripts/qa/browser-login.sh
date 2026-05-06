@@ -618,6 +618,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     .allTextContents();
   const tokenResultSubscriptionOpenCount = await page.locator("#token-result a[data-token-subscription-link]").count();
   const tokenResultSubscriptionActionSymbolCount = await page.locator("#token-result .token-subscription-actions .button-symbol").count();
+  const tokenResultHeadingSymbolCount = await page.locator("#token-result [data-token-result-symbol]").count();
+  const tokenResultHeadingMetaCount = await page.locator("#token-result [data-token-result-meta]").count();
   const tokenResultVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -628,7 +630,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     if (!resultCard) return 1;
     const resultBox = resultCard.getBoundingClientRect();
     return Array.from(
-      resultCard.querySelectorAll(".token-result-heading, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, code, button, a"),
+      resultCard.querySelectorAll(".token-result-heading, .token-result-symbol, .token-result-copy, .token-result-meta, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, code, button, a"),
     ).reduce((total, element) => {
       if (element.offsetParent === null) return total;
       const box = element.getBoundingClientRect();
@@ -1343,6 +1345,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenResultSubscriptionOrigins = tokenResultSubscriptionOrigins;
   state.tokenResultSubscriptionOpenCount = tokenResultSubscriptionOpenCount;
   state.tokenResultSubscriptionActionSymbolCount = tokenResultSubscriptionActionSymbolCount;
+  state.tokenResultHeadingSymbolCount = tokenResultHeadingSymbolCount;
+  state.tokenResultHeadingMetaCount = tokenResultHeadingMetaCount;
   state.tokenResultVisualOverflowCount = tokenResultVisualOverflowCount;
   state.quotaMeterCount = quotaMeterCount;
   state.quotaUsageVisible = quotaUsageVisible;
@@ -1414,6 +1418,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     tokenResultSubscriptionOrigins.some((origin) => !["当前访问域名", "配置域名", "相对地址"].includes(origin)) ||
     tokenResultSubscriptionOpenCount !== 3 ||
     tokenResultSubscriptionActionSymbolCount !== 6 ||
+    tokenResultHeadingSymbolCount !== 1 ||
+    tokenResultHeadingMetaCount !== 1 ||
     tokenResultVisualOverflowCount > 0
   ) {
     throw new Error(`token subscription result card is incomplete or overflowing: ${JSON.stringify(state)}`);

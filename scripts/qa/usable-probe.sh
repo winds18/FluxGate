@@ -94,6 +94,7 @@ curl -fsS -c "$COOKIE_JAR" -X POST "$BASE_URL/api/auth/login" \
   -o "$OUT_DIR/login.json"
 
 curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/overview" -o "$OUT_DIR/overview.json"
+curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/tokens" -o "$OUT_DIR/tokens.json"
 curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/virtual-nodes" -o "$OUT_DIR/virtual-nodes.json"
 curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/policies" -o "$OUT_DIR/policies.json"
 curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/check" -o "$OUT_DIR/sing-box-check.json"
@@ -139,10 +140,25 @@ gateway_port="${GATEWAY_PROBE_PORT:-$virtual_node_port}"
 log "+ nc -z -w 3 $gateway_host $gateway_port"
 nc -z -w 3 "$gateway_host" "$gateway_port"
 
-if [[ -n "${FLUXGATE_QA_SUBSCRIPTION_URL:-}" ]]; then
-  probe_subscription_url "$FLUXGATE_QA_SUBSCRIPTION_URL" "default" "$OUT_DIR/subscription-default.txt"
-  probe_subscription_url "$FLUXGATE_QA_SUBSCRIPTION_URL" "clash" "$OUT_DIR/subscription-clash.yaml"
-  probe_subscription_url "$FLUXGATE_QA_SUBSCRIPTION_URL" "sing-box" "$OUT_DIR/subscription-sing-box.json"
+subscription_url="${FLUXGATE_QA_SUBSCRIPTION_URL:-}"
+subscription_source="env"
+if [[ -z "$subscription_url" ]]; then
+  subscription_source="admin-token-list"
+  subscription_url="$(json_expr "$OUT_DIR/tokens.json" '
+    (Array.isArray(data) ? data : [])
+      .find((item) => item && item.status === "active" && item.subscription_available && (item.subscriptions?.default || item.subscription))
+      ?.subscriptions?.default ||
+    (Array.isArray(data) ? data : [])
+      .find((item) => item && item.status === "active" && item.subscription_available && (item.subscriptions?.default || item.subscription))
+      ?.subscription ||
+    ""
+  ' || true)"
+fi
+
+if [[ -n "$subscription_url" ]]; then
+  probe_subscription_url "$subscription_url" "default" "$OUT_DIR/subscription-default.txt"
+  probe_subscription_url "$subscription_url" "clash" "$OUT_DIR/subscription-clash.yaml"
+  probe_subscription_url "$subscription_url" "sing-box" "$OUT_DIR/subscription-sing-box.json"
   if ! grep -F "$virtual_node_name" "$OUT_DIR/subscription-clash.yaml" >/dev/null; then
     log "usable probe failed: clash subscription missing active virtual node $virtual_node_name"
     exit 1
@@ -158,10 +174,10 @@ process.exit(outbounds.some((item) => item && item.tag === name) ? 0 : 1);
     log "usable probe failed: sing-box subscription missing active virtual node $virtual_node_name"
     exit 1
   fi
-  subscription_probe="enabled"
+  subscription_probe="$subscription_source"
 else
   subscription_probe="skipped"
-  log "FLUXGATE_QA_SUBSCRIPTION_URL is not set; skipping direct subscription body probe"
+  log "no recoverable subscription URL found; skipping direct subscription body probe"
 fi
 
 log "usable probe passed: teams=$teams users=$users tokens=$tokens sources=$sources nodes=$nodes virtual_nodes=$virtual_nodes policies=$policies inbound=$inbound_count users_in_config=$user_count upstreams=$upstream_count gateway=$gateway_host:$gateway_port virtual_node=$virtual_node_name config_hash=$config_hash subscription_probe=$subscription_probe"

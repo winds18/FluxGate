@@ -129,7 +129,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const populatedPanelCountCount = await page
     .locator(".panel-count")
     .evaluateAll((elements) => elements.filter((element) => element.textContent.trim().length > 0).length);
+  const panelSymbolCount = await page.locator(".panel-title .panel-symbol").count();
+  const panelSymbols = await page
+    .locator(".panel-title .panel-symbol")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
   const viewOverflow = {};
+  const panelTitleOverflow = {};
   const viewContextChipCounts = {};
   const viewRailButtonCounts = {};
   const viewRailBadgeCounts = {};
@@ -141,6 +146,25 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
     viewRailButtonCounts[view] = await page.locator("#view-rail .view-rail-button").count();
     viewRailBadgeCounts[view] = await page.locator("#view-rail [data-view-rail-count]").count();
+    panelTitleOverflow[view] = await page.evaluate((viewName) => {
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(document.querySelectorAll(`[data-dashboard-view="${viewName}"] .panel-title`)).reduce((total, title) => {
+        const titleBox = title.getBoundingClientRect();
+        const elements = Array.from(title.querySelectorAll(".panel-symbol, h2, .panel-count"))
+          .filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, titleBox)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
+    }, view);
   }
   await switchView("overview");
   await expect(page.locator("#metrics .metric")).toHaveCount(7, { timeout: 5000 });
@@ -697,6 +721,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.collapsedFormDrawerCount = collapsedFormDrawerCount;
   state.panelCountCount = panelCountCount;
   state.populatedPanelCountCount = populatedPanelCountCount;
+  state.panelSymbolCount = panelSymbolCount;
+  state.panelSymbols = panelSymbols;
+  state.panelTitleOverflow = panelTitleOverflow;
   state.viewContextChipCounts = viewContextChipCounts;
   state.viewRailButtonCounts = viewRailButtonCounts;
   state.viewRailBadgeCounts = viewRailBadgeCounts;
@@ -894,7 +921,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (formDrawerCount !== 7 || collapsedFormDrawerCount !== 7) {
     throw new Error(`form drawers should be collapsed by default: ${JSON.stringify(state)}`);
   }
-  if (panelCountCount !== 9 || populatedPanelCountCount !== 9) {
+  const expectedPanelSymbols = ["源", "点", "网", "团", "员", "钥", "策", "量", "运"];
+  const overflowingPanelTitle = Object.entries(panelTitleOverflow).find(([, overflow]) => overflow > 0);
+  if (
+    panelCountCount !== 9 ||
+    populatedPanelCountCount !== 9 ||
+    panelSymbolCount !== 9 ||
+    expectedPanelSymbols.some((symbol, index) => panelSymbols[index] !== symbol) ||
+    overflowingPanelTitle
+  ) {
     throw new Error(`module panel count badges are incomplete: ${JSON.stringify(state)}`);
   }
   const sparseContextView = Object.entries(viewContextChipCounts).find(([, count]) => count < 3);

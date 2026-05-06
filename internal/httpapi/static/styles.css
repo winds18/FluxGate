@@ -1023,6 +1023,22 @@ main {
   min-width: 0;
 }
 
+.panel-symbol {
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 820;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+  width: 28px;
+}
+
 .panel-title h2 {
   min-width: 0;
   overflow: hidden;

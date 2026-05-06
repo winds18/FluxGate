@@ -1023,7 +1023,9 @@ async function copyText(text) {
 }
 
 function showCopyFeedback(button, label, fallbackLabel = "复制") {
-  button.dataset.copyLabel = button.dataset.copyLabel || button.textContent.trim() || fallbackLabel;
+  button.dataset.copyLabel =
+    button.dataset.copyLabel || button.getAttribute("data-copy-label") || button.textContent.trim() || fallbackLabel;
+  button.dataset.copySymbol = button.dataset.copySymbol || button.getAttribute("data-button-symbol") || "";
   button.textContent = label;
   button.classList.add("is-copied");
   button.setAttribute("aria-label", label);
@@ -1031,7 +1033,13 @@ function showCopyFeedback(button, label, fallbackLabel = "复制") {
     if (!button.isConnected) {
       return;
     }
-    button.textContent = button.dataset.copyLabel || fallbackLabel;
+    const restoreLabel = button.dataset.copyLabel || fallbackLabel;
+    const restoreSymbol = button.dataset.copySymbol || "";
+    if (restoreSymbol) {
+      button.innerHTML = buttonLabel(restoreSymbol, restoreLabel);
+    } else {
+      button.textContent = restoreLabel;
+    }
     button.classList.remove("is-copied");
     button.removeAttribute("aria-label");
   }, 1600);
@@ -2199,7 +2207,7 @@ function renderNodeDetailPanel(node) {
         <div class="detail-item detail-item-wide">
           <div class="detail-item-heading">
             <span>${labelForColumn("uri")}</span>
-            <button class="table-button ghost-button" type="button" data-node-action="copy-uri" data-node-id="${escapeHTML(String(node.id || ""))}" data-node-uri="${escapeHTML(String(node.uri || ""))}">复制 URI</button>
+            <button class="table-button ghost-button" type="button" data-node-action="copy-uri" data-node-id="${escapeHTML(String(node.id || ""))}" data-node-uri="${escapeHTML(String(node.uri || ""))}" data-button-symbol="⧉" data-copy-label="复制 URI">${buttonLabel("⧉", "复制 URI")}</button>
           </div>
           <code class="detail-code">${escapeHTML(String(node.uri || ""))}</code>
         </div>
@@ -2344,8 +2352,8 @@ function renderSubscriptionCardList(items, tokenID = "") {
                   <span class="token-subscription-kind" data-token-subscription-kind>${escapeHTML(subscriptionKindForLabel(label))}</span>
                 </span>
                 <span class="token-subscription-actions">
-                  <a class="table-button ghost-button link-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-token-subscription-link>打开</a>
-                  <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}">复制</button>
+                  <a class="table-button ghost-button link-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-token-subscription-link>${buttonLabel("↗", "打开")}</a>
+                  <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}" data-button-symbol="⧉" data-copy-label="复制">${buttonLabel("⧉", "复制")}</button>
                 </span>
               </div>
               <code title="${escapeHTML(url)}">${escapeHTML(url)}</code>
@@ -2355,6 +2363,10 @@ function renderSubscriptionCardList(items, tokenID = "") {
         .join("")}
     </div>
   `;
+}
+
+function buttonLabel(symbol, label) {
+  return `<span class="button-symbol" aria-hidden="true">${escapeHTML(symbol)}</span><span class="button-label">${escapeHTML(label)}</span>`;
 }
 
 function subscriptionKindForLabel(label) {

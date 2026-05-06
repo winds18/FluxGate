@@ -1321,8 +1321,23 @@ button:disabled {
 }
 
 .table-button {
+  gap: 6px;
+  max-width: 100%;
   min-height: 30px;
+  min-width: 0;
   padding: 0 10px;
+}
+
+.button-symbol {
+  flex: 0 0 auto;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.button-label {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .danger-button {

@@ -412,6 +412,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenResultSubscriptionItemCount = await page.locator("#token-result .token-subscription-item").count();
   const tokenResultSubscriptionKindCount = await page.locator("#token-result [data-token-subscription-kind]").count();
   const tokenResultSubscriptionOpenCount = await page.locator("#token-result a[data-token-subscription-link]").count();
+  const tokenResultSubscriptionActionSymbolCount = await page.locator("#token-result .token-subscription-actions .button-symbol").count();
   const tokenResultVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -442,14 +443,20 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenSubscriptionKindCount = await page.locator("#tokens [data-token-subscription-kind]").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
   const tokenSubscriptionOpenCount = await page.locator("#tokens a[data-token-subscription-link]").count();
+  const tokenSubscriptionActionSymbolCount = await page.locator("#tokens .token-subscription-actions .button-symbol").count();
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
   let tokenCopyFeedbackVisible = false;
+  let tokenCopySymbolRestored = false;
   if (tokenSubscriptionCopyCount > 0) {
     const firstCopyButton = page.locator("#tokens button[data-token-action='copy-subscription']").first();
     await firstCopyButton.click();
     await expect(firstCopyButton).toHaveText("已复制", { timeout: 5000 });
     await expect(page.locator("#status")).toContainText("订阅地址已复制", { timeout: 5000 });
     tokenCopyFeedbackVisible = true;
+    await page.waitForTimeout(1700);
+    await expect(firstCopyButton.locator(".button-symbol")).toHaveText("⧉", { timeout: 5000 });
+    await expect(firstCopyButton.locator(".button-label")).toHaveText("复制", { timeout: 5000 });
+    tokenCopySymbolRestored = true;
   }
   const tokenVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
@@ -882,6 +889,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenResultSubscriptionItemCount = tokenResultSubscriptionItemCount;
   state.tokenResultSubscriptionKindCount = tokenResultSubscriptionKindCount;
   state.tokenResultSubscriptionOpenCount = tokenResultSubscriptionOpenCount;
+  state.tokenResultSubscriptionActionSymbolCount = tokenResultSubscriptionActionSymbolCount;
   state.tokenResultVisualOverflowCount = tokenResultVisualOverflowCount;
   state.quotaMeterCount = quotaMeterCount;
   state.quotaUsageVisible = quotaUsageVisible;
@@ -893,7 +901,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenSubscriptionKindCount = tokenSubscriptionKindCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
   state.tokenSubscriptionOpenCount = tokenSubscriptionOpenCount;
+  state.tokenSubscriptionActionSymbolCount = tokenSubscriptionActionSymbolCount;
   state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
+  state.tokenCopySymbolRestored = tokenCopySymbolRestored;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
   state.tokenVisualOverflowCount = tokenVisualOverflowCount;
   state.tokenVisualOverlapCount = tokenVisualOverlapCount;
@@ -914,6 +924,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     tokenResultSubscriptionItemCount !== 3 ||
     tokenResultSubscriptionKindCount !== 3 ||
     tokenResultSubscriptionOpenCount !== 3 ||
+    tokenResultSubscriptionActionSymbolCount !== 6 ||
     tokenResultVisualOverflowCount > 0
   ) {
     throw new Error(`token subscription result card is incomplete or overflowing: ${JSON.stringify(state)}`);
@@ -925,12 +936,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     tokenSubscriptionCopyCount > 0 &&
     (tokenSubscriptionItemCount !== tokenSubscriptionCopyCount ||
       tokenSubscriptionKindCount !== tokenSubscriptionCopyCount ||
-      tokenSubscriptionOpenCount !== tokenSubscriptionCopyCount)
+      tokenSubscriptionOpenCount !== tokenSubscriptionCopyCount ||
+      tokenSubscriptionActionSymbolCount !== tokenSubscriptionCopyCount * 2)
   ) {
     throw new Error(`token subscription cards are incomplete: ${JSON.stringify(state)}`);
   }
   if (tokenSubscriptionCopyCount > 0 && !tokenCopyFeedbackVisible) {
     throw new Error(`token subscription copy feedback missing: ${JSON.stringify(state)}`);
+  }
+  if (tokenSubscriptionCopyCount > 0 && !tokenCopySymbolRestored) {
+    throw new Error(`token subscription copy symbol restore missing: ${JSON.stringify(state)}`);
   }
   if (tokenVisualOverflowCount > 0 || tokenVisualOverlapCount > 0) {
     throw new Error(`token controls visually overflow or overlap: ${JSON.stringify(state)}`);

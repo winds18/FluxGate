@@ -2834,6 +2834,9 @@ function trafficCardField(label, value, column = "") {
 
 function renderTrafficDaily(rows) {
   renderTrafficBars(trafficDailyEl, rows, {
+    heading: "最近 14 天",
+    hint: "日流量趋势",
+    symbol: "日",
     valueKey: "total_bytes",
     label: (row) => String(row.day || "").slice(5),
     title: (row, total) => `${row.day} ${formatBytes(total)}`,
@@ -2843,6 +2846,9 @@ function renderTrafficDaily(rows) {
 
 function renderTrafficHourly(rows) {
   renderTrafficBars(trafficHourlyEl, rows, {
+    heading: "最近 24 小时",
+    hint: "小时流量趋势",
+    symbol: "时",
     valueKey: "total_bytes",
     label: (row) => {
       return formatHourForDisplay(row.hour);
@@ -2857,25 +2863,54 @@ function renderTrafficBars(target, rows, options) {
     target.innerHTML = emptyState("量", "暂无流量数据", "真实网关流量进入统计链路后会生成趋势图");
     return;
   }
-  const maxTotal = Math.max(...rows.map((row) => row[options.valueKey] || 0), 1);
+  const values = rows.map((row) => Number(row[options.valueKey] || 0));
+  const totalSum = values.reduce((sum, value) => sum + value, 0);
+  const peakIndex = values.reduce((maxIndex, value, index) => (value > values[maxIndex] ? index : maxIndex), 0);
+  const peakRow = rows[peakIndex] || rows[0];
+  const peakTotal = values[peakIndex] || 0;
+  const activeCount = values.filter((value) => value > 0).length;
+  const maxTotal = Math.max(...values, 1);
   target.innerHTML = `
-    <div class="${options.className}">
-      ${rows
-        .map((row) => {
-          const total = row[options.valueKey] || 0;
-          const height = total > 0 ? Math.max(8, Math.round((total / maxTotal) * 118)) : 2;
-          return `
-            <div class="traffic-day" title="${escapeHTML(options.title(row, total))}">
-              <div class="traffic-bar-track">
-                <span class="traffic-bar" style="height: ${height}px"></span>
+    <div class="traffic-chart-panel" data-traffic-chart-panel>
+      <div class="traffic-chart-heading">
+        <span class="traffic-chart-symbol" data-traffic-chart-symbol aria-hidden="true">${escapeHTML(options.symbol || "量")}</span>
+        <div class="traffic-chart-title">
+          <strong>${escapeHTML(options.heading || "流量趋势")}</strong>
+          <span>${escapeHTML(options.hint || "真实网关流量趋势")}</span>
+        </div>
+        <div class="traffic-chart-summary" aria-label="流量趋势摘要">
+          ${trafficChartSummaryChip("总量", formatBytes(totalSum))}
+          ${trafficChartSummaryChip("峰值", `${options.label(peakRow)} · ${formatBytes(peakTotal)}`)}
+          ${trafficChartSummaryChip("活跃", `${activeCount}/${rows.length}`)}
+        </div>
+      </div>
+      <div class="${options.className}">
+        ${rows
+          .map((row) => {
+            const total = row[options.valueKey] || 0;
+            const height = total > 0 ? Math.max(8, Math.round((total / maxTotal) * 118)) : 2;
+            return `
+              <div class="traffic-day" title="${escapeHTML(options.title(row, total))}">
+                <div class="traffic-bar-track">
+                  <span class="traffic-bar" style="height: ${height}px"></span>
+                </div>
+                <span class="traffic-day-label">${escapeHTML(options.label(row))}</span>
+                <strong>${escapeHTML(formatBytes(total))}</strong>
               </div>
-              <span class="traffic-day-label">${escapeHTML(options.label(row))}</span>
-              <strong>${escapeHTML(formatBytes(total))}</strong>
-            </div>
-          `;
-        })
-        .join("")}
+            `;
+          })
+          .join("")}
+      </div>
     </div>
+  `;
+}
+
+function trafficChartSummaryChip(label, value) {
+  return `
+    <span class="traffic-chart-summary-chip" data-traffic-chart-summary-chip>
+      <span>${escapeHTML(label)}</span>
+      <strong>${escapeHTML(value)}</strong>
+    </span>
   `;
 }
 

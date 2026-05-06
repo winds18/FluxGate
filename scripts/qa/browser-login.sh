@@ -366,6 +366,58 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const quotaMeterCount = await page.locator("#traffic-tokens .quota-meter").count();
   const trafficTokenSummaryChipCount = await page.locator("#traffic-tokens [data-traffic-summary-chip]").count();
   const trafficOutboundSummaryChipCount = await page.locator("#traffic-outbounds [data-traffic-summary-chip]").count();
+  const trafficChartPanelCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-chart-panel]').count();
+  const trafficChartSymbolCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-chart-symbol]').count();
+  const trafficChartSummaryChipCount = await page
+    .locator('[data-dashboard-view="traffic"] [data-traffic-chart-summary-chip]')
+    .count();
+  const trafficChartOverflow = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const details = [];
+    Array.from(document.querySelectorAll('[data-dashboard-view="traffic"] [data-traffic-chart-panel]')).forEach(
+      (panel, panelIndex) => {
+        const panelBox = panel.getBoundingClientRect();
+        const elements = Array.from(
+          panel.querySelectorAll(
+            "[data-traffic-chart-symbol], .traffic-chart-title, .traffic-chart-summary, [data-traffic-chart-summary-chip]",
+          ),
+        ).filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, panelBox)) {
+            details.push({
+              panelIndex,
+              selector:
+                element.getAttribute("data-traffic-chart-symbol") !== null
+                  ? "symbol"
+                  : element.getAttribute("data-traffic-chart-summary-chip") !== null
+                    ? "summary-chip"
+                    : element.className || element.tagName,
+              text: (element.textContent || "").trim().replace(/\s+/g, " ").slice(0, 80),
+              panel: {
+                left: Math.round(panelBox.left),
+                right: Math.round(panelBox.right),
+                top: Math.round(panelBox.top),
+                bottom: Math.round(panelBox.bottom),
+              },
+              box: {
+                left: Math.round(box.left),
+                right: Math.round(box.right),
+                top: Math.round(box.top),
+                bottom: Math.round(box.bottom),
+              },
+            });
+          }
+        }
+      },
+    );
+    return { count: details.length, details };
+  });
+  const trafficChartOverflowCount = trafficChartOverflow.count;
   const trafficOutboundEmptyStateCount = await page.locator("#traffic-outbounds [data-empty-state]").count();
   const trafficEmptyStateCount = await page.locator('[data-dashboard-view="traffic"] [data-empty-state]').count();
   const trafficEmptyStateSymbolCount = await page.locator('[data-dashboard-view="traffic"] [data-empty-state-symbol]').count();
@@ -1032,6 +1084,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.trafficOutboundCardCount = trafficOutboundCardCount;
   state.trafficTokenSummaryChipCount = trafficTokenSummaryChipCount;
   state.trafficOutboundSummaryChipCount = trafficOutboundSummaryChipCount;
+  state.trafficChartPanelCount = trafficChartPanelCount;
+  state.trafficChartSymbolCount = trafficChartSymbolCount;
+  state.trafficChartSummaryChipCount = trafficChartSummaryChipCount;
+  state.trafficChartOverflowCount = trafficChartOverflowCount;
+  state.trafficChartOverflowDetails = trafficChartOverflow.details;
   state.trafficOutboundEmptyStateCount = trafficOutboundEmptyStateCount;
   state.trafficEmptyStateCount = trafficEmptyStateCount;
   state.trafficEmptyStateSymbolCount = trafficEmptyStateSymbolCount;
@@ -1137,6 +1194,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (trafficOutboundRowCount > 0 && trafficOutboundCardCount !== trafficOutboundRowCount) ||
     (trafficTokenCardCount > 0 && trafficTokenSummaryChipCount !== trafficTokenCardCount * 4) ||
     (trafficOutboundCardCount > 0 && trafficOutboundSummaryChipCount !== trafficOutboundCardCount * 4) ||
+    trafficChartPanelCount !== 2 ||
+    trafficChartSymbolCount !== 2 ||
+    trafficChartSummaryChipCount !== 6 ||
+    trafficChartOverflowCount > 0 ||
     (trafficOutboundRowCount === 0 && trafficOutboundEmptyStateCount !== 1) ||
     trafficEmptyStateCount !== trafficEmptyStateSymbolCount ||
     trafficEmptyStateOverflowCount > 0 ||

@@ -1952,7 +1952,19 @@ td code {
   min-width: 0;
 }
 
-.token-subscription-heading > span:not(.token-subscription-actions) {
+.token-subscription-title {
+  align-items: center;
+  color: var(--muted);
+  display: inline-flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  font-weight: 760;
+  gap: 6px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.token-subscription-title > span:first-child {
   color: var(--muted);
   font-size: 12px;
   font-weight: 760;
@@ -1960,6 +1972,18 @@ td code {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.token-subscription-kind {
+  background: #edf4ff;
+  border: 1px solid #d7e6ff;
+  border-radius: 999px;
+  color: #1f5fbf;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 780;
+  line-height: 1.2;
+  padding: 3px 7px;
 }
 
 .token-subscription-item code {

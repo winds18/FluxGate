@@ -183,6 +183,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   });
   await expect(page.locator("#token-result .token-result-card")).toBeVisible({ timeout: 5000 });
   const tokenResultSubscriptionItemCount = await page.locator("#token-result .token-subscription-item").count();
+  const tokenResultSubscriptionKindCount = await page.locator("#token-result [data-token-subscription-kind]").count();
   const tokenResultSubscriptionOpenCount = await page.locator("#token-result a[data-token-subscription-link]").count();
   const tokenResultVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
@@ -194,7 +195,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     if (!resultCard) return 1;
     const resultBox = resultCard.getBoundingClientRect();
     return Array.from(
-      resultCard.querySelectorAll(".token-result-heading, .token-subscription-item, .token-subscription-heading, code, button, a"),
+      resultCard.querySelectorAll(".token-result-heading, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, code, button, a"),
     ).reduce((total, element) => {
       if (element.offsetParent === null) return total;
       const box = element.getBoundingClientRect();
@@ -211,6 +212,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenActionFieldCount = await page.locator("#tokens .token-action-field").count();
   const tokenQuotaMeterCount = await page.locator("#tokens [data-token-quota-meter] .quota-meter").count();
   const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
+  const tokenSubscriptionKindCount = await page.locator("#tokens [data-token-subscription-kind]").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
   const tokenSubscriptionOpenCount = await page.locator("#tokens a[data-token-subscription-link]").count();
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
@@ -232,7 +234,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".token-card-heading, .token-card-field, .token-card-meter, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-card-actions",
+          ".token-card-heading, .token-card-field, .token-card-meter, .token-card-subscriptions, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-card-actions",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
@@ -611,6 +613,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenRowCount = tokenRowCount;
   state.tokenCardCount = tokenCardCount;
   state.tokenResultSubscriptionItemCount = tokenResultSubscriptionItemCount;
+  state.tokenResultSubscriptionKindCount = tokenResultSubscriptionKindCount;
   state.tokenResultSubscriptionOpenCount = tokenResultSubscriptionOpenCount;
   state.tokenResultVisualOverflowCount = tokenResultVisualOverflowCount;
   state.quotaMeterCount = quotaMeterCount;
@@ -620,6 +623,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenActionFieldCount = tokenActionFieldCount;
   state.tokenQuotaMeterCount = tokenQuotaMeterCount;
   state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
+  state.tokenSubscriptionKindCount = tokenSubscriptionKindCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
   state.tokenSubscriptionOpenCount = tokenSubscriptionOpenCount;
   state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
@@ -639,7 +643,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (tokenRowCount > 0 && tokenQuotaMeterCount !== tokenRowCount) {
     throw new Error(`token quota meters missing: ${JSON.stringify(state)}`);
   }
-  if (tokenResultSubscriptionItemCount !== 3 || tokenResultSubscriptionOpenCount !== 3 || tokenResultVisualOverflowCount > 0) {
+  if (
+    tokenResultSubscriptionItemCount !== 3 ||
+    tokenResultSubscriptionKindCount !== 3 ||
+    tokenResultSubscriptionOpenCount !== 3 ||
+    tokenResultVisualOverflowCount > 0
+  ) {
     throw new Error(`token subscription result card is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (tokenRowCount > 0 && tokenRotateSubscriptionCount !== tokenRowCount) {
@@ -647,7 +656,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (
     tokenSubscriptionCopyCount > 0 &&
-    (tokenSubscriptionItemCount !== tokenSubscriptionCopyCount || tokenSubscriptionOpenCount !== tokenSubscriptionCopyCount)
+    (tokenSubscriptionItemCount !== tokenSubscriptionCopyCount ||
+      tokenSubscriptionKindCount !== tokenSubscriptionCopyCount ||
+      tokenSubscriptionOpenCount !== tokenSubscriptionCopyCount)
   ) {
     throw new Error(`token subscription cards are incomplete: ${JSON.stringify(state)}`);
   }

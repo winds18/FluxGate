@@ -2160,7 +2160,10 @@ function renderSubscriptionCardList(items, tokenID = "") {
           ([label, url]) => `
             <div class="token-subscription-item">
               <div class="token-subscription-heading">
-                <span>${escapeHTML(label)}</span>
+                <span class="token-subscription-title">
+                  <span>${escapeHTML(label)}</span>
+                  <span class="token-subscription-kind" data-token-subscription-kind>${escapeHTML(subscriptionKindForLabel(label))}</span>
+                </span>
                 <span class="token-subscription-actions">
                   <a class="table-button ghost-button link-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-token-subscription-link>打开</a>
                   <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}">复制</button>
@@ -2173,6 +2176,12 @@ function renderSubscriptionCardList(items, tokenID = "") {
         .join("")}
     </div>
   `;
+}
+
+function subscriptionKindForLabel(label) {
+  if (label === "Clash/Mihomo") return "Mihomo";
+  if (label === "sing-box") return "sing-box";
+  return "通用";
 }
 
 function showTokenSubscriptionResult(result, title) {

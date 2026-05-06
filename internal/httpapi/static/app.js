@@ -2300,7 +2300,7 @@ function renderTokenCard(row) {
               <em>天</em>
             </span>
           </label>
-          <button class="table-button" data-token-action="extend" data-token-id="${row.id}">续期</button>
+          <button class="table-button" data-token-action="extend" data-token-id="${row.id}">${buttonLabel("+", "续期")}</button>
         </span>
         <span class="token-action-group" data-token-action-group>
           <label class="token-action-field">
@@ -2310,11 +2310,16 @@ function renderTokenCard(row) {
               <em>MiB</em>
             </span>
           </label>
-          <button class="table-button" data-token-action="quota" data-token-id="${row.id}">加额</button>
+          <button class="table-button" data-token-action="quota" data-token-id="${row.id}">${buttonLabel("+", "加额")}</button>
         </span>
-        <button class="table-button" data-token-action="restore" data-token-id="${row.id}">恢复</button>
-        <button class="table-button ghost-button" data-token-action="rotate-subscription" data-token-id="${row.id}">重置订阅</button>
-        <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">撤销</button>
+        <span class="token-command-group" data-token-command-group>
+          <span class="token-command-label">状态控制</span>
+          <span class="token-command-buttons">
+            <button class="table-button" data-token-action="restore" data-token-id="${row.id}">${buttonLabel("↺", "恢复")}</button>
+            <button class="table-button ghost-button" data-token-action="rotate-subscription" data-token-id="${row.id}">${buttonLabel("⧉", "重置订阅")}</button>
+            <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">${buttonLabel("!", "撤销")}</button>
+          </span>
+        </span>
       </div>
     </article>
   `;

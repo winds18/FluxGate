@@ -453,6 +453,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
   const tokenQuotaInputCount = await page.locator("#tokens input[data-token-quota-mib]").count();
   const tokenActionFieldCount = await page.locator("#tokens .token-action-field").count();
+  const tokenCommandGroupCount = await page.locator("#tokens [data-token-command-group]").count();
+  const tokenActionButtonSymbolCount = await page.locator("#tokens .token-card-actions .button-symbol").count();
   const tokenQuotaMeterCount = await page.locator("#tokens [data-token-quota-meter] .quota-meter").count();
   const tokenSubscriptionItemCount = await page.locator("#tokens .token-subscription-item").count();
   const tokenSubscriptionKindCount = await page.locator("#tokens [data-token-subscription-kind]").count();
@@ -497,6 +499,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return total;
     }, 0);
   });
+  const tokenActionsScrollOverflowCount = await page.evaluate(() =>
+    Array.from(document.querySelectorAll("#tokens .token-card-actions")).reduce((total, element) => {
+      if (element.scrollWidth > element.clientWidth + 1) return total + 1;
+      return total;
+    }, 0),
+  );
   const tokenVisualOverlapCount = await page.evaluate(() => {
     const intersects = (a, b) =>
       a.left < b.right - 1 &&
@@ -920,6 +928,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenExtendInputCount = tokenExtendInputCount;
   state.tokenQuotaInputCount = tokenQuotaInputCount;
   state.tokenActionFieldCount = tokenActionFieldCount;
+  state.tokenCommandGroupCount = tokenCommandGroupCount;
+  state.tokenActionButtonSymbolCount = tokenActionButtonSymbolCount;
   state.tokenQuotaMeterCount = tokenQuotaMeterCount;
   state.tokenSubscriptionItemCount = tokenSubscriptionItemCount;
   state.tokenSubscriptionKindCount = tokenSubscriptionKindCount;
@@ -932,6 +942,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenCopySymbolRestored = tokenCopySymbolRestored;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
   state.tokenVisualOverflowCount = tokenVisualOverflowCount;
+  state.tokenActionsScrollOverflowCount = tokenActionsScrollOverflowCount;
   state.tokenVisualOverlapCount = tokenVisualOverlapCount;
   state.opsActionCardCount = opsActionCardCount;
   state.opsResultVisible = opsResultVisible;
@@ -942,6 +953,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenRowCount > 0 && tokenActionFieldCount !== tokenRowCount * 2) {
     throw new Error(`token action labels missing: ${JSON.stringify(state)}`);
+  }
+  if (tokenRowCount > 0 && (tokenCommandGroupCount !== tokenRowCount || tokenActionButtonSymbolCount < tokenRowCount * 5)) {
+    throw new Error(`token action panels missing symbols or command groups: ${JSON.stringify(state)}`);
   }
   if (tokenRowCount > 0 && tokenQuotaMeterCount !== tokenRowCount) {
     throw new Error(`token quota meters missing: ${JSON.stringify(state)}`);
@@ -981,7 +995,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (tokenSubscriptionCopyCount > 0 && !tokenCopySymbolRestored) {
     throw new Error(`token subscription copy symbol restore missing: ${JSON.stringify(state)}`);
   }
-  if (tokenVisualOverflowCount > 0 || tokenVisualOverlapCount > 0) {
+  if (tokenVisualOverflowCount > 0 || tokenVisualOverlapCount > 0 || tokenActionsScrollOverflowCount > 0) {
     throw new Error(`token controls visually overflow or overlap: ${JSON.stringify(state)}`);
   }
   if (

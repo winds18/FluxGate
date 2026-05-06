@@ -1231,14 +1231,14 @@ main {
 }
 
 .token-action-group {
-  align-items: end;
   background: var(--surface-muted);
   border: 1px solid var(--border-soft);
   border-radius: 6px;
-  display: inline-flex;
+  display: grid;
   gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
   min-width: 0;
-  padding: 6px;
+  padding: 10px;
 }
 
 .token-action-field {
@@ -1288,6 +1288,36 @@ main {
 .token-action-input input:focus-visible {
   box-shadow: none;
   outline: 0;
+}
+
+.token-command-group {
+  background: var(--surface-muted);
+  border: 1px solid var(--border-soft);
+  border-radius: 6px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px;
+}
+
+.token-command-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 760;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.token-command-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.token-command-buttons button {
+  flex: 1 1 118px;
+  min-width: 0;
 }
 
 .policy-actions {
@@ -2589,7 +2619,12 @@ td code {
 }
 
 .token-card-actions {
-  justify-content: flex-start;
+  align-items: stretch;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 230px), 1fr));
+  justify-content: stretch;
+  overflow: visible;
 }
 
 .table {
@@ -3211,7 +3246,8 @@ td code {
   }
 
   .token-card-actions,
-  .token-action-group {
+  .token-action-group,
+  .token-command-group {
     align-items: stretch;
     width: 100%;
   }
@@ -3221,9 +3257,19 @@ td code {
     width: 100%;
   }
 
+  .token-action-group,
+  .token-command-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .token-command-buttons {
+    display: grid;
+    width: 100%;
+  }
+
   .token-action-group input,
   .token-action-group button,
-  .token-card-actions > button {
+  .token-command-buttons button {
     width: 100%;
   }
 

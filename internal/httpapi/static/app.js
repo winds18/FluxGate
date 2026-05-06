@@ -1,6 +1,7 @@
 const statusEl = document.querySelector("#status");
 const loginView = document.querySelector("#login-view");
 const appView = document.querySelector("#app-view");
+const viewSymbolEl = document.querySelector("#view-symbol");
 const viewTitleEl = document.querySelector("#view-title");
 const viewDescriptionEl = document.querySelector("#view-description");
 const viewContextEl = document.querySelector("#view-context");
@@ -79,6 +80,15 @@ const dashboardViewMeta = {
   policies: ["策略", "控制 Token、成员和团队可见的节点范围"],
   traffic: ["流量", "查看用量、额度消耗和上游出口流量"],
   ops: ["运维", "检查、发布、回滚并重启 sing-box 配置"],
+};
+const dashboardViewSymbols = {
+  overview: "概",
+  access: "源",
+  nodes: "点",
+  identity: "身",
+  policies: "策",
+  traffic: "量",
+  ops: "运",
 };
 const dashboardViewRail = {
   overview: [
@@ -354,6 +364,7 @@ function setActiveView(view) {
     button.setAttribute("aria-current", isActive ? "page" : "false");
   });
   const [title, description] = dashboardViewMeta[nextView];
+  if (viewSymbolEl) viewSymbolEl.textContent = dashboardViewSymbols[nextView] || title.slice(0, 1);
   viewTitleEl.textContent = title;
   viewDescriptionEl.textContent = description;
   updateViewContext();

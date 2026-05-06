@@ -47,6 +47,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const screenshotPath = process.env.SCREENSHOT_PATH;
   const responses = [];
   const consoleMessages = [];
+  const expectedViewSymbols = {
+    overview: "概",
+    access: "源",
+    nodes: "点",
+    identity: "身",
+    policies: "策",
+    traffic: "量",
+    ops: "运",
+  };
 
   page.on("response", (response) => {
     const url = response.url();
@@ -103,9 +112,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const viewContextChipCounts = {};
   const viewRailButtonCounts = {};
   const viewRailBadgeCounts = {};
+  const viewHeaderSymbols = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
+    viewHeaderSymbols[view] = (await page.locator("#view-symbol").textContent())?.trim();
     viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
     viewRailButtonCounts[view] = await page.locator("#view-rail .view-rail-button").count();
     viewRailBadgeCounts[view] = await page.locator("#view-rail [data-view-rail-count]").count();
@@ -565,6 +576,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.viewContextChipCounts = viewContextChipCounts;
   state.viewRailButtonCounts = viewRailButtonCounts;
   state.viewRailBadgeCounts = viewRailBadgeCounts;
+  state.viewHeaderSymbols = viewHeaderSymbols;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
@@ -755,6 +767,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   );
   if (railBadgeMismatch) {
     throw new Error(`dashboard module rail badges are incomplete: ${JSON.stringify(state)}`);
+  }
+  const headerSymbolMismatch = Object.entries(expectedViewSymbols).find(
+    ([view, symbol]) => viewHeaderSymbols[view] !== symbol,
+  );
+  if (headerSymbolMismatch) {
+    throw new Error(`dashboard view header symbol is stale: ${JSON.stringify(state)}`);
   }
   if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);

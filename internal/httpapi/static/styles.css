@@ -288,10 +288,36 @@ main {
   min-width: 0;
 }
 
+.workspace-title-row {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workspace-view-symbol {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 14px;
+  font-weight: 820;
+  height: 34px;
+  justify-content: center;
+  width: 34px;
+}
+
 .workspace-header h2 {
   font-size: 24px;
   font-weight: 780;
   line-height: 1.15;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .workspace-header p:not(.eyebrow) {

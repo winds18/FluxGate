@@ -434,9 +434,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const mobileDockVisible = await page.locator(".mobile-dock").isVisible();
   const mobileSidebarVisible = await page.locator(".dashboard-sidebar").isVisible();
   const mobileOverviewOverflow = await pageHorizontalOverflow();
+  const mobileDockOverflow = await page.locator(".mobile-dock").evaluate((dock) =>
+    Math.max(0, dock.scrollWidth - dock.clientWidth),
+  );
+  await switchView("policies");
+  const mobilePoliciesVisible = await page.locator('[data-dashboard-view="policies"]').isVisible();
+  const mobilePoliciesOverflow = await pageHorizontalOverflow();
   await switchView("nodes");
   const mobileNodesVisible = await page.locator('[data-dashboard-view="nodes"]').isVisible();
   const mobileNodesOverflow = await pageHorizontalOverflow();
+  await switchView("ops");
+  const mobileOpsVisible = await page.locator('[data-dashboard-view="ops"]').isVisible();
+  const mobileOpsOverflow = await pageHorizontalOverflow();
   await page.setViewportSize({ width: 1280, height: 720 });
   await switchView("nodes");
 
@@ -474,8 +483,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileDockVisible = mobileDockVisible;
   state.mobileSidebarVisible = mobileSidebarVisible;
   state.mobileOverviewOverflow = mobileOverviewOverflow;
+  state.mobileDockOverflow = mobileDockOverflow;
+  state.mobilePoliciesVisible = mobilePoliciesVisible;
+  state.mobilePoliciesOverflow = mobilePoliciesOverflow;
   state.mobileNodesVisible = mobileNodesVisible;
   state.mobileNodesOverflow = mobileNodesOverflow;
+  state.mobileOpsVisible = mobileOpsVisible;
+  state.mobileOpsOverflow = mobileOpsOverflow;
   state.teamCardCount = teamCardCount;
   state.teamEditCount = teamEditCount;
   state.teamEditFieldsVisible = teamEditFieldsVisible;
@@ -569,10 +583,21 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (opsActionCardCount !== 4 || !opsResultVisible || opsResultFieldCount < 4 || opsVisualOverflowCount > 0) {
     throw new Error(`ops cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  if (!mobileDockVisible || mobileSidebarVisible || !mobileNodesVisible || mobileOverviewOverflow > 2 || mobileNodesOverflow > 2) {
+  if (
+    !mobileDockVisible ||
+    mobileSidebarVisible ||
+    !mobilePoliciesVisible ||
+    !mobileNodesVisible ||
+    !mobileOpsVisible ||
+    mobileDockOverflow > 2 ||
+    mobileOverviewOverflow > 2 ||
+    mobilePoliciesOverflow > 2 ||
+    mobileNodesOverflow > 2 ||
+    mobileOpsOverflow > 2
+  ) {
     throw new Error(`mobile dashboard layout failed: ${JSON.stringify(state)}`);
   }
-  if (dashboardNavCount !== viewNames.length || mobileDockCount < 5 || dashboardViewCount !== viewNames.length) {
+  if (dashboardNavCount !== viewNames.length || mobileDockCount !== viewNames.length || dashboardViewCount !== viewNames.length) {
     throw new Error(`dashboard navigation is incomplete: ${JSON.stringify(state)}`);
   }
   if (formDrawerCount !== 7 || collapsedFormDrawerCount !== 7) {

@@ -2332,10 +2332,11 @@ td code {
     bottom: 10px;
     box-shadow: 0 10px 28px rgba(15, 23, 42, 0.16);
     display: grid;
-    gap: 4px;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 3px;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
     left: 10px;
-    padding: 5px;
+    min-width: 0;
+    padding: 4px;
     position: fixed;
     right: 10px;
     z-index: 30;
@@ -2346,9 +2347,15 @@ td code {
     border-color: transparent;
     border-radius: 6px;
     color: var(--muted);
-    font-size: 12px;
-    min-height: 38px;
-    padding: 0 4px;
+    font-size: 11px;
+    font-weight: 720;
+    line-height: 1.1;
+    min-height: 36px;
+    min-width: 0;
+    overflow: hidden;
+    padding: 0 2px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .mobile-dock button.is-active {

@@ -178,7 +178,10 @@
 
           <section class="panel">
             <div class="panel-header">
-              <h2>上游来源</h2>
+              <div class="panel-title">
+                <h2>上游来源</h2>
+                <span id="sources-panel-count" class="panel-count">0 个</span>
+              </div>
             </div>
             <div id="sources" class="table"></div>
           </section>
@@ -211,14 +214,20 @@
 
           <section class="panel">
             <div class="panel-header">
-              <h2>节点池</h2>
+              <div class="panel-title">
+                <h2>节点池</h2>
+                <span id="nodes-panel-count" class="panel-count">0 个</span>
+              </div>
             </div>
             <div id="nodes" class="table"></div>
           </section>
 
           <section class="panel">
             <div class="panel-header">
-              <h2>虚拟节点</h2>
+              <div class="panel-title">
+                <h2>虚拟节点</h2>
+                <span id="virtual-nodes-panel-count" class="panel-count">0 个</span>
+              </div>
             </div>
             <div id="virtual-nodes" class="table"></div>
           </section>
@@ -296,21 +305,30 @@
 
           <section class="panel">
             <div class="panel-header">
-              <h2>团队</h2>
+              <div class="panel-title">
+                <h2>团队</h2>
+                <span id="teams-panel-count" class="panel-count">0 个</span>
+              </div>
             </div>
             <div id="teams" class="table"></div>
           </section>
 
           <section class="panel">
             <div class="panel-header">
-              <h2>成员</h2>
+              <div class="panel-title">
+                <h2>成员</h2>
+                <span id="users-panel-count" class="panel-count">0 个</span>
+              </div>
             </div>
             <div id="users" class="table"></div>
           </section>
 
           <section class="panel">
             <div class="panel-header">
-              <h2>Token</h2>
+              <div class="panel-title">
+                <h2>Token</h2>
+                <span id="tokens-panel-count" class="panel-count">0 个</span>
+              </div>
             </div>
             <div id="tokens" class="table"></div>
           </section>
@@ -363,7 +381,10 @@
 
           <section class="panel">
             <div class="panel-header">
-              <h2>策略</h2>
+              <div class="panel-title">
+                <h2>策略</h2>
+                <span id="policies-panel-count" class="panel-count">0 条</span>
+              </div>
             </div>
             <div id="policies" class="table"></div>
           </section>
@@ -372,7 +393,10 @@
         <section class="dashboard-view" data-dashboard-view="traffic" hidden>
           <section class="panel">
             <div class="panel-header">
-              <h2>流量统计</h2>
+              <div class="panel-title">
+                <h2>流量统计</h2>
+                <span id="traffic-panel-count" class="panel-count">0 Token</span>
+              </div>
             </div>
             <div id="traffic-hourly" class="traffic-chart"></div>
             <div id="traffic-daily" class="traffic-chart"></div>
@@ -384,7 +408,10 @@
         <section class="dashboard-view" data-dashboard-view="ops" hidden>
           <section class="panel">
             <div class="panel-header">
-              <h2>sing-box 配置</h2>
+              <div class="panel-title">
+                <h2>sing-box 配置</h2>
+                <span id="config-panel-count" class="panel-count">待补齐</span>
+              </div>
               <div class="button-row">
                 <button id="config-check">检查配置</button>
                 <button id="config-publish">发布配置</button>

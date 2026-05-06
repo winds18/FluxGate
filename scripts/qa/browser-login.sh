@@ -93,6 +93,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const dashboardViewCount = await page.locator("[data-dashboard-view]").count();
   const formDrawerCount = await page.locator("[data-form-drawer]").count();
   const collapsedFormDrawerCount = await page.locator("[data-form-drawer].is-collapsed").count();
+  const panelCountCount = await page.locator(".panel-count").count();
+  const populatedPanelCountCount = await page
+    .locator(".panel-count")
+    .evaluateAll((elements) => elements.filter((element) => element.textContent.trim().length > 0).length);
   const viewOverflow = {};
   const viewContextChipCounts = {};
   for (const view of viewNames) {
@@ -305,6 +309,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardViewCount = dashboardViewCount;
   state.formDrawerCount = formDrawerCount;
   state.collapsedFormDrawerCount = collapsedFormDrawerCount;
+  state.panelCountCount = panelCountCount;
+  state.populatedPanelCountCount = populatedPanelCountCount;
   state.viewContextChipCounts = viewContextChipCounts;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
@@ -365,6 +371,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (formDrawerCount !== 7 || collapsedFormDrawerCount !== 7) {
     throw new Error(`form drawers should be collapsed by default: ${JSON.stringify(state)}`);
+  }
+  if (panelCountCount !== 9 || populatedPanelCountCount !== 9) {
+    throw new Error(`module panel count badges are incomplete: ${JSON.stringify(state)}`);
   }
   const sparseContextView = Object.entries(viewContextChipCounts).find(([, count]) => count < 3);
   if (sparseContextView) {

@@ -26,6 +26,17 @@ const trafficHourlyEl = document.querySelector("#traffic-hourly");
 const trafficDailyEl = document.querySelector("#traffic-daily");
 const trafficOutboundsEl = document.querySelector("#traffic-outbounds");
 const trafficTokensEl = document.querySelector("#traffic-tokens");
+const panelCountEls = {
+  sources: document.querySelector("#sources-panel-count"),
+  nodes: document.querySelector("#nodes-panel-count"),
+  virtualNodes: document.querySelector("#virtual-nodes-panel-count"),
+  teams: document.querySelector("#teams-panel-count"),
+  users: document.querySelector("#users-panel-count"),
+  tokens: document.querySelector("#tokens-panel-count"),
+  policies: document.querySelector("#policies-panel-count"),
+  traffic: document.querySelector("#traffic-panel-count"),
+  config: document.querySelector("#config-panel-count"),
+};
 const refreshEl = document.querySelector("#refresh");
 const configCheckEl = document.querySelector("#config-check");
 const configPublishEl = document.querySelector("#config-publish");
@@ -339,6 +350,7 @@ async function load() {
     renderTrafficDaily(trafficDaily);
     renderTrafficOutbounds(trafficOutbounds);
     renderTrafficTokens(trafficTokens);
+    updatePanelCounts();
     updateViewContext();
     statusEl.textContent = "已连接";
   } catch (error) {
@@ -1136,6 +1148,34 @@ function updateViewContext() {
   viewContextEl.innerHTML = items.map(renderContextChip).join("");
 }
 
+function updatePanelCounts() {
+  const nodes = appState.nodes || [];
+  const virtualNodes = appState.virtualNodes || [];
+  const tokens = appState.tokens || [];
+  const activeNodes = countBy(nodes, (row) => row.status === "active");
+  const activeVirtualNodes = countBy(virtualNodes, (row) => row.status === "active");
+  const activeTokens = countBy(tokens, (row) => row.status === "active");
+  const configReady = activeNodes > 0 && activeVirtualNodes > 0 && activeTokens > 0;
+
+  setPanelCount("sources", `${formatPlainNumber(appState.sources.length)} 个`);
+  setPanelCount("nodes", `${formatPlainNumber(nodes.length)} 个 / ${formatPlainNumber(groupNodesByRegion(nodes).length)} 地区`);
+  setPanelCount("virtualNodes", `${formatPlainNumber(virtualNodes.length)} 个`);
+  setPanelCount("teams", `${formatPlainNumber(appState.teams.length)} 个`);
+  setPanelCount("users", `${formatPlainNumber(appState.users.length)} 个`);
+  setPanelCount("tokens", `${formatPlainNumber(tokens.length)} 个`);
+  setPanelCount("policies", `${formatPlainNumber(appState.policies.length)} 条`);
+  setPanelCount("traffic", `${formatPlainNumber(appState.trafficTokens.length)} Token`);
+  setPanelCount("config", configReady ? "就绪" : "待补齐", configReady ? "success" : "warning");
+}
+
+function setPanelCount(key, value, tone = "") {
+  const element = panelCountEls[key];
+  if (!element) return;
+  element.textContent = value;
+  element.classList.toggle("panel-count-success", tone === "success");
+  element.classList.toggle("panel-count-warning", tone === "warning");
+}
+
 function viewContextItems(view) {
   const overview = appState.overview || {};
   const sources = appState.sources || [];
@@ -1231,6 +1271,10 @@ function renderContextChip(item) {
 
 function countBy(rows, predicate) {
   return (rows || []).filter(predicate).length;
+}
+
+function formatPlainNumber(value) {
+  return new Intl.NumberFormat("zh-CN").format(Number(value || 0));
 }
 
 function renderTeams(rows) {

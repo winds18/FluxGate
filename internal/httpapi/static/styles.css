@@ -325,6 +325,32 @@ main {
   color: var(--warning);
 }
 
+.view-rail {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 5px;
+  min-width: 0;
+}
+
+.view-rail-button {
+  background: var(--surface-muted);
+  border-color: var(--border-soft);
+  color: #334155;
+  font-size: 12px;
+  font-weight: 760;
+  min-height: 30px;
+  min-width: 0;
+  padding: 0 10px;
+}
+
+.view-rail-button:hover {
+  background: #ffffff;
+  border-color: #cbd7e2;
+  color: var(--text);
+}
+
 .eyebrow {
   color: var(--accent);
   font-size: 12px;
@@ -1624,6 +1650,14 @@ td code {
 
   .view-context {
     width: 100%;
+  }
+
+  .view-rail {
+    width: 100%;
+  }
+
+  .view-rail-button {
+    flex: 1 1 calc(50% - 7px);
   }
 
   .context-chip {

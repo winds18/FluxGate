@@ -4,6 +4,7 @@ const appView = document.querySelector("#app-view");
 const viewTitleEl = document.querySelector("#view-title");
 const viewDescriptionEl = document.querySelector("#view-description");
 const viewContextEl = document.querySelector("#view-context");
+const viewRailEl = document.querySelector("#view-rail");
 const dashboardViewSections = Array.from(document.querySelectorAll("[data-dashboard-view]"));
 const dashboardNavButtons = Array.from(document.querySelectorAll("[data-view-nav]"));
 const dashboardJumpButtons = Array.from(document.querySelectorAll("[data-view-jump]"));
@@ -79,6 +80,44 @@ const dashboardViewMeta = {
   traffic: ["流量", "查看用量、额度消耗和上游出口流量"],
   ops: ["运维", "检查、发布、回滚并重启 sing-box 配置"],
 };
+const dashboardViewRail = {
+  overview: [
+    ["运行概览", "metrics"],
+    ["测试闭环", "overview-readiness"],
+    ["下一步", "overview-next-step"],
+  ],
+  access: [
+    ["上游来源", "sources"],
+    ["添加来源", "source-form", true],
+    ["导入节点", "node-import-form", true],
+  ],
+  nodes: [
+    ["节点池", "nodes"],
+    ["虚拟节点", "virtual-nodes"],
+    ["创建虚拟节点", "virtual-node-form", true],
+  ],
+  identity: [
+    ["Token", "tokens"],
+    ["团队", "teams"],
+    ["成员", "users"],
+    ["创建 Token", "token-form", true],
+    ["创建团队", "team-form", true],
+    ["创建成员", "user-form", true],
+  ],
+  policies: [
+    ["策略", "policies"],
+    ["创建策略", "policy-form", true],
+  ],
+  traffic: [
+    ["Token 用量", "traffic-tokens"],
+    ["小时曲线", "traffic-hourly"],
+    ["每日曲线", "traffic-daily"],
+    ["出口摘要", "traffic-outbounds"],
+  ],
+  ops: [
+    ["配置操作", "config-check-result"],
+  ],
+};
 let activeDashboardView = "overview";
 
 refreshEl.addEventListener("click", load);
@@ -115,13 +154,26 @@ document.addEventListener("click", (event) => {
   const drawer = button.closest("[data-form-drawer]");
   if (!drawer) return;
   const nextCollapsed = !drawer.classList.contains("is-collapsed");
-  drawer.classList.toggle("is-collapsed", nextCollapsed);
-  button.textContent = nextCollapsed ? "展开" : "收起";
+  setFormDrawerCollapsed(drawer, nextCollapsed);
 });
 document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-overview-jump]");
   if (!button) return;
   setActiveView(button.dataset.overviewJump || "overview");
+});
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-view-rail-target]");
+  if (!button) return;
+  const target = document.getElementById(button.dataset.viewRailTarget || "");
+  if (!target) return;
+  if (button.dataset.viewRailExpand === "true") {
+    const drawer = target.closest("[data-form-drawer]");
+    if (drawer) {
+      setFormDrawerCollapsed(drawer, false);
+    }
+  }
+  const panelTarget = target.closest(".panel") || target;
+  panelTarget.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
 });
 bootstrap();
 
@@ -302,6 +354,15 @@ function setActiveView(view) {
   viewTitleEl.textContent = title;
   viewDescriptionEl.textContent = description;
   updateViewContext();
+  updateViewRail();
+}
+
+function setFormDrawerCollapsed(drawer, collapsed) {
+  drawer.classList.toggle("is-collapsed", collapsed);
+  const toggle = drawer.querySelector("[data-form-drawer-toggle]");
+  if (toggle) {
+    toggle.textContent = collapsed ? "展开" : "收起";
+  }
 }
 
 async function load() {
@@ -1146,6 +1207,21 @@ function updateViewContext() {
   const items = viewContextItems(activeDashboardView);
   viewContextEl.hidden = items.length === 0;
   viewContextEl.innerHTML = items.map(renderContextChip).join("");
+}
+
+function updateViewRail() {
+  if (!viewRailEl) return;
+  const items = dashboardViewRail[activeDashboardView] || [];
+  viewRailEl.hidden = items.length === 0;
+  viewRailEl.innerHTML = items.map(renderViewRailButton).join("");
+}
+
+function renderViewRailButton([label, target, expand]) {
+  return `
+    <button class="view-rail-button" type="button" data-view-rail-target="${escapeHTML(target)}" data-view-rail-expand="${expand ? "true" : "false"}">
+      ${escapeHTML(label)}
+    </button>
+  `;
 }
 
 function updatePanelCounts() {

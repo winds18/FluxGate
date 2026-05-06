@@ -99,10 +99,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     .evaluateAll((elements) => elements.filter((element) => element.textContent.trim().length > 0).length);
   const viewOverflow = {};
   const viewContextChipCounts = {};
+  const viewRailButtonCounts = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
     viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
+    viewRailButtonCounts[view] = await page.locator("#view-rail .view-rail-button").count();
   }
   await switchView("overview");
   const overviewReadinessCount = await page.locator("#overview-readiness .readiness-item").count();
@@ -133,6 +135,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
 
   await switchView("identity");
+  let moduleRailOpensTokenForm = false;
+  const tokenFormRailButton = page.locator('#view-rail [data-view-rail-target="token-form"]').first();
+  if (await tokenFormRailButton.isVisible()) {
+    await tokenFormRailButton.click();
+    await expect(page.locator("#token-form")).not.toHaveClass(/is-collapsed/, { timeout: 5000 });
+    moduleRailOpensTokenForm = true;
+  }
   const tokenCardCount = await page.locator("#tokens .token-card").count();
   const tokenRowCount = tokenCardCount || (await page.locator("#tokens tbody tr").count());
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
@@ -312,6 +321,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.panelCountCount = panelCountCount;
   state.populatedPanelCountCount = populatedPanelCountCount;
   state.viewContextChipCounts = viewContextChipCounts;
+  state.viewRailButtonCounts = viewRailButtonCounts;
+  state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
   state.viewOverflow = viewOverflow;
@@ -378,6 +389,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const sparseContextView = Object.entries(viewContextChipCounts).find(([, count]) => count < 3);
   if (sparseContextView) {
     throw new Error(`dashboard view context is incomplete: ${JSON.stringify(state)}`);
+  }
+  const sparseRailView = Object.entries(viewRailButtonCounts).find(([, count]) => count < 1);
+  if (sparseRailView || !moduleRailOpensTokenForm) {
+    throw new Error(`dashboard module rail is incomplete: ${JSON.stringify(state)}`);
   }
   if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);

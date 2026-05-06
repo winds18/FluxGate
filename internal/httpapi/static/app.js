@@ -440,7 +440,7 @@ async function load() {
       return;
     }
     statusEl.textContent = "异常";
-    metricsEl.innerHTML = `<div class="empty">${escapeHTML(error.message)}</div>`;
+    metricsEl.innerHTML = emptyState("警", "加载失败", error.message || "请稍后重试");
   }
 }
 
@@ -1639,6 +1639,18 @@ function renderContextChip(item) {
   `;
 }
 
+function emptyState(symbol, title, hint = "") {
+  return `
+    <div class="empty empty-state" data-empty-state>
+      <span class="empty-state-symbol" data-empty-state-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="empty-state-copy">
+        <strong class="empty-state-title">${escapeHTML(title)}</strong>
+        ${hint ? `<span class="empty-state-hint">${escapeHTML(hint)}</span>` : ""}
+      </span>
+    </div>
+  `;
+}
+
 function countBy(rows, predicate) {
   return (rows || []).filter(predicate).length;
 }
@@ -1650,7 +1662,7 @@ function formatPlainNumber(value) {
 function renderTeams(rows) {
   appState.teams = rows || [];
   if (!rows || rows.length === 0) {
-    teamsEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    teamsEl.innerHTML = emptyState("团", "暂无团队", "创建团队后再为成员签发订阅 Token");
     return;
   }
   teamsEl.innerHTML = `
@@ -1711,7 +1723,7 @@ function teamStatusSelect(value) {
 function renderUsers(rows) {
   appState.users = rows || [];
   if (!rows || rows.length === 0) {
-    usersEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    usersEl.innerHTML = emptyState("员", "暂无成员", "添加成员后可以独立控制 Token 有效期和额度");
     return;
   }
   usersEl.innerHTML = `
@@ -1815,7 +1827,7 @@ function userStatusSelect(value) {
 function renderSources(rows) {
   appState.sources = rows || [];
   if (!rows || rows.length === 0) {
-    sourcesEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    sourcesEl.innerHTML = emptyState("源", "暂无来源", "添加订阅或手动来源后会在这里统一管理");
     return;
   }
   sourcesEl.innerHTML = `
@@ -1922,7 +1934,7 @@ function sourceTypeSelect(value) {
 function renderVirtualNodes(rows) {
   appState.virtualNodes = rows || [];
   if (!rows || rows.length === 0) {
-    virtualNodesEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    virtualNodesEl.innerHTML = emptyState("网", "暂无虚拟网关", "创建网关入口后才能生成可用的 sing-box 入站");
     return;
   }
   virtualNodesEl.innerHTML = `
@@ -2038,7 +2050,7 @@ function virtualNodeStatusSelect(value) {
 function renderPolicies(rows) {
   appState.policies = rows || [];
   if (!rows || rows.length === 0) {
-    policiesEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    policiesEl.innerHTML = emptyState("策", "暂无策略", "配置策略后可以限制团队可见节点和网关范围");
     return;
   }
   policiesEl.innerHTML = `
@@ -2157,7 +2169,7 @@ function policyStatusSelect(value) {
 function renderNodes(rows) {
   appState.nodes = rows || [];
   if (!rows || rows.length === 0) {
-    nodesEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    nodesEl.innerHTML = emptyState("点", "暂无节点", "导入上游订阅后会按地区自动聚合节点");
     return;
   }
   const filteredRows = filterNodesByQuery(rows, appState.nodeFilter);
@@ -2241,7 +2253,7 @@ function renderNodeRegions(groups, total, matched) {
       ${
         groups.length > 0
           ? `<div class="node-region-grid">${groups.map((group) => renderNodeRegionCard(group)).join("")}</div>`
-          : `<div class="empty">没有匹配的节点</div>`
+          : emptyState("搜", "没有匹配的节点", "换一个地区、协议、来源、标签或服务器关键词试试")
       }
     </div>
   `;
@@ -2469,7 +2481,7 @@ function renderNodeEditForm(row) {
 function renderTokens(rows) {
   appState.tokens = rows || [];
   if (!rows || rows.length === 0) {
-    tokensEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    tokensEl.innerHTML = emptyState("钥", "暂无 Token", "签发 Token 后会生成通用、Mihomo 和 sing-box 订阅地址");
     return;
   }
   tokensEl.innerHTML = `
@@ -2710,7 +2722,7 @@ function showTokenSubscriptionResult(result, title) {
 
 function renderTrafficTokens(rows) {
   if (!rows || rows.length === 0) {
-    trafficTokensEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    trafficTokensEl.innerHTML = emptyState("钥", "暂无 Token 用量", "有 Token 订阅访问或网关流量后会显示用量");
     return;
   }
   trafficTokensEl.innerHTML = `
@@ -2725,7 +2737,7 @@ function renderTrafficTokens(rows) {
 
 function renderTrafficOutbounds(rows) {
   if (!rows || rows.length === 0) {
-    trafficOutboundsEl.innerHTML = `<div class="empty">暂无数据</div>`;
+    trafficOutboundsEl.innerHTML = emptyState("出", "暂无出口流量", "sing-box 网关产生真实流量后会按上游出口聚合");
     return;
   }
   trafficOutboundsEl.innerHTML = `
@@ -2842,7 +2854,7 @@ function renderTrafficHourly(rows) {
 
 function renderTrafficBars(target, rows, options) {
   if (!rows || rows.length === 0) {
-    target.innerHTML = `<div class="empty">暂无数据</div>`;
+    target.innerHTML = emptyState("量", "暂无流量数据", "真实网关流量进入统计链路后会生成趋势图");
     return;
   }
   const maxTotal = Math.max(...rows.map((row) => row[options.valueKey] || 0), 1);
@@ -2869,7 +2881,7 @@ function renderTrafficBars(target, rows, options) {
 
 function renderTable(target, rows, columns) {
   if (!rows || rows.length === 0) {
-    target.innerHTML = `<div class="empty">暂无数据</div>`;
+    target.innerHTML = emptyState("表", "暂无数据", "数据同步或创建后会出现在这里");
     return;
   }
   target.innerHTML = `

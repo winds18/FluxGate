@@ -3308,7 +3308,65 @@ td code {
 .empty {
   color: var(--faint);
   font-size: 13px;
+  min-width: 0;
   padding: 18px 16px;
+}
+
+.empty-state {
+  align-items: center;
+  background: #fbfdff;
+  border: 1px solid var(--border-soft);
+  border-radius: 8px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: max-content minmax(0, 1fr);
+  margin: 14px;
+  max-width: calc(100% - 28px);
+}
+
+.traffic-chart .empty-state,
+.result-box .empty-state {
+  margin: 0;
+  max-width: 100%;
+}
+
+.empty-state-symbol {
+  align-items: center;
+  background: #eef6ff;
+  border: 1px solid #cfe0f2;
+  border-radius: 8px;
+  color: #1d4ed8;
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 850;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
+.empty-state-copy {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.empty-state-title {
+  color: var(--text);
+  font-size: 14px;
+  font-weight: 780;
+  line-height: 1.35;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.empty-state-hint {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 680;
+  line-height: 1.45;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .traffic-chart {

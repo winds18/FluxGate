@@ -1302,11 +1302,45 @@ function updateViewRail() {
 }
 
 function renderViewRailButton([label, target, expand]) {
+  const metric = viewRailMetricForTarget(target, expand);
   return `
     <button class="view-rail-button" type="button" data-view-rail-target="${escapeHTML(target)}" data-view-rail-expand="${expand ? "true" : "false"}">
-      ${escapeHTML(label)}
+      <span class="view-rail-label">${escapeHTML(label)}</span>
+      <span class="view-rail-count" data-view-rail-count>${escapeHTML(metric)}</span>
     </button>
   `;
+}
+
+function viewRailMetricForTarget(target, expand) {
+  if (expand) return "+";
+  const state = appState || {};
+  const nodes = state.nodes || [];
+  const virtualNodes = state.virtualNodes || [];
+  const tokens = state.tokens || [];
+  const readiness = overviewReadinessChecks(state.overview || {});
+  const readyCount = readiness.filter(([, ready]) => ready).length;
+  const activeNodes = countBy(nodes, (row) => row.status === "active");
+  const activeVirtualNodes = countBy(virtualNodes, (row) => row.status === "active");
+  const activeTokens = countBy(tokens, (row) => row.status === "active");
+  const configReady = activeNodes > 0 && activeVirtualNodes > 0 && activeTokens > 0;
+  const values = {
+    metrics: `${formatPlainNumber(state.overview?.nodes || nodes.length)} 节点`,
+    "overview-readiness": `${readyCount}/${readiness.length}`,
+    "overview-next-step": readyCount === readiness.length ? "可测" : "待补",
+    sources: formatPlainNumber((state.sources || []).length),
+    nodes: `${formatPlainNumber(groupNodesByRegion(nodes).length)} 地区`,
+    "virtual-nodes": formatPlainNumber(virtualNodes.length),
+    teams: formatPlainNumber((state.teams || []).length),
+    users: formatPlainNumber((state.users || []).length),
+    tokens: formatPlainNumber(tokens.length),
+    policies: formatPlainNumber((state.policies || []).length),
+    "traffic-tokens": formatPlainNumber((state.trafficTokens || []).length),
+    "traffic-hourly": formatPlainNumber((state.trafficHourly || []).length),
+    "traffic-daily": formatPlainNumber((state.trafficDaily || []).length),
+    "traffic-outbounds": formatPlainNumber((state.trafficOutbounds || []).length),
+    "config-check-result": configReady ? "就绪" : "待检",
+  };
+  return values[target] || "0";
 }
 
 function updatePanelCounts() {

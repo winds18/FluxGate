@@ -100,11 +100,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const viewOverflow = {};
   const viewContextChipCounts = {};
   const viewRailButtonCounts = {};
+  const viewRailBadgeCounts = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
     viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
     viewRailButtonCounts[view] = await page.locator("#view-rail .view-rail-button").count();
+    viewRailBadgeCounts[view] = await page.locator("#view-rail [data-view-rail-count]").count();
   }
   await switchView("overview");
   const overviewReadinessCount = await page.locator("#overview-readiness .readiness-item").count();
@@ -558,6 +560,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.populatedPanelCountCount = populatedPanelCountCount;
   state.viewContextChipCounts = viewContextChipCounts;
   state.viewRailButtonCounts = viewRailButtonCounts;
+  state.viewRailBadgeCounts = viewRailBadgeCounts;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
@@ -736,6 +739,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const sparseRailView = Object.entries(viewRailButtonCounts).find(([, count]) => count < 1);
   if (sparseRailView || !moduleRailOpensTokenForm) {
     throw new Error(`dashboard module rail is incomplete: ${JSON.stringify(state)}`);
+  }
+  const railBadgeMismatch = Object.entries(viewRailButtonCounts).find(
+    ([view, count]) => count !== viewRailBadgeCounts[view],
+  );
+  if (railBadgeMismatch) {
+    throw new Error(`dashboard module rail badges are incomplete: ${JSON.stringify(state)}`);
   }
   if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);

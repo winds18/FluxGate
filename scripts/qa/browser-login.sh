@@ -167,6 +167,30 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     }, 0);
   });
   const overviewReadinessCount = await page.locator("#overview-readiness .readiness-item").count();
+  const overviewReadinessSymbolCount = await page.locator("#overview-readiness .readiness-symbol").count();
+  const overviewReadinessSymbols = await page
+    .locator("#overview-readiness .readiness-symbol")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const overviewReadinessOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#overview-readiness .readiness-item")).reduce((total, item) => {
+      const itemBox = item.getBoundingClientRect();
+      const elements = Array.from(
+        item.querySelectorAll(".readiness-symbol-wrap, .readiness-symbol, .readiness-dot, .readiness-body, strong, small"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, itemBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const overviewNextStepButtonCount = await page.locator("#overview-next-step [data-overview-jump]").count();
   const overviewNextStepCardCount = await page.locator("#overview-next-step [data-overview-next-step-card]").count();
   const overviewNextStepActionCount = await page.locator("#overview-next-step .next-step-action").count();
@@ -683,6 +707,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewMetricValueCount = overviewMetricValueCount;
   state.overviewMetricOverflowCount = overviewMetricOverflowCount;
   state.overviewReadinessCount = overviewReadinessCount;
+  state.overviewReadinessSymbolCount = overviewReadinessSymbolCount;
+  state.overviewReadinessSymbols = overviewReadinessSymbols;
+  state.overviewReadinessOverflowCount = overviewReadinessOverflowCount;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
   state.overviewNextStepCardCount = overviewNextStepCardCount;
   state.overviewNextStepActionCount = overviewNextStepActionCount;
@@ -898,7 +925,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`overview metric cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  if (overviewReadinessCount !== 5 || overviewNextStepButtonCount !== 1) {
+  const expectedOverviewReadinessSymbols = ["源", "点", "网", "身", "策"];
+  if (
+    overviewReadinessCount !== 5 ||
+    overviewReadinessSymbolCount !== 5 ||
+    expectedOverviewReadinessSymbols.some((symbol, index) => overviewReadinessSymbols[index] !== symbol) ||
+    overviewReadinessOverflowCount > 0 ||
+    overviewNextStepButtonCount !== 1
+  ) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);
   }
   if (overviewNextStepCardCount !== 1 || overviewNextStepActionCount !== 1 || overviewNextStepOverflowCount > 0) {

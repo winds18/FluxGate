@@ -1255,11 +1255,11 @@ function renderMetrics(data) {
 
 function overviewReadinessChecks(data) {
   return [
-    ["接入来源", Number(data.sources || 0) > 0, `${data.sources || 0} 个来源`, "access"],
-    ["节点池", Number(data.nodes || 0) > 0, `${data.nodes || 0} 个节点`, "nodes"],
-    ["虚拟网关", Number(data.virtual_nodes || 0) > 0, `${data.virtual_nodes || 0} 个入口`, "nodes"],
-    ["团队 Token", Number(data.tokens || 0) > 0, `${data.tokens || 0} 个 Token`, "identity"],
-    ["访问策略", Number(data.policies || 0) > 0, `${data.policies || 0} 条策略`, "policies"],
+    ["接入来源", Number(data.sources || 0) > 0, `${data.sources || 0} 个来源`, "access", "源"],
+    ["节点池", Number(data.nodes || 0) > 0, `${data.nodes || 0} 个节点`, "nodes", "点"],
+    ["虚拟网关", Number(data.virtual_nodes || 0) > 0, `${data.virtual_nodes || 0} 个入口`, "nodes", "网"],
+    ["团队 Token", Number(data.tokens || 0) > 0, `${data.tokens || 0} 个 Token`, "identity", "身"],
+    ["访问策略", Number(data.policies || 0) > 0, `${data.policies || 0} 条策略`, "policies", "策"],
   ];
 }
 
@@ -1289,10 +1289,13 @@ function renderOverviewReadiness(data) {
     <div class="readiness-list" data-overview-readiness>
       ${checks
         .map(
-          ([label, ready, summary, view]) => `
+          ([label, ready, summary, view, symbol]) => `
             <button class="readiness-item ${ready ? "is-ready" : ""}" type="button" data-overview-jump="${view}">
-              <span class="readiness-dot"></span>
-              <span>
+              <span class="readiness-symbol-wrap" aria-hidden="true">
+                <span class="readiness-symbol">${escapeHTML(symbol)}</span>
+                <span class="readiness-dot"></span>
+              </span>
+              <span class="readiness-body">
                 <strong>${escapeHTML(label)}</strong>
                 <small>${escapeHTML(summary)}</small>
               </span>

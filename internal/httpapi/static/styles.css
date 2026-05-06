@@ -674,8 +674,9 @@ main {
   border: 1px solid var(--border-soft);
   border-radius: 8px;
   color: var(--text);
-  display: flex;
+  display: grid;
   gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
   min-width: 0;
   padding: 10px;
   text-align: left;
@@ -686,21 +687,54 @@ main {
   border-color: #cbd7e2;
 }
 
+.readiness-symbol-wrap {
+  display: inline-grid;
+  flex: 0 0 auto;
+  height: 34px;
+  min-width: 0;
+  place-items: center;
+  position: relative;
+  width: 34px;
+}
+
+.readiness-symbol {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--primary);
+  display: inline-flex;
+  font-size: 14px;
+  font-weight: 820;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
 .readiness-dot {
   background: #f59e0b;
+  border: 2px solid #ffffff;
   border-radius: 999px;
-  box-shadow: 0 0 0 4px #fef3c7;
+  bottom: -1px;
   flex: 0 0 auto;
-  height: 8px;
-  width: 8px;
+  height: 10px;
+  position: absolute;
+  right: -1px;
+  width: 10px;
+}
+
+.readiness-item.is-ready .readiness-symbol {
+  background: #ecfdf5;
+  border-color: #bbf7d0;
+  color: #047857;
 }
 
 .readiness-item.is-ready .readiness-dot {
   background: #059669;
-  box-shadow: 0 0 0 4px #d1fae5;
 }
 
-.readiness-item span:last-child {
+.readiness-body {
   display: grid;
   gap: 3px;
   min-width: 0;

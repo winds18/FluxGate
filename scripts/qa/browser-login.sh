@@ -125,6 +125,32 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const dashboardViewCount = await page.locator("[data-dashboard-view]").count();
   const formDrawerCount = await page.locator("[data-form-drawer]").count();
   const collapsedFormDrawerCount = await page.locator("[data-form-drawer].is-collapsed").count();
+  const formDrawerSymbolCount = await page.locator("[data-form-drawer] .drawer-symbol").count();
+  const formDrawerSymbols = await page
+    .locator("[data-form-drawer] .drawer-symbol")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const visibleFormDrawerHeaderOverflow = async () => page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("[data-form-drawer] .panel-header"))
+      .filter((header) => header.offsetParent !== null)
+      .reduce((total, header) => {
+        const headerBox = header.getBoundingClientRect();
+        const elements = Array.from(header.querySelectorAll(".drawer-title, .drawer-symbol, h2, .drawer-toggle")).filter(
+          (element) => element.offsetParent !== null,
+        );
+        for (const element of elements) {
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, headerBox)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
+  });
   const panelCountCount = await page.locator(".panel-count").count();
   const populatedPanelCountCount = await page
     .locator(".panel-count")
@@ -134,6 +160,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     .locator(".panel-title .panel-symbol")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
   const viewOverflow = {};
+  const formDrawerHeaderOverflow = {};
   const panelTitleOverflow = {};
   const viewContextChipCounts = {};
   const viewRailButtonCounts = {};
@@ -142,6 +169,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
+    formDrawerHeaderOverflow[view] = await visibleFormDrawerHeaderOverflow();
     viewHeaderSymbols[view] = (await page.locator("#view-symbol").textContent())?.trim();
     viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
     viewRailButtonCounts[view] = await page.locator("#view-rail .view-rail-button").count();
@@ -719,6 +747,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardViewCount = dashboardViewCount;
   state.formDrawerCount = formDrawerCount;
   state.collapsedFormDrawerCount = collapsedFormDrawerCount;
+  state.formDrawerSymbolCount = formDrawerSymbolCount;
+  state.formDrawerSymbols = formDrawerSymbols;
+  state.formDrawerHeaderOverflow = formDrawerHeaderOverflow;
   state.panelCountCount = panelCountCount;
   state.populatedPanelCountCount = populatedPanelCountCount;
   state.panelSymbolCount = panelSymbolCount;
@@ -918,8 +949,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`dashboard navigation is incomplete: ${JSON.stringify(state)}`);
   }
-  if (formDrawerCount !== 7 || collapsedFormDrawerCount !== 7) {
-    throw new Error(`form drawers should be collapsed by default: ${JSON.stringify(state)}`);
+  const expectedFormDrawerSymbols = ["源", "导", "网", "团", "员", "钥", "策"];
+  const overflowingFormDrawerHeader = Object.entries(formDrawerHeaderOverflow).find(([, overflow]) => overflow > 0);
+  if (
+    formDrawerCount !== 7 ||
+    collapsedFormDrawerCount !== 7 ||
+    formDrawerSymbolCount !== 7 ||
+    expectedFormDrawerSymbols.some((symbol, index) => formDrawerSymbols[index] !== symbol) ||
+    overflowingFormDrawerHeader
+  ) {
+    throw new Error(`form drawers should be collapsed and visually stable by default: ${JSON.stringify(state)}`);
   }
   const expectedPanelSymbols = ["源", "点", "网", "团", "员", "钥", "策", "量", "运"];
   const overflowingPanelTitle = Object.entries(panelTitleOverflow).find(([, overflow]) => overflow > 0);

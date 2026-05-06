@@ -945,6 +945,37 @@ main {
   border-bottom: 0;
 }
 
+.drawer-title {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+
+.drawer-symbol {
+  align-items: center;
+  background: #eff6ff;
+  border: 1px solid #bfdbfe;
+  border-radius: 8px;
+  color: var(--primary);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 820;
+  height: 28px;
+  justify-content: center;
+  line-height: 1;
+  width: 28px;
+}
+
+.drawer-title h2 {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .form-drawer .form-body,
 .form-drawer .result-box {
   border-top: 1px solid var(--border-soft);
@@ -2981,6 +3012,7 @@ td code {
     flex-direction: column;
   }
 
+  .drawer-title,
   .panel-title {
     width: 100%;
   }

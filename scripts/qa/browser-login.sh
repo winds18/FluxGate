@@ -163,6 +163,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const formDrawerHeaderOverflow = {};
   const panelTitleOverflow = {};
   const viewContextChipCounts = {};
+  const viewContextOverflow = {};
   const viewRailButtonCounts = {};
   const viewRailSymbolCounts = {};
   const viewRailSymbols = {};
@@ -175,6 +176,24 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     formDrawerHeaderOverflow[view] = await visibleFormDrawerHeaderOverflow();
     viewHeaderSymbols[view] = (await page.locator("#view-symbol").textContent())?.trim();
     viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
+    viewContextOverflow[view] = await page.evaluate(() => {
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(document.querySelectorAll("#view-context .context-chip")).reduce((total, chip) => {
+        const chipBox = chip.getBoundingClientRect();
+        const elements = Array.from(chip.querySelectorAll("span, strong")).filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, chipBox)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
+    });
     viewRailButtonCounts[view] = await page.locator("#view-rail .view-rail-button").count();
     viewRailSymbolCounts[view] = await page.locator("#view-rail .view-rail-symbol").count();
     viewRailSymbols[view] = await page
@@ -783,6 +802,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.panelSymbols = panelSymbols;
   state.panelTitleOverflow = panelTitleOverflow;
   state.viewContextChipCounts = viewContextChipCounts;
+  state.viewContextOverflow = viewContextOverflow;
   state.viewRailButtonCounts = viewRailButtonCounts;
   state.viewRailSymbolCounts = viewRailSymbolCounts;
   state.viewRailSymbols = viewRailSymbols;
@@ -1002,7 +1022,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`module panel count badges are incomplete: ${JSON.stringify(state)}`);
   }
   const sparseContextView = Object.entries(viewContextChipCounts).find(([, count]) => count < 3);
-  if (sparseContextView) {
+  const overflowingContextView = Object.entries(viewContextOverflow).find(([, overflow]) => overflow > 0);
+  if (sparseContextView || overflowingContextView) {
     throw new Error(`dashboard view context is incomplete: ${JSON.stringify(state)}`);
   }
   const sparseRailView = Object.entries(viewRailButtonCounts).find(([, count]) => count < 1);

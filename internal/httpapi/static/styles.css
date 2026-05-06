@@ -359,6 +359,7 @@ main {
   flex-wrap: wrap;
   gap: 7px;
   margin-top: 7px;
+  max-width: 100%;
   min-width: 0;
 }
 
@@ -369,10 +370,13 @@ main {
   border-radius: 6px;
   color: var(--text);
   display: inline-grid;
+  flex: 0 1 auto;
   gap: 7px;
-  grid-template-columns: max-content minmax(0, max-content);
+  grid-template-columns: max-content minmax(0, 1fr);
+  max-width: 100%;
   min-height: 30px;
   min-width: 0;
+  overflow: hidden;
   padding: 0 9px;
 }
 

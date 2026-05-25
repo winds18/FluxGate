@@ -1865,7 +1865,28 @@ function openDashboardTarget(targetID, expand = false) {
     }
   }
   const panelTarget = target.closest(".panel") || target;
+  highlightDashboardTarget(panelTarget);
   panelTarget.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+  focusDashboardTarget(target);
+}
+
+function highlightDashboardTarget(target) {
+  target.classList.remove("is-target-highlighted");
+  window.requestAnimationFrame(() => {
+    target.classList.add("is-target-highlighted");
+    window.setTimeout(() => target.classList.remove("is-target-highlighted"), 1800);
+  });
+}
+
+function focusDashboardTarget(target) {
+  const drawer = target.matches("[data-form-drawer]") ? target : target.closest("[data-form-drawer]");
+  const searchRoot = drawer?.querySelector(".form-body") || target;
+  const focusTarget = searchRoot.querySelector(
+    'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href]',
+  );
+  if (focusTarget && typeof focusTarget.focus === "function") {
+    focusTarget.focus({ preventScroll: true });
+  }
 }
 
 function emptyState(symbol, title, hint = "", action = null) {

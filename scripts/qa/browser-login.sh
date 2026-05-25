@@ -263,6 +263,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const workspacePrimaryActionLabels = {};
   const workspacePrimaryActionSymbolCounts = {};
   const workspacePrimaryActionOverflow = {};
+  const workspacePrimaryActionFocus = {};
+  const workspacePrimaryActionHighlight = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
@@ -358,9 +360,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       }, 0);
     }, view);
   }
+  await switchView("access");
+  await page.locator("#view-primary-action").click();
+  await expect(page.locator("#source-form:not(.is-collapsed)")).toBeVisible({ timeout: 5000 });
+  workspacePrimaryActionFocus.access = await page.evaluate(() => document.activeElement?.getAttribute("name") || "");
+  workspacePrimaryActionHighlight.access = await page.locator("#source-form.is-target-highlighted").count();
   await switchView("identity");
   await page.locator("#view-primary-action").click();
   await expect(page.locator("#token-form:not(.is-collapsed)")).toBeVisible({ timeout: 5000 });
+  workspacePrimaryActionFocus.identity = await page.evaluate(() => document.activeElement?.getAttribute("name") || "");
+  workspacePrimaryActionHighlight.identity = await page.locator("#token-form.is-target-highlighted").count();
   const workspacePrimaryActionOpensTokenForm = true;
   await switchView("overview");
   await expect(page.locator("#metrics .metric")).toHaveCount(7, { timeout: 5000 });
@@ -1428,6 +1437,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.workspacePrimaryActionLabels = workspacePrimaryActionLabels;
   state.workspacePrimaryActionSymbolCounts = workspacePrimaryActionSymbolCounts;
   state.workspacePrimaryActionOverflow = workspacePrimaryActionOverflow;
+  state.workspacePrimaryActionFocus = workspacePrimaryActionFocus;
+  state.workspacePrimaryActionHighlight = workspacePrimaryActionHighlight;
   state.workspacePrimaryActionOpensTokenForm = workspacePrimaryActionOpensTokenForm;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewMetricCount = overviewMetricCount;
@@ -1863,6 +1874,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const missingPrimaryActionView = Object.entries(workspacePrimaryActionCounts).find(([, count]) => count !== 1);
   const missingPrimaryActionSymbolView = Object.entries(workspacePrimaryActionSymbolCounts).find(([, count]) => count !== 1);
   const overflowingPrimaryActionView = Object.entries(workspacePrimaryActionOverflow).find(([, overflow]) => overflow > 0);
+  const missingPrimaryActionFocus = workspacePrimaryActionFocus.access !== "name" || workspacePrimaryActionFocus.identity !== "user_id";
+  const missingPrimaryActionHighlight = workspacePrimaryActionHighlight.access !== 1 || workspacePrimaryActionHighlight.identity !== 1;
   const expectedPrimaryActionLabels = {
     access: "添加来源",
     nodes: "创建网关",
@@ -1879,6 +1892,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     missingPrimaryActionView ||
     missingPrimaryActionSymbolView ||
     overflowingPrimaryActionView ||
+    missingPrimaryActionFocus ||
+    missingPrimaryActionHighlight ||
     primaryActionLabelMismatch ||
     !workspacePrimaryActionOpensTokenForm
   ) {

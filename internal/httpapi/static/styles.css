@@ -1017,6 +1017,13 @@ main {
   gap: 0;
 }
 
+.panel.is-target-highlighted,
+.form-drawer.is-target-highlighted,
+.overview-panel.is-target-highlighted {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14), var(--shadow);
+}
+
 .form-drawer .panel-header {
   border-bottom: 0;
 }

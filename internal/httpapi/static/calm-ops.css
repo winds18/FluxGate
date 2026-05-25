@@ -569,7 +569,8 @@ a.table-button:hover {
 .token-subscription-list,
 .token-subscription-item,
 .token-subscription-heading,
-.token-subscription-meta {
+.token-subscription-meta,
+.token-subscription-probe-result {
   min-width: 0;
 }
 

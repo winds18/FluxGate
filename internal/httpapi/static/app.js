@@ -1223,6 +1223,10 @@ async function handleTokenAction(event) {
   if (!button) return;
   const id = button.dataset.tokenId;
   const action = button.dataset.tokenAction;
+  if (action === "probe-subscription") {
+    await probeSubscription(button);
+    return;
+  }
   if (
     action === "revoke" &&
     !(await confirmDanger({
@@ -1278,6 +1282,53 @@ async function handleTokenAction(event) {
     setStatus("更新失败", "danger");
     button.disabled = false;
   }
+}
+
+async function probeSubscription(button) {
+  const url = button.dataset.tokenUrl || "";
+  if (!url) {
+    setStatus("缺少订阅地址", "warning");
+    return;
+  }
+  button.disabled = true;
+  button.innerHTML = buttonLabel("…", "探测中");
+  setStatus("探测订阅中", "loading");
+  try {
+    const result = await postJSON("/api/subscription/probe", { url });
+    updateSubscriptionProbeMeta(button, result);
+    if (result.available) {
+      button.innerHTML = buttonLabel("✓", "可访问");
+      button.classList.add("is-copied");
+      setStatus(`订阅可访问：${formatBytes(result.body_bytes || 0)}`, "success");
+    } else {
+      button.innerHTML = buttonLabel("!", "不可用");
+      button.classList.remove("is-copied");
+      setStatus(`订阅不可用：${result.message || "请打开链接确认"}`, "danger");
+    }
+  } catch (error) {
+    button.innerHTML = buttonLabel("!", "失败");
+    button.classList.remove("is-copied");
+    setStatus("订阅探测失败", "danger");
+  } finally {
+    button.disabled = false;
+  }
+}
+
+function updateSubscriptionProbeMeta(button, result) {
+  const item = button.closest(".token-subscription-item");
+  const meta = item?.querySelector(".token-subscription-meta");
+  if (!item || !meta) return;
+  let probe = item.querySelector("[data-token-subscription-probed-at]");
+  if (!probe) {
+    probe = document.createElement("span");
+    probe.className = "token-subscription-probe-result";
+    probe.setAttribute("data-token-subscription-probed-at", "");
+    meta.appendChild(probe);
+  }
+  const checkedAt = formatDateTimeForDisplay(result.checked_at) || "刚刚";
+  const size = result.body_bytes ? ` · ${formatBytes(result.body_bytes)}` : "";
+  probe.dataset.status = result.available ? "success" : "danger";
+  probe.textContent = `${result.available ? "可访问" : "不可用"} · ${checkedAt}${size}`;
 }
 
 async function copyText(text) {
@@ -3234,6 +3285,7 @@ function renderSubscriptionCardList(items, tokenID = "") {
                 </span>
                 <span class="token-subscription-actions">
                   <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}" data-button-symbol="⧉" data-copy-label="复制">${buttonLabel("⧉", "复制")}</button>
+                  <button class="table-button ghost-button" type="button" data-token-action="probe-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}">${buttonLabel("测", "探测")}</button>
                   <a class="table-button ghost-button link-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-token-subscription-link>${buttonLabel("↗", "打开")}</a>
                 </span>
               </div>

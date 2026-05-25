@@ -829,6 +829,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     .locator("#token-result [data-token-subscription-origin]")
     .allTextContents();
   const tokenResultSubscriptionOpenCount = await page.locator("#token-result a[data-token-subscription-link]").count();
+  const tokenResultSubscriptionProbeCount = await page.locator("#token-result button[data-token-action='probe-subscription']").count();
   const tokenResultSubscriptionActionSymbolCount = await page.locator("#token-result .token-subscription-actions .button-symbol").count();
   const tokenResultHeadingSymbolCount = await page.locator("#token-result [data-token-result-symbol]").count();
   const tokenResultHeadingMetaCount = await page.locator("#token-result [data-token-result-meta]").count();
@@ -842,7 +843,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     if (!resultCard) return 1;
     const resultBox = resultCard.getBoundingClientRect();
     return Array.from(
-      resultCard.querySelectorAll(".token-result-heading, .token-result-symbol, .token-result-copy, .token-result-meta, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, code, button, a"),
+      resultCard.querySelectorAll(".token-result-heading, .token-result-symbol, .token-result-copy, .token-result-meta, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, .token-subscription-probe-result, code, button, a"),
     ).reduce((total, element) => {
       if (element.offsetParent === null) return total;
       const box = element.getBoundingClientRect();
@@ -890,10 +891,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenSubscriptionOriginCount = await page.locator("#tokens [data-token-subscription-origin]").count();
   const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
   const tokenSubscriptionOpenCount = await page.locator("#tokens a[data-token-subscription-link]").count();
+  const tokenSubscriptionProbeCount = await page.locator("#tokens button[data-token-action='probe-subscription']").count();
   const tokenSubscriptionActionSymbolCount = await page.locator("#tokens .token-subscription-actions .button-symbol").count();
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
   let tokenCopyFeedbackVisible = false;
   let tokenCopySymbolRestored = false;
+  let tokenProbeFeedbackVisible = false;
   let confirmDialogVisible = false;
   let confirmDialogTitle = "";
   let confirmDialogButtonCount = 0;
@@ -908,6 +911,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await expect(firstCopyButton.locator(".button-symbol")).toHaveText("⧉", { timeout: 5000 });
     await expect(firstCopyButton.locator(".button-label")).toHaveText("复制", { timeout: 5000 });
     tokenCopySymbolRestored = true;
+  }
+  if (tokenSubscriptionProbeCount > 0) {
+    const firstProbeButton = page.locator("#tokens button[data-token-action='probe-subscription']").first();
+    await firstProbeButton.click();
+    await expect(firstProbeButton).toHaveText(/可访问/, { timeout: 5000 });
+    await expect(page.locator("#status")).toContainText("订阅可访问", { timeout: 5000 });
+    await expect(page.locator("#tokens [data-token-subscription-probed-at]").first()).toBeVisible({ timeout: 5000 });
+    tokenProbeFeedbackVisible = true;
   }
   if (tokenRotateSubscriptionCount > 0) {
     await page.locator("#tokens button[data-token-action='rotate-subscription']").first().click();
@@ -931,7 +942,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const cardBox = card.getBoundingClientRect();
       const elements = Array.from(
         card.querySelectorAll(
-          ".token-card-heading, .token-card-summary, [data-token-summary-chip], .token-card-field, .token-card-section-heading, .token-card-section-symbol, .token-card-section-title, .token-card-section-meta, .token-card-meter, .token-card-subscriptions, .token-card-control, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, .token-card-actions",
+          ".token-card-heading, .token-card-summary, [data-token-summary-chip], .token-card-field, .token-card-section-heading, .token-card-section-symbol, .token-card-section-title, .token-card-section-meta, .token-card-meter, .token-card-subscriptions, .token-card-control, .token-subscription-item, .token-subscription-heading, .token-subscription-kind, .token-subscription-meta, .token-subscription-profile, .token-subscription-origin, .token-subscription-probe-result, .token-card-actions",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
@@ -1647,6 +1658,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenResultSubscriptionOriginCount = tokenResultSubscriptionOriginCount;
   state.tokenResultSubscriptionOrigins = tokenResultSubscriptionOrigins;
   state.tokenResultSubscriptionOpenCount = tokenResultSubscriptionOpenCount;
+  state.tokenResultSubscriptionProbeCount = tokenResultSubscriptionProbeCount;
   state.tokenResultSubscriptionActionSymbolCount = tokenResultSubscriptionActionSymbolCount;
   state.tokenResultHeadingSymbolCount = tokenResultHeadingSymbolCount;
   state.tokenResultHeadingMetaCount = tokenResultHeadingMetaCount;
@@ -1670,9 +1682,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenSubscriptionOriginCount = tokenSubscriptionOriginCount;
   state.tokenSubscriptionCopyCount = tokenSubscriptionCopyCount;
   state.tokenSubscriptionOpenCount = tokenSubscriptionOpenCount;
+  state.tokenSubscriptionProbeCount = tokenSubscriptionProbeCount;
   state.tokenSubscriptionActionSymbolCount = tokenSubscriptionActionSymbolCount;
   state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
   state.tokenCopySymbolRestored = tokenCopySymbolRestored;
+  state.tokenProbeFeedbackVisible = tokenProbeFeedbackVisible;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
   state.confirmDialogVisible = confirmDialogVisible;
   state.confirmDialogTitle = confirmDialogTitle;
@@ -1726,7 +1740,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     ) ||
     tokenResultSubscriptionOrigins.some((origin) => !["当前访问域名", "配置域名", "相对地址"].includes(origin)) ||
     tokenResultSubscriptionOpenCount !== 3 ||
-    tokenResultSubscriptionActionSymbolCount !== 6 ||
+    tokenResultSubscriptionProbeCount !== 3 ||
+    tokenResultSubscriptionActionSymbolCount !== 9 ||
     tokenResultHeadingSymbolCount !== 1 ||
     tokenResultHeadingMetaCount !== 1 ||
     tokenResultVisualOverflowCount > 0
@@ -1746,7 +1761,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       tokenSubscriptionProfileCount !== tokenSubscriptionCopyCount ||
       tokenSubscriptionOriginCount !== tokenSubscriptionCopyCount ||
       tokenSubscriptionOpenCount !== tokenSubscriptionCopyCount ||
-      tokenSubscriptionActionSymbolCount !== tokenSubscriptionCopyCount * 2)
+      tokenSubscriptionProbeCount !== tokenSubscriptionCopyCount ||
+      tokenSubscriptionActionSymbolCount !== tokenSubscriptionCopyCount * 3)
   ) {
     throw new Error(`token subscription cards are incomplete: ${JSON.stringify(state)}`);
   }
@@ -1755,6 +1771,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenSubscriptionCopyCount > 0 && !tokenCopySymbolRestored) {
     throw new Error(`token subscription copy symbol restore missing: ${JSON.stringify(state)}`);
+  }
+  if (tokenSubscriptionCopyCount > 0 && !tokenProbeFeedbackVisible) {
+    throw new Error(`token subscription probe feedback missing: ${JSON.stringify(state)}`);
   }
   if (tokenVisualOverflowCount > 0 || tokenVisualOverlapCount > 0 || tokenActionsScrollOverflowCount > 0) {
     throw new Error(`token controls visually overflow or overlap: ${JSON.stringify(state)}`);

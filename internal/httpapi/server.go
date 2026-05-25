@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net"
 	"net/http"
+	"net/http/httptest"
 	"net/url"
 	"strconv"
 	"strings"
@@ -91,6 +92,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("POST /api/tokens/{id}/rotate-subscription", s.handleRotateTokenSubscription)
 	s.mux.HandleFunc("POST /api/tokens/{id}/extend", s.handleExtendToken)
 	s.mux.HandleFunc("POST /api/tokens/{id}/quota", s.handleAddTokenQuota)
+	s.mux.HandleFunc("POST /api/subscription/probe", s.handleProbeSubscription)
 
 	s.mux.HandleFunc("GET /api/virtual-nodes", s.handleListVirtualNodes)
 	s.mux.HandleFunc("POST /api/virtual-nodes", s.handleCreateVirtualNode)
@@ -1112,6 +1114,100 @@ func (s *Server) handleSubscription(w http.ResponseWriter, r *http.Request) {
 	subscription.SetUserInfoHeader(w.Header(), token)
 	w.Header().Set("content-type", response.ContentType)
 	_, _ = w.Write(response.Body)
+}
+
+type probeSubscriptionInput struct {
+	URL string `json:"url"`
+}
+
+func (s *Server) handleProbeSubscription(w http.ResponseWriter, r *http.Request) {
+	var input probeSubscriptionInput
+	if !decodeJSON(w, r, &input) {
+		return
+	}
+	result, err := s.probeSubscription(r, input.URL)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, result)
+}
+
+func (s *Server) probeSubscription(adminRequest *http.Request, rawURL string) (map[string]any, error) {
+	rawURL = strings.TrimSpace(rawURL)
+	if rawURL == "" {
+		return nil, errors.New("subscription url is required")
+	}
+	parsed, err := url.Parse(rawURL)
+	if err != nil {
+		return nil, errors.New("invalid subscription url")
+	}
+	if parsed.Scheme != "" && parsed.Scheme != "http" && parsed.Scheme != "https" {
+		return nil, errors.New("subscription url must use http or https")
+	}
+	if !strings.HasPrefix(parsed.Path, "/sub/") {
+		return nil, errors.New("subscription url must point to /sub/")
+	}
+	plainToken := strings.TrimPrefix(parsed.Path, "/sub/")
+	if plainToken == "" || strings.Contains(plainToken, "/") {
+		return nil, errors.New("subscription token path is invalid")
+	}
+
+	internalURL := parsed.RequestURI()
+	if internalURL == "" {
+		internalURL = "/sub/" + plainToken
+	}
+	probeRequest := httptest.NewRequest(http.MethodGet, internalURL, nil)
+	probeRequest = probeRequest.WithContext(adminRequest.Context())
+	probeRequest.Host = adminRequest.Host
+	if parsed.Host != "" {
+		if !safePublicHost(parsed.Host) {
+			return nil, errors.New("subscription host is invalid")
+		}
+		probeRequest.Host = parsed.Host
+	} else {
+		if forwardedHost := adminRequest.Header.Get("x-forwarded-host"); forwardedHost != "" {
+			probeRequest.Header.Set("x-forwarded-host", forwardedHost)
+		}
+	}
+	if forwardedProto := adminRequest.Header.Get("x-forwarded-proto"); forwardedProto != "" {
+		probeRequest.Header.Set("x-forwarded-proto", forwardedProto)
+	}
+	probeRequest.Header.Set("user-agent", "FluxGate-Subscription-Probe/1.0")
+	probeRequest.SetPathValue("token", plainToken)
+
+	recorder := httptest.NewRecorder()
+	s.handleSubscription(recorder, probeRequest)
+	status := recorder.Code
+	body := recorder.Body.Bytes()
+	available := status >= http.StatusOK && status < http.StatusMultipleChoices && len(strings.TrimSpace(string(body))) > 0
+	message := "订阅可访问"
+	if !available {
+		message = subscriptionProbeErrorMessage(body, status)
+	}
+	target := parsed.Query().Get("target")
+	if target == "" {
+		target = "auto"
+	}
+	return map[string]any{
+		"available":    available,
+		"status":       status,
+		"target":       target,
+		"content_type": recorder.Header().Get("content-type"),
+		"body_bytes":   len(body),
+		"checked_at":   time.Now().UTC().Format(time.RFC3339),
+		"message":      message,
+	}, nil
+}
+
+func subscriptionProbeErrorMessage(body []byte, status int) string {
+	var payload struct {
+		Error string `json:"error"`
+	}
+	if err := json.Unmarshal(body, &payload); err == nil && payload.Error != "" {
+		return payload.Error
+	}
+	return "订阅返回异常：" + strconv.Itoa(status)
 }
 
 func (s *Server) publicBaseURL(r *http.Request) string {

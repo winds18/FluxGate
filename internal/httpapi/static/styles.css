@@ -541,6 +541,10 @@ main {
   padding-inline: 14px;
 }
 
+.app-shell.is-refreshing #refresh {
+  cursor: wait;
+}
+
 .dashboard-view {
   align-content: start;
   display: grid;

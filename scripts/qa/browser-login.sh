@@ -292,6 +292,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let formDrawerDraftFeedback = {};
   let formDrawerSubmitFeedback = {};
   let formDrawerSubmitRestored = {};
+  let refreshButtonPendingFeedback = {};
+  let refreshButtonPendingRestored = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
@@ -538,6 +540,82 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       inputDisabled: nameInput?.disabled ? 1 : 0,
       label: submitButton?.querySelector(".button-label")?.textContent?.trim() || "",
       symbol: submitButton?.querySelector(".button-symbol")?.textContent?.trim() || "",
+    };
+  });
+  const refreshOverviewFixture = await page.evaluate(async () => {
+    const response = await fetch("/api/overview");
+    return response.json();
+  });
+  await page.evaluate((overviewFixture) => {
+    const originalFetch = window.fetch.bind(window);
+    window.__refreshProbeSeen = false;
+    window.__releaseRefreshProbe = null;
+    window.fetch = (input, init = {}) => {
+      const url = typeof input === "string" ? input : input?.url || "";
+      const method = String(init?.method || input?.method || "GET").toUpperCase();
+      if (method === "GET" && String(url).endsWith("/api/overview")) {
+        window.__refreshProbeSeen = true;
+        return new Promise((resolve) => {
+          window.__releaseRefreshProbe = () => {
+            window.fetch = originalFetch;
+            resolve(
+              new Response(JSON.stringify(overviewFixture), {
+                status: 200,
+                headers: { "content-type": "application/json" },
+              }),
+            );
+          };
+        });
+      }
+      return originalFetch(input, init);
+    };
+  }, refreshOverviewFixture);
+  await page.locator("#refresh").click();
+  await expect.poll(() => page.evaluate(() => Boolean(window.__refreshProbeSeen)), { timeout: 1000 }).toBe(true);
+  await page.waitForTimeout(100);
+  refreshButtonPendingFeedback = await page.evaluate(() => {
+    const button = document.querySelector("#refresh");
+    const appView = document.querySelector("#app-view");
+    const parent = button?.getBoundingClientRect();
+    const outside = (child) =>
+      parent &&
+      (child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1);
+    const overflow = parent
+      ? Array.from(button.querySelectorAll(".button-symbol, .button-label"))
+          .filter((element) => element.offsetParent !== null)
+          .reduce((total, element) => {
+            const box = element.getBoundingClientRect();
+            return total + (box.width > 0 && box.height > 0 && outside(box) ? 1 : 0);
+          }, 0)
+      : 1;
+    return {
+      disabled: button?.disabled ? 1 : 0,
+      pending: button?.classList.contains("is-pending") ? 1 : 0,
+      label: button?.querySelector(".button-label")?.textContent?.trim() || "",
+      symbol: button?.querySelector(".button-symbol")?.textContent?.trim() || "",
+      status: document.querySelector("#status")?.textContent?.trim() || "",
+      tone: document.querySelector("#status")?.dataset.statusTone || "",
+      ariaBusy: appView?.getAttribute("aria-busy") || "",
+      overflow,
+    };
+  });
+  await page.evaluate(() => window.__releaseRefreshProbe?.());
+  await expect(page.locator("#status")).toHaveText("已连接", { timeout: 15000 });
+  await expect(page.locator("#refresh")).toBeEnabled({ timeout: 15000 });
+  refreshButtonPendingRestored = await page.evaluate(() => {
+    const button = document.querySelector("#refresh");
+    const appView = document.querySelector("#app-view");
+    return {
+      disabled: button?.disabled ? 1 : 0,
+      pending: button?.classList.contains("is-pending") ? 1 : 0,
+      label: button?.querySelector(".button-label")?.textContent?.trim() || "",
+      symbol: button?.querySelector(".button-symbol")?.textContent?.trim() || "",
+      status: document.querySelector("#status")?.textContent?.trim() || "",
+      tone: document.querySelector("#status")?.dataset.statusTone || "",
+      ariaBusy: appView?.getAttribute("aria-busy") || "",
     };
   });
   await switchView("identity");
@@ -1879,6 +1957,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.loginButtonOverflowCount = loginButtonOverflowCount;
   state.refreshButtonSymbolCount = refreshButtonSymbolCount;
   state.refreshButtonOverflowCount = refreshButtonOverflowCount;
+  state.refreshButtonPendingFeedback = refreshButtonPendingFeedback;
+  state.refreshButtonPendingRestored = refreshButtonPendingRestored;
   state.logoutButtonSymbolCount = logoutButtonSymbolCount;
   state.topbarButtonOverflowCount = topbarButtonOverflowCount;
   state.formDrawerSymbols = formDrawerSymbols;
@@ -2469,6 +2549,25 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     formDrawerSubmitRestored.symbol !== "+"
   ) {
     throw new Error(`form drawer submit should restore controls after completion: ${JSON.stringify(state)}`);
+  }
+  if (
+    refreshButtonPendingFeedback.disabled !== 1 ||
+    refreshButtonPendingFeedback.pending !== 1 ||
+    refreshButtonPendingFeedback.label !== "刷新中" ||
+    refreshButtonPendingFeedback.symbol !== "…" ||
+    refreshButtonPendingFeedback.status !== "刷新中" ||
+    refreshButtonPendingFeedback.tone !== "loading" ||
+    refreshButtonPendingFeedback.ariaBusy !== "true" ||
+    refreshButtonPendingFeedback.overflow > 0 ||
+    refreshButtonPendingRestored.disabled !== 0 ||
+    refreshButtonPendingRestored.pending !== 0 ||
+    refreshButtonPendingRestored.label !== "刷新" ||
+    refreshButtonPendingRestored.symbol !== "↻" ||
+    refreshButtonPendingRestored.status !== "已连接" ||
+    refreshButtonPendingRestored.tone !== "success" ||
+    refreshButtonPendingRestored.ariaBusy
+  ) {
+    throw new Error(`refresh should show and restore a stable pending state: ${JSON.stringify(state)}`);
   }
   const expectedPanelSymbols = ["源", "点", "网", "团", "员", "钥", "策", "量", "运"];
   const overflowingPanelTitle = Object.entries(panelTitleOverflow).find(([, overflow]) => overflow > 0);

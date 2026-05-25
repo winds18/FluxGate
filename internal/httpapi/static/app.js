@@ -140,6 +140,7 @@ let activeDashboardView = "overview";
 let activeDashboardTarget = "";
 let invalidFeedbackLocked = false;
 let fallbackFieldFeedbackID = 0;
+let refreshPendingDepth = 0;
 
 refreshEl.addEventListener("click", load);
 deliveryReadinessEl.addEventListener("click", checkDeliveryReadiness);
@@ -698,6 +699,34 @@ function setSubmitButtonPending(button, submitting) {
   delete button.dataset.formOriginalLabel;
 }
 
+function setRefreshPending(pending) {
+  if (!refreshEl) return;
+  refreshPendingDepth = Math.max(0, refreshPendingDepth + (pending ? 1 : -1));
+  const active = refreshPendingDepth > 0;
+
+  appView?.classList.toggle("is-refreshing", active);
+  if (active) {
+    appView?.setAttribute("aria-busy", "true");
+  } else {
+    appView?.removeAttribute("aria-busy");
+  }
+
+  if (active) {
+    if (!refreshEl.dataset.refreshPendingStored) {
+      refreshEl.dataset.refreshPendingStored = "true";
+      refreshEl.dataset.refreshWasDisabled = refreshEl.disabled ? "true" : "false";
+    }
+    setSubmitButtonPending(refreshEl, true);
+    refreshEl.disabled = true;
+    return;
+  }
+
+  setSubmitButtonPending(refreshEl, false);
+  refreshEl.disabled = refreshEl.dataset.refreshWasDisabled === "true";
+  delete refreshEl.dataset.refreshPendingStored;
+  delete refreshEl.dataset.refreshWasDisabled;
+}
+
 function setInlineActionPending(container, button, pending) {
   if (!container) return;
   container.classList.toggle("is-action-pending", pending);
@@ -835,6 +864,7 @@ function cancelFormDrawer(drawer) {
 }
 
 async function load() {
+  setRefreshPending(true);
   setStatus("刷新中", "loading");
   try {
     const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficHourly, trafficDaily, trafficOutbounds, trafficTokens] = await Promise.all([
@@ -894,6 +924,8 @@ async function load() {
     }
     setStatus("异常", "danger");
     metricsEl.innerHTML = emptyState("警", "加载失败", error.message || "请稍后重试");
+  } finally {
+    setRefreshPending(false);
   }
 }
 

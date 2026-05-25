@@ -1424,6 +1424,10 @@ main {
   min-width: 92px;
 }
 
+.ops-action-grid[aria-busy="true"] .ops-action-card:not(.is-action-pending) {
+  opacity: 0.72;
+}
+
 .token-action-group {
   background: var(--surface-muted);
   border: 1px solid var(--border-soft);
@@ -1892,7 +1896,8 @@ textarea {
 .token-card.is-action-pending,
 .virtual-node-card.is-action-pending,
 .policy-card.is-action-pending,
-.node-card.is-action-pending {
+.node-card.is-action-pending,
+.ops-action-card.is-action-pending {
   border-color: #93c5fd;
   box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2), 0 10px 24px rgba(37, 99, 235, 0.08);
 }
@@ -1908,7 +1913,8 @@ textarea {
 .policy-card.is-action-pending input,
 .policy-card.is-action-pending select,
 .node-card.is-action-pending input,
-.node-card.is-action-pending select {
+.node-card.is-action-pending select,
+.ops-action-card.is-action-pending button {
   cursor: wait;
 }
 

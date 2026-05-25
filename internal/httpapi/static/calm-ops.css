@@ -243,7 +243,8 @@ textarea:hover {
 .token-card.is-action-pending,
 .virtual-node-card.is-action-pending,
 .policy-card.is-action-pending,
-.node-card.is-action-pending {
+.node-card.is-action-pending,
+.ops-action-card.is-action-pending {
   border-color: rgba(43, 108, 176, 0.44);
   box-shadow: 0 0 0 3px rgba(43, 108, 176, 0.14), 0 18px 36px rgba(18, 32, 30, 0.08);
 }

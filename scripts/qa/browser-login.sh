@@ -1682,8 +1682,90 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const opsActionSymbolCount = await page.locator("#ops-actions .ops-action-symbol").count();
   const opsActionChipCount = await page.locator("#ops-actions [data-ops-action-chip]").count();
   const opsActionButtonSymbolCount = await page.locator("#ops-actions button .button-symbol").count();
+  let opsActionPendingFeedback = null;
+  let opsActionPendingRestored = null;
+  await page.evaluate(() => {
+    window.__opsConfigCheckRelease = null;
+    window.__opsConfigCheckSeen = false;
+    const originalFetch = window.fetch.bind(window);
+    window.fetch = (input, init) => {
+      const url = typeof input === "string" ? input : input?.url || "";
+      const method = String(init?.method || "GET").toUpperCase();
+      if (url.includes("/api/sing-box/config/check") && method === "POST") {
+        window.__opsConfigCheckSeen = true;
+        return new Promise((resolve) => {
+          window.__opsConfigCheckRelease = () => {
+            resolve(
+              new Response(
+                JSON.stringify({
+                  valid: true,
+                  config_hash: "qa-ops-pending",
+                  inbound_count: 1,
+                  outbound_count: 2,
+                  upstream_outbound_count: 2,
+                  user_count: 1,
+                }),
+                { status: 200, headers: { "Content-Type": "application/json" } },
+              ),
+            );
+          };
+        });
+      }
+      return originalFetch(input, init);
+    };
+  });
   await page.locator("#config-check").click();
+  await expect.poll(async () => page.evaluate(() => window.__opsConfigCheckSeen === true), { timeout: 3000 }).toBe(true);
+  opsActionPendingFeedback = await page.evaluate(() => {
+    const card = document.querySelector("#config-check")?.closest(".ops-action-card");
+    const grid = document.querySelector("#ops-actions");
+    const label = document.querySelector("#config-check .button-label")?.textContent?.trim() || "";
+    const symbol = document.querySelector("#config-check .button-symbol")?.textContent?.trim() || "";
+    const status = document.querySelector("#status")?.textContent?.trim() || "";
+    const tone = document.querySelector("#status")?.dataset.statusTone || "";
+    const disabled = (selector) => (grid ? Array.from(grid.querySelectorAll(selector)).filter((element) => element.disabled).length : 0);
+    const overflow = card
+      ? Array.from(card.querySelectorAll("button, .ops-action-symbol, [data-ops-action-chip], strong")).filter((element) => {
+          const parent = card.getBoundingClientRect();
+          const box = element.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && (box.left < parent.left - 1 || box.right > parent.right + 1);
+        }).length
+      : 0;
+    return {
+      pending: document.querySelectorAll("#ops-actions .ops-action-card.is-action-pending").length,
+      ariaBusy: card?.getAttribute("aria-busy") || "",
+      gridBusy: grid?.getAttribute("aria-busy") || "",
+      checkDisabled: disabled("#config-check"),
+      publishDisabled: disabled("#config-publish"),
+      rollbackDisabled: disabled("#config-rollback"),
+      restartDisabled: disabled("#config-restart"),
+      label,
+      symbol,
+      status,
+      tone,
+      overflow,
+    };
+  });
+  await page.evaluate(() => window.__opsConfigCheckRelease?.());
   await expect(page.locator("#config-check-result .ops-result-card")).toBeVisible({ timeout: 5000 });
+  opsActionPendingRestored = await page.evaluate(() => {
+    const card = document.querySelector("#config-check")?.closest(".ops-action-card");
+    const grid = document.querySelector("#ops-actions");
+    const label = document.querySelector("#config-check .button-label")?.textContent?.trim() || "";
+    const symbol = document.querySelector("#config-check .button-symbol")?.textContent?.trim() || "";
+    const disabled = (selector) => (grid ? Array.from(grid.querySelectorAll(selector)).filter((element) => element.disabled).length : 0);
+    return {
+      pending: document.querySelectorAll("#ops-actions .ops-action-card.is-action-pending").length,
+      ariaBusy: card?.getAttribute("aria-busy") || "",
+      gridBusy: grid?.getAttribute("aria-busy") || "",
+      checkDisabled: disabled("#config-check"),
+      publishDisabled: disabled("#config-publish"),
+      rollbackDisabled: disabled("#config-rollback"),
+      restartDisabled: disabled("#config-restart"),
+      label,
+      symbol,
+    };
+  });
   await page.locator("#delivery-readiness").click();
   await expect(page.locator("#config-check-result .ops-result-card")).toContainText(/交付/, { timeout: 5000 });
   const opsResultVisible = await page.locator("#config-check-result .ops-result-card").isVisible();
@@ -2012,6 +2094,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsActionSymbolCount = opsActionSymbolCount;
   state.opsActionChipCount = opsActionChipCount;
   state.opsActionButtonSymbolCount = opsActionButtonSymbolCount;
+  state.opsActionPendingFeedback = opsActionPendingFeedback;
+  state.opsActionPendingRestored = opsActionPendingRestored;
   state.opsResultVisible = opsResultVisible;
   state.opsResultFieldCount = opsResultFieldCount;
   state.opsResultSymbolCount = opsResultSymbolCount;
@@ -2242,6 +2326,34 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeDetailVisible && (!nodeDetailCopyVisible || !nodeDetailCopyFeedbackVisible)) {
     throw new Error(`node detail copy feedback missing: ${JSON.stringify(state)}`);
+  }
+  if (
+    opsActionCardCount > 0 &&
+    (!opsActionPendingFeedback ||
+      opsActionPendingFeedback.pending !== 1 ||
+      opsActionPendingFeedback.ariaBusy !== "true" ||
+      opsActionPendingFeedback.gridBusy !== "true" ||
+      opsActionPendingFeedback.checkDisabled !== 1 ||
+      opsActionPendingFeedback.publishDisabled !== 1 ||
+      opsActionPendingFeedback.rollbackDisabled !== 1 ||
+      opsActionPendingFeedback.restartDisabled !== 1 ||
+      opsActionPendingFeedback.label !== "检查配置中" ||
+      opsActionPendingFeedback.symbol !== "…" ||
+      opsActionPendingFeedback.status !== "检查配置中" ||
+      opsActionPendingFeedback.tone !== "loading" ||
+      opsActionPendingFeedback.overflow > 0 ||
+      !opsActionPendingRestored ||
+      opsActionPendingRestored.pending !== 0 ||
+      opsActionPendingRestored.ariaBusy !== "" ||
+      opsActionPendingRestored.gridBusy !== "" ||
+      opsActionPendingRestored.checkDisabled !== 0 ||
+      opsActionPendingRestored.publishDisabled !== 0 ||
+      opsActionPendingRestored.rollbackDisabled !== 0 ||
+      opsActionPendingRestored.restartDisabled !== 0 ||
+      opsActionPendingRestored.label !== "检查配置" ||
+      opsActionPendingRestored.symbol !== "检")
+  ) {
+    throw new Error(`ops action pending feedback missing: ${JSON.stringify(state)}`);
   }
   if (
     opsActionCardCount !== 5 ||

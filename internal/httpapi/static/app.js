@@ -746,6 +746,58 @@ async function runInlineAction(container, button, statusMessage, action, failure
   }
 }
 
+function setOpsActionPending(card, button, pending) {
+  const grid = document.querySelector("#ops-actions");
+  card?.classList.toggle("is-action-pending", pending);
+  if (pending) {
+    card?.setAttribute("aria-busy", "true");
+    grid?.setAttribute("aria-busy", "true");
+  } else {
+    card?.removeAttribute("aria-busy");
+    grid?.removeAttribute("aria-busy");
+  }
+
+  setSubmitButtonPending(button, pending);
+  grid?.querySelectorAll("button").forEach((control) => {
+    if (pending) {
+      if (control.disabled) {
+        control.dataset.opsWasDisabled = "true";
+      } else {
+        delete control.dataset.opsWasDisabled;
+      }
+      control.disabled = true;
+      return;
+    }
+    control.disabled = control.dataset.opsWasDisabled === "true";
+    delete control.dataset.opsWasDisabled;
+  });
+}
+
+async function runOpsAction(button, statusMessage, action) {
+  const grid = document.querySelector("#ops-actions");
+  const card = button?.closest(".ops-action-card");
+  if (grid?.dataset.actionPending === "true") {
+    return { ok: false, skipped: true };
+  }
+  if (grid) {
+    grid.dataset.actionPending = "true";
+  }
+  setOpsActionPending(card, button, true);
+  setStatus(statusMessage, "loading");
+  try {
+    const value = await action();
+    return { ok: true, value };
+  } catch (error) {
+    setStatus("操作失败，请查看结果", "danger");
+    return { ok: false, error };
+  } finally {
+    if (grid) {
+      delete grid.dataset.actionPending;
+    }
+    setOpsActionPending(card, button, false);
+  }
+}
+
 async function runFormDrawerSubmit(drawer, action) {
   if (drawer.dataset.formSubmitting === "true") {
     return { ok: false, skipped: true };
@@ -1502,117 +1554,110 @@ function showCopyFeedback(button, label, fallbackLabel = "复制") {
 }
 
 async function checkDeliveryReadiness() {
-  deliveryReadinessEl.disabled = true;
-  setStatus("检查交付收口中", "loading");
-  try {
-    const result = await getJSON("/api/delivery/readiness");
-    const config = result.config || {};
-    const nextAction = Array.isArray(result.next_actions) && result.next_actions.length > 0 ? result.next_actions[0] : "--";
-    showConfigResult(result.ready ? "交付可真实测试" : "交付待补齐", result.ready ? "success" : "warning", [
-      ["闭环", `${formatCell(result.ready_count)}/${formatCell(result.total_checks)}`],
-      ["配置 Hash", escapeHTML(String(config.config_hash || "").slice(0, 12) || "--"), true],
-      ["入站", formatCell(config.inbound_count)],
-      ["上游", formatCell(config.upstream_outbound_count)],
-      ["用户", formatCell(config.user_count)],
-      ["下一步", escapeHTML(nextAction), true],
-    ]);
-    setStatus(result.ready ? "交付闭环可测" : "交付闭环待补", result.ready ? "success" : "warning");
-  } catch (error) {
-    showConfigResult("收口检查失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    setStatus("收口检查失败", "danger");
-  } finally {
-    deliveryReadinessEl.disabled = false;
-  }
+  await runOpsAction(deliveryReadinessEl, "检查交付收口中", async () => {
+    try {
+      const result = await getJSON("/api/delivery/readiness");
+      const config = result.config || {};
+      const nextAction = Array.isArray(result.next_actions) && result.next_actions.length > 0 ? result.next_actions[0] : "--";
+      showConfigResult(result.ready ? "交付可真实测试" : "交付待补齐", result.ready ? "success" : "warning", [
+        ["闭环", `${formatCell(result.ready_count)}/${formatCell(result.total_checks)}`],
+        ["配置 Hash", escapeHTML(String(config.config_hash || "").slice(0, 12) || "--"), true],
+        ["入站", formatCell(config.inbound_count)],
+        ["上游", formatCell(config.upstream_outbound_count)],
+        ["用户", formatCell(config.user_count)],
+        ["下一步", escapeHTML(nextAction), true],
+      ]);
+      setStatus(result.ready ? "交付闭环可测" : "交付闭环待补", result.ready ? "success" : "warning");
+    } catch (error) {
+      showConfigResult("收口检查失败", "danger", [["错误", escapeHTML(error.message), true]]);
+      setStatus("收口检查失败", "danger");
+    }
+  });
 }
 
 async function checkConfig() {
-  configCheckEl.disabled = true;
-  setStatus("检查配置中", "loading");
-  try {
-    const result = await postJSON("/api/sing-box/config/check", {});
-    showConfigResult(result.valid ? "检查通过" : "检查失败", result.valid ? "success" : "danger", [
-      ["配置 Hash", escapeHTML(String(result.config_hash || "").slice(0, 12)), true],
-      ["入站", formatCell(result.inbound_count)],
-      ["出口", formatCell(result.outbound_count)],
-      ["上游", formatCell(result.upstream_outbound_count)],
-      ["用户", formatCell(result.user_count)],
-    ]);
-    setStatus(result.valid ? "配置可用" : "配置异常", result.valid ? "success" : "danger");
-  } catch (error) {
-    showConfigResult("检查失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    setStatus("配置异常", "danger");
-  } finally {
-    configCheckEl.disabled = false;
-  }
+  await runOpsAction(configCheckEl, "检查配置中", async () => {
+    try {
+      const result = await postJSON("/api/sing-box/config/check", {});
+      showConfigResult(result.valid ? "检查通过" : "检查失败", result.valid ? "success" : "danger", [
+        ["配置 Hash", escapeHTML(String(result.config_hash || "").slice(0, 12)), true],
+        ["入站", formatCell(result.inbound_count)],
+        ["出口", formatCell(result.outbound_count)],
+        ["上游", formatCell(result.upstream_outbound_count)],
+        ["用户", formatCell(result.user_count)],
+      ]);
+      setStatus(result.valid ? "配置可用" : "配置异常", result.valid ? "success" : "danger");
+    } catch (error) {
+      showConfigResult("检查失败", "danger", [["错误", escapeHTML(error.message), true]]);
+      setStatus("配置异常", "danger");
+    }
+  });
 }
 
 async function publishConfig() {
-  configPublishEl.disabled = true;
-  setStatus("发布配置中", "loading");
-  try {
-    const result = await postJSON("/api/sing-box/config/publish", {});
-    const restartText = result.restart ? formatRestartResult(result.restart) : result.restart_required ? "需要" : "无需";
-    showConfigResult(result.published ? "发布完成" : "发布失败", result.published ? "success" : "danger", [
-      ["配置 Hash", escapeHTML(String(result.config_hash || "").slice(0, 12)), true],
-      ["上版备份", result.previous_saved ? "已保存" : "无"],
-      ["重启", escapeHTML(restartText)],
-      ["出口", formatCell(result.outbound_count)],
-      ["用户", formatCell(result.user_count)],
-    ]);
-    setStatus(
-      result.published && !result.restart_required ? "配置已发布并生效" : result.published ? "配置已发布，需重启 sing-box" : "发布失败",
-      result.published ? "success" : "danger",
-    );
-  } catch (error) {
-    showConfigResult("发布失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    setStatus("发布失败", "danger");
-  } finally {
-    configPublishEl.disabled = false;
-  }
+  await runOpsAction(configPublishEl, "发布配置中", async () => {
+    try {
+      const result = await postJSON("/api/sing-box/config/publish", {});
+      const restartText = result.restart ? formatRestartResult(result.restart) : result.restart_required ? "需要" : "无需";
+      showConfigResult(result.published ? "发布完成" : "发布失败", result.published ? "success" : "danger", [
+        ["配置 Hash", escapeHTML(String(result.config_hash || "").slice(0, 12)), true],
+        ["上版备份", result.previous_saved ? "已保存" : "无"],
+        ["重启", escapeHTML(restartText)],
+        ["出口", formatCell(result.outbound_count)],
+        ["用户", formatCell(result.user_count)],
+      ]);
+      setStatus(
+        result.published && !result.restart_required ? "配置已发布并生效" : result.published ? "配置已发布，需重启 sing-box" : "发布失败",
+        result.published ? "success" : "danger",
+      );
+    } catch (error) {
+      showConfigResult("发布失败", "danger", [["错误", escapeHTML(error.message), true]]);
+      setStatus("发布失败", "danger");
+    }
+  });
 }
 
 async function rollbackConfig() {
-  configRollbackEl.disabled = true;
-  setStatus("回滚配置中", "loading");
-  try {
-    const result = await postJSON("/api/sing-box/config/rollback", {});
-    const restartText = result.restart ? formatRestartResult(result.restart) : result.restart_required ? "需要" : "无需";
-    showConfigResult(result.rolled_back ? "回滚完成" : "回滚失败", result.rolled_back ? "success" : "danger", [
-      ["配置 Hash", escapeHTML(String(result.config_hash || "").slice(0, 12)), true],
-      ["重启", escapeHTML(restartText)],
-      ["出口", formatCell(result.outbound_count)],
-      ["用户", formatCell(result.user_count)],
-    ]);
-    setStatus(
-      result.rolled_back && !result.restart_required ? "配置已回滚并生效" : result.rolled_back ? "配置已回滚，需重启 sing-box" : "回滚失败",
-      result.rolled_back ? "success" : "danger",
-    );
-  } catch (error) {
-    showConfigResult("回滚失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    setStatus("回滚失败", "danger");
-  } finally {
-    configRollbackEl.disabled = false;
-  }
+  await runOpsAction(configRollbackEl, "回滚配置中", async () => {
+    try {
+      const result = await postJSON("/api/sing-box/config/rollback", {});
+      const restartText = result.restart ? formatRestartResult(result.restart) : result.restart_required ? "需要" : "无需";
+      showConfigResult(result.rolled_back ? "回滚完成" : "回滚失败", result.rolled_back ? "success" : "danger", [
+        ["配置 Hash", escapeHTML(String(result.config_hash || "").slice(0, 12)), true],
+        ["重启", escapeHTML(restartText)],
+        ["出口", formatCell(result.outbound_count)],
+        ["用户", formatCell(result.user_count)],
+      ]);
+      setStatus(
+        result.rolled_back && !result.restart_required ? "配置已回滚并生效" : result.rolled_back ? "配置已回滚，需重启 sing-box" : "回滚失败",
+        result.rolled_back ? "success" : "danger",
+      );
+    } catch (error) {
+      showConfigResult("回滚失败", "danger", [["错误", escapeHTML(error.message), true]]);
+      setStatus("回滚失败", "danger");
+    }
+  });
 }
 
 async function restartSingBox() {
-  configRestartEl.disabled = true;
-  setStatus("重启服务中", "loading");
-  try {
-    const result = await postJSON("/api/sing-box/restart", {});
-    showConfigResult(result.success ? "重启已执行" : result.skipped ? "重启未启用" : "重启失败", result.success ? "success" : result.skipped ? "warning" : "danger", [
-      ["启用", result.enabled ? "true" : "false"],
-      ["已执行", result.executed ? "true" : "false"],
-      ["耗时", formatCell(result.duration_ms)],
-      ["消息", escapeHTML(result.message || "--"), true],
-    ]);
-    setStatus(result.success ? "服务已重启" : result.skipped ? "重启未启用" : "重启失败", result.success ? "success" : result.skipped ? "warning" : "danger");
-  } catch (error) {
-    showConfigResult("重启失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    setStatus("重启失败", "danger");
-  } finally {
-    configRestartEl.disabled = false;
-  }
+  await runOpsAction(configRestartEl, "重启服务中", async () => {
+    try {
+      const result = await postJSON("/api/sing-box/restart", {});
+      showConfigResult(result.success ? "重启已执行" : result.skipped ? "重启未启用" : "重启失败", result.success ? "success" : result.skipped ? "warning" : "danger", [
+        ["启用", result.enabled ? "true" : "false"],
+        ["已执行", result.executed ? "true" : "false"],
+        ["耗时", formatCell(result.duration_ms)],
+        ["消息", escapeHTML(result.message || "--"), true],
+      ]);
+      setStatus(
+        result.success ? "服务已重启" : result.skipped ? "重启未启用" : "重启失败",
+        result.success ? "success" : result.skipped ? "warning" : "danger",
+      );
+    } catch (error) {
+      showConfigResult("重启失败", "danger", [["错误", escapeHTML(error.message), true]]);
+      setStatus("重启失败", "danger");
+    }
+  });
 }
 
 function showConfigResult(title, tone, details) {

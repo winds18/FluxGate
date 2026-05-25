@@ -121,12 +121,22 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
 
   const viewNames = ["overview", "access", "nodes", "identity", "policies", "traffic", "ops"];
+  const primaryMobileViews = ["overview", "access", "nodes", "identity"];
+  const overflowMobileViews = ["policies", "traffic", "ops"];
   const switchView = async (view) => {
     const sidebarButton = page.locator(`.dashboard-sidebar [data-view-nav="${view}"]`).first();
     if (await sidebarButton.isVisible()) {
       await sidebarButton.click();
     } else {
-      await page.locator(`.mobile-dock [data-view-nav="${view}"]`).first().click();
+      const dockButton = page.locator(`.mobile-dock [data-view-nav="${view}"]`).first();
+      if (await dockButton.count()) {
+        await dockButton.click();
+      } else {
+        await page.locator("[data-mobile-more-toggle]").click();
+        await expect(page.locator("#mobile-more-menu")).toBeVisible({ timeout: 3000 });
+        await page.locator(`#mobile-more-menu [data-view-nav="${view}"]`).first().click();
+        await expect(page.locator("#mobile-more-menu")).toBeHidden({ timeout: 3000 });
+      }
     }
     await expect(page.locator(`[data-dashboard-view="${view}"]`)).toBeVisible({ timeout: 5000 });
     const activeNavCount = await page.locator(`[data-view-nav="${view}"].is-active`).count();
@@ -139,9 +149,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const dashboardNavCount = await page.locator(".dashboard-sidebar [data-view-nav]").count();
   const dashboardNavSymbolCount = await page.locator(".dashboard-sidebar .nav-symbol").count();
   const dashboardNavBadgeCount = await page.locator(".dashboard-sidebar [data-view-count]").count();
-  const mobileDockCount = await page.locator(".mobile-dock [data-view-nav]").count();
+  const mobileDockCount = await page.locator(".mobile-dock > button").count();
+  const mobileDockDirectNavCount = await page.locator(".mobile-dock [data-view-nav]").count();
   const mobileDockSymbolCount = await page.locator(".mobile-dock .mobile-dock-symbol").count();
-  const mobileDockBadgeCount = await page.locator(".mobile-dock [data-view-count]").count();
+  const mobileDockBadgeCount = await page.locator(".mobile-dock .mobile-dock-badge").count();
+  const mobileMoreToggleCount = await page.locator("[data-mobile-more-toggle]").count();
+  const mobileMoreNavCount = await page.locator("#mobile-more-menu [data-view-nav]").count();
+  const mobileMoreBadgeCount = await page.locator("#mobile-more-menu [data-view-count]").count();
   let populatedNavBadgeCount = 0;
   let navBadgeValues = {};
   const dashboardViewCount = await page.locator("[data-dashboard-view]").count();
@@ -1394,6 +1408,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const mobileDockOverflow = await page.locator(".mobile-dock").evaluate((dock) =>
     Math.max(0, dock.scrollWidth - dock.clientWidth),
   );
+  await page.locator("[data-mobile-more-toggle]").click();
+  const mobileMoreMenuVisible = await page.locator("#mobile-more-menu").isVisible();
+  const mobileMoreMenuOverflow = await page.locator("#mobile-more-menu").evaluate((menu) =>
+    Math.max(0, menu.scrollWidth - menu.clientWidth),
+  );
+  await page.locator('#mobile-more-menu [data-view-nav="policies"]').click();
+  await expect(page.locator("#mobile-more-menu")).toBeHidden({ timeout: 3000 });
+  const mobileMoreMenuHidesAfterSelection = await page.locator("#mobile-more-menu").isHidden();
   await switchView("policies");
   const mobilePoliciesVisible = await page.locator('[data-dashboard-view="policies"]').isVisible();
   const mobilePoliciesOverflow = await pageHorizontalOverflow();
@@ -1403,6 +1425,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await switchView("ops");
   const mobileOpsVisible = await page.locator('[data-dashboard-view="ops"]').isVisible();
   const mobileOpsOverflow = await pageHorizontalOverflow();
+  const mobileMoreToggleActiveForOps = await page.locator("[data-mobile-more-toggle]").evaluate((button) =>
+    button.classList.contains("is-active") && button.getAttribute("aria-expanded") === "false",
+  );
   await page.setViewportSize({ width: 1280, height: 720 });
   await switchView("nodes");
   populatedNavBadgeCount = await page
@@ -1434,8 +1459,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardNavSymbolCount = dashboardNavSymbolCount;
   state.dashboardNavBadgeCount = dashboardNavBadgeCount;
   state.mobileDockCount = mobileDockCount;
+  state.mobileDockDirectNavCount = mobileDockDirectNavCount;
   state.mobileDockSymbolCount = mobileDockSymbolCount;
   state.mobileDockBadgeCount = mobileDockBadgeCount;
+  state.mobileMoreToggleCount = mobileMoreToggleCount;
+  state.mobileMoreNavCount = mobileMoreNavCount;
+  state.mobileMoreBadgeCount = mobileMoreBadgeCount;
   state.populatedNavBadgeCount = populatedNavBadgeCount;
   state.navBadgeValues = navBadgeValues;
   state.dashboardViewCount = dashboardViewCount;
@@ -1515,12 +1544,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileSidebarVisible = mobileSidebarVisible;
   state.mobileOverviewOverflow = mobileOverviewOverflow;
   state.mobileDockOverflow = mobileDockOverflow;
+  state.mobileMoreMenuVisible = mobileMoreMenuVisible;
+  state.mobileMoreMenuOverflow = mobileMoreMenuOverflow;
+  state.mobileMoreMenuHidesAfterSelection = mobileMoreMenuHidesAfterSelection;
   state.mobilePoliciesVisible = mobilePoliciesVisible;
   state.mobilePoliciesOverflow = mobilePoliciesOverflow;
   state.mobileNodesVisible = mobileNodesVisible;
   state.mobileNodesOverflow = mobileNodesOverflow;
   state.mobileOpsVisible = mobileOpsVisible;
   state.mobileOpsOverflow = mobileOpsOverflow;
+  state.mobileMoreToggleActiveForOps = mobileMoreToggleActiveForOps;
   state.teamCardCount = teamCardCount;
   state.teamEditCount = teamEditCount;
   state.teamEditFieldsVisible = teamEditFieldsVisible;
@@ -1850,10 +1883,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (
     !mobileDockVisible ||
     mobileSidebarVisible ||
+    !mobileMoreMenuVisible ||
+    !mobileMoreMenuHidesAfterSelection ||
+    !mobileMoreToggleActiveForOps ||
     !mobilePoliciesVisible ||
     !mobileNodesVisible ||
     !mobileOpsVisible ||
     mobileDockOverflow > 2 ||
+    mobileMoreMenuOverflow > 2 ||
     mobileOverviewOverflow > 2 ||
     mobilePoliciesOverflow > 2 ||
     mobileNodesOverflow > 2 ||
@@ -1865,9 +1902,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     dashboardNavCount !== viewNames.length ||
     dashboardNavSymbolCount !== viewNames.length ||
     dashboardNavBadgeCount !== viewNames.length ||
-    mobileDockCount !== viewNames.length ||
-    mobileDockSymbolCount !== viewNames.length ||
-    mobileDockBadgeCount !== viewNames.length ||
+    mobileDockCount !== 5 ||
+    mobileDockDirectNavCount !== primaryMobileViews.length ||
+    mobileDockSymbolCount !== 5 ||
+    mobileDockBadgeCount !== 5 ||
+    mobileMoreToggleCount !== 1 ||
+    mobileMoreNavCount !== overflowMobileViews.length ||
+    mobileMoreBadgeCount !== overflowMobileViews.length ||
     populatedNavBadgeCount !== viewNames.length * 2 ||
     dashboardViewCount !== viewNames.length
   ) {

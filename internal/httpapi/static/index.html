@@ -115,10 +115,15 @@
         <button type="button" data-view-nav="access"><span class="mobile-dock-symbol" aria-hidden="true">源</span><span>接入</span><span class="mobile-dock-badge" data-view-count="access">--</span></button>
         <button type="button" data-view-nav="nodes"><span class="mobile-dock-symbol" aria-hidden="true">点</span><span>节点</span><span class="mobile-dock-badge" data-view-count="nodes">--</span></button>
         <button type="button" data-view-nav="identity"><span class="mobile-dock-symbol" aria-hidden="true">身</span><span>身份</span><span class="mobile-dock-badge" data-view-count="identity">--</span></button>
-        <button type="button" data-view-nav="policies"><span class="mobile-dock-symbol" aria-hidden="true">策</span><span>策略</span><span class="mobile-dock-badge" data-view-count="policies">--</span></button>
-        <button type="button" data-view-nav="traffic"><span class="mobile-dock-symbol" aria-hidden="true">量</span><span>流量</span><span class="mobile-dock-badge" data-view-count="traffic">--</span></button>
-        <button type="button" data-view-nav="ops"><span class="mobile-dock-symbol" aria-hidden="true">运</span><span>运维</span><span class="mobile-dock-badge" data-view-count="ops">--</span></button>
+        <button type="button" data-mobile-more-toggle aria-controls="mobile-more-menu" aria-expanded="false"><span class="mobile-dock-symbol" aria-hidden="true">···</span><span>更多</span><span class="mobile-dock-badge">3</span></button>
       </nav>
+      <div id="mobile-more-menu" class="mobile-more-menu" hidden>
+        <div class="mobile-more-panel" role="menu" aria-label="更多模块">
+          <button type="button" data-view-nav="policies" role="menuitem"><span class="mobile-dock-symbol" aria-hidden="true">策</span><span>策略</span><span class="mobile-dock-badge" data-view-count="policies">--</span></button>
+          <button type="button" data-view-nav="traffic" role="menuitem"><span class="mobile-dock-symbol" aria-hidden="true">量</span><span>流量</span><span class="mobile-dock-badge" data-view-count="traffic">--</span></button>
+          <button type="button" data-view-nav="ops" role="menuitem"><span class="mobile-dock-symbol" aria-hidden="true">运</span><span>运维</span><span class="mobile-dock-badge" data-view-count="ops">--</span></button>
+        </div>
+      </div>
 
       <section class="workspace">
         <div class="workspace-header">

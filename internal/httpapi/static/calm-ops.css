@@ -795,6 +795,17 @@ a.table-button:hover {
     right: 8px;
   }
 
+  .mobile-more-menu:not([hidden]) {
+    bottom: 76px;
+    left: 8px;
+    right: 8px;
+  }
+
+  .mobile-more-panel {
+    border-radius: var(--fg-radius);
+    box-shadow: 0 18px 42px rgba(18, 32, 30, 0.18);
+  }
+
   .mobile-dock button {
     min-height: 50px;
     padding: 0 1px;

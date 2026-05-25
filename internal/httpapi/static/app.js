@@ -12,6 +12,9 @@ const dashboardNavButtons = Array.from(document.querySelectorAll("[data-view-nav
 const dashboardNavCountEls = Array.from(document.querySelectorAll("[data-view-count]"));
 const dashboardJumpButtons = Array.from(document.querySelectorAll("[data-view-jump]"));
 const overviewCardCountEls = Array.from(document.querySelectorAll("[data-overview-card-count]"));
+const mobileMoreToggle = document.querySelector("[data-mobile-more-toggle]");
+const mobileMoreMenu = document.querySelector("#mobile-more-menu");
+const mobileOverflowViews = new Set(["policies", "traffic", "ops"]);
 const loginForm = document.querySelector("#login-form");
 const loginErrorEl = document.querySelector("#login-error");
 const loginUsernameEl = document.querySelector("#login-username");
@@ -183,6 +186,25 @@ document.addEventListener("click", (event) => {
   if (!drawer) return;
   const nextCollapsed = !drawer.classList.contains("is-collapsed");
   setFormDrawerCollapsed(drawer, nextCollapsed);
+});
+mobileMoreToggle?.addEventListener("click", (event) => {
+  event.stopPropagation();
+  setMobileMoreMenuOpen(mobileMoreMenu?.hidden !== false);
+});
+mobileMoreMenu?.addEventListener("click", (event) => {
+  if (event.target.closest("[data-view-nav]")) {
+    setMobileMoreMenuOpen(false);
+  }
+});
+document.addEventListener("click", (event) => {
+  if (mobileMoreMenu?.hidden !== false) return;
+  if (event.target.closest("#mobile-more-menu") || event.target.closest("[data-mobile-more-toggle]")) return;
+  setMobileMoreMenuOpen(false);
+});
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    setMobileMoreMenuOpen(false);
+  }
 });
 document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-overview-jump]");
@@ -579,6 +601,16 @@ function setActiveView(view) {
   updateWorkspacePrimaryAction();
   updateNavigationCounts();
   updateOverviewCardCounts();
+  mobileMoreToggle?.classList.toggle("is-active", mobileOverflowViews.has(nextView));
+  if (!mobileOverflowViews.has(nextView)) {
+    setMobileMoreMenuOpen(false);
+  }
+}
+
+function setMobileMoreMenuOpen(open) {
+  if (!mobileMoreMenu || !mobileMoreToggle) return;
+  mobileMoreMenu.hidden = !open;
+  mobileMoreToggle.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
 function setFormDrawerCollapsed(drawer, collapsed) {

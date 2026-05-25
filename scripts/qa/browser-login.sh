@@ -1117,6 +1117,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const opsActionButtonSymbolCount = await page.locator("#ops-actions button .button-symbol").count();
   await page.locator("#config-check").click();
   await expect(page.locator("#config-check-result .ops-result-card")).toBeVisible({ timeout: 5000 });
+  await page.locator("#delivery-readiness").click();
+  await expect(page.locator("#config-check-result .ops-result-card")).toContainText(/交付/, { timeout: 5000 });
   const opsResultVisible = await page.locator("#config-check-result .ops-result-card").isVisible();
   const opsResultFieldCount = await page.locator("#config-check-result .ops-result-field").count();
   const opsResultSymbolCount = await page.locator("#config-check-result .ops-result-symbol").count();
@@ -1547,10 +1549,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`node detail copy feedback missing: ${JSON.stringify(state)}`);
   }
   if (
-    opsActionCardCount !== 4 ||
-    opsActionSymbolCount !== 4 ||
-    opsActionChipCount !== 4 ||
-    opsActionButtonSymbolCount !== 4 ||
+    opsActionCardCount !== 5 ||
+    opsActionSymbolCount !== 5 ||
+    opsActionChipCount !== 5 ||
+    opsActionButtonSymbolCount !== 5 ||
     !opsResultVisible ||
     opsResultFieldCount < 4 ||
     opsResultSymbolCount !== 1 ||
@@ -1725,7 +1727,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     state.loginVisible ||
     state.appHidden ||
     !state.appVisible ||
-    !["已连接", "配置可用"].includes(state.status)
+    !["已连接", "配置可用", "交付闭环可测"].includes(state.status)
   ) {
     throw new Error(JSON.stringify(result, null, 2));
   }

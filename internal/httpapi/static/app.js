@@ -42,6 +42,7 @@ const panelCountEls = {
   config: document.querySelector("#config-panel-count"),
 };
 const refreshEl = document.querySelector("#refresh");
+const deliveryReadinessEl = document.querySelector("#delivery-readiness");
 const configCheckEl = document.querySelector("#config-check");
 const configPublishEl = document.querySelector("#config-publish");
 const configRollbackEl = document.querySelector("#config-rollback");
@@ -127,12 +128,14 @@ const dashboardViewRail = {
     ["出口摘要", "traffic-outbounds"],
   ],
   ops: [
+    ["交付收口", "config-check-result"],
     ["配置操作", "config-check-result"],
   ],
 };
 let activeDashboardView = "overview";
 
 refreshEl.addEventListener("click", load);
+deliveryReadinessEl.addEventListener("click", checkDeliveryReadiness);
 configCheckEl.addEventListener("click", checkConfig);
 configPublishEl.addEventListener("click", publishConfig);
 configRollbackEl.addEventListener("click", rollbackConfig);
@@ -1043,6 +1046,30 @@ function showCopyFeedback(button, label, fallbackLabel = "复制") {
     button.classList.remove("is-copied");
     button.removeAttribute("aria-label");
   }, 1600);
+}
+
+async function checkDeliveryReadiness() {
+  deliveryReadinessEl.disabled = true;
+  statusEl.textContent = "检查交付收口中";
+  try {
+    const result = await getJSON("/api/delivery/readiness");
+    const config = result.config || {};
+    const nextAction = Array.isArray(result.next_actions) && result.next_actions.length > 0 ? result.next_actions[0] : "--";
+    showConfigResult(result.ready ? "交付可真实测试" : "交付待补齐", result.ready ? "success" : "warning", [
+      ["闭环", `${formatCell(result.ready_count)}/${formatCell(result.total_checks)}`],
+      ["配置 Hash", escapeHTML(String(config.config_hash || "").slice(0, 12) || "--"), true],
+      ["入站", formatCell(config.inbound_count)],
+      ["上游", formatCell(config.upstream_outbound_count)],
+      ["用户", formatCell(config.user_count)],
+      ["下一步", escapeHTML(nextAction), true],
+    ]);
+    statusEl.textContent = result.ready ? "交付闭环可测" : "交付闭环待补";
+  } catch (error) {
+    showConfigResult("收口检查失败", "danger", [["错误", escapeHTML(error.message), true]]);
+    statusEl.textContent = "收口检查失败";
+  } finally {
+    deliveryReadinessEl.disabled = false;
+  }
 }
 
 async function checkConfig() {

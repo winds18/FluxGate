@@ -325,6 +325,25 @@ GitHub Actions 镜像构建已配置在 `.github/workflows/docker-image.yml`：
 
 首次部署时如果还没有 sing-box 配置，`bootstrap-remote.sh` 会生成一个最小可启动配置；后续由 FluxGate 控制面发布正式配置。
 
+### 可选 Sub-Store 服务
+
+FluxGate 可以只把 Sub-Store 当成“订阅地址节点提取器”。如果服务器已有 Sub-Store，直接在 `.env` 配置 `SUB_STORE_EXTRACT_URL_TEMPLATE` 即可。若希望跟随本项目 Docker Compose 启动一个内网 Sub-Store，可叠加覆盖文件：
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.sub-store.yml up -d
+```
+
+示例配置：
+
+```text
+SUB_STORE_EXTRACT_URL_TEMPLATE=http://sub-store:3001/download/sub/ClashMeta?url={url}&includeUnsupportedProxy=true&ignoreFailedRemoteSub=enabled
+SUB_STORE_TIMEOUT_SECONDS=20
+SUB_STORE_HOST_BIND=127.0.0.1
+SUB_STORE_HTTP_PORT=3001
+```
+
+`{url}` 由 FluxGate 自动替换为上游来源订阅地址。Sub-Store 返回 Clash/Mihomo、URI 列表或 base64 订阅内容均会继续走 FluxGate 的归一化解析；提取失败时会回退 FluxGate 直连拉取。
+
 ## 7. 首次部署流程
 
 ```bash

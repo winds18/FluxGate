@@ -41,6 +41,17 @@ sing-box Data Plane
 
 FluxGate 不做真实代理转发，不解密 HTTPS 内容。它可以统计用户、节点和出口维度的流量、连接元数据和订阅访问情况，但不做 MITM 内容审计。
 
+## 可选 Sub-Store 提取
+
+FluxGate 默认会直接拉取 `subscription` 来源 URL，并用内置解析器提取节点。若要复用已有 Sub-Store，只做“订阅地址 -> 节点内容”的提取，可以配置：
+
+```text
+SUB_STORE_EXTRACT_URL_TEMPLATE=http://sub-store:3001/download/sub/ClashMeta?url={url}&includeUnsupportedProxy=true&ignoreFailedRemoteSub=enabled
+SUB_STORE_TIMEOUT_SECONDS=20
+```
+
+`{url}` 会由 FluxGate 自动 URL encode。Sub-Store 提取失败时会回退到 FluxGate 直连拉取，避免上游刷新整体中断。需要随项目一起启动 Sub-Store 时，可叠加 `docker-compose.sub-store.yml`。
+
 ## 部署配置
 
 ```text

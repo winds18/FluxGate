@@ -7,14 +7,17 @@ import (
 	"time"
 
 	"github.com/winds18/FluxGate/internal/store"
+	"github.com/winds18/FluxGate/internal/substore"
 	"github.com/winds18/FluxGate/internal/upstream"
 )
 
 type FetchFunc func(context.Context, string) (string, error)
 
 type Refresher struct {
-	Store *store.Store
-	Fetch FetchFunc
+	Store    *store.Store
+	Fetch    FetchFunc
+	SubStore substore.Extractor
+	Logger   *slog.Logger
 }
 
 type Summary struct {
@@ -134,6 +137,18 @@ func (r Refresher) RunScheduler(ctx context.Context, interval time.Duration, lim
 func (r Refresher) fetch(ctx context.Context, sourceURL string) (string, error) {
 	if r.Fetch != nil {
 		return r.Fetch(ctx, sourceURL)
+	}
+	if r.SubStore.Enabled() {
+		extracted, err := r.SubStore.Extract(ctx, sourceURL)
+		if err == nil {
+			if r.Logger != nil {
+				r.Logger.Info("sub-store extraction succeeded")
+			}
+			return extracted, nil
+		}
+		if r.Logger != nil {
+			r.Logger.Info("sub-store extraction failed; falling back to direct subscription fetch", "reason", err.Error())
+		}
 	}
 	return upstream.Fetcher{}.Fetch(ctx, sourceURL)
 }

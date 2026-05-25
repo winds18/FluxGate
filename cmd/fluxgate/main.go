@@ -16,6 +16,7 @@ import (
 	"github.com/winds18/FluxGate/internal/singbox"
 	"github.com/winds18/FluxGate/internal/stats"
 	"github.com/winds18/FluxGate/internal/store"
+	"github.com/winds18/FluxGate/internal/substore"
 	"github.com/winds18/FluxGate/internal/upstreamsync"
 )
 
@@ -57,7 +58,14 @@ func main() {
 		logger.Info("bootstrap admin skipped")
 	}
 
-	refresher := upstreamsync.Refresher{Store: db}
+	subStoreExtractor := substore.Extractor{
+		URLTemplate: cfg.SubStoreExtractURLTemplate,
+		Timeout:     cfg.SubStoreTimeout,
+	}
+	if subStoreExtractor.Enabled() {
+		logger.Info("sub-store extraction enabled")
+	}
+	refresher := upstreamsync.Refresher{Store: db, SubStore: subStoreExtractor, Logger: logger}
 	go refresher.RunScheduler(ctx, cfg.SourceSyncPollInterval, cfg.SourceSyncBatchLimit, logger)
 
 	if cfg.SingBoxV2RayAPIAddr != "" && cfg.StatsPollInterval > 0 {

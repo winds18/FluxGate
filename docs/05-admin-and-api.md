@@ -279,9 +279,12 @@ POST /api/sing-box/config/check
 POST /api/sing-box/config/publish
 POST /api/sing-box/config/rollback
 POST /api/sing-box/restart
+GET  /api/delivery/readiness
 ```
 
 当前已落地 `config/publish`、`config/rollback` 和 `restart`。发布/回滚响应会返回 `restart_required`；当部署侧显式设置 `SING_BOX_AUTO_RESTART=true` 时，发布/回滚会自动调用重启执行器。默认 driver 为 Docker Unix socket；如需命令模式，可设置 `SING_BOX_RESTART_DRIVER=command` 并配置 `SING_BOX_RESTART_COMMAND` / `SING_BOX_RESTART_ARGS`。
+
+`GET /api/delivery/readiness` 会汇总真实可测闭环：上游来源、可用节点、虚拟网关、可用 Token、访问策略和 sing-box 配置检查。返回值包含 `ready`、`checks`、`config` 和 `next_actions`，供管理后台“运维 -> 交付检查”展示，也供脚本验收判断当前实例是否达到可导入客户端测试的状态。
 
 ### 2.12 统计
 

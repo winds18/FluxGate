@@ -59,7 +59,7 @@
 - 管理后台 Token 续期、加额和状态控制已整理为分区动作面板，补齐字段标签、单位、动作符号和无横向滚动验收，减少真实测试时的输入歧义与按钮挤压。
 - 管理后台流量模块 Token 用量和上游出口摘要已改为卡片式信息层级，两个分区不管有无数据都会显示统一符号、标题、数量徽标和说明；新增 Token 状态/成员/今日/本月与出口来源/上传/下载/总量摘要芯片，额度进度、今日/本月/累计用量和出口上传下载分层展示，并纳入分区头与视觉溢出验收。
 - 管理后台流量趋势图已补齐小时/日摘要头，展示趋势符号、总量、峰值和活跃样本数，并纳入浏览器趋势摘要与视觉溢出验收。
-- 管理后台运维模块已改为带操作符号、状态胶囊的配置操作卡和结构化结果卡，配置检查结果可分层展示结果符号、状态胶囊、Hash、入站、出口、上游和用户数量，并纳入浏览器检查与视觉溢出验收。
+- 管理后台运维模块已改为带操作符号、状态胶囊的配置操作卡和结构化结果卡，配置检查结果可分层展示结果符号、状态胶囊、Hash、入站、出口、上游和用户数量；交付收口检查会汇总来源、节点、虚拟网关、Token、策略和配置是否达到真实可测状态，并纳入浏览器检查与视觉溢出验收。
 - 管理后台空状态已统一为带模块符号、标题和提示文案的结构化空状态，避免真实测试时无数据区域只显示一行“暂无数据”，流量模块空状态已纳入浏览器符号与溢出验收。
 - 管理后台节点池地区聚合卡已补齐地区符号、可用数量徽标和协议/来源状态胶囊，地区首屏具备更清晰的控制台扫描层级，并纳入浏览器数量和溢出验收。
 - 管理后台节点池地区内节点卡片已补齐协议符号、状态/协议/命名模式信息芯片、服务端端点摘要和统一动作符号按钮，编辑表单保存动作也纳入符号按钮体系；长标题、来源、标签、服务器地址和操作区继续限制在卡片内部，并纳入浏览器数量和溢出验收。
@@ -186,6 +186,7 @@
 - subscription 来源可解析 Surge `[Proxy]` 代理段中的 SS、SSR、Trojan、VLESS、VMess、Hysteria2、TUIC、Juicity、Hysteria、AnyTLS、ShadowTLS、Naive、SSH、WireGuard、HTTP/HTTPS、SOCKS、Direct、Reject 和 DNS 节点，并兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive-https`、`naive-quic` 和 `socks5h` 协议别名，转换为标准 URI。
 - Surge `[Proxy]` `ssr`/`shadowsocksr` 节点会按 Shadowsocks 兼容链路归一化为 `ss://`，保留服务端、端口、加密方法、密码和节点名，并避免 SSR 专有 `protocol`/`obfs` 参数误写入 sing-box Shadowsocks `network`。
 - subscription 来源支持按刷新间隔自动同步到期订阅。
+- subscription 来源 URL 刷新可选接入 Sub-Store 提取模板，只做“订阅地址 -> 节点内容”提取，提取结果仍交由 FluxGate 归一化、命名、去重和入库；提取失败时会回退直连拉取。
 - subscription 来源可解析 Clash YAML `proxies` 中的常见 SS/Trojan/VLESS/VMess/Hysteria2/TUIC/Juicity/Hysteria/HTTP/SOCKS/AnyTLS/ShadowTLS/Naive/SSH/WireGuard 节点，以及 Direct/Reject 变体/DNS 内置出站；Clash YAML 结构化 `type` 兼容 `ssr`/`shadowsocksr`、`trojan-go`、`vmess-aead`、`hy2`、`http+tls`、`http-tls`、`any-tls`、`shadow-tls`、`naive+https`、`naive-https`、`naive-quic` 和 `socks5h` 别名。
 - Clash YAML `type: ssr`/`shadowsocksr` 节点会按 Shadowsocks 兼容链路归一化为 `ss://`，保留服务端、端口、加密方法、密码和节点名，并避免 SSR 专有 `protocol`/`obfs` 参数误写入 sing-box Shadowsocks `network`。
 - Clash YAML 解析支持嵌套 `proxy`/`proxies`/`proxy-list`/`proxies-list`/`node`/`nodes`/`node-list`/`server`/`servers`/`server-list` 列表，并兼容 `proxyList`、`nodeList`、`serverList` 等 camelCase/PascalCase 写法，可兼容带内嵌 provider 节点清单的订阅结构。

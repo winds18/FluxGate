@@ -81,6 +81,23 @@ scripts/deploy/remote-logs.sh
 
 前缀修改后会同步刷新自动命名节点；手动改名过的节点会保留人工名称。
 
+### 可选：用 Sub-Store 提取节点
+
+如果某些机场订阅格式比较绕，可以让 FluxGate 在刷新 `subscription` 来源 URL 时先调用 Sub-Store，只把订阅地址转换成节点内容，再交回 FluxGate 入库、命名、聚合和生成网关配置。FluxGate 不把策略、分组或二次订阅管理交给 Sub-Store。
+
+1. 准备一个可访问的 Sub-Store 后端。
+2. 在服务器 `.env` 设置 `SUB_STORE_EXTRACT_URL_TEMPLATE`，示例：
+
+```text
+SUB_STORE_EXTRACT_URL_TEMPLATE=http://sub-store:3001/download/sub/ClashMeta?url={url}&includeUnsupportedProxy=true&ignoreFailedRemoteSub=enabled
+SUB_STORE_TIMEOUT_SECONDS=20
+```
+
+3. `{url}` 不要手动替换，FluxGate 会把上游来源里的订阅 URL 自动编码后填进去。
+4. 重启 FluxGate 后，在“上游来源”里刷新 subscription 来源。
+
+如果 Sub-Store 提取失败，FluxGate 会记录日志并回退到内置直连拉取，避免一个提取接口故障导致所有来源不可刷新。需要项目自带 Sub-Store 容器时，可以使用 `docker-compose.sub-store.yml` 覆盖文件。
+
 ## 4. 检查节点池
 
 节点池默认按地区聚合：

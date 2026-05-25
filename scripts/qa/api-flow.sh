@@ -304,6 +304,11 @@ run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/che
 config_check_valid="$(json_value "data.valid" <"$OUT_DIR/sing-box-check.json")"
 config_check_hash="$(json_value "data.config_hash" <"$OUT_DIR/sing-box-check.json")"
 config_check_upstreams="$(json_value "data.upstream_outbound_count" <"$OUT_DIR/sing-box-check.json")"
+run_logged curl -fsS -b "$COOKIE_JAR" "$BASE_URL/api/delivery/readiness" -o "$OUT_DIR/delivery-readiness.json"
+delivery_ready="$(json_value "data.ready" <"$OUT_DIR/delivery-readiness.json")"
+delivery_ready_count="$(json_value "data.ready_count" <"$OUT_DIR/delivery-readiness.json")"
+delivery_total_checks="$(json_value "data.total_checks" <"$OUT_DIR/delivery-readiness.json")"
+delivery_config_hash="$(json_value "data.config.config_hash" <"$OUT_DIR/delivery-readiness.json")"
 run_logged curl -fsS -b "$COOKIE_JAR" -X POST "$BASE_URL/api/sing-box/config/publish" -o "$OUT_DIR/sing-box-publish.json"
 config_publish_done="$(json_value "data.published" <"$OUT_DIR/sing-box-publish.json")"
 config_publish_hash="$(json_value "data.config_hash" <"$OUT_DIR/sing-box-publish.json")"
@@ -537,6 +542,11 @@ fi
 
 if [[ "$config_check_valid" != "true" || -z "$config_check_hash" || "$config_check_upstreams" -lt 1 ]]; then
   log "sing-box config check should pass with upstreams: valid=$config_check_valid hash=$config_check_hash upstreams=$config_check_upstreams"
+  exit 1
+fi
+
+if [[ "$delivery_ready" != "true" || "$delivery_ready_count" != "$delivery_total_checks" || "$delivery_config_hash" != "$config_check_hash" ]]; then
+  log "delivery readiness should match usable config: ready=$delivery_ready ready_count=$delivery_ready_count total=$delivery_total_checks delivery_hash=$delivery_config_hash check_hash=$config_check_hash"
   exit 1
 fi
 

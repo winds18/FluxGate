@@ -21,6 +21,7 @@ import (
 	"github.com/winds18/FluxGate/internal/singbox"
 	"github.com/winds18/FluxGate/internal/store"
 	"github.com/winds18/FluxGate/internal/subscription"
+	"github.com/winds18/FluxGate/internal/substore"
 	"github.com/winds18/FluxGate/internal/upstreamsync"
 )
 
@@ -100,6 +101,7 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /api/traffic/daily", s.handleListTrafficDaily)
 	s.mux.HandleFunc("GET /api/traffic/hourly", s.handleListTrafficHourly)
 	s.mux.HandleFunc("GET /api/traffic/outbounds", s.handleListOutboundTraffic)
+	s.mux.HandleFunc("GET /api/delivery/readiness", s.handleDeliveryReadiness)
 
 	s.mux.HandleFunc("POST /api/sing-box/config/generate", s.handleGenerateSingBoxConfig)
 	s.mux.HandleFunc("POST /api/sing-box/config/check", s.handleCheckSingBoxConfig)
@@ -292,6 +294,172 @@ func (s *Server) handleOverview(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, overview)
 }
 
+type deliveryReadinessResponse struct {
+	Ready       bool                     `json:"ready"`
+	ReadyCount  int                      `json:"ready_count"`
+	TotalChecks int                      `json:"total_checks"`
+	Checks      []deliveryReadinessCheck `json:"checks"`
+	Config      deliveryConfigReadiness  `json:"config"`
+	NextActions []string                 `json:"next_actions"`
+	UpdatedAt   string                   `json:"updated_at"`
+}
+
+type deliveryReadinessCheck struct {
+	Key     string `json:"key"`
+	Symbol  string `json:"symbol"`
+	Title   string `json:"title"`
+	Ready   bool   `json:"ready"`
+	Status  string `json:"status"`
+	Summary string `json:"summary"`
+}
+
+type deliveryConfigReadiness struct {
+	Valid                 bool     `json:"valid"`
+	ConfigHash            string   `json:"config_hash"`
+	InboundCount          int      `json:"inbound_count"`
+	OutboundCount         int      `json:"outbound_count"`
+	UpstreamOutboundCount int      `json:"upstream_outbound_count"`
+	UserCount             int      `json:"user_count"`
+	Messages              []string `json:"messages"`
+}
+
+func (s *Server) handleDeliveryReadiness(w http.ResponseWriter, r *http.Request) {
+	readiness, err := s.deliveryReadiness(r.Context())
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, readiness)
+}
+
+func (s *Server) deliveryReadiness(ctx context.Context) (deliveryReadinessResponse, error) {
+	overview, err := s.store.Overview(ctx, s.cfg.Version)
+	if err != nil {
+		return deliveryReadinessResponse{}, err
+	}
+	nodes, err := s.store.ListNodes(ctx)
+	if err != nil {
+		return deliveryReadinessResponse{}, err
+	}
+	virtualNodes, err := s.store.ListVirtualNodes(ctx)
+	if err != nil {
+		return deliveryReadinessResponse{}, err
+	}
+	tokens, err := s.store.ListTokens(ctx)
+	if err != nil {
+		return deliveryReadinessResponse{}, err
+	}
+	policies, err := s.store.ListPolicies(ctx)
+	if err != nil {
+		return deliveryReadinessResponse{}, err
+	}
+	config, err := s.buildSingBoxConfig(ctx)
+	if err != nil {
+		return deliveryReadinessResponse{}, err
+	}
+	configCheck, err := singbox.CheckConfig(config)
+	if err != nil {
+		return deliveryReadinessResponse{}, err
+	}
+
+	activeNodes := 0
+	for _, node := range nodes {
+		if node.Status == "active" {
+			activeNodes++
+		}
+	}
+	activeVirtualNodes := 0
+	for _, node := range virtualNodes {
+		if node.Status == "active" && node.ListenPort > 0 {
+			activeVirtualNodes++
+		}
+	}
+	usableTokens := 0
+	now := time.Now().UTC()
+	for _, token := range tokens {
+		if ok, _ := subscription.TokenUsable(token, now); ok {
+			usableTokens++
+		}
+	}
+	activePolicies := 0
+	for _, policy := range policies {
+		if policy.Status == "active" {
+			activePolicies++
+		}
+	}
+	configReady := configCheck.Valid &&
+		configCheck.InboundCount > 0 &&
+		configCheck.UpstreamOutboundCount > 0 &&
+		configCheck.UserCount > 0
+	checks := []deliveryReadinessCheck{
+		deliveryCheck("sources", "源", "接入来源", overview.Sources > 0, countSummary(overview.Sources, "个来源")),
+		deliveryCheck("nodes", "点", "可用节点", activeNodes > 0, countSummary(int64(activeNodes), "个可用节点")),
+		deliveryCheck("virtual_nodes", "网", "虚拟网关", activeVirtualNodes > 0, countSummary(int64(activeVirtualNodes), "个活跃入口")),
+		deliveryCheck("tokens", "钥", "可用 Token", usableTokens > 0, countSummary(int64(usableTokens), "个可用 Token")),
+		deliveryCheck("policies", "策", "访问策略", activePolicies > 0, countSummary(int64(activePolicies), "条活跃策略")),
+		deliveryCheck("config", "运", "网关配置", configReady, configSummary(configCheck)),
+	}
+
+	readyCount := 0
+	var nextActions []string
+	for _, check := range checks {
+		if check.Ready {
+			readyCount++
+			continue
+		}
+		nextActions = append(nextActions, "补齐"+check.Title)
+	}
+	if len(nextActions) == 0 {
+		nextActions = []string{"复制 Token 订阅地址导入客户端", "从客户端连接网关并观察流量摘要"}
+	}
+
+	return deliveryReadinessResponse{
+		Ready:       readyCount == len(checks),
+		ReadyCount:  readyCount,
+		TotalChecks: len(checks),
+		Checks:      checks,
+		Config: deliveryConfigReadiness{
+			Valid:                 configCheck.Valid,
+			ConfigHash:            configCheck.ConfigHash,
+			InboundCount:          configCheck.InboundCount,
+			OutboundCount:         configCheck.OutboundCount,
+			UpstreamOutboundCount: configCheck.UpstreamOutboundCount,
+			UserCount:             configCheck.UserCount,
+			Messages:              configCheck.Messages,
+		},
+		NextActions: nextActions,
+		UpdatedAt:   time.Now().UTC().Format(time.RFC3339),
+	}, nil
+}
+
+func deliveryCheck(key, symbol, title string, ready bool, summary string) deliveryReadinessCheck {
+	status := "待补"
+	if ready {
+		status = "就绪"
+	}
+	return deliveryReadinessCheck{
+		Key:     key,
+		Symbol:  symbol,
+		Title:   title,
+		Ready:   ready,
+		Status:  status,
+		Summary: summary,
+	}
+}
+
+func countSummary(value int64, unit string) string {
+	return strconv.FormatInt(value, 10) + " " + unit
+}
+
+func configSummary(result singbox.CheckResult) string {
+	if !result.Valid {
+		return "配置待修复"
+	}
+	return strconv.Itoa(result.InboundCount) + " 入站 / " +
+		strconv.Itoa(result.UserCount) + " 用户 / " +
+		strconv.Itoa(result.UpstreamOutboundCount) + " 上游"
+}
+
 func (s *Server) handleListSources(w http.ResponseWriter, r *http.Request) {
 	items, err := s.store.ListSources(r.Context())
 	if err != nil {
@@ -341,7 +509,7 @@ func (s *Server) handleRefreshSource(w http.ResponseWriter, r *http.Request) {
 		writeStoreError(w, err)
 		return
 	}
-	refresher := upstreamsync.Refresher{Store: s.store}
+	refresher := s.sourceRefresher()
 	result, err := refresher.RefreshSource(r.Context(), source)
 	if err != nil {
 		_ = s.store.SetSourceSyncError(r.Context(), source.ID, err.Error())
@@ -372,6 +540,17 @@ func (s *Server) handleRefreshSource(w http.ResponseWriter, r *http.Request) {
 		"source": updatedSource,
 		"result": result,
 	})
+}
+
+func (s *Server) sourceRefresher() upstreamsync.Refresher {
+	return upstreamsync.Refresher{
+		Store: s.store,
+		SubStore: substore.Extractor{
+			URLTemplate: s.cfg.SubStoreExtractURLTemplate,
+			Timeout:     s.cfg.SubStoreTimeout,
+		},
+		Logger: s.logger,
+	}
 }
 
 func (s *Server) handleRegenerateSourceNodeNames(w http.ResponseWriter, r *http.Request) {

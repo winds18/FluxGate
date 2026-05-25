@@ -754,6 +754,11 @@ a.table-button:hover {
   overflow: hidden;
 }
 
+.form-drawer.is-submitting {
+  border-color: rgba(37, 99, 235, 0.32);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.08), var(--shadow);
+}
+
 .form-drawer .panel-header {
   cursor: default;
 }
@@ -770,6 +775,12 @@ a.table-button:hover {
   background: #fff8df;
   border-color: #ead68d;
   color: #765719;
+}
+
+.form-drawer.is-submitting .drawer-draft {
+  background: #eef4ff;
+  border-color: #bdd0f7;
+  color: #1f4a9d;
 }
 
 @media (max-width: 1180px) {

@@ -288,6 +288,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const activeRailTargets = {};
   let formDrawerCancelFeedback = {};
   let formDrawerDraftFeedback = {};
+  let formDrawerSubmitFeedback = {};
+  let formDrawerSubmitRestored = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
@@ -441,6 +443,94 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     dirty: document.querySelector("#source-form")?.classList.contains("is-dirty") ? 1 : 0,
     draftHidden: document.querySelector("#source-form [data-form-draft]")?.hidden ?? true,
   }));
+  let releaseSourceSubmit = null;
+  let sourceSubmitRouteSeen = false;
+  await page.route("**/api/sources", async (route, request) => {
+    if (request.method().toUpperCase() !== "POST") {
+      await route.fallback();
+      return;
+    }
+    sourceSubmitRouteSeen = true;
+    await new Promise((resolve) => {
+      releaseSourceSubmit = resolve;
+    });
+    await route.fulfill({
+      status: 200,
+      contentType: "application/json",
+      body: JSON.stringify({
+        id: 999001,
+        name: "QA pending source",
+        type: "manual",
+        url: "",
+        display_prefix: "[QA pending source]",
+        default_tags: "",
+        refresh_interval_minutes: 0,
+        status: "active",
+      }),
+    });
+  });
+  await page.locator("#view-primary-action").click();
+  await expect(page.locator("#source-form:not(.is-collapsed)")).toBeVisible({ timeout: 5000 });
+  await page.locator('#source-form input[name="name"]').fill("QA pending source");
+  const sourceSubmitResponse = page.waitForResponse(
+    (response) => response.url().includes("/api/sources") && response.request().method().toUpperCase() === "POST",
+    { timeout: 5000 },
+  );
+  await page.locator('#source-form button[type="submit"]').click();
+  await expect.poll(() => sourceSubmitRouteSeen, { timeout: 1000 }).toBe(true);
+  await page.waitForTimeout(100);
+  formDrawerSubmitFeedback = await page.evaluate(() => {
+    const drawer = document.querySelector("#source-form");
+    const submitButton = drawer?.querySelector('button[type="submit"]');
+    const cancelButton = drawer?.querySelector("[data-form-drawer-cancel]");
+    const nameInput = drawer?.querySelector('input[name="name"]');
+    const label = submitButton?.querySelector(".button-label")?.textContent?.trim() || "";
+    const symbol = submitButton?.querySelector(".button-symbol")?.textContent?.trim() || "";
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const buttonBox = submitButton?.getBoundingClientRect();
+    const buttonOverflow = buttonBox
+      ? Array.from(submitButton.querySelectorAll(".button-symbol, .button-label")).reduce((total, element) => {
+          const box = element.getBoundingClientRect();
+          return total + (box.width > 0 && box.height > 0 && outside(box, buttonBox) ? 1 : 0);
+        }, 0)
+      : 1;
+    return {
+      submitting: drawer?.classList.contains("is-submitting") ? 1 : 0,
+      ariaBusy: drawer?.getAttribute("aria-busy") || "",
+      submitDisabled: submitButton?.disabled ? 1 : 0,
+      cancelDisabled: cancelButton?.disabled ? 1 : 0,
+      inputDisabled: nameInput?.disabled ? 1 : 0,
+      label,
+      symbol,
+      status: document.querySelector("#status")?.textContent?.trim() || "",
+      tone: document.querySelector("#status")?.dataset.statusTone || "",
+      overflow: buttonOverflow,
+    };
+  });
+  if (releaseSourceSubmit) releaseSourceSubmit();
+  await sourceSubmitResponse;
+  await page.unroute("**/api/sources");
+  await expect(page.locator("#status")).toHaveText("已连接", { timeout: 15000 });
+  await expect(page.locator('#source-form button[type="submit"]')).toBeEnabled({ timeout: 15000 });
+  formDrawerSubmitRestored = await page.evaluate(() => {
+    const drawer = document.querySelector("#source-form");
+    const submitButton = drawer?.querySelector('button[type="submit"]');
+    const cancelButton = drawer?.querySelector("[data-form-drawer-cancel]");
+    const nameInput = drawer?.querySelector('input[name="name"]');
+    return {
+      submitting: drawer?.classList.contains("is-submitting") ? 1 : 0,
+      ariaBusy: drawer?.getAttribute("aria-busy") || "",
+      submitDisabled: submitButton?.disabled ? 1 : 0,
+      cancelDisabled: cancelButton?.disabled ? 1 : 0,
+      inputDisabled: nameInput?.disabled ? 1 : 0,
+      label: submitButton?.querySelector(".button-label")?.textContent?.trim() || "",
+      symbol: submitButton?.querySelector(".button-symbol")?.textContent?.trim() || "",
+    };
+  });
   await switchView("identity");
   await page.locator("#view-primary-action").click();
   await expect(page.locator("#token-form:not(.is-collapsed)")).toBeVisible({ timeout: 5000 });
@@ -1522,6 +1612,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.formDrawerDraftCount = formDrawerDraftCount;
   state.formDrawerCancelFeedback = formDrawerCancelFeedback;
   state.formDrawerDraftFeedback = formDrawerDraftFeedback;
+  state.formDrawerSubmitFeedback = formDrawerSubmitFeedback;
+  state.formDrawerSubmitRestored = formDrawerSubmitRestored;
   state.formSubmitButtonSymbolCount = formSubmitButtonSymbolCount;
   state.loginButtonSymbolCount = loginButtonSymbolCount;
   state.loginButtonOverflowCount = loginButtonOverflowCount;
@@ -2014,6 +2106,31 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     formDrawerCancelFeedback.draftHidden !== true
   ) {
     throw new Error(`form drawer cancel should clear draft input and report feedback: ${JSON.stringify(state)}`);
+  }
+  if (
+    formDrawerSubmitFeedback.submitting !== 1 ||
+    formDrawerSubmitFeedback.ariaBusy !== "true" ||
+    formDrawerSubmitFeedback.submitDisabled !== 1 ||
+    formDrawerSubmitFeedback.cancelDisabled !== 1 ||
+    formDrawerSubmitFeedback.inputDisabled !== 1 ||
+    formDrawerSubmitFeedback.label !== "添加中" ||
+    formDrawerSubmitFeedback.symbol !== "…" ||
+    !formDrawerSubmitFeedback.status?.includes("正在提交：添加来源") ||
+    formDrawerSubmitFeedback.tone !== "loading" ||
+    formDrawerSubmitFeedback.overflow > 0
+  ) {
+    throw new Error(`form drawer submit should show a stable pending state: ${JSON.stringify(state)}`);
+  }
+  if (
+    formDrawerSubmitRestored.submitting !== 0 ||
+    formDrawerSubmitRestored.ariaBusy ||
+    formDrawerSubmitRestored.submitDisabled !== 0 ||
+    formDrawerSubmitRestored.cancelDisabled !== 0 ||
+    formDrawerSubmitRestored.inputDisabled !== 0 ||
+    formDrawerSubmitRestored.label !== "添加" ||
+    formDrawerSubmitRestored.symbol !== "+"
+  ) {
+    throw new Error(`form drawer submit should restore controls after completion: ${JSON.stringify(state)}`);
   }
   const expectedPanelSymbols = ["源", "点", "网", "团", "员", "钥", "策", "量", "运"];
   const overflowingPanelTitle = Object.entries(panelTitleOverflow).find(([, overflow]) => overflow > 0);

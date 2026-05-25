@@ -1039,6 +1039,11 @@ main {
   gap: 0;
 }
 
+.form-drawer.is-submitting {
+  border-color: #bfdbfe;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1), var(--shadow);
+}
+
 .panel.is-target-highlighted,
 .form-drawer.is-target-highlighted,
 .overview-panel.is-target-highlighted {
@@ -1099,6 +1104,12 @@ main {
   padding: 0 9px;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.form-drawer.is-submitting .drawer-draft {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
 }
 
 .form-drawer .form-body,
@@ -1205,6 +1216,15 @@ main {
   gap: 6px;
   max-width: 100%;
   min-width: 92px;
+}
+
+.form-body button[type="submit"].is-pending {
+  background: #1d4ed8;
+  cursor: wait;
+}
+
+.form-body button[type="submit"].is-pending .button-symbol {
+  letter-spacing: 0;
 }
 
 .login-panel button[type="submit"] {

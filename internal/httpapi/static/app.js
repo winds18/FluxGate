@@ -646,6 +646,77 @@ function setFormDrawerDirty(drawer, dirty) {
   }
 }
 
+function setFormDrawerSubmitting(drawer, submitting) {
+  drawer.classList.toggle("is-submitting", submitting);
+  if (submitting) {
+    drawer.setAttribute("aria-busy", "true");
+  } else {
+    drawer.removeAttribute("aria-busy");
+  }
+
+  const submitButton = drawer.querySelector('button[type="submit"]');
+  setSubmitButtonPending(submitButton, submitting);
+  drawer.querySelectorAll("input, select, textarea, button").forEach((control) => {
+    if (submitting) {
+      if (control.disabled) {
+        control.dataset.formWasDisabled = "true";
+      } else {
+        delete control.dataset.formWasDisabled;
+      }
+      control.disabled = true;
+      return;
+    }
+    control.disabled = control.dataset.formWasDisabled === "true";
+    delete control.dataset.formWasDisabled;
+  });
+}
+
+function setSubmitButtonPending(button, submitting) {
+  if (!button) return;
+  const symbol = button.querySelector(".button-symbol");
+  const label = button.querySelector(".button-label");
+  if (submitting) {
+    if (!button.dataset.formOriginalSymbol) {
+      button.dataset.formOriginalSymbol = symbol?.textContent || "";
+    }
+    if (!button.dataset.formOriginalLabel) {
+      button.dataset.formOriginalLabel = label?.textContent || "提交";
+    }
+    button.classList.add("is-pending");
+    if (symbol) symbol.textContent = "…";
+    if (label) label.textContent = `${button.dataset.formOriginalLabel}中`;
+    return;
+  }
+  button.classList.remove("is-pending");
+  if (symbol && button.dataset.formOriginalSymbol) {
+    symbol.textContent = button.dataset.formOriginalSymbol;
+  }
+  if (label && button.dataset.formOriginalLabel) {
+    label.textContent = button.dataset.formOriginalLabel;
+  }
+  delete button.dataset.formOriginalSymbol;
+  delete button.dataset.formOriginalLabel;
+}
+
+async function runFormDrawerSubmit(drawer, action) {
+  if (drawer.dataset.formSubmitting === "true") {
+    return { ok: false, skipped: true };
+  }
+  drawer.dataset.formSubmitting = "true";
+  setFormDrawerSubmitting(drawer, true);
+  setStatus(`正在提交：${dashboardTargetLabel(drawer.id)}`, "loading");
+  try {
+    const value = await action();
+    return { ok: true, value };
+  } catch (error) {
+    setStatus(`提交失败：${dashboardTargetLabel(drawer.id)}`, "danger");
+    return { ok: false, error };
+  } finally {
+    delete drawer.dataset.formSubmitting;
+    setFormDrawerSubmitting(drawer, false);
+  }
+}
+
 function cancelFormDrawer(drawer) {
   drawer.reset();
   clearInvalidFieldFeedback({ currentTarget: drawer, clearAll: true });
@@ -729,10 +800,11 @@ async function load() {
 async function submitTeam(event) {
   event.preventDefault();
   const form = new FormData(teamForm);
-  await postAndReload("/api/teams", {
+  const result = await runFormDrawerSubmit(teamForm, () => postAndReload("/api/teams", {
     name: textField(form, "name"),
     description: textField(form, "description"),
-  });
+  }));
+  if (!result.ok) return;
   teamForm.reset();
   setFormDrawerDirty(teamForm, false);
 }
@@ -741,11 +813,12 @@ async function submitUser(event) {
   event.preventDefault();
   const form = new FormData(userForm);
   const teamID = numberField(form, "team_id");
-  await postAndReload("/api/users", {
+  const result = await runFormDrawerSubmit(userForm, () => postAndReload("/api/users", {
     team_id: teamID > 0 ? teamID : null,
     name: textField(form, "name"),
     email: textField(form, "email"),
-  });
+  }));
+  if (!result.ok) return;
   userForm.reset();
   setFormDrawerDirty(userForm, false);
 }
@@ -753,13 +826,14 @@ async function submitUser(event) {
 async function submitSource(event) {
   event.preventDefault();
   const form = new FormData(sourceForm);
-  await postAndReload("/api/sources", {
+  const result = await runFormDrawerSubmit(sourceForm, () => postAndReload("/api/sources", {
     name: textField(form, "name"),
     type: textField(form, "type") || "manual",
     url: textField(form, "url"),
     default_tags: textField(form, "default_tags"),
     refresh_interval_minutes: numberField(form, "refresh_interval_minutes"),
-  });
+  }));
+  if (!result.ok) return;
   sourceForm.reset();
   setFormDrawerDirty(sourceForm, false);
 }
@@ -767,10 +841,11 @@ async function submitSource(event) {
 async function submitNodeImport(event) {
   event.preventDefault();
   const form = new FormData(nodeImportForm);
-  await postAndReload("/api/nodes/import", {
+  const result = await runFormDrawerSubmit(nodeImportForm, () => postAndReload("/api/nodes/import", {
     source_id: numberField(form, "source_id"),
     content: textField(form, "content"),
-  });
+  }));
+  if (!result.ok) return;
   nodeImportForm.reset();
   setFormDrawerDirty(nodeImportForm, false);
 }
@@ -778,12 +853,13 @@ async function submitNodeImport(event) {
 async function submitVirtualNode(event) {
   event.preventDefault();
   const form = new FormData(virtualNodeForm);
-  await postAndReload("/api/virtual-nodes", {
+  const result = await runFormDrawerSubmit(virtualNodeForm, () => postAndReload("/api/virtual-nodes", {
     name: textField(form, "name"),
     listen_protocol: "vless",
     listen_port: numberField(form, "listen_port"),
     tag_selector: textField(form, "tag_selector"),
-  });
+  }));
+  if (!result.ok) return;
   virtualNodeForm.reset();
   setFormDrawerDirty(virtualNodeForm, false);
 }
@@ -792,7 +868,7 @@ async function submitPolicy(event) {
   event.preventDefault();
   const form = new FormData(policyForm);
   const scopeID = numberField(form, "scope_id");
-  await postAndReload("/api/policies", {
+  const result = await runFormDrawerSubmit(policyForm, () => postAndReload("/api/policies", {
     name: textField(form, "name"),
     scope_type: textField(form, "scope_type") || "team",
     scope_id: scopeID > 0 ? scopeID : null,
@@ -800,7 +876,8 @@ async function submitPolicy(event) {
     include_tags: textField(form, "include_tags"),
     exclude_tags: textField(form, "exclude_tags"),
     max_nodes: numberField(form, "max_nodes"),
-  });
+  }));
+  if (!result.ok) return;
   policyForm.reset();
   setFormDrawerDirty(policyForm, false);
 }
@@ -809,13 +886,14 @@ async function submitToken(event) {
   event.preventDefault();
   const form = new FormData(tokenForm);
   const quotaMiB = numberField(form, "quota_mib");
-  const result = await postAndReload("/api/tokens", {
+  const result = await runFormDrawerSubmit(tokenForm, () => postAndReload("/api/tokens", {
     user_id: numberField(form, "user_id"),
     name: textField(form, "name"),
     expire_days: numberField(form, "expire_days"),
     quota_bytes: quotaMiB * 1024 * 1024,
-  });
-  showTokenSubscriptionResult(result, "订阅地址");
+  }));
+  if (!result.ok) return;
+  showTokenSubscriptionResult(result.value, "订阅地址");
   tokenForm.reset();
   setFormDrawerDirty(tokenForm, false);
 }
@@ -1588,7 +1666,6 @@ function formatRestartResult(result) {
 }
 
 async function postAndReload(path, payload) {
-  setStatus("保存中", "loading");
   try {
     const result = await postJSON(path, payload);
     await load();

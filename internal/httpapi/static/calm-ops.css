@@ -296,6 +296,18 @@ a.table-button:hover {
   min-width: 0;
 }
 
+.node-region-workspace {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(0, 1fr);
+  min-width: 0;
+}
+
+.node-region-workspace.has-node-detail {
+  grid-template-columns: minmax(0, 1fr) minmax(360px, 440px);
+}
+
 .node-browser-header,
 .node-filter-bar,
 .node-region-summary {
@@ -491,17 +503,16 @@ a.table-button:hover {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(181, 199, 195, 0.94);
   border-radius: var(--fg-radius);
-  bottom: 18px;
   box-shadow: 0 20px 54px rgba(18, 32, 30, 0.2);
   color: var(--text);
-  max-width: calc(100vw - 36px);
+  max-height: calc(100vh - 110px);
+  max-width: none;
   min-width: 0;
   overflow: auto;
-  position: fixed;
-  right: 18px;
+  position: sticky;
   top: 86px;
-  width: min(480px, calc(100vw - 36px));
-  z-index: 70;
+  width: auto;
+  z-index: 1;
 }
 
 .node-detail-panel {
@@ -863,6 +874,11 @@ a.table-button:hover {
     grid-template-columns: 1fr;
   }
 
+  .node-region-workspace,
+  .node-region-workspace.has-node-detail {
+    grid-template-columns: 1fr;
+  }
+
   .node-actions .table-button,
   .token-subscription-actions .table-button {
     flex: 1 1 auto;
@@ -895,9 +911,11 @@ a.table-button:hover {
     bottom: 76px;
     left: 8px;
     max-width: none;
+    position: fixed;
     right: 8px;
     top: 78px;
     width: auto;
+    z-index: 70;
   }
 
   .detail-grid {

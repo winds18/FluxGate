@@ -3088,10 +3088,12 @@ function renderNodeRegion(group, groups, total, matched, totalRegionCount) {
       </div>
       ${renderNodeRegionSummary(group)}
       ${renderNodeFilterBar(total, matched, groups.length)}
-      <div class="node-card-grid">
-        ${group.items.map((row) => renderNodeCard(row)).join("")}
+      <div class="node-region-workspace ${detail ? "has-node-detail" : ""}">
+        <div class="node-card-grid">
+          ${group.items.map((row) => renderNodeCard(row)).join("")}
+        </div>
+        ${detail ? renderNodeDetailPanel(detail) : ""}
       </div>
-      ${detail ? renderNodeDetailPanel(detail) : ""}
     </div>
   `;
 }

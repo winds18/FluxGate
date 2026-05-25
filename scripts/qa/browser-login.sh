@@ -1759,6 +1759,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let nodeDetailChipCount = 0;
   let nodeDetailSummaryOverflowCount = 0;
   let nodeDetailCodeOverflowCount = 0;
+  let nodeDetailOverlapCount = 0;
   let nodeDetailCopyVisible = false;
   let nodeDetailCopyFeedbackVisible = false;
   let nodeEditSaveSymbolCount = 0;
@@ -1834,6 +1835,25 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         (element) => element.scrollWidth > element.clientWidth + 2,
       ).length,
     );
+    nodeDetailOverlapCount = await page.evaluate(() => {
+      const isVisible = (element) => {
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        const box = element.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && box.width > 0 && box.height > 0;
+      };
+      const drawer = document.querySelector("#nodes .node-detail-drawer");
+      if (!isVisible(drawer)) return 0;
+      const drawerBox = drawer.getBoundingClientRect();
+      return Array.from(document.querySelectorAll("#nodes .node-card"))
+        .filter((card) => isVisible(card))
+        .reduce((total, card) => {
+          const cardBox = card.getBoundingClientRect();
+          const overlapX = Math.max(0, Math.min(drawerBox.right, cardBox.right) - Math.max(drawerBox.left, cardBox.left));
+          const overlapY = Math.max(0, Math.min(drawerBox.bottom, cardBox.bottom) - Math.max(drawerBox.top, cardBox.top));
+          return total + (overlapX > 1 && overlapY > 1 ? 1 : 0);
+        }, 0);
+    });
   }
 
   await switchView("ops");
@@ -2177,6 +2197,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeDetailCopyVisible = nodeDetailCopyVisible;
   state.nodeDetailCopyFeedbackVisible = nodeDetailCopyFeedbackVisible;
   state.nodeDetailCodeOverflowCount = nodeDetailCodeOverflowCount;
+  state.nodeDetailOverlapCount = nodeDetailOverlapCount;
   state.nodeEditSaveSymbolCount = nodeEditSaveSymbolCount;
   state.nodeEditFieldCount = nodeEditFieldCount;
   state.nodeEditInputNames = nodeEditInputNames;
@@ -2474,6 +2495,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeDetailCodeOverflowCount > 0) {
     throw new Error(`node detail code blocks overflow horizontally: ${JSON.stringify(state)}`);
+  }
+  if (nodeDetailVisible && nodeDetailOverlapCount > 0) {
+    throw new Error(`node detail should not cover node cards on desktop: ${JSON.stringify(state)}`);
   }
   if (
     nodeEditCount > 0 &&

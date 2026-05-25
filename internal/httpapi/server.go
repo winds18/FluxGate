@@ -605,13 +605,11 @@ func (s *Server) handleUpdateNode(w http.ResponseWriter, r *http.Request) {
 	if !ok {
 		return
 	}
-	var input struct {
-		DisplayName string `json:"display_name"`
-	}
+	var input store.UpdateNodeInput
 	if !decodeJSON(w, r, &input) {
 		return
 	}
-	node, err := s.store.UpdateNodeDisplayName(r.Context(), id, input.DisplayName)
+	node, err := s.store.UpdateNode(r.Context(), id, input)
 	if err != nil {
 		writeStoreError(w, err)
 		return

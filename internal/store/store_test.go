@@ -113,6 +113,65 @@ func TestSourcePrefixAndNodeDisplayNames(t *testing.T) {
 	}
 }
 
+func TestNodeUpdateEditableFields(t *testing.T) {
+	ctx := context.Background()
+	db := openTestStore(t)
+
+	source, err := db.CreateSource(ctx, CreateSourceInput{Name: "机场A", Type: "manual", DefaultTags: "基础"})
+	if err != nil {
+		t.Fatalf("create source: %v", err)
+	}
+	result, err := db.ImportNodes(ctx, ImportNodesInput{
+		SourceID: source.ID,
+		Content:  "vless://uuid@example.com:443#香港%2001",
+	})
+	if err != nil {
+		t.Fatalf("import nodes: %v", err)
+	}
+	if result.Imported != 1 {
+		t.Fatalf("expected one imported node, got %+v", result)
+	}
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		t.Fatalf("list nodes: %v", err)
+	}
+	if len(nodes) != 1 {
+		t.Fatalf("expected one node, got %d", len(nodes))
+	}
+
+	updated, err := db.UpdateNode(ctx, nodes[0].ID, UpdateNodeInput{
+		DisplayName: stringPtr("手动美国出口"),
+		Region:      stringPtr("🇺🇸美国"),
+		Tags:        stringPtr("QA, VIP, qa"),
+		NameMode:    stringPtr("manual"),
+	})
+	if err != nil {
+		t.Fatalf("update node editable fields: %v", err)
+	}
+	if updated.DisplayName != "手动美国出口" || updated.NameMode != "manual" {
+		t.Fatalf("unexpected edited node name fields: %+v", updated)
+	}
+	if updated.Region != "🇺🇸美国" {
+		t.Fatalf("unexpected edited node region: %q", updated.Region)
+	}
+	if strings.Join(updated.Tags, ",") != "QA,VIP" {
+		t.Fatalf("unexpected edited node tags: %#v", updated.Tags)
+	}
+
+	updated, err = db.UpdateNode(ctx, nodes[0].ID, UpdateNodeInput{
+		NameMode: stringPtr("auto"),
+	})
+	if err != nil {
+		t.Fatalf("restore node auto naming through update: %v", err)
+	}
+	if updated.DisplayName != "[机场A] 香港 01" || updated.NameMode != "auto" {
+		t.Fatalf("unexpected auto node naming: %+v", updated)
+	}
+	if updated.Region != "🇺🇸美国" || strings.Join(updated.Tags, ",") != "QA,VIP" {
+		t.Fatalf("auto naming should keep operator fields: %+v", updated)
+	}
+}
+
 func stringPtr(value string) *string {
 	return &value
 }

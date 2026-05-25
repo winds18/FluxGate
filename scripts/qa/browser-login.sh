@@ -1063,11 +1063,35 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let nodeDetailCopyVisible = false;
   let nodeDetailCopyFeedbackVisible = false;
   let nodeEditSaveSymbolCount = 0;
+  let nodeEditFieldCount = 0;
+  let nodeEditInputNames = [];
+  let nodeEditFormOverflowCount = 0;
   if (nodeEditCount > 0) {
     await page.locator("#nodes button[data-node-action='edit']").first().click();
     await expect(page.locator("#nodes form[data-node-edit-form]").first()).toBeVisible({ timeout: 5000 });
     nodeEditFormVisible = true;
     nodeEditSaveSymbolCount = await page.locator("#nodes form[data-node-edit-form] button[type='submit'] .button-symbol").count();
+    nodeEditFieldCount = await page.locator("#nodes form[data-node-edit-form] .node-edit-field").count();
+    nodeEditInputNames = await page
+      .locator("#nodes form[data-node-edit-form] input[name], #nodes form[data-node-edit-form] select[name]")
+      .evaluateAll((elements) => elements.map((element) => element.getAttribute("name")).sort());
+    nodeEditFormOverflowCount = await page.evaluate(() => {
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(document.querySelectorAll("#nodes form[data-node-edit-form]")).reduce((total, form) => {
+        const formBox = form.getBoundingClientRect();
+        for (const element of Array.from(form.querySelectorAll("label, input, select, button")).filter((element) => element.offsetParent !== null)) {
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, formBox)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
+    });
     await page.locator("#nodes button[data-node-action='cancel']").first().click();
     await page.locator("#nodes .node-card-main").first().click();
     await expect(page.locator("#nodes .node-detail-drawer .detail-code").first()).toBeVisible({ timeout: 5000 });
@@ -1320,6 +1344,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeDetailCopyFeedbackVisible = nodeDetailCopyFeedbackVisible;
   state.nodeDetailCodeOverflowCount = nodeDetailCodeOverflowCount;
   state.nodeEditSaveSymbolCount = nodeEditSaveSymbolCount;
+  state.nodeEditFieldCount = nodeEditFieldCount;
+  state.nodeEditInputNames = nodeEditInputNames;
+  state.nodeEditFormOverflowCount = nodeEditFormOverflowCount;
   state.east8TimeSamples = east8TimeSamples;
   state.trafficTokenRowCount = trafficTokenRowCount;
   state.trafficTokenCardCount = trafficTokenCardCount;
@@ -1544,8 +1571,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (nodeDetailCodeOverflowCount > 0) {
     throw new Error(`node detail code blocks overflow horizontally: ${JSON.stringify(state)}`);
   }
-  if (nodeEditCount > 0 && nodeEditSaveSymbolCount < 1) {
-    throw new Error(`node edit save action is missing symbol: ${JSON.stringify(state)}`);
+  if (
+    nodeEditCount > 0 &&
+    (nodeEditSaveSymbolCount < 1 ||
+      nodeEditFieldCount < 4 ||
+      ["display_name", "name_mode", "region", "tags"].some((name) => !nodeEditInputNames.includes(name)) ||
+      nodeEditFormOverflowCount > 0)
+  ) {
+    throw new Error(`node edit form is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (nodeDetailVisible && (!nodeDetailDrawerVisible || !nodeDetailSummaryVisible || nodeDetailChipCount < 4 || nodeDetailSummaryOverflowCount > 0)) {
     throw new Error(`node detail summary is incomplete or overflowing: ${JSON.stringify(state)}`);

@@ -250,12 +250,18 @@ node_detail_id="$(json_value "data.id" <"$OUT_DIR/node-detail.json")"
 node_detail_uri="$(json_value "data.uri || ''" <"$OUT_DIR/node-detail.json")"
 node_detail_hash="$(json_value "data.uri_hash || ''" <"$OUT_DIR/node-detail.json")"
 node_detail_source_name="$(json_value "data.source_name || ''" <"$OUT_DIR/node-detail.json")"
-patch_json "/api/nodes/$first_node_id" '{"display_name":"QA 手动节点"}' "$OUT_DIR/node-update.json"
+patch_json "/api/nodes/$first_node_id" '{"display_name":"QA 手动节点","region":"🇺🇸美国","tags":"QA-Manual, QA-HK","name_mode":"manual"}' "$OUT_DIR/node-update.json"
 node_manual_name="$(json_value "data.display_name" <"$OUT_DIR/node-update.json")"
 node_manual_mode="$(json_value "data.name_mode" <"$OUT_DIR/node-update.json")"
+node_manual_region="$(json_value "data.region" <"$OUT_DIR/node-update.json")"
+node_manual_tags="$(json_value "(data.tags || []).join(',')" <"$OUT_DIR/node-update.json")"
+node_manual_has_tags="$(json_value "(data.tags || []).includes('QA-Manual') && (data.tags || []).includes('QA-HK') ? 'true' : 'false'" <"$OUT_DIR/node-update.json")"
 post_json "/api/nodes/$first_node_id/reset-display-name" '{}' "$OUT_DIR/node-reset-name.json"
 node_reset_name="$(json_value "data.display_name" <"$OUT_DIR/node-reset-name.json")"
 node_reset_mode="$(json_value "data.name_mode" <"$OUT_DIR/node-reset-name.json")"
+node_reset_region="$(json_value "data.region" <"$OUT_DIR/node-reset-name.json")"
+node_reset_tags="$(json_value "(data.tags || []).join(',')" <"$OUT_DIR/node-reset-name.json")"
+node_reset_has_tags="$(json_value "(data.tags || []).includes('QA-Manual') && (data.tags || []).includes('QA-HK') ? 'true' : 'false'" <"$OUT_DIR/node-reset-name.json")"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-HK","listen_protocol":"vless","listen_port":8443,"tag_selector":"{\"include\":[\"QA-HK\"]}"}' "$OUT_DIR/virtual-node.json"
 post_json "/api/virtual-nodes" '{"name":"FluxGate-SG","listen_protocol":"vless","listen_port":8444}' "$OUT_DIR/virtual-node-sg.json"
 virtual_sg_id="$(json_value "data.id" <"$OUT_DIR/virtual-node-sg.json")"
@@ -420,8 +426,8 @@ if [[ "$clash_vmess_node_count" -lt 1 ]]; then
   exit 1
 fi
 
-if [[ "$first_node_id" -lt 1 || "$node_manual_name" != "QA 手动节点" || "$node_manual_mode" != "manual" || "$node_reset_mode" != "auto" || "$node_reset_name" == "QA 手动节点" ]]; then
-  log "node edit/reset should work: id=$first_node_id manual_name=$node_manual_name manual_mode=$node_manual_mode reset_name=$node_reset_name reset_mode=$node_reset_mode"
+if [[ "$first_node_id" -lt 1 || "$node_manual_name" != "QA 手动节点" || "$node_manual_mode" != "manual" || "$node_manual_region" != "🇺🇸美国" || "$node_manual_has_tags" != "true" || "$node_reset_mode" != "auto" || "$node_reset_name" == "QA 手动节点" || "$node_reset_region" != "🇺🇸美国" || "$node_reset_has_tags" != "true" ]]; then
+  log "node edit/reset should work and keep operator fields: id=$first_node_id manual_name=$node_manual_name manual_mode=$node_manual_mode manual_region=$node_manual_region manual_tags=$node_manual_tags reset_name=$node_reset_name reset_mode=$node_reset_mode reset_region=$node_reset_region reset_tags=$node_reset_tags"
   exit 1
 fi
 

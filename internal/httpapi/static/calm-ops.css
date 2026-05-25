@@ -357,6 +357,51 @@ a.table-button:hover {
   flex: 1 1 120px;
 }
 
+.node-edit-form {
+  background: #f8fbfa;
+  border: 1px solid var(--border-soft);
+  border-radius: var(--fg-radius);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  min-width: 0;
+  padding: 12px;
+}
+
+.node-edit-field {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.node-edit-field span {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 780;
+}
+
+.node-edit-field input,
+.node-edit-field select {
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+}
+
+.node-edit-field-wide,
+.node-edit-actions {
+  grid-column: 1 / -1;
+}
+
+.node-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.node-edit-actions .table-button {
+  min-width: 112px;
+}
+
 .node-detail-drawer {
   background: rgba(255, 255, 255, 0.98);
   border: 1px solid rgba(181, 199, 195, 0.94);
@@ -563,6 +608,10 @@ a.table-button:hover {
   .token-subscription-actions .table-button {
     flex: 1 1 auto;
     width: 100%;
+  }
+
+  .node-edit-form {
+    grid-template-columns: 1fr;
   }
 
   .node-detail-drawer {

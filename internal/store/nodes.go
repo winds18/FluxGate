@@ -19,6 +19,13 @@ type ImportNodesInput struct {
 	MarkMissingInactive bool   `json:"mark_missing_inactive"`
 }
 
+type UpdateNodeInput struct {
+	DisplayName *string `json:"display_name,omitempty"`
+	Region      *string `json:"region,omitempty"`
+	Tags        *string `json:"tags,omitempty"`
+	NameMode    *string `json:"name_mode,omitempty"`
+}
+
 func (s *Store) ImportNodes(ctx context.Context, input ImportNodesInput) (ImportResult, error) {
 	source, err := s.GetSource(ctx, input.SourceID)
 	if err != nil {
@@ -148,38 +155,72 @@ func (s *Store) GetNode(ctx context.Context, id int64) (Node, error) {
 }
 
 func (s *Store) UpdateNodeDisplayName(ctx context.Context, id int64, displayName string) (Node, error) {
-	displayName = strings.TrimSpace(displayName)
-	if displayName == "" {
-		displayName = "Unnamed"
-	}
-	if _, err := s.db.ExecContext(ctx, `
-		UPDATE upstream_nodes
-		SET display_name = ?, name_mode = 'manual', updated_at = CURRENT_TIMESTAMP
-		WHERE id = ?
-	`, displayName, id); err != nil {
-		return Node{}, err
-	}
-	return s.GetNode(ctx, id)
+	return s.UpdateNode(ctx, id, UpdateNodeInput{
+		DisplayName: &displayName,
+		NameMode:    stringValuePtr("manual"),
+	})
 }
 
 func (s *Store) ResetNodeDisplayName(ctx context.Context, id int64) (Node, error) {
+	return s.UpdateNode(ctx, id, UpdateNodeInput{NameMode: stringValuePtr("auto")})
+}
+
+func (s *Store) UpdateNode(ctx context.Context, id int64, input UpdateNodeInput) (Node, error) {
 	node, err := s.GetNode(ctx, id)
 	if err != nil {
 		return Node{}, err
 	}
-	source, err := s.GetSource(ctx, node.SourceID)
-	if err != nil {
-		return Node{}, err
+
+	nameMode := strings.ToLower(strings.TrimSpace(node.NameMode))
+	if nameMode == "" {
+		nameMode = "auto"
 	}
-	displayName := naming.DisplayName(source.DisplayPrefix, node.RawName)
+	if input.NameMode != nil {
+		nameMode = strings.ToLower(strings.TrimSpace(*input.NameMode))
+		if nameMode == "" {
+			nameMode = "manual"
+		}
+		if nameMode != "auto" && nameMode != "manual" {
+			return Node{}, fmt.Errorf("name_mode must be auto or manual")
+		}
+	}
+
+	displayName := node.DisplayName
+	if input.DisplayName != nil {
+		displayName = strings.TrimSpace(*input.DisplayName)
+	}
+	if nameMode == "auto" {
+		source, err := s.GetSource(ctx, node.SourceID)
+		if err != nil {
+			return Node{}, err
+		}
+		displayName = naming.DisplayName(source.DisplayPrefix, node.RawName)
+	} else if displayName == "" {
+		displayName = "Unnamed"
+	}
+
+	nodeRegion := node.Region
+	if input.Region != nil {
+		nodeRegion = strings.TrimSpace(*input.Region)
+	}
+
 	if _, err := s.db.ExecContext(ctx, `
 		UPDATE upstream_nodes
-		SET display_name = ?, name_mode = 'auto', updated_at = CURRENT_TIMESTAMP
+		SET display_name = ?, name_mode = ?, region = ?, updated_at = CURRENT_TIMESTAMP
 		WHERE id = ?
-	`, displayName, id); err != nil {
+	`, displayName, nameMode, nodeRegion, id); err != nil {
 		return Node{}, err
 	}
+	if input.Tags != nil {
+		if err := s.replaceNodeTags(ctx, id, *input.Tags); err != nil {
+			return Node{}, err
+		}
+	}
 	return s.GetNode(ctx, id)
+}
+
+func stringValuePtr(value string) *string {
+	return &value
 }
 
 func (s *Store) nodeBySourceHash(ctx context.Context, sourceID int64, uriHash string) (Node, error) {

@@ -970,13 +970,17 @@ async function handleNodeEditSubmit(event) {
   event.preventDefault();
   const id = Number.parseInt(form.dataset.nodeId || "0", 10);
   if (!id) return;
-  const displayName = textField(new FormData(form), "display_name");
+  const formData = new FormData(form);
+  const displayName = textField(formData, "display_name");
+  const region = textField(formData, "region");
+  const tags = textField(formData, "tags");
+  const nameMode = textField(formData, "name_mode") || "manual";
   form.querySelectorAll("button").forEach((button) => {
     button.disabled = true;
   });
   setStatus("保存节点中", "loading");
   try {
-    await patchJSON(`/api/nodes/${id}`, { display_name: displayName });
+    await patchJSON(`/api/nodes/${id}`, { display_name: displayName, region, tags, name_mode: nameMode });
     appState.editingNodeID = null;
     await load();
   } catch (error) {
@@ -2574,10 +2578,32 @@ function formatDetailValue(value, label = "") {
 }
 
 function renderNodeEditForm(row) {
+  const tags = Array.isArray(row.tags) ? row.tags.join(", ") : String(row.tags || "");
+  const nameMode = String(row.name_mode || "auto").toLowerCase() === "manual" ? "manual" : "auto";
   return `
-    <form class="inline-edit-form" data-node-edit-form data-node-id="${row.id}">
-      <input name="display_name" value="${escapeHTML(row.display_name || "")}" required />
-      <button class="table-button" type="submit">${buttonLabel("✓", "保存")}</button>
+    <form class="node-edit-form" data-node-edit-form data-node-id="${row.id}">
+      <label class="node-edit-field node-edit-field-wide">
+        <span>展示名</span>
+        <input name="display_name" value="${escapeHTML(row.display_name || "")}" required />
+      </label>
+      <label class="node-edit-field">
+        <span>地区</span>
+        <input name="region" value="${escapeHTML(row.region || "")}" placeholder="其他" />
+      </label>
+      <label class="node-edit-field">
+        <span>命名模式</span>
+        <select name="name_mode">
+          <option value="auto" ${nameMode === "auto" ? "selected" : ""}>自动</option>
+          <option value="manual" ${nameMode === "manual" ? "selected" : ""}>手动</option>
+        </select>
+      </label>
+      <label class="node-edit-field node-edit-field-wide">
+        <span>标签</span>
+        <input name="tags" value="${escapeHTML(tags)}" placeholder="QA, VIP" />
+      </label>
+      <div class="node-edit-actions">
+        <button class="table-button" type="submit">${buttonLabel("✓", "保存")}</button>
+      </div>
     </form>
   `;
 }

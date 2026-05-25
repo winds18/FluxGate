@@ -260,3 +260,35 @@ git commit -m "Document calm ops admin UI implementation"
 
 Run: `scripts/deploy/push-and-deploy.sh`
 Expected: push succeeds, remote build succeeds, remote health/ready/login/overview verification passes.
+
+## Task 7: Humanize Node Safe Editing
+
+**Files:**
+- Modify: `internal/store/nodes.go`
+- Modify: `internal/httpapi/server.go`
+- Modify: `internal/httpapi/static/app.js`
+- Modify: `internal/httpapi/static/calm-ops.css`
+- Modify: `internal/store/store_test.go`
+- Modify: `scripts/qa/api-flow.sh`
+- Modify: `scripts/qa/browser-login.sh`
+- Modify: `docs/11-current-implementation.md`
+
+- [x] **Step 1: Add Store behavior coverage**
+
+Add a failing test for editable node fields: display name, region override, tags, name mode, and auto-name reset preserving operator-managed fields.
+
+- [x] **Step 2: Add `UpdateNode` safe-field API in the store**
+
+Keep `UpdateNodeDisplayName` and `ResetNodeDisplayName` compatible while routing them through the new safe-field update path.
+
+- [x] **Step 3: Expose safe fields through `PATCH /api/nodes/{id}`**
+
+Decode `store.UpdateNodeInput` and keep raw URI/protocol/server fields read-only through the detail drawer.
+
+- [x] **Step 4: Replace single-field node edit with a labeled edit panel**
+
+Show display name, region, name mode and tags with unified control sizing and responsive no-overflow layout.
+
+- [x] **Step 5: Expand API and browser QA**
+
+API flow verifies node edit/reset behavior and browser QA verifies field presence plus edit panel overflow.

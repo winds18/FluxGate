@@ -73,6 +73,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   });
 
   await page.goto(baseURL, { waitUntil: "domcontentloaded" });
+  const calmOpsStylesheetCount = await page.locator('link[href="/assets/calm-ops.css"]').count();
   await page.waitForSelector("#login-form", { state: "visible", timeout: 15000 });
   const loginButtonSymbolCount = await page.locator('#login-form button[type="submit"] .button-symbol').count();
   const loginButtonOverflowCount = await page.evaluate(() => {
@@ -1054,6 +1055,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const nodeEditCount = await page.locator("#nodes button[data-node-action='edit']").count();
   let nodeEditFormVisible = false;
   let nodeDetailVisible = false;
+  let nodeDetailDrawerVisible = false;
   let nodeDetailSummaryVisible = false;
   let nodeDetailChipCount = 0;
   let nodeDetailSummaryOverflowCount = 0;
@@ -1068,8 +1070,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     nodeEditSaveSymbolCount = await page.locator("#nodes form[data-node-edit-form] button[type='submit'] .button-symbol").count();
     await page.locator("#nodes button[data-node-action='cancel']").first().click();
     await page.locator("#nodes .node-card-main").first().click();
-    await expect(page.locator("#nodes .node-detail-row .detail-code").first()).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("#nodes .node-detail-drawer .detail-code").first()).toBeVisible({ timeout: 5000 });
     nodeDetailVisible = true;
+    nodeDetailDrawerVisible = await page.locator("#nodes .node-detail-drawer").first().isVisible();
     await expect(page.locator("#nodes .node-detail-summary").first()).toBeVisible({ timeout: 5000 });
     nodeDetailSummaryVisible = true;
     nodeDetailChipCount = await page.locator("#nodes [data-node-detail-chip]").count();
@@ -1104,7 +1107,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await expect(page.locator("#status")).toContainText("节点 URI 已复制", { timeout: 5000 });
     nodeDetailCopyFeedbackVisible = true;
     nodeDetailCodeOverflowCount = await page.evaluate(() =>
-      Array.from(document.querySelectorAll("#nodes .node-detail-row .detail-code")).filter(
+      Array.from(document.querySelectorAll("#nodes .node-detail-drawer .detail-code")).filter(
         (element) => element.scrollWidth > element.clientWidth + 2,
       ).length,
     );
@@ -1309,6 +1312,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeEditCount = nodeEditCount;
   state.nodeEditFormVisible = nodeEditFormVisible;
   state.nodeDetailVisible = nodeDetailVisible;
+  state.nodeDetailDrawerVisible = nodeDetailDrawerVisible;
   state.nodeDetailSummaryVisible = nodeDetailSummaryVisible;
   state.nodeDetailChipCount = nodeDetailChipCount;
   state.nodeDetailSummaryOverflowCount = nodeDetailSummaryOverflowCount;
@@ -1385,6 +1389,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsResultSymbolCount = opsResultSymbolCount;
   state.opsResultChipCount = opsResultChipCount;
   state.opsVisualOverflowCount = opsVisualOverflowCount;
+  state.calmOpsStylesheetCount = calmOpsStylesheetCount;
   if (tokenRowCount > 0 && (tokenExtendInputCount !== tokenRowCount || tokenQuotaInputCount !== tokenRowCount)) {
     throw new Error(`token custom controls missing: ${JSON.stringify(state)}`);
   }
@@ -1542,7 +1547,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (nodeEditCount > 0 && nodeEditSaveSymbolCount < 1) {
     throw new Error(`node edit save action is missing symbol: ${JSON.stringify(state)}`);
   }
-  if (nodeDetailVisible && (!nodeDetailSummaryVisible || nodeDetailChipCount < 4 || nodeDetailSummaryOverflowCount > 0)) {
+  if (nodeDetailVisible && (!nodeDetailDrawerVisible || !nodeDetailSummaryVisible || nodeDetailChipCount < 4 || nodeDetailSummaryOverflowCount > 0)) {
     throw new Error(`node detail summary is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (nodeDetailVisible && (!nodeDetailCopyVisible || !nodeDetailCopyFeedbackVisible)) {
@@ -1723,6 +1728,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   };
 
   if (
+    calmOpsStylesheetCount !== 1 ||
     !state.loginHidden ||
     state.loginVisible ||
     state.appHidden ||

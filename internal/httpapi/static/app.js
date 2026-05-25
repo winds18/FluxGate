@@ -282,8 +282,18 @@ const columnLabels = {
   actions: "操作",
 };
 
+function setStatus(message, tone = "info") {
+  statusEl.textContent = message;
+  statusEl.dataset.statusTone = tone;
+  statusEl.setAttribute("aria-live", tone === "danger" || tone === "warning" ? "assertive" : "polite");
+}
+
+function confirmDanger(message) {
+  return window.confirm(`${message}\n\n这个操作会立即生效，请确认后继续。`);
+}
+
 async function bootstrap() {
-  statusEl.textContent = "连接中";
+  setStatus("连接中", "loading");
   try {
     await getJSON("/api/auth/session");
     showApp();
@@ -296,7 +306,7 @@ async function bootstrap() {
 async function login(event) {
   event.preventDefault();
   loginErrorEl.textContent = "";
-  statusEl.textContent = "登录中";
+  setStatus("登录中", "loading");
   try {
     const username = loginUsernameEl.value.trim();
     const password = loginPasswordEl.value;
@@ -305,7 +315,7 @@ async function login(event) {
     showApp();
     await load();
   } catch (error) {
-    statusEl.textContent = "未登录";
+    setStatus("未登录", "warning");
     loginErrorEl.textContent = "账号或密码不正确";
   }
 }
@@ -345,7 +355,7 @@ function showLogin() {
   appView.hidden = true;
   loginView.hidden = false;
   logoutEl.hidden = true;
-  statusEl.textContent = "未登录";
+  setStatus("未登录", "warning");
   loginUsernameEl.focus();
 }
 
@@ -353,7 +363,7 @@ function showApp() {
   loginView.hidden = true;
   appView.hidden = false;
   logoutEl.hidden = false;
-  statusEl.textContent = "已登录";
+  setStatus("已登录", "success");
   setActiveView(activeDashboardView);
 }
 
@@ -387,7 +397,7 @@ function setFormDrawerCollapsed(drawer, collapsed) {
 }
 
 async function load() {
-  statusEl.textContent = "刷新中";
+  setStatus("刷新中", "loading");
   try {
     const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficHourly, trafficDaily, trafficOutbounds, trafficTokens] = await Promise.all([
       getJSON("/api/overview"),
@@ -436,13 +446,13 @@ async function load() {
     updateViewContext();
     updateNavigationCounts();
     updateOverviewCardCounts();
-    statusEl.textContent = "已连接";
+    setStatus("已连接", "success");
   } catch (error) {
     if (error.status === 401) {
       showLogin();
       return;
     }
-    statusEl.textContent = "异常";
+    setStatus("异常", "danger");
     metricsEl.innerHTML = emptyState("警", "加载失败", error.message || "请稍后重试");
   }
 }
@@ -567,13 +577,13 @@ async function saveTeam(button) {
   row.querySelectorAll("button").forEach((item) => {
     item.disabled = true;
   });
-  statusEl.textContent = "保存团队中";
+  setStatus("保存团队中", "loading");
   try {
     await patchJSON(`/api/teams/${id}`, payload);
     appState.editingTeamID = null;
     await load();
   } catch (error) {
-    statusEl.textContent = "保存失败";
+    setStatus("保存失败", "danger");
     row.querySelectorAll("button").forEach((item) => {
       item.disabled = false;
     });
@@ -620,13 +630,13 @@ async function saveUser(button) {
   row.querySelectorAll("button").forEach((item) => {
     item.disabled = true;
   });
-  statusEl.textContent = "保存成员中";
+  setStatus("保存成员中", "loading");
   try {
     await patchJSON(`/api/users/${id}`, payload);
     appState.editingUserID = null;
     await load();
   } catch (error) {
-    statusEl.textContent = "保存失败";
+    setStatus("保存失败", "danger");
     row.querySelectorAll("button").forEach((item) => {
       item.disabled = false;
     });
@@ -663,12 +673,12 @@ async function handleSourceAction(event) {
   }
   if (action !== "refresh") return;
   button.disabled = true;
-  statusEl.textContent = "刷新来源中";
+  setStatus("刷新来源中", "loading");
   try {
     await postJSON(`/api/sources/${id}/refresh`, {});
     await load();
   } catch (error) {
-    statusEl.textContent = "刷新失败";
+    setStatus("刷新失败", "danger");
     button.disabled = false;
   }
 }
@@ -689,13 +699,13 @@ async function saveSource(button) {
   row.querySelectorAll("button").forEach((item) => {
     item.disabled = true;
   });
-  statusEl.textContent = "保存来源中";
+  setStatus("保存来源中", "loading");
   try {
     await patchJSON(`/api/sources/${id}`, payload);
     appState.editingSourceID = null;
     await load();
   } catch (error) {
-    statusEl.textContent = "保存失败";
+    setStatus("保存失败", "danger");
     row.querySelectorAll("button").forEach((item) => {
       item.disabled = false;
     });
@@ -705,12 +715,12 @@ async function saveSource(button) {
 async function regenerateSourceNames(button) {
   const id = button.dataset.sourceId;
   button.disabled = true;
-  statusEl.textContent = "同步节点命名中";
+  setStatus("同步节点命名中", "loading");
   try {
     await postJSON(`/api/sources/${id}/regenerate-node-names`, {});
     await load();
   } catch (error) {
-    statusEl.textContent = "同步失败";
+    setStatus("同步失败", "danger");
     button.disabled = false;
   }
 }
@@ -756,13 +766,13 @@ async function saveVirtualNode(button) {
   row.querySelectorAll("button").forEach((item) => {
     item.disabled = true;
   });
-  statusEl.textContent = "保存虚拟节点中";
+  setStatus("保存虚拟节点中", "loading");
   try {
     await patchJSON(`/api/virtual-nodes/${id}`, payload);
     appState.editingVirtualNodeID = null;
     await load();
   } catch (error) {
-    statusEl.textContent = "保存失败";
+    setStatus("保存失败", "danger");
     row.querySelectorAll("button").forEach((item) => {
       item.disabled = false;
     });
@@ -813,13 +823,13 @@ async function savePolicy(button) {
   row.querySelectorAll("button").forEach((item) => {
     item.disabled = true;
   });
-  statusEl.textContent = "保存策略中";
+  setStatus("保存策略中", "loading");
   try {
     await patchJSON(`/api/policies/${id}`, payload);
     appState.editingPolicyID = null;
     await load();
   } catch (error) {
-    statusEl.textContent = "保存失败";
+    setStatus("保存失败", "danger");
     row.querySelectorAll("button").forEach((item) => {
       item.disabled = false;
     });
@@ -863,18 +873,25 @@ async function handleNodeAction(event) {
   }
   const button = event.target.closest("button[data-node-action]");
   if (!button) return;
+  const action = button.dataset.nodeAction;
+  if (action === "close-detail") {
+    appState.expandedNodeID = null;
+    appState.nodeDetail = null;
+    renderNodes(appState.nodes);
+    setStatus("节点详情已收起", "info");
+    return;
+  }
   const id = Number.parseInt(button.dataset.nodeId || "0", 10);
   if (!id) return;
-  const action = button.dataset.nodeAction;
   if (action === "copy-uri") {
     button.disabled = true;
     try {
       await copyText(button.dataset.nodeUri || "");
-      statusEl.textContent = "节点 URI 已复制";
+      setStatus("节点 URI 已复制", "success");
       showCopyFeedback(button, "已复制", "复制 URI");
       button.disabled = false;
     } catch (error) {
-      statusEl.textContent = "复制失败";
+      setStatus("复制失败", "danger");
       button.disabled = false;
     }
     return;
@@ -897,34 +914,36 @@ async function handleNodeAction(event) {
       appState.expandedNodeID = null;
       appState.nodeDetail = null;
       renderNodes(appState.nodes);
+      setStatus("节点详情已收起", "info");
       return;
     }
     button.disabled = true;
-    statusEl.textContent = "加载节点详情中";
+    setStatus("加载节点详情中", "loading");
     try {
       const detail = await getJSON(`/api/nodes/${id}`);
       appState.expandedNodeID = id;
       appState.nodeDetail = detail;
       appState.editingNodeID = null;
       renderNodes(appState.nodes);
-      statusEl.textContent = "已连接";
+      setStatus("节点详情已打开", "success");
+      nodesEl.querySelector(".node-detail-close")?.focus();
     } catch (error) {
       appState.expandedNodeID = null;
       appState.nodeDetail = null;
-      statusEl.textContent = "详情加载失败";
+      setStatus("详情加载失败", "danger");
       button.disabled = false;
     }
     return;
   }
   if (action !== "reset-name") return;
   button.disabled = true;
-  statusEl.textContent = "恢复节点命名中";
+  setStatus("恢复节点命名中", "loading");
   try {
     await postJSON(`/api/nodes/${id}/reset-display-name`, {});
     appState.editingNodeID = null;
     await load();
   } catch (error) {
-    statusEl.textContent = "恢复失败";
+    setStatus("恢复失败", "danger");
     button.disabled = false;
   }
 }
@@ -955,13 +974,13 @@ async function handleNodeEditSubmit(event) {
   form.querySelectorAll("button").forEach((button) => {
     button.disabled = true;
   });
-  statusEl.textContent = "保存节点中";
+  setStatus("保存节点中", "loading");
   try {
     await patchJSON(`/api/nodes/${id}`, { display_name: displayName });
     appState.editingNodeID = null;
     await load();
   } catch (error) {
-    statusEl.textContent = "保存失败";
+    setStatus("保存失败", "danger");
     form.querySelectorAll("button").forEach((button) => {
       button.disabled = false;
     });
@@ -971,14 +990,25 @@ async function handleNodeEditSubmit(event) {
 async function handleTokenAction(event) {
   const button = event.target.closest("button[data-token-action]");
   if (!button) return;
-  button.disabled = true;
   const id = button.dataset.tokenId;
   const action = button.dataset.tokenAction;
-  statusEl.textContent = "更新 Token 中";
+  if (action === "revoke" && !confirmDanger("确定要停用这个 Token 吗？伙伴将无法继续使用对应订阅和网关访问。")) {
+    setStatus("已取消停用", "info");
+    return;
+  }
+  if (
+    action === "rotate-subscription" &&
+    !confirmDanger("确定要重置这个 Token 的订阅地址吗？旧订阅地址会失效，需要重新分发。")
+  ) {
+    setStatus("已取消重置", "info");
+    return;
+  }
+  button.disabled = true;
+  setStatus("更新 Token 中", "loading");
   try {
     if (action === "copy-subscription") {
       await copyText(button.dataset.tokenUrl || "");
-      statusEl.textContent = "订阅地址已复制";
+      setStatus("订阅地址已复制", "success");
       showCopyFeedback(button, "已复制", "复制");
       button.disabled = false;
       return;
@@ -1003,7 +1033,7 @@ async function handleTokenAction(event) {
     }
     await load();
   } catch (error) {
-    statusEl.textContent = "更新失败";
+    setStatus("更新失败", "danger");
     button.disabled = false;
   }
 }
@@ -1050,7 +1080,7 @@ function showCopyFeedback(button, label, fallbackLabel = "复制") {
 
 async function checkDeliveryReadiness() {
   deliveryReadinessEl.disabled = true;
-  statusEl.textContent = "检查交付收口中";
+  setStatus("检查交付收口中", "loading");
   try {
     const result = await getJSON("/api/delivery/readiness");
     const config = result.config || {};
@@ -1063,10 +1093,10 @@ async function checkDeliveryReadiness() {
       ["用户", formatCell(config.user_count)],
       ["下一步", escapeHTML(nextAction), true],
     ]);
-    statusEl.textContent = result.ready ? "交付闭环可测" : "交付闭环待补";
+    setStatus(result.ready ? "交付闭环可测" : "交付闭环待补", result.ready ? "success" : "warning");
   } catch (error) {
     showConfigResult("收口检查失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    statusEl.textContent = "收口检查失败";
+    setStatus("收口检查失败", "danger");
   } finally {
     deliveryReadinessEl.disabled = false;
   }
@@ -1074,7 +1104,7 @@ async function checkDeliveryReadiness() {
 
 async function checkConfig() {
   configCheckEl.disabled = true;
-  statusEl.textContent = "检查配置中";
+  setStatus("检查配置中", "loading");
   try {
     const result = await postJSON("/api/sing-box/config/check", {});
     showConfigResult(result.valid ? "检查通过" : "检查失败", result.valid ? "success" : "danger", [
@@ -1084,10 +1114,10 @@ async function checkConfig() {
       ["上游", formatCell(result.upstream_outbound_count)],
       ["用户", formatCell(result.user_count)],
     ]);
-    statusEl.textContent = result.valid ? "配置可用" : "配置异常";
+    setStatus(result.valid ? "配置可用" : "配置异常", result.valid ? "success" : "danger");
   } catch (error) {
     showConfigResult("检查失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    statusEl.textContent = "配置异常";
+    setStatus("配置异常", "danger");
   } finally {
     configCheckEl.disabled = false;
   }
@@ -1095,7 +1125,7 @@ async function checkConfig() {
 
 async function publishConfig() {
   configPublishEl.disabled = true;
-  statusEl.textContent = "发布配置中";
+  setStatus("发布配置中", "loading");
   try {
     const result = await postJSON("/api/sing-box/config/publish", {});
     const restartText = result.restart ? formatRestartResult(result.restart) : result.restart_required ? "需要" : "无需";
@@ -1106,10 +1136,13 @@ async function publishConfig() {
       ["出口", formatCell(result.outbound_count)],
       ["用户", formatCell(result.user_count)],
     ]);
-    statusEl.textContent = result.published && !result.restart_required ? "配置已发布并生效" : result.published ? "配置已发布，需重启 sing-box" : "发布失败";
+    setStatus(
+      result.published && !result.restart_required ? "配置已发布并生效" : result.published ? "配置已发布，需重启 sing-box" : "发布失败",
+      result.published ? "success" : "danger",
+    );
   } catch (error) {
     showConfigResult("发布失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    statusEl.textContent = "发布失败";
+    setStatus("发布失败", "danger");
   } finally {
     configPublishEl.disabled = false;
   }
@@ -1117,7 +1150,7 @@ async function publishConfig() {
 
 async function rollbackConfig() {
   configRollbackEl.disabled = true;
-  statusEl.textContent = "回滚配置中";
+  setStatus("回滚配置中", "loading");
   try {
     const result = await postJSON("/api/sing-box/config/rollback", {});
     const restartText = result.restart ? formatRestartResult(result.restart) : result.restart_required ? "需要" : "无需";
@@ -1127,10 +1160,13 @@ async function rollbackConfig() {
       ["出口", formatCell(result.outbound_count)],
       ["用户", formatCell(result.user_count)],
     ]);
-    statusEl.textContent = result.rolled_back && !result.restart_required ? "配置已回滚并生效" : result.rolled_back ? "配置已回滚，需重启 sing-box" : "回滚失败";
+    setStatus(
+      result.rolled_back && !result.restart_required ? "配置已回滚并生效" : result.rolled_back ? "配置已回滚，需重启 sing-box" : "回滚失败",
+      result.rolled_back ? "success" : "danger",
+    );
   } catch (error) {
     showConfigResult("回滚失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    statusEl.textContent = "回滚失败";
+    setStatus("回滚失败", "danger");
   } finally {
     configRollbackEl.disabled = false;
   }
@@ -1138,7 +1174,7 @@ async function rollbackConfig() {
 
 async function restartSingBox() {
   configRestartEl.disabled = true;
-  statusEl.textContent = "重启服务中";
+  setStatus("重启服务中", "loading");
   try {
     const result = await postJSON("/api/sing-box/restart", {});
     showConfigResult(result.success ? "重启已执行" : result.skipped ? "重启未启用" : "重启失败", result.success ? "success" : result.skipped ? "warning" : "danger", [
@@ -1147,10 +1183,10 @@ async function restartSingBox() {
       ["耗时", formatCell(result.duration_ms)],
       ["消息", escapeHTML(result.message || "--"), true],
     ]);
-    statusEl.textContent = result.success ? "服务已重启" : result.skipped ? "重启未启用" : "重启失败";
+    setStatus(result.success ? "服务已重启" : result.skipped ? "重启未启用" : "重启失败", result.success ? "success" : result.skipped ? "warning" : "danger");
   } catch (error) {
     showConfigResult("重启失败", "danger", [["错误", escapeHTML(error.message), true]]);
-    statusEl.textContent = "重启失败";
+    setStatus("重启失败", "danger");
   } finally {
     configRestartEl.disabled = false;
   }
@@ -1210,13 +1246,13 @@ function formatRestartResult(result) {
 }
 
 async function postAndReload(path, payload) {
-  statusEl.textContent = "保存中";
+  setStatus("保存中", "loading");
   try {
     const result = await postJSON(path, payload);
     await load();
     return result;
   } catch (error) {
-    statusEl.textContent = "保存失败";
+    setStatus("保存失败", "danger");
     throw error;
   }
 }
@@ -2317,6 +2353,8 @@ function regionSymbolForRegion(region) {
 }
 
 function renderNodeRegion(group, groups, total, matched, totalRegionCount) {
+  const selectedNode = group.items.find((row) => row.id === appState.expandedNodeID);
+  const detail = selectedNode ? appState.nodeDetail || selectedNode : null;
   return `
     <div class="node-browser" data-node-view="cards" data-node-region="${escapeHTML(group.region)}">
       <div class="node-browser-header">
@@ -2331,6 +2369,7 @@ function renderNodeRegion(group, groups, total, matched, totalRegionCount) {
       <div class="node-card-grid">
         ${group.items.map((row) => renderNodeCard(row)).join("")}
       </div>
+      ${detail ? renderNodeDetailPanel(detail) : ""}
     </div>
   `;
 }
@@ -2377,7 +2416,6 @@ function renderNodeFilterBar(total, matched, regionCount) {
 function renderNodeCard(row) {
   const isEditing = appState.editingNodeID === row.id;
   const isExpanded = appState.expandedNodeID === row.id;
-  const detail = isExpanded ? appState.nodeDetail || row : null;
   const endpoint = nodeEndpointLabel(row);
   return `
     <article class="node-card ${isExpanded ? "node-card-expanded" : ""}" data-node-id="${row.id}">
@@ -2409,7 +2447,6 @@ function renderNodeCard(row) {
         }
         <button class="table-button ghost-button" type="button" data-node-action="reset-name" data-node-id="${row.id}" ${row.name_mode === "auto" ? "disabled" : ""}>${buttonLabel("↺", "恢复自动")}</button>
       </div>
-      ${detail ? renderNodeDetailPanel(detail) : ""}
     </article>
   `;
 }
@@ -2461,8 +2498,12 @@ function nodeProtocolSymbol(protocol) {
 
 function renderNodeDetailPanel(node) {
   return `
-    <div class="node-detail-row">
+    <aside class="node-detail-drawer" role="dialog" aria-label="节点详情" aria-modal="false">
       <div class="node-detail-panel">
+        <div class="node-detail-toolbar">
+          <span class="node-detail-eyebrow">节点详情</span>
+          <button class="table-button ghost-button node-detail-close" type="button" data-node-action="close-detail">${buttonLabel("×", "关闭")}</button>
+        </div>
         <div class="node-detail-summary">
           <div class="node-detail-summary-title">
             <span class="node-card-protocol-symbol" aria-hidden="true">${escapeHTML(nodeProtocolSymbol(node.protocol))}</span>
@@ -2506,7 +2547,7 @@ function renderNodeDetailPanel(node) {
           <code class="detail-code">${escapeHTML(String(node.uri || ""))}</code>
         </div>
       </div>
-    </div>
+    </aside>
   `;
 }
 
@@ -2706,8 +2747,8 @@ function tokenCardField(label, value, column = "") {
 function renderTokenSubscriptions(row) {
   const subscriptions = row.subscriptions || {};
   const items = [
-    ["默认", subscriptions.default || row.subscription || ""],
-    ["Clash/Mihomo", subscriptions.clash || ""],
+    ["默认订阅", subscriptions.default || row.subscription || ""],
+    ["Mihomo", subscriptions.clash || ""],
     ["sing-box", subscriptions.sing_box || ""],
   ].filter((item) => item[1]);
   if (!row.subscription_available || items.length === 0) {
@@ -2730,8 +2771,8 @@ function renderSubscriptionCardList(items, tokenID = "") {
                   <span class="token-subscription-kind" data-token-subscription-kind>${escapeHTML(subscriptionKindForLabel(label))}</span>
                 </span>
                 <span class="token-subscription-actions">
-                  <a class="table-button ghost-button link-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-token-subscription-link>${buttonLabel("↗", "打开")}</a>
                   <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}" data-button-symbol="⧉" data-copy-label="复制">${buttonLabel("⧉", "复制")}</button>
+                  <a class="table-button ghost-button link-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-token-subscription-link>${buttonLabel("↗", "打开")}</a>
                 </span>
               </div>
               <span class="token-subscription-meta">
@@ -2752,13 +2793,13 @@ function buttonLabel(symbol, label) {
 }
 
 function subscriptionKindForLabel(label) {
-  if (label === "Clash/Mihomo") return "Mihomo";
+  if (label === "Mihomo" || label === "Clash/Mihomo") return "Mihomo";
   if (label === "sing-box") return "sing-box";
   return "通用";
 }
 
 function subscriptionProfileForLabel(label) {
-  if (label === "Clash/Mihomo") return "YAML · Mihomo";
+  if (label === "Mihomo" || label === "Clash/Mihomo") return "YAML · Mihomo";
   if (label === "sing-box") return "JSON · sing-box";
   return "URI · 通用";
 }
@@ -2780,8 +2821,8 @@ function showTokenSubscriptionResult(result, title) {
   const clashSubscription = subscriptions.clash || `${defaultSubscription}?target=clash`;
   const singBoxSubscription = subscriptions.sing_box || `${defaultSubscription}?target=sing-box`;
   const items = [
-    ["默认", defaultSubscription],
-    ["Clash/Mihomo", clashSubscription],
+    ["默认订阅", defaultSubscription],
+    ["Mihomo", clashSubscription],
     ["sing-box", singBoxSubscription],
   ].filter((item) => item[1]);
   const formatCount = `${formatPlainNumber(items.length)} 格式`;

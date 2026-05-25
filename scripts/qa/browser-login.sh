@@ -683,6 +683,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
   let tokenCopyFeedbackVisible = false;
   let tokenCopySymbolRestored = false;
+  let confirmDialogVisible = false;
+  let confirmDialogTitle = "";
+  let confirmDialogButtonCount = 0;
+  let confirmDialogCancelled = false;
   if (tokenSubscriptionCopyCount > 0) {
     const firstCopyButton = page.locator("#tokens button[data-token-action='copy-subscription']").first();
     await firstCopyButton.click();
@@ -693,6 +697,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await expect(firstCopyButton.locator(".button-symbol")).toHaveText("⧉", { timeout: 5000 });
     await expect(firstCopyButton.locator(".button-label")).toHaveText("复制", { timeout: 5000 });
     tokenCopySymbolRestored = true;
+  }
+  if (tokenRotateSubscriptionCount > 0) {
+    await page.locator("#tokens button[data-token-action='rotate-subscription']").first().click();
+    const confirmDialog = page.locator("[data-confirm-dialog]").first();
+    await expect(confirmDialog).toBeVisible({ timeout: 5000 });
+    confirmDialogVisible = true;
+    confirmDialogTitle = (await confirmDialog.locator("[data-confirm-title]").textContent())?.trim() || "";
+    confirmDialogButtonCount = await confirmDialog.locator("button").count();
+    await confirmDialog.locator("[data-confirm-cancel]").click();
+    await expect(confirmDialog).toBeHidden({ timeout: 5000 });
+    await expect(page.locator("#status")).toContainText("已取消", { timeout: 5000 });
+    confirmDialogCancelled = true;
   }
   const tokenVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
@@ -1404,6 +1420,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
   state.tokenCopySymbolRestored = tokenCopySymbolRestored;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
+  state.confirmDialogVisible = confirmDialogVisible;
+  state.confirmDialogTitle = confirmDialogTitle;
+  state.confirmDialogButtonCount = confirmDialogButtonCount;
+  state.confirmDialogCancelled = confirmDialogCancelled;
   state.tokenVisualOverflowCount = tokenVisualOverflowCount;
   state.tokenActionsScrollOverflowCount = tokenActionsScrollOverflowCount;
   state.tokenVisualOverlapCount = tokenVisualOverlapCount;
@@ -1460,6 +1480,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenRowCount > 0 && tokenRotateSubscriptionCount !== tokenRowCount) {
     throw new Error(`token subscription rotate controls missing: ${JSON.stringify(state)}`);
+  }
+  if (tokenRotateSubscriptionCount > 0 && (!confirmDialogVisible || confirmDialogTitle !== "重置订阅地址" || confirmDialogButtonCount !== 2 || !confirmDialogCancelled)) {
+    throw new Error(`custom confirm dialog is missing or not cancellable: ${JSON.stringify(state)}`);
   }
   if (
     tokenSubscriptionCopyCount > 0 &&

@@ -292,3 +292,31 @@ Show display name, region, name mode and tags with unified control sizing and re
 - [x] **Step 5: Expand API and browser QA**
 
 API flow verifies node edit/reset behavior and browser QA verifies field presence plus edit panel overflow.
+
+## Task 8: Replace Native Token Confirms With In-App Dialogs
+
+**Files:**
+- Modify: `internal/httpapi/static/app.js`
+- Modify: `internal/httpapi/static/calm-ops.css`
+- Modify: `scripts/qa/browser-login.sh`
+- Modify: `docs/11-current-implementation.md`
+
+- [x] **Step 1: Add browser QA before implementation**
+
+Browser QA clicks the Token reset-subscription action, expects a visible in-app confirmation dialog, verifies the `重置订阅地址` title, checks that cancel/confirm actions are both present, then cancels and confirms the dialog closes with an `已取消` status.
+
+- [x] **Step 2: Implement the custom dangerous-action dialog**
+
+`confirmDanger` now renders an accessible in-app dialog with title, impact copy, cancel/confirm buttons, backdrop cancel, `Escape` cancel and focus restoration.
+
+- [x] **Step 3: Apply the dialog to dangerous Token actions**
+
+Token revoke and subscription reset both use the same dialog pattern and return clear cancellation feedback before any API mutation is sent.
+
+- [x] **Step 4: Add responsive dialog styling**
+
+The dialog uses the Calm Ops radius, shadow, danger symbol, compact action layout, and mobile-safe single-column actions without relying on native browser confirm UI.
+
+- [x] **Step 5: Verify through build and full local QA**
+
+Run `scripts/dev/build.sh` and `scripts/qa/local-suite.sh`; expected result is zero exit status, with browser QA confirming dialog visibility, title, action count and cancellation.

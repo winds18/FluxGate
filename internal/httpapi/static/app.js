@@ -288,8 +288,49 @@ function setStatus(message, tone = "info") {
   statusEl.setAttribute("aria-live", tone === "danger" || tone === "warning" ? "assertive" : "polite");
 }
 
-function confirmDanger(message) {
-  return window.confirm(`${message}\n\n这个操作会立即生效，请确认后继续。`);
+function confirmDanger({ title, message, confirmLabel = "确认", cancelLabel = "取消" }) {
+  const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+  return new Promise((resolve) => {
+    const dialog = document.createElement("div");
+    dialog.className = "confirm-dialog-backdrop";
+    dialog.dataset.confirmDialog = "";
+    dialog.setAttribute("role", "presentation");
+    dialog.innerHTML = `
+      <section class="confirm-dialog" role="dialog" aria-modal="true" aria-labelledby="confirm-dialog-title" aria-describedby="confirm-dialog-message">
+        <div class="confirm-dialog-symbol" aria-hidden="true">!</div>
+        <div class="confirm-dialog-content">
+          <h3 id="confirm-dialog-title" data-confirm-title>${escapeHTML(title || "确认操作")}</h3>
+          <p id="confirm-dialog-message">${escapeHTML(message || "这个操作会立即生效，请确认后继续。")}</p>
+          <div class="confirm-dialog-actions">
+            <button class="table-button ghost-button" type="button" data-confirm-cancel>${escapeHTML(cancelLabel)}</button>
+            <button class="table-button danger-button" type="button" data-confirm-accept>${escapeHTML(confirmLabel)}</button>
+          </div>
+        </div>
+      </section>
+    `;
+
+    const finish = (confirmed) => {
+      document.removeEventListener("keydown", handleKeydown);
+      dialog.remove();
+      previousFocus?.focus?.();
+      resolve(confirmed);
+    };
+    const handleKeydown = (event) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        finish(false);
+      }
+    };
+
+    dialog.addEventListener("click", (event) => {
+      if (event.target === dialog) finish(false);
+    });
+    dialog.querySelector("[data-confirm-cancel]")?.addEventListener("click", () => finish(false));
+    dialog.querySelector("[data-confirm-accept]")?.addEventListener("click", () => finish(true));
+    document.addEventListener("keydown", handleKeydown);
+    document.body.append(dialog);
+    requestAnimationFrame(() => dialog.querySelector("[data-confirm-cancel]")?.focus());
+  });
 }
 
 async function bootstrap() {
@@ -996,13 +1037,24 @@ async function handleTokenAction(event) {
   if (!button) return;
   const id = button.dataset.tokenId;
   const action = button.dataset.tokenAction;
-  if (action === "revoke" && !confirmDanger("确定要停用这个 Token 吗？伙伴将无法继续使用对应订阅和网关访问。")) {
+  if (
+    action === "revoke" &&
+    !(await confirmDanger({
+      title: "停用 Token",
+      message: "伙伴将无法继续使用对应订阅和网关访问。停用后仍可在状态控制里恢复。",
+      confirmLabel: "停用",
+    }))
+  ) {
     setStatus("已取消停用", "info");
     return;
   }
   if (
     action === "rotate-subscription" &&
-    !confirmDanger("确定要重置这个 Token 的订阅地址吗？旧订阅地址会失效，需要重新分发。")
+    !(await confirmDanger({
+      title: "重置订阅地址",
+      message: "旧订阅地址会立即失效，需要把新地址重新分发给伙伴。",
+      confirmLabel: "重置",
+    }))
   ) {
     setStatus("已取消重置", "info");
     return;

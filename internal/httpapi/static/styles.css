@@ -1091,7 +1091,19 @@ main {
   display: none;
 }
 
-.drawer-toggle {
+.drawer-actions {
+  align-items: center;
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.drawer-toggle,
+.drawer-cancel {
   align-items: center;
   background: #ffffff;
   border: 1px solid var(--border);
@@ -1110,7 +1122,17 @@ main {
   white-space: nowrap;
 }
 
-.drawer-toggle:hover {
+.drawer-cancel {
+  background: #f8fafc;
+  border-color: var(--border-soft);
+}
+
+.form-drawer.is-collapsed .drawer-cancel {
+  display: none;
+}
+
+.drawer-toggle:hover,
+.drawer-cancel:hover {
   border-color: #c7d4df;
   color: var(--text);
 }

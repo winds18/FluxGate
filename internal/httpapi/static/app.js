@@ -187,6 +187,13 @@ document.addEventListener("click", (event) => {
   const nextCollapsed = !drawer.classList.contains("is-collapsed");
   setFormDrawerCollapsed(drawer, nextCollapsed);
 });
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-form-drawer-cancel]");
+  if (!button) return;
+  const drawer = button.closest("[data-form-drawer]");
+  if (!drawer) return;
+  cancelFormDrawer(drawer);
+});
 mobileMoreToggle?.addEventListener("click", (event) => {
   event.stopPropagation();
   setMobileMoreMenuOpen(mobileMoreMenu?.hidden !== false);
@@ -619,6 +626,22 @@ function setFormDrawerCollapsed(drawer, collapsed) {
   if (toggle) {
     toggle.innerHTML = buttonLabel(collapsed ? "+" : "−", collapsed ? "展开" : "收起");
   }
+}
+
+function cancelFormDrawer(drawer) {
+  drawer.reset();
+  clearInvalidFieldFeedback({ currentTarget: drawer, clearAll: true });
+  drawer.querySelectorAll(".result-box").forEach((element) => {
+    element.hidden = true;
+    element.replaceChildren();
+  });
+  setFormDrawerCollapsed(drawer, true);
+  if (activeDashboardTarget === drawer.id) {
+    activeDashboardTarget = "";
+    updateViewRail();
+  }
+  setStatus(`已取消：${dashboardTargetLabel(drawer.id)}`, "info");
+  drawer.querySelector("[data-form-drawer-toggle]")?.focus({ preventScroll: true });
 }
 
 async function load() {

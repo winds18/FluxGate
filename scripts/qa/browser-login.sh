@@ -163,6 +163,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const collapsedFormDrawerCount = await page.locator("[data-form-drawer].is-collapsed").count();
   const formDrawerSymbolCount = await page.locator("[data-form-drawer] .drawer-symbol").count();
   const formDrawerToggleSymbolCount = await page.locator("[data-form-drawer] [data-form-drawer-toggle] .button-symbol").count();
+  const formDrawerCancelCount = await page.locator("[data-form-drawer] [data-form-drawer-cancel]").count();
+  const formDrawerCancelSymbolCount = await page.locator("[data-form-drawer] [data-form-drawer-cancel] .button-symbol").count();
   const formSubmitButtonSymbolCount = await page.locator('[data-form-drawer] button[type="submit"] .button-symbol').count();
   const refreshButtonSymbolCount = await page.locator("#refresh .button-symbol").count();
   const logoutButtonSymbolCount = await page.locator("#logout .button-symbol").count();
@@ -216,11 +218,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       .reduce((total, header) => {
         const headerBox = header.getBoundingClientRect();
         const elements = Array.from(
-          header.querySelectorAll(".drawer-title, .drawer-symbol, h2, .drawer-toggle, .drawer-toggle .button-symbol, .drawer-toggle .button-label"),
+          header.querySelectorAll(".drawer-title, .drawer-symbol, h2, .drawer-actions, .drawer-toggle, .drawer-toggle .button-symbol, .drawer-toggle .button-label, [data-form-drawer-cancel], [data-form-drawer-cancel] .button-symbol, [data-form-drawer-cancel] .button-label"),
         ).filter((element) => element.offsetParent !== null);
         for (const element of elements) {
-          const parent = element.closest(".drawer-toggle") && !element.classList.contains("drawer-toggle")
-            ? element.closest(".drawer-toggle").getBoundingClientRect()
+          const parentButton = element.closest(".drawer-toggle, [data-form-drawer-cancel]");
+          const parent = parentButton && !element.classList.contains("drawer-toggle") && !element.hasAttribute("data-form-drawer-cancel")
+            ? parentButton.getBoundingClientRect()
             : headerBox;
           const box = element.getBoundingClientRect();
           if (box.width > 0 && box.height > 0 && outside(box, parent)) {
@@ -282,6 +285,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const workspacePrimaryActionStatus = {};
   const workspacePrimaryActionStatusTone = {};
   const activeRailTargets = {};
+  let formDrawerCancelFeedback = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
@@ -406,6 +410,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     inlineCount: document.querySelectorAll("#source-form [data-field-feedback]").length,
     ariaInvalid: document.querySelector('#source-form input[name="name"]')?.getAttribute("aria-invalid") || "",
     invalidClass: document.querySelector('#source-form input[name="name"]')?.classList.contains("is-field-invalid") ? 1 : 0,
+  }));
+  await page.locator('#source-form [data-form-drawer-cancel]').click();
+  await expect(page.locator("#source-form.is-collapsed")).toHaveCount(1, { timeout: 1000 });
+  formDrawerCancelFeedback = await page.evaluate(() => ({
+    status: document.querySelector("#status")?.textContent?.trim() || "",
+    tone: document.querySelector("#status")?.dataset.statusTone || "",
+    value: document.querySelector('#source-form input[name="name"]')?.value || "",
+    inlineCount: document.querySelectorAll("#source-form [data-field-feedback]").length,
+    ariaInvalid: document.querySelector('#source-form input[name="name"]')?.getAttribute("aria-invalid") || "",
   }));
   await switchView("identity");
   await page.locator("#view-primary-action").click();
@@ -1483,6 +1496,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.collapsedFormDrawerCount = collapsedFormDrawerCount;
   state.formDrawerSymbolCount = formDrawerSymbolCount;
   state.formDrawerToggleSymbolCount = formDrawerToggleSymbolCount;
+  state.formDrawerCancelCount = formDrawerCancelCount;
+  state.formDrawerCancelSymbolCount = formDrawerCancelSymbolCount;
+  state.formDrawerCancelFeedback = formDrawerCancelFeedback;
   state.formSubmitButtonSymbolCount = formSubmitButtonSymbolCount;
   state.loginButtonSymbolCount = loginButtonSymbolCount;
   state.loginButtonOverflowCount = loginButtonOverflowCount;
@@ -1941,6 +1957,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     collapsedFormDrawerCount !== 7 ||
     formDrawerSymbolCount !== 7 ||
     formDrawerToggleSymbolCount !== 7 ||
+    formDrawerCancelCount !== 7 ||
+    formDrawerCancelSymbolCount !== 7 ||
     formSubmitButtonSymbolCount !== 7 ||
     loginButtonSymbolCount !== 1 ||
     loginButtonOverflowCount > 0 ||
@@ -1953,6 +1971,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     overflowingFormSubmit
   ) {
     throw new Error(`form drawers should be collapsed and visually stable by default: ${JSON.stringify(state)}`);
+  }
+  if (
+    !formDrawerCancelFeedback.status?.includes("已取消：添加来源") ||
+    formDrawerCancelFeedback.tone !== "info" ||
+    formDrawerCancelFeedback.value !== "" ||
+    formDrawerCancelFeedback.inlineCount !== 0 ||
+    formDrawerCancelFeedback.ariaInvalid !== ""
+  ) {
+    throw new Error(`form drawer cancel should clear draft input and report feedback: ${JSON.stringify(state)}`);
   }
   const expectedPanelSymbols = ["源", "点", "网", "团", "员", "钥", "策", "量", "运"];
   const overflowingPanelTitle = Object.entries(panelTitleOverflow).find(([, overflow]) => overflow > 0);

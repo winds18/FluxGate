@@ -646,6 +646,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const trafficOutboundEmptyStateCount = await page.locator("#traffic-outbounds [data-empty-state]").count();
   const trafficEmptyStateCount = await page.locator('[data-dashboard-view="traffic"] [data-empty-state]').count();
   const trafficEmptyStateSymbolCount = await page.locator('[data-dashboard-view="traffic"] [data-empty-state-symbol]').count();
+  const trafficEmptyStateActionCount = await page.locator('[data-dashboard-view="traffic"] [data-empty-state-action]').count();
+  const trafficEmptyStateActionSymbolCount = await page
+    .locator('[data-dashboard-view="traffic"] [data-empty-state-action] .button-symbol')
+    .count();
   const trafficEmptyStateOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -655,7 +659,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     return Array.from(document.querySelectorAll('[data-dashboard-view="traffic"] [data-empty-state]')).reduce((total, empty) => {
       const parentBox = empty.getBoundingClientRect();
       const elements = Array.from(
-        empty.querySelectorAll("[data-empty-state-symbol], .empty-state-copy, .empty-state-title, .empty-state-hint"),
+        empty.querySelectorAll("[data-empty-state-symbol], .empty-state-copy, .empty-state-title, .empty-state-hint, [data-empty-state-action], [data-empty-state-action] .button-symbol, [data-empty-state-action] .button-label"),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
         const box = element.getBoundingClientRect();
@@ -666,6 +670,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return total;
     }, 0);
   });
+  let trafficEmptyStateActionNavigates = false;
+  if (trafficOutboundEmptyStateCount > 0) {
+    await page.locator("#traffic-outbounds [data-empty-state-action]").first().click();
+    await expect(page.locator('[data-dashboard-view="ops"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("#ops-actions")).toBeVisible({ timeout: 5000 });
+    trafficEmptyStateActionNavigates = true;
+    await switchView("traffic");
+  }
   const trafficVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -1504,6 +1516,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.trafficOutboundEmptyStateCount = trafficOutboundEmptyStateCount;
   state.trafficEmptyStateCount = trafficEmptyStateCount;
   state.trafficEmptyStateSymbolCount = trafficEmptyStateSymbolCount;
+  state.trafficEmptyStateActionCount = trafficEmptyStateActionCount;
+  state.trafficEmptyStateActionSymbolCount = trafficEmptyStateActionSymbolCount;
+  state.trafficEmptyStateActionNavigates = trafficEmptyStateActionNavigates;
   state.trafficEmptyStateOverflowCount = trafficEmptyStateOverflowCount;
   state.trafficVisualOverflowCount = trafficVisualOverflowCount;
   state.tokenRowCount = tokenRowCount;
@@ -1642,6 +1657,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     trafficChartOverflowCount > 0 ||
     (trafficOutboundRowCount === 0 && trafficOutboundEmptyStateCount !== 1) ||
     trafficEmptyStateCount !== trafficEmptyStateSymbolCount ||
+    trafficEmptyStateCount !== trafficEmptyStateActionCount ||
+    trafficEmptyStateCount !== trafficEmptyStateActionSymbolCount ||
+    (trafficOutboundEmptyStateCount > 0 && !trafficEmptyStateActionNavigates) ||
     trafficEmptyStateOverflowCount > 0 ||
     trafficVisualOverflowCount > 0
   ) {

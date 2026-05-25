@@ -180,16 +180,16 @@ document.addEventListener("click", (event) => {
 document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-view-rail-target]");
   if (!button) return;
-  const target = document.getElementById(button.dataset.viewRailTarget || "");
-  if (!target) return;
-  if (button.dataset.viewRailExpand === "true") {
-    const drawer = target.closest("[data-form-drawer]");
-    if (drawer) {
-      setFormDrawerCollapsed(drawer, false);
-    }
-  }
-  const panelTarget = target.closest(".panel") || target;
-  panelTarget.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+  navigateToDashboardTarget(activeDashboardView, button.dataset.viewRailTarget || "", button.dataset.viewRailExpand === "true");
+});
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-empty-state-action]");
+  if (!button) return;
+  navigateToDashboardTarget(
+    button.dataset.emptyStateView || activeDashboardView,
+    button.dataset.emptyStateTarget || "",
+    button.dataset.emptyStateExpand === "true",
+  );
 });
 bootstrap();
 
@@ -1796,7 +1796,27 @@ function renderContextChip(item) {
   `;
 }
 
-function emptyState(symbol, title, hint = "") {
+function navigateToDashboardTarget(view, targetID, expand = false) {
+  if (view && dashboardViewMeta[view]) {
+    setActiveView(view);
+  }
+  requestAnimationFrame(() => openDashboardTarget(targetID, expand));
+}
+
+function openDashboardTarget(targetID, expand = false) {
+  const target = document.getElementById(targetID || "");
+  if (!target) return;
+  if (expand) {
+    const drawer = target.closest("[data-form-drawer]");
+    if (drawer) {
+      setFormDrawerCollapsed(drawer, false);
+    }
+  }
+  const panelTarget = target.closest(".panel") || target;
+  panelTarget.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
+}
+
+function emptyState(symbol, title, hint = "", action = null) {
   return `
     <div class="empty empty-state" data-empty-state>
       <span class="empty-state-symbol" data-empty-state-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
@@ -1804,7 +1824,24 @@ function emptyState(symbol, title, hint = "") {
         <strong class="empty-state-title">${escapeHTML(title)}</strong>
         ${hint ? `<span class="empty-state-hint">${escapeHTML(hint)}</span>` : ""}
       </span>
+      ${renderEmptyStateAction(action)}
     </div>
+  `;
+}
+
+function renderEmptyStateAction(action) {
+  if (!action || !action.target) return "";
+  const view = action.view || activeDashboardView;
+  const label = action.label || "去处理";
+  const symbol = action.symbol || "→";
+  return `
+    <button class="primary-link-button empty-state-action" type="button"
+      data-empty-state-action
+      data-empty-state-view="${escapeHTML(view)}"
+      data-empty-state-target="${escapeHTML(action.target)}"
+      data-empty-state-expand="${action.expand ? "true" : "false"}">
+      ${buttonLabel(symbol, label)}
+    </button>
   `;
 }
 
@@ -1819,7 +1856,13 @@ function formatPlainNumber(value) {
 function renderTeams(rows) {
   appState.teams = rows || [];
   if (!rows || rows.length === 0) {
-    teamsEl.innerHTML = emptyState("团", "暂无团队", "创建团队后再为成员签发订阅 Token");
+    teamsEl.innerHTML = emptyState("团", "暂无团队", "创建团队后再为成员签发订阅 Token", {
+      label: "创建团队",
+      symbol: "团",
+      view: "identity",
+      target: "team-form",
+      expand: true,
+    });
     return;
   }
   teamsEl.innerHTML = `
@@ -1880,7 +1923,13 @@ function teamStatusSelect(value) {
 function renderUsers(rows) {
   appState.users = rows || [];
   if (!rows || rows.length === 0) {
-    usersEl.innerHTML = emptyState("员", "暂无成员", "添加成员后可以独立控制 Token 有效期和额度");
+    usersEl.innerHTML = emptyState("员", "暂无成员", "添加成员后可以独立控制 Token 有效期和额度", {
+      label: "添加成员",
+      symbol: "员",
+      view: "identity",
+      target: "user-form",
+      expand: true,
+    });
     return;
   }
   usersEl.innerHTML = `
@@ -1984,7 +2033,13 @@ function userStatusSelect(value) {
 function renderSources(rows) {
   appState.sources = rows || [];
   if (!rows || rows.length === 0) {
-    sourcesEl.innerHTML = emptyState("源", "暂无来源", "添加订阅或手动来源后会在这里统一管理");
+    sourcesEl.innerHTML = emptyState("源", "暂无来源", "添加订阅或手动来源后会在这里统一管理", {
+      label: "添加来源",
+      symbol: "源",
+      view: "access",
+      target: "source-form",
+      expand: true,
+    });
     return;
   }
   sourcesEl.innerHTML = `
@@ -2091,7 +2146,13 @@ function sourceTypeSelect(value) {
 function renderVirtualNodes(rows) {
   appState.virtualNodes = rows || [];
   if (!rows || rows.length === 0) {
-    virtualNodesEl.innerHTML = emptyState("网", "暂无虚拟网关", "创建网关入口后才能生成可用的 sing-box 入站");
+    virtualNodesEl.innerHTML = emptyState("网", "暂无虚拟网关", "创建网关入口后才能生成可用的 sing-box 入站", {
+      label: "创建网关",
+      symbol: "网",
+      view: "nodes",
+      target: "virtual-node-form",
+      expand: true,
+    });
     return;
   }
   virtualNodesEl.innerHTML = `
@@ -2207,7 +2268,13 @@ function virtualNodeStatusSelect(value) {
 function renderPolicies(rows) {
   appState.policies = rows || [];
   if (!rows || rows.length === 0) {
-    policiesEl.innerHTML = emptyState("策", "暂无策略", "配置策略后可以限制团队可见节点和网关范围");
+    policiesEl.innerHTML = emptyState("策", "暂无策略", "配置策略后可以限制团队可见节点和网关范围", {
+      label: "创建策略",
+      symbol: "策",
+      view: "policies",
+      target: "policy-form",
+      expand: true,
+    });
     return;
   }
   policiesEl.innerHTML = `
@@ -2326,7 +2393,13 @@ function policyStatusSelect(value) {
 function renderNodes(rows) {
   appState.nodes = rows || [];
   if (!rows || rows.length === 0) {
-    nodesEl.innerHTML = emptyState("点", "暂无节点", "导入上游订阅后会按地区自动聚合节点");
+    nodesEl.innerHTML = emptyState("点", "暂无节点", "导入上游订阅后会按地区自动聚合节点", {
+      label: "导入节点",
+      symbol: "导",
+      view: "access",
+      target: "node-import-form",
+      expand: true,
+    });
     return;
   }
   const filteredRows = filterNodesByQuery(rows, appState.nodeFilter);
@@ -2701,7 +2774,13 @@ function renderNodeEditForm(row) {
 function renderTokens(rows) {
   appState.tokens = rows || [];
   if (!rows || rows.length === 0) {
-    tokensEl.innerHTML = emptyState("钥", "暂无 Token", "签发 Token 后会生成通用、Mihomo 和 sing-box 订阅地址");
+    tokensEl.innerHTML = emptyState("钥", "暂无 Token", "签发 Token 后会生成通用、Mihomo 和 sing-box 订阅地址", {
+      label: "签发 Token",
+      symbol: "钥",
+      view: "identity",
+      target: "token-form",
+      expand: true,
+    });
     return;
   }
   tokensEl.innerHTML = `
@@ -2963,7 +3042,13 @@ function renderTrafficTokens(rows) {
     trafficTokensEl.innerHTML = `
       <div class="traffic-card-section" data-traffic-card-section>
         ${trafficSectionHeader("钥", "Token 用量", 0, "按团队 Token 聚合订阅与网关流量")}
-        ${emptyState("钥", "暂无 Token 用量", "有 Token 订阅访问或网关流量后会显示用量")}
+        ${emptyState("钥", "暂无 Token 用量", "有 Token 订阅访问或网关流量后会显示用量", {
+          label: "签发 Token",
+          symbol: "钥",
+          view: "identity",
+          target: "token-form",
+          expand: true,
+        })}
       </div>
     `;
     return;
@@ -2983,7 +3068,12 @@ function renderTrafficOutbounds(rows) {
     trafficOutboundsEl.innerHTML = `
       <div class="traffic-card-section" data-traffic-card-section>
         ${trafficSectionHeader("出", "出口摘要", 0, "按上游节点出口聚合真实转发流量")}
-        ${emptyState("出", "暂无出口流量", "sing-box 网关产生真实流量后会按上游出口聚合")}
+        ${emptyState("出", "暂无出口流量", "sing-box 网关产生真实流量后会按上游出口聚合", {
+          label: "查看运维",
+          symbol: "运",
+          view: "ops",
+          target: "ops-actions",
+        })}
       </div>
     `;
     return;
@@ -3121,7 +3211,12 @@ function renderTrafficHourly(rows) {
 
 function renderTrafficBars(target, rows, options) {
   if (!rows || rows.length === 0) {
-    target.innerHTML = emptyState("量", "暂无流量数据", "真实网关流量进入统计链路后会生成趋势图");
+    target.innerHTML = emptyState("量", "暂无流量数据", "真实网关流量进入统计链路后会生成趋势图", {
+      label: "查看运维",
+      symbol: "运",
+      view: "ops",
+      target: "ops-actions",
+    });
     return;
   }
   const values = rows.map((row) => Number(row[options.valueKey] || 0));

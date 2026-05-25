@@ -3594,7 +3594,7 @@ td code {
   border-radius: 8px;
   display: grid;
   gap: 10px;
-  grid-template-columns: max-content minmax(0, 1fr);
+  grid-template-columns: max-content minmax(0, 1fr) max-content;
   margin: 14px;
   max-width: calc(100% - 28px);
 }
@@ -3642,6 +3642,12 @@ td code {
   line-height: 1.45;
   min-width: 0;
   overflow-wrap: anywhere;
+}
+
+.empty-state-action {
+  justify-self: end;
+  min-height: 36px;
+  padding-inline: 12px;
 }
 
 .traffic-chart {
@@ -4284,6 +4290,15 @@ td code {
 
   .primary-link-button {
     width: 100%;
+  }
+
+  .empty-state {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  .empty-state-action {
+    grid-column: 1 / -1;
+    justify-self: stretch;
   }
 
   .form-panel,

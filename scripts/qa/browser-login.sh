@@ -259,12 +259,37 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const viewRailBadgeCounts = {};
   const viewRailOverflow = {};
   const viewHeaderSymbols = {};
+  const workspacePrimaryActionCounts = {};
+  const workspacePrimaryActionLabels = {};
+  const workspacePrimaryActionSymbolCounts = {};
+  const workspacePrimaryActionOverflow = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
     formDrawerHeaderOverflow[view] = await visibleFormDrawerHeaderOverflow();
     formSubmitOverflow[view] = await visibleFormSubmitOverflow();
     viewHeaderSymbols[view] = (await page.locator("#view-symbol").textContent())?.trim();
+    workspacePrimaryActionCounts[view] = await page.locator("#view-primary-action").count();
+    workspacePrimaryActionLabels[view] = workspacePrimaryActionCounts[view] > 0
+      ? (await page.locator("#view-primary-action .button-label").first().textContent())?.trim() || ""
+      : "";
+    workspacePrimaryActionSymbolCounts[view] = await page.locator("#view-primary-action .button-symbol").count();
+    workspacePrimaryActionOverflow[view] = await page.evaluate(() => {
+      const button = document.querySelector("#view-primary-action");
+      if (!button) return 1;
+      const buttonBox = button.getBoundingClientRect();
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(button.querySelectorAll(".button-symbol, .button-label"))
+        .filter((element) => element.offsetParent !== null)
+        .reduce((total, element) => {
+          const box = element.getBoundingClientRect();
+          return total + (box.width > 0 && box.height > 0 && outside(box, buttonBox) ? 1 : 0);
+        }, 0);
+    });
     viewContextChipCounts[view] = await page.locator("#view-context .context-chip").count();
     viewContextOverflow[view] = await page.evaluate(() => {
       const outside = (child, parent) =>
@@ -333,6 +358,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       }, 0);
     }, view);
   }
+  await switchView("identity");
+  await page.locator("#view-primary-action").click();
+  await expect(page.locator("#token-form:not(.is-collapsed)")).toBeVisible({ timeout: 5000 });
+  const workspacePrimaryActionOpensTokenForm = true;
   await switchView("overview");
   await expect(page.locator("#metrics .metric")).toHaveCount(7, { timeout: 5000 });
   const overviewMetricCount = await page.locator("#metrics .metric").count();
@@ -1395,6 +1424,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.viewRailBadgeCounts = viewRailBadgeCounts;
   state.viewRailOverflow = viewRailOverflow;
   state.viewHeaderSymbols = viewHeaderSymbols;
+  state.workspacePrimaryActionCounts = workspacePrimaryActionCounts;
+  state.workspacePrimaryActionLabels = workspacePrimaryActionLabels;
+  state.workspacePrimaryActionSymbolCounts = workspacePrimaryActionSymbolCounts;
+  state.workspacePrimaryActionOverflow = workspacePrimaryActionOverflow;
+  state.workspacePrimaryActionOpensTokenForm = workspacePrimaryActionOpensTokenForm;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewMetricCount = overviewMetricCount;
   state.overviewMetricSymbolCount = overviewMetricSymbolCount;
@@ -1825,6 +1859,30 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const overflowingContextView = Object.entries(viewContextOverflow).find(([, overflow]) => overflow > 0);
   if (sparseContextView || overflowingContextView) {
     throw new Error(`dashboard view context is incomplete: ${JSON.stringify(state)}`);
+  }
+  const missingPrimaryActionView = Object.entries(workspacePrimaryActionCounts).find(([, count]) => count !== 1);
+  const missingPrimaryActionSymbolView = Object.entries(workspacePrimaryActionSymbolCounts).find(([, count]) => count !== 1);
+  const overflowingPrimaryActionView = Object.entries(workspacePrimaryActionOverflow).find(([, overflow]) => overflow > 0);
+  const expectedPrimaryActionLabels = {
+    access: "添加来源",
+    nodes: "创建网关",
+    identity: "签发 Token",
+    policies: "创建策略",
+    traffic: "查看运维",
+    ops: "检查收口",
+  };
+  const primaryActionLabelMismatch = Object.entries(workspacePrimaryActionLabels).find(([view, label]) => {
+    if (view === "overview") return !["继续初始化", "去运维发布"].includes(label);
+    return expectedPrimaryActionLabels[view] && label !== expectedPrimaryActionLabels[view];
+  });
+  if (
+    missingPrimaryActionView ||
+    missingPrimaryActionSymbolView ||
+    overflowingPrimaryActionView ||
+    primaryActionLabelMismatch ||
+    !workspacePrimaryActionOpensTokenForm
+  ) {
+    throw new Error(`dashboard workspace primary action is incomplete: ${JSON.stringify(state)}`);
   }
   const sparseRailView = Object.entries(viewRailButtonCounts).find(([, count]) => count < 1);
   if (sparseRailView || !moduleRailOpensTokenForm) {

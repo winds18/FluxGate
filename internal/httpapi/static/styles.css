@@ -9,6 +9,7 @@
   --faint: #8794a6;
   --primary: #1769e0;
   --primary-hover: #1158c4;
+  --primary-strong: var(--primary-hover);
   --accent: #13a06f;
   --accent-soft: #e9f8f2;
   --sidebar: #111827;
@@ -508,6 +509,14 @@ main {
   align-items: center;
   display: flex;
   gap: 8px;
+  justify-content: flex-end;
+  min-width: 0;
+}
+
+.workspace-primary-action {
+  box-shadow: 0 8px 18px rgba(39, 100, 216, 0.18);
+  min-height: 38px;
+  padding-inline: 14px;
 }
 
 .dashboard-view {

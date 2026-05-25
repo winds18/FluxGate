@@ -6,6 +6,7 @@ const viewTitleEl = document.querySelector("#view-title");
 const viewDescriptionEl = document.querySelector("#view-description");
 const viewContextEl = document.querySelector("#view-context");
 const viewRailEl = document.querySelector("#view-rail");
+const viewPrimaryActionEl = document.querySelector("#view-primary-action");
 const dashboardViewSections = Array.from(document.querySelectorAll("[data-dashboard-view]"));
 const dashboardNavButtons = Array.from(document.querySelectorAll("[data-view-nav]"));
 const dashboardNavCountEls = Array.from(document.querySelectorAll("[data-view-count]"));
@@ -141,6 +142,11 @@ configPublishEl.addEventListener("click", publishConfig);
 configRollbackEl.addEventListener("click", rollbackConfig);
 configRestartEl.addEventListener("click", restartSingBox);
 logoutEl.addEventListener("click", logout);
+viewPrimaryActionEl?.addEventListener("click", () => {
+  const action = workspacePrimaryActionForView(activeDashboardView);
+  if (!action) return;
+  navigateToDashboardTarget(action.view || activeDashboardView, action.target || "", Boolean(action.expand));
+});
 loginForm.addEventListener("submit", login);
 teamForm.addEventListener("submit", submitTeam);
 userForm.addEventListener("submit", submitUser);
@@ -425,6 +431,7 @@ function setActiveView(view) {
   viewDescriptionEl.textContent = description;
   updateViewContext();
   updateViewRail();
+  updateWorkspacePrimaryAction();
   updateNavigationCounts();
   updateOverviewCardCounts();
 }
@@ -485,6 +492,8 @@ async function load() {
     renderTrafficTokens(trafficTokens);
     updatePanelCounts();
     updateViewContext();
+    updateViewRail();
+    updateWorkspacePrimaryAction();
     updateNavigationCounts();
     updateOverviewCardCounts();
     setStatus("已连接", "success");
@@ -1522,6 +1531,49 @@ function updateViewRail() {
   const items = dashboardViewRail[activeDashboardView] || [];
   viewRailEl.hidden = items.length === 0;
   viewRailEl.innerHTML = items.map(renderViewRailButton).join("");
+}
+
+function updateWorkspacePrimaryAction() {
+  if (!viewPrimaryActionEl) return;
+  const action = workspacePrimaryActionForView(activeDashboardView);
+  viewPrimaryActionEl.hidden = !action;
+  if (!action) return;
+  viewPrimaryActionEl.innerHTML = buttonLabel(action.symbol || "→", action.label || "下一步");
+  viewPrimaryActionEl.dataset.primaryActionView = action.view || activeDashboardView;
+  viewPrimaryActionEl.dataset.primaryActionTarget = action.target || "";
+  viewPrimaryActionEl.dataset.primaryActionExpand = action.expand ? "true" : "false";
+  viewPrimaryActionEl.setAttribute(
+    "aria-label",
+    `${dashboardViewMeta[activeDashboardView]?.[0] || "当前模块"}：${action.label || "下一步"}`,
+  );
+}
+
+function workspacePrimaryActionForView(view) {
+  if (view === "overview") return overviewPrimaryAction();
+  const actions = {
+    access: { label: "添加来源", symbol: "源", view: "access", target: "source-form", expand: true },
+    nodes: { label: "创建网关", symbol: "网", view: "nodes", target: "virtual-node-form", expand: true },
+    identity: { label: "签发 Token", symbol: "钥", view: "identity", target: "token-form", expand: true },
+    policies: { label: "创建策略", symbol: "策", view: "policies", target: "policy-form", expand: true },
+    traffic: { label: "查看运维", symbol: "运", view: "ops", target: "ops-actions" },
+    ops: { label: "检查收口", symbol: "收", view: "ops", target: "ops-actions" },
+  };
+  return actions[view] || null;
+}
+
+function overviewPrimaryAction() {
+  const firstMissing = overviewReadinessChecks(appState.overview || {}).find(([, ready]) => !ready);
+  if (!firstMissing) {
+    return { label: "去运维发布", symbol: "运", view: "ops", target: "ops-actions" };
+  }
+  const actions = {
+    "接入来源": { label: "添加来源", symbol: "源", view: "access", target: "source-form", expand: true },
+    "节点池": { label: "导入节点", symbol: "导", view: "access", target: "node-import-form", expand: true },
+    "虚拟网关": { label: "创建网关", symbol: "网", view: "nodes", target: "virtual-node-form", expand: true },
+    "团队 Token": { label: "签发 Token", symbol: "钥", view: "identity", target: "token-form", expand: true },
+    "访问策略": { label: "创建策略", symbol: "策", view: "policies", target: "policy-form", expand: true },
+  };
+  return actions[firstMissing[0]] || { label: "继续初始化", symbol: "步", view: firstMissing[3], target: "overview-next-step" };
 }
 
 function renderViewRailButton([label, target, expand]) {

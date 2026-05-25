@@ -363,11 +363,22 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await switchView("access");
   await page.locator("#view-primary-action").click();
   await expect(page.locator("#source-form:not(.is-collapsed)")).toBeVisible({ timeout: 5000 });
+  await expect(page.locator("#source-form.is-target-highlighted")).toHaveCount(1, { timeout: 1000 });
   workspacePrimaryActionFocus.access = await page.evaluate(() => document.activeElement?.getAttribute("name") || "");
   workspacePrimaryActionHighlight.access = await page.locator("#source-form.is-target-highlighted").count();
+  await page.waitForTimeout(1900);
+  await page.locator('#source-form button[type="submit"]').click();
+  await expect(page.locator("#source-form.is-target-highlighted")).toHaveCount(1, { timeout: 1000 });
+  const requiredFieldFeedback = await page.evaluate(() => ({
+    status: document.querySelector("#status")?.textContent?.trim() || "",
+    tone: document.querySelector("#status")?.dataset.statusTone || "",
+    activeName: document.activeElement?.getAttribute("name") || "",
+    highlighted: document.querySelector("#source-form")?.classList.contains("is-target-highlighted") ? 1 : 0,
+  }));
   await switchView("identity");
   await page.locator("#view-primary-action").click();
   await expect(page.locator("#token-form:not(.is-collapsed)")).toBeVisible({ timeout: 5000 });
+  await expect(page.locator("#token-form.is-target-highlighted")).toHaveCount(1, { timeout: 1000 });
   workspacePrimaryActionFocus.identity = await page.evaluate(() => document.activeElement?.getAttribute("name") || "");
   workspacePrimaryActionHighlight.identity = await page.locator("#token-form.is-target-highlighted").count();
   const workspacePrimaryActionOpensTokenForm = true;
@@ -1440,6 +1451,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.workspacePrimaryActionFocus = workspacePrimaryActionFocus;
   state.workspacePrimaryActionHighlight = workspacePrimaryActionHighlight;
   state.workspacePrimaryActionOpensTokenForm = workspacePrimaryActionOpensTokenForm;
+  state.requiredFieldFeedback = requiredFieldFeedback;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewMetricCount = overviewMetricCount;
   state.overviewMetricSymbolCount = overviewMetricSymbolCount;
@@ -1898,6 +1910,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     !workspacePrimaryActionOpensTokenForm
   ) {
     throw new Error(`dashboard workspace primary action is incomplete: ${JSON.stringify(state)}`);
+  }
+  if (
+    !requiredFieldFeedback.status.includes("请先补齐：名称") ||
+    requiredFieldFeedback.tone !== "warning" ||
+    requiredFieldFeedback.activeName !== "name" ||
+    requiredFieldFeedback.highlighted !== 1
+  ) {
+    throw new Error(`form required field feedback is missing: ${JSON.stringify(state)}`);
   }
   const sparseRailView = Object.entries(viewRailButtonCounts).find(([, count]) => count < 1);
   if (sparseRailView || !moduleRailOpensTokenForm) {

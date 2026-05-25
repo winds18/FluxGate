@@ -134,6 +134,7 @@ const dashboardViewRail = {
   ],
 };
 let activeDashboardView = "overview";
+let invalidFeedbackLocked = false;
 
 refreshEl.addEventListener("click", load);
 deliveryReadinessEl.addEventListener("click", checkDeliveryReadiness);
@@ -155,6 +156,9 @@ nodeImportForm.addEventListener("submit", submitNodeImport);
 virtualNodeForm.addEventListener("submit", submitVirtualNode);
 policyForm.addEventListener("submit", submitPolicy);
 tokenForm.addEventListener("submit", submitToken);
+document.addEventListener("invalid", handleInvalidField, true);
+document.addEventListener("input", clearInvalidFieldFeedback, true);
+document.addEventListener("change", clearInvalidFieldFeedback, true);
 teamsEl.addEventListener("click", handleTeamAction);
 usersEl.addEventListener("click", handleUserAction);
 sourcesEl.addEventListener("click", handleSourceAction);
@@ -292,6 +296,78 @@ function setStatus(message, tone = "info") {
   statusEl.textContent = message;
   statusEl.dataset.statusTone = tone;
   statusEl.setAttribute("aria-live", tone === "danger" || tone === "warning" ? "assertive" : "polite");
+}
+
+function handleInvalidField(event) {
+  const field = event.target;
+  if (!isFormControl(field)) return;
+  event.preventDefault();
+  if (invalidFeedbackLocked) return;
+  invalidFeedbackLocked = true;
+  window.setTimeout(() => {
+    invalidFeedbackLocked = false;
+  }, 0);
+
+  const form = field.closest("form");
+  clearInvalidFieldFeedback({ target: field, currentTarget: form || document, clearAll: true });
+  field.classList.add("is-field-invalid");
+  field.closest("label")?.classList.add("is-field-invalid");
+
+  const drawer = field.closest("[data-form-drawer]");
+  if (drawer) {
+    setFormDrawerCollapsed(drawer, false);
+  }
+  const target = drawer || form?.closest(".panel") || form || field.closest(".panel") || field;
+  setStatus(validationStatusForField(field), "warning");
+  highlightDashboardTarget(target);
+  target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+  field.focus({ preventScroll: true });
+}
+
+function clearInvalidFieldFeedback(event) {
+  const scope = event.clearAll ? event.currentTarget || document : null;
+  if (scope?.querySelectorAll) {
+    scope.querySelectorAll(".is-field-invalid").forEach((element) => element.classList.remove("is-field-invalid"));
+    return;
+  }
+  const field = event.target;
+  if (!isFormControl(field)) return;
+  field.classList.remove("is-field-invalid");
+  field.closest("label")?.classList.remove("is-field-invalid");
+}
+
+function isFormControl(element) {
+  return element instanceof HTMLInputElement || element instanceof HTMLSelectElement || element instanceof HTMLTextAreaElement;
+}
+
+function validationStatusForField(field) {
+  const label = labelForField(field);
+  const validity = field.validity;
+  if (validity?.valueMissing) {
+    return `请先补齐：${label}`;
+  }
+  if (validity?.typeMismatch) {
+    return `请检查格式：${label}`;
+  }
+  if (validity?.rangeUnderflow || validity?.rangeOverflow || validity?.stepMismatch) {
+    return `请检查数值：${label}`;
+  }
+  return `请检查：${label}`;
+}
+
+function labelForField(field) {
+  const label = field.closest("label");
+  if (label) {
+    const text = Array.from(label.childNodes)
+      .filter((node) => node.nodeType === Node.TEXT_NODE)
+      .map((node) => node.textContent || "")
+      .join("")
+      .replace(/\s+/g, " ")
+      .replace(/[：:]\s*$/, "")
+      .trim();
+    if (text) return text;
+  }
+  return field.getAttribute("aria-label") || field.getAttribute("placeholder") || field.name || "这个字段";
 }
 
 function confirmDanger({ title, message, confirmLabel = "确认", cancelLabel = "取消" }) {

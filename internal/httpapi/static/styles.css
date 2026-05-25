@@ -1111,6 +1111,21 @@ main {
   line-height: 1.2;
 }
 
+.form-body label.is-field-invalid,
+.login-panel label.is-field-invalid {
+  color: #b42318;
+}
+
+.form-body input.is-field-invalid,
+.form-body select.is-field-invalid,
+.form-body textarea.is-field-invalid,
+.login-panel input.is-field-invalid,
+.login-panel select.is-field-invalid,
+.login-panel textarea.is-field-invalid {
+  border-color: #f87171;
+  box-shadow: 0 0 0 3px rgba(248, 113, 113, 0.16);
+}
+
 .form-body button[type="submit"] {
   align-self: end;
   gap: 6px;

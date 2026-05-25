@@ -7,6 +7,7 @@ REMOTE_HOST="${REMOTE_HOST:-}"
 DEPLOY_ID="${DEPLOY_ID:-deploy-$(timestamp)}"
 TARGET_GOOS="${TARGET_GOOS:-linux}"
 TARGET_GOARCH="${TARGET_GOARCH:-amd64}"
+TARGET_PLATFORM="${TARGET_PLATFORM:-$TARGET_GOOS/$TARGET_GOARCH}"
 CLEANUP_IMAGE="${CLEANUP_IMAGE:-true}"
 LOAD_REMOTE="${LOAD_REMOTE:-true}"
 WORK_DIR="$ROOT_DIR/tmp/prebuilt-image/$DEPLOY_ID"
@@ -56,8 +57,8 @@ cd "$ROOT_DIR"
 GOOS="$TARGET_GOOS" GOARCH="$TARGET_GOARCH" CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o "$WORK_DIR/fluxgate" ./cmd/fluxgate
 cp "$ca_bundle" "$WORK_DIR/ca-certificates.crt"
 
-log "building prebuilt Docker image locally: $IMAGE"
-run_logged docker build -f "$ROOT_DIR/Dockerfile.prebuilt" -t "$IMAGE" "$WORK_DIR"
+log "building prebuilt Docker image locally: $IMAGE platform=$TARGET_PLATFORM"
+run_logged docker build --platform "$TARGET_PLATFORM" -f "$ROOT_DIR/Dockerfile.prebuilt" -t "$IMAGE" "$WORK_DIR"
 
 if [[ "$LOAD_REMOTE" == "true" ]]; then
   log "loading prebuilt Docker image on remote host: $IMAGE"

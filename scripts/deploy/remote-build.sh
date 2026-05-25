@@ -24,6 +24,7 @@ if [[ "$SING_BOX_CUSTOM_BUILD_ENABLED" == "true" ]]; then
   log "building sing-box image remotely: $SING_BOX_IMAGE"
   run_logged docker build \
     --build-arg "GOPROXY=${GOPROXY:-https://goproxy.cn,https://proxy.golang.org,direct}" \
+    --build-arg "GOSUMDB=${GOSUMDB:-sum.golang.google.cn}" \
     --build-arg "SING_BOX_VERSION=$SING_BOX_VERSION" \
     --build-arg "SING_BOX_BUILD_TAGS=$SING_BOX_BUILD_TAGS" \
     -f Dockerfile.sing-box \

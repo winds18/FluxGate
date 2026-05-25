@@ -136,6 +136,7 @@ const dashboardViewRail = {
 let activeDashboardView = "overview";
 let activeDashboardTarget = "";
 let invalidFeedbackLocked = false;
+let fallbackFieldFeedbackID = 0;
 
 refreshEl.addEventListener("click", load);
 deliveryReadinessEl.addEventListener("click", checkDeliveryReadiness);
@@ -313,6 +314,7 @@ function handleInvalidField(event) {
   clearInvalidFieldFeedback({ target: field, currentTarget: form || document, clearAll: true });
   field.classList.add("is-field-invalid");
   field.closest("label")?.classList.add("is-field-invalid");
+  showInvalidFieldFeedback(field);
 
   const drawer = field.closest("[data-form-drawer]");
   if (drawer) {
@@ -332,13 +334,16 @@ function handleInvalidField(event) {
 function clearInvalidFieldFeedback(event) {
   const scope = event.clearAll ? event.currentTarget || document : null;
   if (scope?.querySelectorAll) {
+    scope.querySelectorAll("[data-field-feedback]").forEach((element) => element.remove());
     scope.querySelectorAll(".is-field-invalid").forEach((element) => element.classList.remove("is-field-invalid"));
+    scope.querySelectorAll('[aria-invalid="true"]').forEach((element) => clearFieldInvalidAttributes(element));
     return;
   }
   const field = event.target;
   if (!isFormControl(field)) return;
   field.classList.remove("is-field-invalid");
   field.closest("label")?.classList.remove("is-field-invalid");
+  clearFieldInvalidAttributes(field);
 }
 
 function isFormControl(element) {
@@ -358,6 +363,65 @@ function validationStatusForField(field) {
     return `请检查数值：${label}`;
   }
   return `请检查：${label}`;
+}
+
+function showInvalidFieldFeedback(field) {
+  const feedbackID = fieldFeedbackID(field);
+  let feedback = document.getElementById(feedbackID);
+  if (!feedback) {
+    feedback = document.createElement("p");
+    feedback.id = feedbackID;
+    feedback.className = "field-feedback";
+    feedback.dataset.fieldFeedback = "";
+    field.insertAdjacentElement("afterend", feedback);
+  }
+  feedback.textContent = fieldFeedbackMessage(field);
+  field.setAttribute("aria-invalid", "true");
+  addDescribedByID(field, feedbackID);
+}
+
+function clearFieldInvalidAttributes(field) {
+  if (!isFormControl(field)) return;
+  const feedbackID = field.dataset.fieldFeedbackID || fieldFeedbackID(field);
+  document.getElementById(feedbackID)?.remove();
+  removeDescribedByID(field, feedbackID);
+  field.removeAttribute("aria-invalid");
+  delete field.dataset.fieldFeedbackID;
+}
+
+function fieldFeedbackID(field) {
+  if (field.dataset.fieldFeedbackID) return field.dataset.fieldFeedbackID;
+  const formID = field.closest("form")?.id || "form";
+  const fieldKey = field.name || field.id || field.getAttribute("aria-label") || `field-${++fallbackFieldFeedbackID}`;
+  const id = `${formID}-${fieldKey}-feedback`.replace(/[^A-Za-z0-9_-]+/g, "-");
+  field.dataset.fieldFeedbackID = id;
+  return id;
+}
+
+function fieldFeedbackMessage(field) {
+  const label = labelForField(field);
+  const validity = field.validity;
+  if (validity?.valueMissing) return `请填写${label}`;
+  if (validity?.typeMismatch) return `请检查${label}的格式`;
+  if (validity?.rangeUnderflow || validity?.rangeOverflow || validity?.stepMismatch) return `请检查${label}的数值`;
+  return `请检查${label}`;
+}
+
+function addDescribedByID(field, id) {
+  const ids = new Set(String(field.getAttribute("aria-describedby") || "").split(/\s+/).filter(Boolean));
+  ids.add(id);
+  field.setAttribute("aria-describedby", Array.from(ids).join(" "));
+}
+
+function removeDescribedByID(field, id) {
+  const ids = String(field.getAttribute("aria-describedby") || "")
+    .split(/\s+/)
+    .filter((value) => value && value !== id);
+  if (ids.length) {
+    field.setAttribute("aria-describedby", ids.join(" "));
+  } else {
+    field.removeAttribute("aria-describedby");
+  }
 }
 
 function labelForField(field) {

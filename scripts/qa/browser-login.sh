@@ -382,6 +382,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     tone: document.querySelector("#status")?.dataset.statusTone || "",
     activeName: document.activeElement?.getAttribute("name") || "",
     highlighted: document.querySelector("#source-form")?.classList.contains("is-target-highlighted") ? 1 : 0,
+    inlineCount: document.querySelectorAll("#source-form [data-field-feedback]").length,
+    inlineText: document.querySelector("#source-form [data-field-feedback]")?.textContent?.trim() || "",
+    ariaInvalid: document.querySelector('#source-form input[name="name"]')?.getAttribute("aria-invalid") || "",
+    describedBy: document.querySelector('#source-form input[name="name"]')?.getAttribute("aria-describedby") || "",
+  }));
+  await page.locator('#source-form input[name="name"]').fill("QA inline source");
+  const requiredFieldFeedbackCleared = await page.evaluate(() => ({
+    inlineCount: document.querySelectorAll("#source-form [data-field-feedback]").length,
+    ariaInvalid: document.querySelector('#source-form input[name="name"]')?.getAttribute("aria-invalid") || "",
+    invalidClass: document.querySelector('#source-form input[name="name"]')?.classList.contains("is-field-invalid") ? 1 : 0,
   }));
   await switchView("identity");
   await page.locator("#view-primary-action").click();
@@ -1468,6 +1478,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.activeRailTargets = activeRailTargets;
   state.workspacePrimaryActionOpensTokenForm = workspacePrimaryActionOpensTokenForm;
   state.requiredFieldFeedback = requiredFieldFeedback;
+  state.requiredFieldFeedbackCleared = requiredFieldFeedbackCleared;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
   state.overviewMetricCount = overviewMetricCount;
   state.overviewMetricSymbolCount = overviewMetricSymbolCount;
@@ -1940,7 +1951,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     !requiredFieldFeedback.status.includes("请先补齐：名称") ||
     requiredFieldFeedback.tone !== "warning" ||
     requiredFieldFeedback.activeName !== "name" ||
-    requiredFieldFeedback.highlighted !== 1
+    requiredFieldFeedback.highlighted !== 1 ||
+    requiredFieldFeedback.inlineCount !== 1 ||
+    !requiredFieldFeedback.inlineText.includes("请填写名称") ||
+    requiredFieldFeedback.ariaInvalid !== "true" ||
+    !requiredFieldFeedback.describedBy.includes("source-form-name-feedback") ||
+    requiredFieldFeedbackCleared.inlineCount !== 0 ||
+    requiredFieldFeedbackCleared.ariaInvalid ||
+    requiredFieldFeedbackCleared.invalidClass !== 0
   ) {
     throw new Error(`form required field feedback is missing: ${JSON.stringify(state)}`);
   }

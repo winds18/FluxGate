@@ -1134,6 +1134,16 @@ main {
   color: #b42318;
 }
 
+.field-feedback {
+  color: #b42318;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.35;
+  margin: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+
 .form-body input.is-field-invalid,
 .form-body select.is-field-invalid,
 .form-body textarea.is-field-invalid,

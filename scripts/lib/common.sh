@@ -32,3 +32,35 @@ run_logged() {
   log "+ $*"
   "$@"
 }
+
+add_no_proxy_host() {
+  local host="$1"
+  if [[ -z "$host" ]]; then
+    return
+  fi
+
+  local current="${NO_PROXY:-${no_proxy:-}}"
+  if [[ ",$current," != *",$host,"* ]]; then
+    current="${current:+$current,}$host"
+  fi
+
+  export NO_PROXY="$current"
+  export no_proxy="$current"
+}
+
+configure_no_proxy_for_url() {
+  local url="$1"
+  local host="${url#*://}"
+  host="${host%%/*}"
+  if [[ "$host" == \[*\]* ]]; then
+    host="${host#\[}"
+    host="${host%%\]*}"
+  else
+    host="${host%%:*}"
+  fi
+
+  add_no_proxy_host "$host"
+  add_no_proxy_host "127.0.0.1"
+  add_no_proxy_host "localhost"
+  add_no_proxy_host "::1"
+}

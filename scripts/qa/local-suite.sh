@@ -19,6 +19,7 @@ trap cleanup EXIT
 
 log "running local QA suite"
 "$ROOT_DIR/scripts/qa/public-scan.sh"
+"$ROOT_DIR/scripts/qa/ui-static.sh"
 "$ROOT_DIR/scripts/qa/substore-extraction.sh"
 PORT="$PORT" "$ROOT_DIR/scripts/dev/stop.sh" >/dev/null 2>&1 || true
 KEEP_ARTIFACTS="$KEEP_ARTIFACTS" "$ROOT_DIR/scripts/qa/cleanup.sh"

@@ -180,7 +180,13 @@ dashboardNavButtons.forEach((button) => {
   button.addEventListener("click", () => setActiveView(button.dataset.viewNav || "overview"));
 });
 dashboardJumpButtons.forEach((button) => {
-  button.addEventListener("click", () => setActiveView(button.dataset.viewJump || "overview"));
+  button.addEventListener("click", () => {
+    navigateToDashboardTarget(
+      button.dataset.viewJump || "overview",
+      button.dataset.viewJumpTarget || "",
+      button.dataset.viewJumpExpand === "true",
+    );
+  });
 });
 document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-form-drawer-toggle]");

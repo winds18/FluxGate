@@ -253,6 +253,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const viewContextChipCounts = {};
   const viewContextOverflow = {};
   const viewRailButtonCounts = {};
+  const viewRailLabels = {};
   const viewRailSymbolCounts = {};
   const viewRailSymbols = {};
   const viewRailBadgeCounts = {};
@@ -284,6 +285,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       }, 0);
     });
     viewRailButtonCounts[view] = await page.locator("#view-rail .view-rail-button").count();
+    viewRailLabels[view] = await page
+      .locator("#view-rail .view-rail-label")
+      .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
     viewRailSymbolCounts[view] = await page.locator("#view-rail .view-rail-symbol").count();
     viewRailSymbols[view] = await page
       .locator("#view-rail .view-rail-symbol")
@@ -1373,6 +1377,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.viewContextChipCounts = viewContextChipCounts;
   state.viewContextOverflow = viewContextOverflow;
   state.viewRailButtonCounts = viewRailButtonCounts;
+  state.viewRailLabels = viewRailLabels;
   state.viewRailSymbolCounts = viewRailSymbolCounts;
   state.viewRailSymbols = viewRailSymbols;
   state.viewRailBadgeCounts = viewRailBadgeCounts;
@@ -1808,7 +1813,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`dashboard module rail is incomplete: ${JSON.stringify(state)}`);
   }
   const expectedRailSymbols = {
-    overview: ["概", "闭", "步"],
+    overview: ["概", "向", "步"],
     access: ["源", "加", "导"],
     nodes: ["点", "网", "建"],
     identity: ["钥", "团", "员", "钥", "团", "员"],
@@ -1823,6 +1828,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   });
   if (railSymbolMismatch) {
     throw new Error(`dashboard module rail symbols are incomplete: ${JSON.stringify(state)}`);
+  }
+  const expectedRailLabels = {
+    overview: ["运行概览", "初始化", "下一步"],
+  };
+  const railLabelMismatch = Object.entries(expectedRailLabels).find(([view, expected]) => {
+    const actual = viewRailLabels[view] || [];
+    return expected.some((label, index) => actual[index] !== label);
+  });
+  if (railLabelMismatch) {
+    throw new Error(`dashboard module rail labels should match the human setup guide: ${JSON.stringify(state)}`);
   }
   const overflowingRailView = Object.entries(viewRailOverflow).find(([, overflow]) => overflow > 0);
   if (overflowingRailView) {

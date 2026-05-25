@@ -96,7 +96,7 @@ const dashboardViewSymbols = {
 const dashboardViewRail = {
   overview: [
     ["运行概览", "metrics"],
-    ["测试闭环", "overview-readiness"],
+    ["初始化", "overview-readiness"],
     ["下一步", "overview-next-step"],
   ],
   access: [
@@ -1539,7 +1539,7 @@ function renderViewRailButton([label, target, expand]) {
 function viewRailSymbolForTarget(label, target, expand) {
   const symbols = {
     metrics: "概",
-    "overview-readiness": "闭",
+    "overview-readiness": "向",
     "overview-next-step": "步",
     sources: "源",
     "source-form": "加",

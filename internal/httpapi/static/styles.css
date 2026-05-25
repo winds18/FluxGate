@@ -545,6 +545,10 @@ main {
   cursor: wait;
 }
 
+.app-shell.is-logging-out #logout {
+  cursor: wait;
+}
+
 .dashboard-view {
   align-content: start;
   display: grid;

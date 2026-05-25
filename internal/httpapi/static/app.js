@@ -545,34 +545,40 @@ async function login(event) {
 }
 
 async function logout() {
-  await fetch("/api/auth/logout", { method: "POST" });
-  appState = {
-    overview: {},
-    teams: [],
-    users: [],
-    sources: [],
-    nodes: [],
-    virtualNodes: [],
-    policies: [],
-    tokens: [],
-    trafficHourly: [],
-    trafficDaily: [],
-    trafficOutbounds: [],
-    trafficTokens: [],
-    editingTeamID: null,
-    editingUserID: null,
-    editingSourceID: null,
-    editingVirtualNodeID: null,
-    editingPolicyID: null,
-    editingNodeID: null,
-    expandedNodeRegion: null,
-    expandedNodeID: null,
-    nodeDetail: null,
-    nodeFilter: "",
-  };
-  tokenResultEl.hidden = true;
-  tokenResultEl.textContent = "";
-  showLogin();
+  setLogoutPending(true);
+  setStatus("退出中", "loading");
+  try {
+    await fetch("/api/auth/logout", { method: "POST" });
+  } finally {
+    setLogoutPending(false);
+    appState = {
+      overview: {},
+      teams: [],
+      users: [],
+      sources: [],
+      nodes: [],
+      virtualNodes: [],
+      policies: [],
+      tokens: [],
+      trafficHourly: [],
+      trafficDaily: [],
+      trafficOutbounds: [],
+      trafficTokens: [],
+      editingTeamID: null,
+      editingUserID: null,
+      editingSourceID: null,
+      editingVirtualNodeID: null,
+      editingPolicyID: null,
+      editingNodeID: null,
+      expandedNodeRegion: null,
+      expandedNodeID: null,
+      nodeDetail: null,
+      nodeFilter: "",
+    };
+    tokenResultEl.hidden = true;
+    tokenResultEl.textContent = "";
+    showLogin();
+  }
 }
 
 function showLogin() {
@@ -725,6 +731,31 @@ function setRefreshPending(pending) {
   refreshEl.disabled = refreshEl.dataset.refreshWasDisabled === "true";
   delete refreshEl.dataset.refreshPendingStored;
   delete refreshEl.dataset.refreshWasDisabled;
+}
+
+function setLogoutPending(pending) {
+  if (!logoutEl) return;
+  appView?.classList.toggle("is-logging-out", pending);
+  if (pending) {
+    appView?.setAttribute("aria-busy", "true");
+  } else if (refreshPendingDepth === 0) {
+    appView?.removeAttribute("aria-busy");
+  }
+
+  if (pending) {
+    if (!logoutEl.dataset.logoutPendingStored) {
+      logoutEl.dataset.logoutPendingStored = "true";
+      logoutEl.dataset.logoutWasDisabled = logoutEl.disabled ? "true" : "false";
+    }
+    setSubmitButtonPending(logoutEl, true);
+    logoutEl.disabled = true;
+    return;
+  }
+
+  setSubmitButtonPending(logoutEl, false);
+  logoutEl.disabled = logoutEl.dataset.logoutWasDisabled === "true";
+  delete logoutEl.dataset.logoutPendingStored;
+  delete logoutEl.dataset.logoutWasDisabled;
 }
 
 function setInlineActionPending(container, button, pending) {

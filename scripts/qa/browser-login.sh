@@ -50,6 +50,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let calmOpsResponseStatus = 0;
   let sourceInlineSaveFeedback = null;
   let sourceInlineSaveRestored = null;
+  let logoutButtonPendingFeedback = {};
+  let logoutButtonCompletedFeedback = {};
   const expectedViewSymbols = {
     overview: "概",
     access: "源",
@@ -120,6 +122,85 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         consoleMessages,
       })}`,
     );
+  }
+  await page.evaluate(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.__logoutProbeSeen = false;
+    window.__releaseLogoutProbe = null;
+    window.fetch = (input, init = {}) => {
+      const url = typeof input === "string" ? input : input?.url || "";
+      const method = String(init?.method || input?.method || "GET").toUpperCase();
+      if (method === "POST" && String(url).endsWith("/api/auth/logout")) {
+        window.__logoutProbeSeen = true;
+        return new Promise((resolve) => {
+          window.__releaseLogoutProbe = () => {
+            window.fetch = originalFetch;
+            resolve(new Response("{}", { status: 200, headers: { "content-type": "application/json" } }));
+          };
+        });
+      }
+      return originalFetch(input, init);
+    };
+  });
+  await page.locator("#logout").click();
+  await expect.poll(() => page.evaluate(() => Boolean(window.__logoutProbeSeen)), { timeout: 1000 }).toBe(true);
+  await page.waitForTimeout(100);
+  logoutButtonPendingFeedback = await page.evaluate(() => {
+    const button = document.querySelector("#logout");
+    const appView = document.querySelector("#app-view");
+    const parent = button?.getBoundingClientRect();
+    const outside = (child) =>
+      parent &&
+      (child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1);
+    const overflow = parent
+      ? Array.from(button.querySelectorAll(".button-symbol, .button-label"))
+          .filter((element) => element.offsetParent !== null)
+          .reduce((total, element) => {
+            const box = element.getBoundingClientRect();
+            return total + (box.width > 0 && box.height > 0 && outside(box) ? 1 : 0);
+          }, 0)
+      : 1;
+    return {
+      disabled: button?.disabled ? 1 : 0,
+      pending: button?.classList.contains("is-pending") ? 1 : 0,
+      label: button?.querySelector(".button-label")?.textContent?.trim() || "",
+      symbol: button?.querySelector(".button-symbol")?.textContent?.trim() || "",
+      status: document.querySelector("#status")?.textContent?.trim() || "",
+      tone: document.querySelector("#status")?.dataset.statusTone || "",
+      ariaBusy: appView?.getAttribute("aria-busy") || "",
+      overflow,
+    };
+  });
+  await page.evaluate(() => window.__releaseLogoutProbe?.());
+  await expect(page.locator("#login-form")).toBeVisible({ timeout: 10000 });
+  logoutButtonCompletedFeedback = await page.evaluate(() => ({
+    loginVisible: Boolean(
+      document.querySelector("#login-form") &&
+        getComputedStyle(document.querySelector("#login-form")).display !== "none" &&
+        document.querySelector("#login-form").getClientRects().length > 0,
+    ),
+    appHidden: document.querySelector("#app-view")?.hidden ? 1 : 0,
+    logoutHidden: document.querySelector("#logout")?.hidden ? 1 : 0,
+    logoutDisabled: document.querySelector("#logout")?.disabled ? 1 : 0,
+    status: document.querySelector("#status")?.textContent?.trim() || "",
+    tone: document.querySelector("#status")?.dataset.statusTone || "",
+    ariaBusy: document.querySelector("#app-view")?.getAttribute("aria-busy") || "",
+  }));
+  await page.fill("#login-username", username);
+  await page.fill("#login-password", password);
+  await page.click("#login-form button[type=submit]");
+  await expect(page.locator("#login-form")).toBeHidden({ timeout: 10000 });
+  await expect(page.locator("#app-view")).toBeVisible({ timeout: 10000 });
+  await page.waitForFunction(() => {
+    const status = document.querySelector("#status")?.textContent?.trim();
+    return Boolean(status && !["登录中", "已登录", "刷新中"].includes(status));
+  }, null, { timeout: 15000 });
+  const reloginLoadStatus = (await page.locator("#status").textContent())?.trim();
+  if (reloginLoadStatus !== "已连接") {
+    throw new Error(`dashboard did not reload after logout probe: ${reloginLoadStatus}`);
   }
 
   const viewNames = ["overview", "access", "nodes", "identity", "policies", "traffic", "ops"];
@@ -1955,6 +2036,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.formSubmitButtonSymbolCount = formSubmitButtonSymbolCount;
   state.loginButtonSymbolCount = loginButtonSymbolCount;
   state.loginButtonOverflowCount = loginButtonOverflowCount;
+  state.logoutButtonPendingFeedback = logoutButtonPendingFeedback;
+  state.logoutButtonCompletedFeedback = logoutButtonCompletedFeedback;
   state.refreshButtonSymbolCount = refreshButtonSymbolCount;
   state.refreshButtonOverflowCount = refreshButtonOverflowCount;
   state.refreshButtonPendingFeedback = refreshButtonPendingFeedback;
@@ -2549,6 +2632,25 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     formDrawerSubmitRestored.symbol !== "+"
   ) {
     throw new Error(`form drawer submit should restore controls after completion: ${JSON.stringify(state)}`);
+  }
+  if (
+    logoutButtonPendingFeedback.disabled !== 1 ||
+    logoutButtonPendingFeedback.pending !== 1 ||
+    logoutButtonPendingFeedback.label !== "退出中" ||
+    logoutButtonPendingFeedback.symbol !== "…" ||
+    logoutButtonPendingFeedback.status !== "退出中" ||
+    logoutButtonPendingFeedback.tone !== "loading" ||
+    logoutButtonPendingFeedback.ariaBusy !== "true" ||
+    logoutButtonPendingFeedback.overflow > 0 ||
+    logoutButtonCompletedFeedback.loginVisible !== true ||
+    logoutButtonCompletedFeedback.appHidden !== 1 ||
+    logoutButtonCompletedFeedback.logoutHidden !== 1 ||
+    logoutButtonCompletedFeedback.logoutDisabled !== 0 ||
+    logoutButtonCompletedFeedback.status !== "未登录" ||
+    logoutButtonCompletedFeedback.tone !== "warning" ||
+    logoutButtonCompletedFeedback.ariaBusy
+  ) {
+    throw new Error(`logout should show pending feedback and return to login cleanly: ${JSON.stringify(state)}`);
   }
   if (
     refreshButtonPendingFeedback.disabled !== 1 ||

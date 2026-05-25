@@ -240,6 +240,7 @@ textarea:hover {
 
 .source-card.is-action-pending,
 .identity-card.is-action-pending,
+.token-card.is-action-pending,
 .virtual-node-card.is-action-pending,
 .policy-card.is-action-pending,
 .node-card.is-action-pending {

@@ -1360,16 +1360,38 @@ async function handleTokenAction(event) {
     setStatus("已取消重置", "info");
     return;
   }
-  button.disabled = true;
-  setStatus("更新 Token 中", "loading");
-  try {
-    if (action === "copy-subscription") {
+  if (action === "copy-subscription") {
+    button.disabled = true;
+    setStatus("复制订阅地址中", "loading");
+    try {
       await copyText(button.dataset.tokenUrl || "");
       setStatus("订阅地址已复制", "success");
       showCopyFeedback(button, "已复制", "复制");
+    } catch (error) {
+      setStatus("复制失败", "danger");
+    } finally {
       button.disabled = false;
-      return;
     }
+    return;
+  }
+  const card = button.closest(".token-card") || button;
+  const pendingStatus =
+    {
+      extend: "续期 Token 中",
+      quota: "追加额度中",
+      revoke: "停用 Token 中",
+      restore: "恢复 Token 中",
+      "rotate-subscription": "重置订阅地址中",
+    }[action] || "更新 Token 中";
+  const failureStatus =
+    {
+      extend: "续期失败",
+      quota: "追加额度失败",
+      revoke: "停用失败",
+      restore: "恢复失败",
+      "rotate-subscription": "重置失败",
+    }[action] || "更新失败";
+  await runInlineAction(card, button, pendingStatus, async () => {
     if (action === "extend") {
       const input = button.closest("[data-token-action-group]")?.querySelector("[data-token-extend-days]");
       const extendDays = numberInputValue(input, 30);
@@ -1389,10 +1411,7 @@ async function handleTokenAction(event) {
       showTokenSubscriptionResult(result, "订阅地址已重置");
     }
     await load();
-  } catch (error) {
-    setStatus("更新失败", "danger");
-    button.disabled = false;
-  }
+  }, failureStatus);
 }
 
 async function probeSubscription(button) {

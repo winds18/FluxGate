@@ -1030,6 +1030,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let tokenCopyFeedbackVisible = false;
   let tokenCopySymbolRestored = false;
   let tokenProbeFeedbackVisible = false;
+  let tokenCardActionFeedback = null;
+  let tokenCardActionRestored = null;
   let confirmDialogVisible = false;
   let confirmDialogTitle = "";
   let confirmDialogButtonCount = 0;
@@ -1064,6 +1066,87 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await expect(confirmDialog).toBeHidden({ timeout: 5000 });
     await expect(page.locator("#status")).toContainText("已取消", { timeout: 5000 });
     confirmDialogCancelled = true;
+  }
+  if (tokenCardCount > 0) {
+    await page.evaluate(() => {
+      const originalFetch = window.fetch.bind(window);
+      window.__tokenExtendSeen = false;
+      window.__releaseTokenExtend = null;
+      window.fetch = (input, init = {}) => {
+        const url = typeof input === "string" ? input : input?.url || "";
+        const method = String(init?.method || "GET").toUpperCase();
+        if (method === "POST" && /\/api\/tokens\/\d+\/extend$/.test(String(url))) {
+          window.__tokenExtendSeen = true;
+          return new Promise((resolve) => {
+            window.__releaseTokenExtend = () => {
+              window.fetch = originalFetch;
+              resolve(
+                new Response(JSON.stringify({ ok: true }), {
+                  status: 200,
+                  headers: { "content-type": "application/json" },
+                }),
+              );
+            };
+          });
+        }
+        return originalFetch(input, init);
+      };
+    });
+    await page.locator("#tokens button[data-token-action='extend']").first().click();
+    await expect.poll(() => page.evaluate(() => Boolean(window.__tokenExtendSeen)), { timeout: 1000 }).toBe(true);
+    await page.waitForTimeout(100);
+    tokenCardActionFeedback = await page.evaluate(() => {
+      const card = document.querySelector("#tokens .token-card");
+      const extendButton = card?.querySelector("button[data-token-action='extend']");
+      const quotaButton = card?.querySelector("button[data-token-action='quota']");
+      const revokeButton = card?.querySelector("button[data-token-action='revoke'], button[data-token-action='restore']");
+      const extendInput = card?.querySelector("[data-token-extend-days]");
+      const quotaInput = card?.querySelector("[data-token-quota-mib]");
+      const label = extendButton?.querySelector(".button-label")?.textContent?.trim() || "";
+      const symbol = extendButton?.querySelector(".button-symbol")?.textContent?.trim() || "";
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      const buttonBox = extendButton?.getBoundingClientRect();
+      const overflow = buttonBox
+        ? Array.from(extendButton.querySelectorAll(".button-symbol, .button-label")).reduce((total, element) => {
+            const box = element.getBoundingClientRect();
+            return total + (box.width > 0 && box.height > 0 && outside(box, buttonBox) ? 1 : 0);
+          }, 0)
+        : 1;
+      return {
+        pending: card?.classList.contains("is-action-pending") ? 1 : 0,
+        ariaBusy: card?.getAttribute("aria-busy") || "",
+        extendDisabled: extendButton?.disabled ? 1 : 0,
+        quotaDisabled: quotaButton?.disabled ? 1 : 0,
+        revokeDisabled: revokeButton?.disabled ? 1 : 0,
+        extendInputDisabled: extendInput?.disabled ? 1 : 0,
+        quotaInputDisabled: quotaInput?.disabled ? 1 : 0,
+        label,
+        symbol,
+        status: document.querySelector("#status")?.textContent?.trim() || "",
+        tone: document.querySelector("#status")?.dataset.statusTone || "",
+        overflow,
+      };
+    });
+    await page.evaluate(() => window.__releaseTokenExtend?.());
+    await expect(page.locator("#status")).toHaveText("已连接", { timeout: 15000 });
+    await expect(page.locator("#tokens button[data-token-action='extend']").first()).toBeEnabled({ timeout: 15000 });
+    tokenCardActionRestored = await page.evaluate(() => {
+      const card = document.querySelector("#tokens .token-card");
+      const extendButton = card?.querySelector("button[data-token-action='extend']");
+      const extendInput = card?.querySelector("[data-token-extend-days]");
+      return {
+        pending: card?.classList.contains("is-action-pending") ? 1 : 0,
+        ariaBusy: card?.getAttribute("aria-busy") || "",
+        extendDisabled: extendButton?.disabled ? 1 : 0,
+        extendInputDisabled: extendInput?.disabled ? 1 : 0,
+        label: extendButton?.querySelector(".button-label")?.textContent?.trim() || "",
+        symbol: extendButton?.querySelector(".button-symbol")?.textContent?.trim() || "",
+      };
+    });
   }
   const tokenVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
@@ -1915,6 +1998,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
   state.tokenCopySymbolRestored = tokenCopySymbolRestored;
   state.tokenProbeFeedbackVisible = tokenProbeFeedbackVisible;
+  state.tokenCardActionFeedback = tokenCardActionFeedback;
+  state.tokenCardActionRestored = tokenCardActionRestored;
   state.tokenRotateSubscriptionCount = tokenRotateSubscriptionCount;
   state.confirmDialogVisible = confirmDialogVisible;
   state.confirmDialogTitle = confirmDialogTitle;
@@ -2002,6 +2087,31 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenSubscriptionCopyCount > 0 && !tokenProbeFeedbackVisible) {
     throw new Error(`token subscription probe feedback missing: ${JSON.stringify(state)}`);
+  }
+  if (
+    tokenCardCount > 0 &&
+    (!tokenCardActionFeedback ||
+      tokenCardActionFeedback.pending !== 1 ||
+      tokenCardActionFeedback.ariaBusy !== "true" ||
+      tokenCardActionFeedback.extendDisabled !== 1 ||
+      tokenCardActionFeedback.quotaDisabled !== 1 ||
+      tokenCardActionFeedback.revokeDisabled !== 1 ||
+      tokenCardActionFeedback.extendInputDisabled !== 1 ||
+      tokenCardActionFeedback.quotaInputDisabled !== 1 ||
+      tokenCardActionFeedback.label !== "续期中" ||
+      tokenCardActionFeedback.symbol !== "…" ||
+      tokenCardActionFeedback.status !== "续期 Token 中" ||
+      tokenCardActionFeedback.tone !== "loading" ||
+      tokenCardActionFeedback.overflow > 0 ||
+      !tokenCardActionRestored ||
+      tokenCardActionRestored.pending !== 0 ||
+      tokenCardActionRestored.ariaBusy !== "" ||
+      tokenCardActionRestored.extendDisabled !== 0 ||
+      tokenCardActionRestored.extendInputDisabled !== 0 ||
+      tokenCardActionRestored.label !== "续期" ||
+      tokenCardActionRestored.symbol !== "+")
+  ) {
+    throw new Error(`token card action pending feedback missing: ${JSON.stringify(state)}`);
   }
   if (tokenVisualOverflowCount > 0 || tokenVisualOverlapCount > 0 || tokenActionsScrollOverflowCount > 0) {
     throw new Error(`token controls visually overflow or overlap: ${JSON.stringify(state)}`);

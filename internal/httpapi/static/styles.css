@@ -1889,6 +1889,7 @@ textarea {
 
 .source-card.is-action-pending,
 .identity-card.is-action-pending,
+.token-card.is-action-pending,
 .virtual-node-card.is-action-pending,
 .policy-card.is-action-pending,
 .node-card.is-action-pending {
@@ -1900,6 +1901,8 @@ textarea {
 .source-card.is-action-pending select,
 .identity-card.is-action-pending input,
 .identity-card.is-action-pending select,
+.token-card.is-action-pending input,
+.token-card.is-action-pending select,
 .virtual-node-card.is-action-pending input,
 .virtual-node-card.is-action-pending select,
 .policy-card.is-action-pending input,

@@ -165,6 +165,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const formDrawerToggleSymbolCount = await page.locator("[data-form-drawer] [data-form-drawer-toggle] .button-symbol").count();
   const formDrawerCancelCount = await page.locator("[data-form-drawer] [data-form-drawer-cancel]").count();
   const formDrawerCancelSymbolCount = await page.locator("[data-form-drawer] [data-form-drawer-cancel] .button-symbol").count();
+  const formDrawerDraftCount = await page.locator("[data-form-drawer] [data-form-draft]").count();
   const formSubmitButtonSymbolCount = await page.locator('[data-form-drawer] button[type="submit"] .button-symbol').count();
   const refreshButtonSymbolCount = await page.locator("#refresh .button-symbol").count();
   const logoutButtonSymbolCount = await page.locator("#logout .button-symbol").count();
@@ -218,7 +219,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       .reduce((total, header) => {
         const headerBox = header.getBoundingClientRect();
         const elements = Array.from(
-          header.querySelectorAll(".drawer-title, .drawer-symbol, h2, .drawer-actions, .drawer-toggle, .drawer-toggle .button-symbol, .drawer-toggle .button-label, [data-form-drawer-cancel], [data-form-drawer-cancel] .button-symbol, [data-form-drawer-cancel] .button-label"),
+          header.querySelectorAll(".drawer-title, .drawer-symbol, h2, [data-form-draft], .drawer-actions, .drawer-toggle, .drawer-toggle .button-symbol, .drawer-toggle .button-label, [data-form-drawer-cancel], [data-form-drawer-cancel] .button-symbol, [data-form-drawer-cancel] .button-label"),
         ).filter((element) => element.offsetParent !== null);
         for (const element of elements) {
           const parentButton = element.closest(".drawer-toggle, [data-form-drawer-cancel]");
@@ -286,6 +287,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const workspacePrimaryActionStatusTone = {};
   const activeRailTargets = {};
   let formDrawerCancelFeedback = {};
+  let formDrawerDraftFeedback = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
@@ -411,6 +413,23 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     ariaInvalid: document.querySelector('#source-form input[name="name"]')?.getAttribute("aria-invalid") || "",
     invalidClass: document.querySelector('#source-form input[name="name"]')?.classList.contains("is-field-invalid") ? 1 : 0,
   }));
+  formDrawerDraftFeedback = await page.evaluate(() => {
+    const drawer = document.querySelector("#source-form");
+    const draft = drawer?.querySelector("[data-form-draft]");
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const headerBox = drawer?.querySelector(".panel-header")?.getBoundingClientRect();
+    const draftBox = draft?.getBoundingClientRect();
+    return {
+      dirty: drawer?.classList.contains("is-dirty") ? 1 : 0,
+      draftHidden: draft?.hidden ?? true,
+      text: draft?.textContent?.trim() || "",
+      overflow: headerBox && draftBox && draftBox.width > 0 && draftBox.height > 0 && outside(draftBox, headerBox) ? 1 : 0,
+    };
+  });
   await page.locator('#source-form [data-form-drawer-cancel]').click();
   await expect(page.locator("#source-form.is-collapsed")).toHaveCount(1, { timeout: 1000 });
   formDrawerCancelFeedback = await page.evaluate(() => ({
@@ -419,6 +438,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     value: document.querySelector('#source-form input[name="name"]')?.value || "",
     inlineCount: document.querySelectorAll("#source-form [data-field-feedback]").length,
     ariaInvalid: document.querySelector('#source-form input[name="name"]')?.getAttribute("aria-invalid") || "",
+    dirty: document.querySelector("#source-form")?.classList.contains("is-dirty") ? 1 : 0,
+    draftHidden: document.querySelector("#source-form [data-form-draft]")?.hidden ?? true,
   }));
   await switchView("identity");
   await page.locator("#view-primary-action").click();
@@ -1498,7 +1519,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.formDrawerToggleSymbolCount = formDrawerToggleSymbolCount;
   state.formDrawerCancelCount = formDrawerCancelCount;
   state.formDrawerCancelSymbolCount = formDrawerCancelSymbolCount;
+  state.formDrawerDraftCount = formDrawerDraftCount;
   state.formDrawerCancelFeedback = formDrawerCancelFeedback;
+  state.formDrawerDraftFeedback = formDrawerDraftFeedback;
   state.formSubmitButtonSymbolCount = formSubmitButtonSymbolCount;
   state.loginButtonSymbolCount = loginButtonSymbolCount;
   state.loginButtonOverflowCount = loginButtonOverflowCount;
@@ -1959,6 +1982,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     formDrawerToggleSymbolCount !== 7 ||
     formDrawerCancelCount !== 7 ||
     formDrawerCancelSymbolCount !== 7 ||
+    formDrawerDraftCount !== 7 ||
     formSubmitButtonSymbolCount !== 7 ||
     loginButtonSymbolCount !== 1 ||
     loginButtonOverflowCount > 0 ||
@@ -1973,11 +1997,21 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`form drawers should be collapsed and visually stable by default: ${JSON.stringify(state)}`);
   }
   if (
+    formDrawerDraftFeedback.dirty !== 1 ||
+    formDrawerDraftFeedback.draftHidden !== false ||
+    formDrawerDraftFeedback.text !== "草稿未提交" ||
+    formDrawerDraftFeedback.overflow > 0
+  ) {
+    throw new Error(`form drawer should show a stable unsaved draft marker after input: ${JSON.stringify(state)}`);
+  }
+  if (
     !formDrawerCancelFeedback.status?.includes("已取消：添加来源") ||
     formDrawerCancelFeedback.tone !== "info" ||
     formDrawerCancelFeedback.value !== "" ||
     formDrawerCancelFeedback.inlineCount !== 0 ||
-    formDrawerCancelFeedback.ariaInvalid !== ""
+    formDrawerCancelFeedback.ariaInvalid !== "" ||
+    formDrawerCancelFeedback.dirty !== 0 ||
+    formDrawerCancelFeedback.draftHidden !== true
   ) {
     throw new Error(`form drawer cancel should clear draft input and report feedback: ${JSON.stringify(state)}`);
   }

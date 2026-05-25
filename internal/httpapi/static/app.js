@@ -164,6 +164,8 @@ tokenForm.addEventListener("submit", submitToken);
 document.addEventListener("invalid", handleInvalidField, true);
 document.addEventListener("input", clearInvalidFieldFeedback, true);
 document.addEventListener("change", clearInvalidFieldFeedback, true);
+document.addEventListener("input", handleFormDrawerDraft, true);
+document.addEventListener("change", handleFormDrawerDraft, true);
 teamsEl.addEventListener("click", handleTeamAction);
 usersEl.addEventListener("click", handleUserAction);
 sourcesEl.addEventListener("click", handleSourceAction);
@@ -628,9 +630,26 @@ function setFormDrawerCollapsed(drawer, collapsed) {
   }
 }
 
+function handleFormDrawerDraft(event) {
+  const field = event.target;
+  if (!isFormControl(field)) return;
+  const drawer = field.closest("[data-form-drawer]");
+  if (!drawer) return;
+  setFormDrawerDirty(drawer, true);
+}
+
+function setFormDrawerDirty(drawer, dirty) {
+  drawer.classList.toggle("is-dirty", dirty);
+  const draft = drawer.querySelector("[data-form-draft]");
+  if (draft) {
+    draft.hidden = !dirty;
+  }
+}
+
 function cancelFormDrawer(drawer) {
   drawer.reset();
   clearInvalidFieldFeedback({ currentTarget: drawer, clearAll: true });
+  setFormDrawerDirty(drawer, false);
   drawer.querySelectorAll(".result-box").forEach((element) => {
     element.hidden = true;
     element.replaceChildren();
@@ -715,6 +734,7 @@ async function submitTeam(event) {
     description: textField(form, "description"),
   });
   teamForm.reset();
+  setFormDrawerDirty(teamForm, false);
 }
 
 async function submitUser(event) {
@@ -727,6 +747,7 @@ async function submitUser(event) {
     email: textField(form, "email"),
   });
   userForm.reset();
+  setFormDrawerDirty(userForm, false);
 }
 
 async function submitSource(event) {
@@ -740,6 +761,7 @@ async function submitSource(event) {
     refresh_interval_minutes: numberField(form, "refresh_interval_minutes"),
   });
   sourceForm.reset();
+  setFormDrawerDirty(sourceForm, false);
 }
 
 async function submitNodeImport(event) {
@@ -750,6 +772,7 @@ async function submitNodeImport(event) {
     content: textField(form, "content"),
   });
   nodeImportForm.reset();
+  setFormDrawerDirty(nodeImportForm, false);
 }
 
 async function submitVirtualNode(event) {
@@ -762,6 +785,7 @@ async function submitVirtualNode(event) {
     tag_selector: textField(form, "tag_selector"),
   });
   virtualNodeForm.reset();
+  setFormDrawerDirty(virtualNodeForm, false);
 }
 
 async function submitPolicy(event) {
@@ -778,6 +802,7 @@ async function submitPolicy(event) {
     max_nodes: numberField(form, "max_nodes"),
   });
   policyForm.reset();
+  setFormDrawerDirty(policyForm, false);
 }
 
 async function submitToken(event) {
@@ -792,6 +817,7 @@ async function submitToken(event) {
   });
   showTokenSubscriptionResult(result, "订阅地址");
   tokenForm.reset();
+  setFormDrawerDirty(tokenForm, false);
 }
 
 async function handleTeamAction(event) {

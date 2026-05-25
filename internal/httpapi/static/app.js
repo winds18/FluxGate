@@ -134,6 +134,7 @@ const dashboardViewRail = {
   ],
 };
 let activeDashboardView = "overview";
+let activeDashboardTarget = "";
 let invalidFeedbackLocked = false;
 
 refreshEl.addEventListener("click", load);
@@ -318,6 +319,10 @@ function handleInvalidField(event) {
     setFormDrawerCollapsed(drawer, false);
   }
   const target = drawer || form?.closest(".panel") || form || field.closest(".panel") || field;
+  if (target?.id) {
+    activeDashboardTarget = target.id;
+    updateViewRail();
+  }
   setStatus(validationStatusForField(field), "warning");
   highlightDashboardTarget(target);
   target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
@@ -1655,8 +1660,9 @@ function overviewPrimaryAction() {
 function renderViewRailButton([label, target, expand]) {
   const metric = viewRailMetricForTarget(target, expand);
   const symbol = viewRailSymbolForTarget(label, target, expand);
+  const isCurrent = target === activeDashboardTarget;
   return `
-    <button class="view-rail-button" type="button" data-view-rail-target="${escapeHTML(target)}" data-view-rail-expand="${expand ? "true" : "false"}">
+    <button class="view-rail-button${isCurrent ? " is-current" : ""}" type="button" data-view-rail-target="${escapeHTML(target)}" data-view-rail-expand="${expand ? "true" : "false"}" aria-current="${isCurrent ? "true" : "false"}">
       <span class="view-rail-symbol" aria-hidden="true">${escapeHTML(symbol)}</span>
       <span class="view-rail-label">${escapeHTML(label)}</span>
       <span class="view-rail-count" data-view-rail-count>${escapeHTML(metric)}</span>
@@ -1934,6 +1940,8 @@ function navigateToDashboardTarget(view, targetID, expand = false) {
 function openDashboardTarget(targetID, expand = false) {
   const target = document.getElementById(targetID || "");
   if (!target) return;
+  activeDashboardTarget = targetID || "";
+  updateViewRail();
   if (expand) {
     const drawer = target.closest("[data-form-drawer]");
     if (drawer) {
@@ -1942,8 +1950,22 @@ function openDashboardTarget(targetID, expand = false) {
   }
   const panelTarget = target.closest(".panel") || target;
   highlightDashboardTarget(panelTarget);
+  setStatus(`已定位：${dashboardTargetLabel(targetID)}`, "info");
   panelTarget.scrollIntoView({ behavior: "smooth", block: "start", inline: "nearest" });
   focusDashboardTarget(target);
+}
+
+function dashboardTargetLabel(targetID) {
+  const target = document.getElementById(targetID || "");
+  const railItem = Object.values(dashboardViewRail)
+    .flat()
+    .find(([, target]) => target === targetID);
+  if (railItem?.[0]) return railItem[0];
+  const action = workspacePrimaryActionForView(activeDashboardView);
+  if (action?.target === targetID && action.label) return action.label;
+  const heading = target?.querySelector?.("h2")?.textContent?.trim();
+  if (heading) return heading;
+  return dashboardViewMeta[activeDashboardView]?.[0] || "当前模块";
 }
 
 function highlightDashboardTarget(target) {

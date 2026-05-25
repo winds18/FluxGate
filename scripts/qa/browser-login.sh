@@ -265,6 +265,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const workspacePrimaryActionOverflow = {};
   const workspacePrimaryActionFocus = {};
   const workspacePrimaryActionHighlight = {};
+  const workspacePrimaryActionStatus = {};
+  const workspacePrimaryActionStatusTone = {};
+  const activeRailTargets = {};
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
@@ -366,6 +369,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await expect(page.locator("#source-form.is-target-highlighted")).toHaveCount(1, { timeout: 1000 });
   workspacePrimaryActionFocus.access = await page.evaluate(() => document.activeElement?.getAttribute("name") || "");
   workspacePrimaryActionHighlight.access = await page.locator("#source-form.is-target-highlighted").count();
+  workspacePrimaryActionStatus.access = (await page.locator("#status").textContent())?.trim() || "";
+  workspacePrimaryActionStatusTone.access = await page.locator("#status").getAttribute("data-status-tone");
+  activeRailTargets.access = await page
+    .locator('#view-rail .view-rail-button.is-current[aria-current="true"]')
+    .evaluateAll((elements) => elements.map((element) => element.getAttribute("data-view-rail-target") || ""));
   await page.waitForTimeout(1900);
   await page.locator('#source-form button[type="submit"]').click();
   await expect(page.locator("#source-form.is-target-highlighted")).toHaveCount(1, { timeout: 1000 });
@@ -381,6 +389,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await expect(page.locator("#token-form.is-target-highlighted")).toHaveCount(1, { timeout: 1000 });
   workspacePrimaryActionFocus.identity = await page.evaluate(() => document.activeElement?.getAttribute("name") || "");
   workspacePrimaryActionHighlight.identity = await page.locator("#token-form.is-target-highlighted").count();
+  workspacePrimaryActionStatus.identity = (await page.locator("#status").textContent())?.trim() || "";
+  workspacePrimaryActionStatusTone.identity = await page.locator("#status").getAttribute("data-status-tone");
+  activeRailTargets.identity = await page
+    .locator('#view-rail .view-rail-button.is-current[aria-current="true"]')
+    .evaluateAll((elements) => elements.map((element) => element.getAttribute("data-view-rail-target") || ""));
   const workspacePrimaryActionOpensTokenForm = true;
   await switchView("overview");
   await expect(page.locator("#metrics .metric")).toHaveCount(7, { timeout: 5000 });
@@ -1450,6 +1463,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.workspacePrimaryActionOverflow = workspacePrimaryActionOverflow;
   state.workspacePrimaryActionFocus = workspacePrimaryActionFocus;
   state.workspacePrimaryActionHighlight = workspacePrimaryActionHighlight;
+  state.workspacePrimaryActionStatus = workspacePrimaryActionStatus;
+  state.workspacePrimaryActionStatusTone = workspacePrimaryActionStatusTone;
+  state.activeRailTargets = activeRailTargets;
   state.workspacePrimaryActionOpensTokenForm = workspacePrimaryActionOpensTokenForm;
   state.requiredFieldFeedback = requiredFieldFeedback;
   state.moduleRailOpensTokenForm = moduleRailOpensTokenForm;
@@ -1888,6 +1904,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const overflowingPrimaryActionView = Object.entries(workspacePrimaryActionOverflow).find(([, overflow]) => overflow > 0);
   const missingPrimaryActionFocus = workspacePrimaryActionFocus.access !== "name" || workspacePrimaryActionFocus.identity !== "user_id";
   const missingPrimaryActionHighlight = workspacePrimaryActionHighlight.access !== 1 || workspacePrimaryActionHighlight.identity !== 1;
+  const missingPrimaryActionStatus =
+    !workspacePrimaryActionStatus.access.includes("已定位：添加来源") ||
+    workspacePrimaryActionStatusTone.access !== "info" ||
+    !workspacePrimaryActionStatus.identity.includes("已定位：创建 Token") ||
+    workspacePrimaryActionStatusTone.identity !== "info";
+  const missingRailTarget =
+    !activeRailTargets.access?.includes("source-form") || !activeRailTargets.identity?.includes("token-form");
   const expectedPrimaryActionLabels = {
     access: "添加来源",
     nodes: "创建网关",
@@ -1906,6 +1929,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     overflowingPrimaryActionView ||
     missingPrimaryActionFocus ||
     missingPrimaryActionHighlight ||
+    missingPrimaryActionStatus ||
+    missingRailTarget ||
     primaryActionLabelMismatch ||
     !workspacePrimaryActionOpensTokenForm
   ) {

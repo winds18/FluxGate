@@ -498,6 +498,24 @@ main {
   color: var(--text);
 }
 
+.view-rail-button.is-current {
+  background: #eef5ff;
+  border-color: #9fc4ff;
+  color: var(--primary);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.12);
+}
+
+.view-rail-button.is-current .view-rail-symbol {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
+.view-rail-button.is-current .view-rail-count {
+  border-color: #bfdbfe;
+  color: var(--primary);
+}
+
 .eyebrow {
   color: var(--accent);
   font-size: 12px;

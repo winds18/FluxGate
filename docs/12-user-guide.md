@@ -98,6 +98,14 @@ SUB_STORE_TIMEOUT_SECONDS=20
 
 如果 Sub-Store 提取失败，FluxGate 会记录日志并回退到内置直连拉取，避免一个提取接口故障导致所有来源不可刷新。需要项目自带 Sub-Store 容器时，可以使用 `docker-compose.sub-store.yml` 覆盖文件。
 
+本地验收 Sub-Store 提取链路：
+
+```bash
+scripts/qa/substore-extraction.sh
+```
+
+这个脚本使用内存 fake transport 模拟 Sub-Store 提取响应，创建一个 `subscription` URL 来源并刷新；脚本会断言 FluxGate 把原始订阅 URL 交给 Sub-Store、拿回节点内容并导入节点池。它不会依赖真实机场，也不会打开本地监听端口。
+
 ## 4. 检查节点池
 
 节点池默认按地区聚合：

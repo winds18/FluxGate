@@ -2,9 +2,10 @@ package upstreamsync
 
 import (
 	"context"
+	"io"
 	"net/http"
-	"net/http/httptest"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -79,18 +80,21 @@ func TestRefreshSourceUsesSubStoreExtraction(t *testing.T) {
 	}
 
 	hits := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		hits++
 		if got := r.URL.Query().Get("url"); got != sourceURL {
 			t.Fatalf("unexpected forwarded subscription url: %q", got)
 		}
-		_, _ = w.Write([]byte("vless://1678dd69-bdf8-4468-933e-9e42821fec93@example.com:443#台湾01"))
-	}))
-	t.Cleanup(server.Close)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader("vless://1678dd69-bdf8-4468-933e-9e42821fec93@example.com:443#台湾01")),
+			Header:     make(http.Header),
+		}, nil
+	})}
 
 	result, err := Refresher{
 		Store:    db,
-		SubStore: substore.Extractor{URLTemplate: server.URL + "/extract?url={url}"},
+		SubStore: substore.Extractor{URLTemplate: "http://sub-store.local/extract?url={url}", Client: client},
 	}.RefreshSource(ctx, source)
 	if err != nil {
 		t.Fatalf("refresh source: %v", err)
@@ -112,4 +116,10 @@ func TestRefreshSourceUsesSubStoreExtraction(t *testing.T) {
 	if updated.RawContent != "vless://1678dd69-bdf8-4468-933e-9e42821fec93@example.com:443#台湾01" {
 		t.Fatalf("expected extracted raw content, got %q", updated.RawContent)
 	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
 }

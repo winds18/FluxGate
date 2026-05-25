@@ -3,8 +3,8 @@ package substore
 import (
 	"context"
 	"encoding/base64"
+	"io"
 	"net/http"
-	"net/http/httptest"
 	"strings"
 	"testing"
 )
@@ -16,16 +16,22 @@ func TestExtractorExtractsNormalizedNodes(t *testing.T) {
 		"trojan://password@example.net:443#日本01",
 	}, "\n")
 	hits := 0
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	client := &http.Client{Transport: roundTripFunc(func(r *http.Request) (*http.Response, error) {
 		hits++
 		if got := r.URL.Query().Get("url"); got != sourceURL {
 			t.Fatalf("unexpected forwarded subscription url: %q", got)
 		}
-		_, _ = w.Write([]byte(base64.StdEncoding.EncodeToString([]byte(rawNodes))))
-	}))
-	t.Cleanup(server.Close)
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body:       io.NopCloser(strings.NewReader(base64.StdEncoding.EncodeToString([]byte(rawNodes)))),
+			Header:     make(http.Header),
+		}, nil
+	})}
 
-	extracted, err := Extractor{URLTemplate: server.URL + "/extract?url={url}"}.Extract(context.Background(), sourceURL)
+	extracted, err := Extractor{
+		URLTemplate: "http://sub-store.local/extract?url={url}",
+		Client:      client,
+	}.Extract(context.Background(), sourceURL)
 	if err != nil {
 		t.Fatalf("extract: %v", err)
 	}
@@ -35,6 +41,12 @@ func TestExtractorExtractsNormalizedNodes(t *testing.T) {
 	if extracted != rawNodes {
 		t.Fatalf("unexpected extracted nodes:\n%s", extracted)
 	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
 }
 
 func TestExtractorRequiresURLPlaceholder(t *testing.T) {

@@ -2,9 +2,15 @@ package httpapi
 
 import (
 	"context"
+	"io"
+	"log/slog"
+	"net/http"
 	"net/http/httptest"
 	"path/filepath"
+	"strconv"
+	"strings"
 	"testing"
+	"time"
 
 	"github.com/winds18/FluxGate/internal/config"
 	"github.com/winds18/FluxGate/internal/store"
@@ -149,6 +155,88 @@ func TestDeliveryReadinessReflectsUsableInstance(t *testing.T) {
 	if len(ready.NextActions) != 2 || ready.NextActions[0] != "复制 Token 订阅地址导入客户端" {
 		t.Fatalf("unexpected next actions for ready instance: %+v", ready.NextActions)
 	}
+}
+
+func TestRefreshSourceAPIUsesSubStoreExtraction(t *testing.T) {
+	ctx := context.Background()
+	db := openHTTPTestStore(t)
+
+	sourceURL := "https://airport.example/sub?token=qa-placeholder"
+	hits := 0
+	oldTransport := http.DefaultTransport
+	http.DefaultTransport = roundTripFunc(func(r *http.Request) (*http.Response, error) {
+		hits++
+		if got := r.URL.Query().Get("url"); got != sourceURL {
+			t.Fatalf("unexpected forwarded subscription url: %q", got)
+		}
+		return &http.Response{
+			StatusCode: http.StatusOK,
+			Body: io.NopCloser(strings.NewReader(strings.Join([]string{
+				"vless://1678dd69-bdf8-4468-933e-9e42821fec93@example.com:443#香港01",
+				"trojan://qa-placeholder@example.net:443#日本01",
+			}, "\n"))),
+			Header: make(http.Header),
+		}, nil
+	})
+	t.Cleanup(func() { http.DefaultTransport = oldTransport })
+
+	source, err := db.CreateSource(ctx, store.CreateSourceInput{
+		Name: "SubStore QA",
+		Type: "subscription",
+		URL:  sourceURL,
+	})
+	if err != nil {
+		t.Fatalf("create source: %v", err)
+	}
+
+	server := &Server{
+		cfg: config.Config{
+			SessionSecret:              "test-session-secret",
+			TokenSecret:                "test-token-secret",
+			SubStoreExtractURLTemplate: "http://sub-store.local/extract?url={url}",
+			SubStoreTimeout:            5 * time.Second,
+		},
+		store:  db,
+		logger: slog.New(slog.NewTextHandler(io.Discard, nil)),
+	}
+	recorder := httptest.NewRecorder()
+	request := httptest.NewRequest(http.MethodPost, "/api/sources/"+strconv.FormatInt(source.ID, 10)+"/refresh", strings.NewReader(`{}`))
+	request.SetPathValue("id", strconv.FormatInt(source.ID, 10))
+	server.handleRefreshSource(recorder, request)
+
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("refresh status=%d body=%s", recorder.Code, recorder.Body.String())
+	}
+	if hits != 1 {
+		t.Fatalf("expected exactly one sub-store request, got %d", hits)
+	}
+
+	nodes, err := db.ListNodes(ctx)
+	if err != nil {
+		t.Fatalf("list nodes: %v", err)
+	}
+	if len(nodes) != 2 {
+		t.Fatalf("expected two extracted nodes, got %+v", nodes)
+	}
+	names := []string{nodes[0].DisplayName, nodes[1].DisplayName}
+	if !containsNamePart(names, "香港01") || !containsNamePart(names, "日本01") {
+		t.Fatalf("expected extracted node names, got %v", names)
+	}
+}
+
+type roundTripFunc func(*http.Request) (*http.Response, error)
+
+func (f roundTripFunc) RoundTrip(r *http.Request) (*http.Response, error) {
+	return f(r)
+}
+
+func containsNamePart(names []string, part string) bool {
+	for _, name := range names {
+		if strings.Contains(name, part) {
+			return true
+		}
+	}
+	return false
 }
 
 func openHTTPTestStore(t *testing.T) *store.Store {

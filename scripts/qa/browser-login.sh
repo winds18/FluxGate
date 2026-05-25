@@ -339,6 +339,24 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         return total;
       }, 0);
   });
+  const visibleFormDrawerNarrowCount = async () => page.evaluate(() => {
+    const isVisible = (element) => {
+      if (!element) return false;
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && box.width > 0 && box.height > 0;
+    };
+    return Array.from(document.querySelectorAll("[data-dashboard-view]:not([hidden]) .action-grid")).reduce((total, grid) => {
+      const gridBox = grid.getBoundingClientRect();
+      if (gridBox.width <= 0) return total;
+      return total + Array.from(grid.querySelectorAll("[data-form-drawer]"))
+        .filter(isVisible)
+        .reduce((count, drawer) => {
+          const drawerBox = drawer.getBoundingClientRect();
+          return count + (drawerBox.width / gridBox.width < 0.92 ? 1 : 0);
+        }, 0);
+    }, 0);
+  });
   const panelCountCount = await page.locator(".panel-count").count();
   const populatedPanelCountCount = await page
     .locator(".panel-count")
@@ -350,6 +368,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const viewOverflow = {};
   const formDrawerHeaderOverflow = {};
   const formSubmitOverflow = {};
+  const formDrawerNarrowCount = {};
   const panelTitleOverflow = {};
   const viewContextChipCounts = {};
   const viewContextOverflow = {};
@@ -380,6 +399,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     viewOverflow[view] = await pageHorizontalOverflow();
     formDrawerHeaderOverflow[view] = await visibleFormDrawerHeaderOverflow();
     formSubmitOverflow[view] = await visibleFormSubmitOverflow();
+    formDrawerNarrowCount[view] = await visibleFormDrawerNarrowCount();
     viewHeaderSymbols[view] = (await page.locator("#view-symbol").textContent())?.trim();
     workspacePrimaryActionCounts[view] = await page.locator("#view-primary-action").count();
     workspacePrimaryActionLabels[view] = workspacePrimaryActionCounts[view] > 0
@@ -2067,6 +2087,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.formDrawerSymbols = formDrawerSymbols;
   state.formDrawerHeaderOverflow = formDrawerHeaderOverflow;
   state.formSubmitOverflow = formSubmitOverflow;
+  state.formDrawerNarrowCount = formDrawerNarrowCount;
   state.panelCountCount = panelCountCount;
   state.populatedPanelCountCount = populatedPanelCountCount;
   state.panelSymbolCount = panelSymbolCount;
@@ -2592,6 +2613,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const expectedFormDrawerSymbols = ["源", "导", "网", "团", "员", "钥", "策"];
   const overflowingFormDrawerHeader = Object.entries(formDrawerHeaderOverflow).find(([, overflow]) => overflow > 0);
   const overflowingFormSubmit = Object.entries(formSubmitOverflow).find(([, overflow]) => overflow > 0);
+  const narrowFormDrawer = Object.entries(formDrawerNarrowCount).find(([, count]) => count > 0);
   if (
     formDrawerCount !== 7 ||
     collapsedFormDrawerCount !== 7 ||
@@ -2609,7 +2631,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     topbarButtonOverflowCount > 0 ||
     expectedFormDrawerSymbols.some((symbol, index) => formDrawerSymbols[index] !== symbol) ||
     overflowingFormDrawerHeader ||
-    overflowingFormSubmit
+    overflowingFormSubmit ||
+    narrowFormDrawer
   ) {
     throw new Error(`form drawers should be collapsed and visually stable by default: ${JSON.stringify(state)}`);
   }

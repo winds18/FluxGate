@@ -238,6 +238,18 @@ textarea:hover {
   box-shadow: 0 1px 2px rgba(18, 32, 30, 0.04);
 }
 
+.action-grid {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.action-grid .form-panel,
+.action-grid .wide-panel,
+.action-grid #policy-form,
+.action-grid #token-form {
+  grid-column: 1 / -1;
+  width: 100%;
+}
+
 .source-card.is-action-pending,
 .identity-card.is-action-pending,
 .token-card.is-action-pending,

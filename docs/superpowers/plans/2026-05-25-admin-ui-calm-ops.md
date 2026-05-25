@@ -320,3 +320,33 @@ The dialog uses the Calm Ops radius, shadow, danger symbol, compact action layou
 - [x] **Step 5: Verify through build and full local QA**
 
 Run `scripts/dev/build.sh` and `scripts/qa/local-suite.sh`; expected result is zero exit status, with browser QA confirming dialog visibility, title, action count and cancellation.
+
+## Task 9: Humanize Overview Initialization Guide
+
+**Files:**
+- Modify: `internal/httpapi/server.go`
+- Modify: `internal/httpapi/static/app.js`
+- Modify: `internal/httpapi/static/calm-ops.css`
+- Modify: `scripts/qa/browser-login.sh`
+- Modify: `docs/11-current-implementation.md`
+- Modify: `docs/07-roadmap.md`
+
+- [x] **Step 1: Add browser QA before implementation**
+
+Browser QA now requires the overview readiness panel to expose a single progress value, a single current action block, five step hints, and zero overflow for both the guide shell and readiness items.
+
+- [x] **Step 2: Render a human-friendly guide state**
+
+The overview readiness panel now presents `初始化向导`, `可测进度`, the next recommended action, contextual copy, and a direct module jump button instead of only listing raw readiness states.
+
+- [x] **Step 3: Add per-step guidance**
+
+Each readiness step includes a concise hint for what to do next or how to review the ready state, so the user can complete the real-test loop without guessing which module to open.
+
+- [x] **Step 4: Fix and assert Calm Ops stylesheet delivery**
+
+The server now serves `/assets/calm-ops.css`, and browser QA asserts the stylesheet response is `200` so modern layout fixes cannot silently fail.
+
+- [x] **Step 5: Verify through build, full QA, cleanup, and public scan**
+
+Run `scripts/qa/local-suite.sh`, `scripts/dev/build.sh`, `scripts/dev/test.sh`, `scripts/qa/cleanup.sh`, `scripts/qa/public-scan.sh`, and `git diff --check`; expected result is zero exit status with guide overflow counts at 0.

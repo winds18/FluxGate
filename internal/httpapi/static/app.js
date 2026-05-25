@@ -1400,18 +1400,20 @@ function renderMetrics(data) {
 
 function overviewReadinessChecks(data) {
   return [
-    ["接入来源", Number(data.sources || 0) > 0, `${data.sources || 0} 个来源`, "access", "源"],
-    ["节点池", Number(data.nodes || 0) > 0, `${data.nodes || 0} 个节点`, "nodes", "点"],
-    ["虚拟网关", Number(data.virtual_nodes || 0) > 0, `${data.virtual_nodes || 0} 个入口`, "nodes", "网"],
-    ["团队 Token", Number(data.tokens || 0) > 0, `${data.tokens || 0} 个 Token`, "identity", "身"],
-    ["访问策略", Number(data.policies || 0) > 0, `${data.policies || 0} 条策略`, "policies", "策"],
+    ["接入来源", Number(data.sources || 0) > 0, `${data.sources || 0} 个来源`, "access", "源", "先添加或导入机场订阅，让节点池有可用上游。"],
+    ["节点池", Number(data.nodes || 0) > 0, `${data.nodes || 0} 个节点`, "nodes", "点", "检查地区聚合、节点详情和命名，确保伙伴能看懂节点来源。"],
+    ["虚拟网关", Number(data.virtual_nodes || 0) > 0, `${data.virtual_nodes || 0} 个入口`, "nodes", "网", "创建 sing-box 入站入口，把节点池组合成可分发网关。"],
+    ["团队 Token", Number(data.tokens || 0) > 0, `${data.tokens || 0} 个 Token`, "identity", "身", "为团队伙伴创建 Token，并复制对应客户端订阅地址。"],
+    ["访问策略", Number(data.policies || 0) > 0, `${data.policies || 0} 条策略`, "policies", "策", "给团队或 Token 绑定可见范围和节点上限，避免误分发。"],
   ];
 }
 
 function renderOverviewReadiness(data) {
   const checks = overviewReadinessChecks(data);
   const readyCount = checks.filter(([, ready]) => ready).length;
+  const firstMissingIndex = checks.findIndex(([, ready]) => !ready);
   const firstMissing = checks.find(([, ready]) => !ready);
+  const progressPercent = Math.round((readyCount / checks.length) * 100);
   const next = firstMissing
     ? {
         title: `补齐${firstMissing[0]}`,
@@ -1425,16 +1427,51 @@ function renderOverviewReadiness(data) {
         view: "ops",
         action: "去运维发布",
       };
+  const guideCurrent = firstMissing
+    ? {
+        step: `第 ${firstMissingIndex + 1} 步`,
+        title: next.title,
+        description: firstMissing[5],
+        view: next.view,
+        action: next.action,
+      }
+    : {
+        step: "闭环完成",
+        title: "发布配置并导入客户端",
+        description: "基础数据已齐备，现在可以发布网关配置，然后复制订阅地址到 Mihomo 或 sing-box 真实验证。",
+        view: "ops",
+        action: "去运维发布",
+      };
 
   overviewReadinessEl.innerHTML = `
     <div class="overview-panel-heading">
-      <span>真实测试闭环</span>
+      <span>初始化向导</span>
       <strong>${readyCount}/${checks.length}</strong>
+    </div>
+    <div class="guide-summary" data-guide-summary>
+      <div class="guide-progress">
+        <span class="guide-progress-label">可测进度</span>
+        <strong data-guide-progress>${readyCount}/${checks.length}</strong>
+        <span class="guide-progress-bar" aria-hidden="true">
+          <span style="width: ${progressPercent}%"></span>
+        </span>
+      </div>
+      <div class="guide-current" data-guide-current>
+        <span class="guide-current-symbol" aria-hidden="true">${escapeHTML(dashboardViewSymbols[guideCurrent.view] || "→")}</span>
+        <span class="guide-current-copy">
+          <small>${escapeHTML(guideCurrent.step)}</small>
+          <strong>${escapeHTML(guideCurrent.title)}</strong>
+          <span>${escapeHTML(guideCurrent.description)}</span>
+        </span>
+        <button class="primary-link-button guide-current-action" type="button" data-overview-jump="${guideCurrent.view}">
+          ${buttonLabel("→", guideCurrent.action)}
+        </button>
+      </div>
     </div>
     <div class="readiness-list" data-overview-readiness>
       ${checks
         .map(
-          ([label, ready, summary, view, symbol], index) => `
+          ([label, ready, summary, view, symbol, hint], index) => `
             <button class="readiness-item ${ready ? "is-ready" : ""}" type="button" data-overview-jump="${view}">
               <span class="readiness-symbol-wrap" aria-hidden="true">
                 <span class="readiness-index">${String(index + 1).padStart(2, "0")}</span>
@@ -1447,6 +1484,7 @@ function renderOverviewReadiness(data) {
                   <span class="readiness-state">${ready ? "就绪" : "待补"}</span>
                 </span>
                 <small>${escapeHTML(summary)}</small>
+                <span class="readiness-hint">${escapeHTML(ready ? "已具备，点击可复核配置。" : hint)}</span>
               </span>
             </button>
           `,

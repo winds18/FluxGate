@@ -47,6 +47,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const screenshotPath = process.env.SCREENSHOT_PATH;
   const responses = [];
   const consoleMessages = [];
+  let calmOpsResponseStatus = 0;
   const expectedViewSymbols = {
     overview: "概",
     access: "源",
@@ -59,6 +60,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   page.on("response", (response) => {
     const url = response.url();
+    if (url.endsWith("/assets/calm-ops.css")) {
+      calmOpsResponseStatus = response.status();
+    }
     if (url.includes("/api/")) {
       responses.push(`${response.status()} ${url}`);
     }
@@ -380,6 +384,111 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       }
       return total;
     }, 0);
+  });
+  const overviewReadinessOverflowDetails = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const details = [];
+    Array.from(document.querySelectorAll("#overview-readiness .readiness-item")).forEach((item, itemIndex) => {
+      const itemBox = item.getBoundingClientRect();
+      const elements = Array.from(
+        item.querySelectorAll(
+          ".readiness-symbol-wrap, .readiness-index, .readiness-symbol, .readiness-dot, .readiness-body, .readiness-title-row, .readiness-state, strong, small",
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, itemBox)) {
+          details.push({
+            itemIndex,
+            selector: element.className || element.tagName,
+            text: (element.textContent || "").trim().replace(/\s+/g, " ").slice(0, 80),
+            item: {
+              left: Math.round(itemBox.left),
+              right: Math.round(itemBox.right),
+              top: Math.round(itemBox.top),
+              bottom: Math.round(itemBox.bottom),
+            },
+            box: {
+              left: Math.round(box.left),
+              right: Math.round(box.right),
+              top: Math.round(box.top),
+              bottom: Math.round(box.bottom),
+            },
+          });
+        }
+      }
+    });
+    return details;
+  });
+  const overviewGuideProgressCount = await page.locator("#overview-readiness [data-guide-progress]").count();
+  const overviewGuideProgressValue = overviewGuideProgressCount
+    ? (await page.locator("#overview-readiness [data-guide-progress]").first().textContent())?.trim() || ""
+    : "";
+  const overviewGuideCurrentCount = await page.locator("#overview-readiness [data-guide-current]").count();
+  const overviewGuideCurrentActionSymbolCount = await page.locator("#overview-readiness [data-guide-current] .button-symbol").count();
+  const overviewGuideHintCount = await page.locator("#overview-readiness .readiness-hint").count();
+  const overviewGuideOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const panel = document.querySelector("#overview-readiness");
+    if (!panel) return 1;
+    const panelBox = panel.getBoundingClientRect();
+    return Array.from(
+      panel.querySelectorAll(
+        "[data-guide-progress], [data-guide-current], .guide-progress-bar, .guide-current-copy, .guide-current-action, .readiness-hint",
+      ),
+    )
+      .filter((element) => element.offsetParent !== null)
+      .reduce((total, element) => {
+        const box = element.getBoundingClientRect();
+        return box.width > 0 && box.height > 0 && outside(box, panelBox) ? total + 1 : total;
+      }, 0);
+  });
+  const overviewGuideOverflowDetails = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const panel = document.querySelector("#overview-readiness");
+    if (!panel) return [{ selector: "panel", text: "missing" }];
+    const panelBox = panel.getBoundingClientRect();
+    const details = [];
+    Array.from(
+      panel.querySelectorAll(
+        "[data-guide-progress], [data-guide-current], .guide-progress-bar, .guide-current-copy, .guide-current-action, .readiness-hint",
+      ),
+    )
+      .filter((element) => element.offsetParent !== null)
+      .forEach((element) => {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, panelBox)) {
+          details.push({
+            selector: element.className || element.tagName,
+            text: (element.textContent || "").trim().replace(/\s+/g, " ").slice(0, 80),
+            panel: {
+              left: Math.round(panelBox.left),
+              right: Math.round(panelBox.right),
+              top: Math.round(panelBox.top),
+              bottom: Math.round(panelBox.bottom),
+            },
+            box: {
+              left: Math.round(box.left),
+              right: Math.round(box.right),
+              top: Math.round(box.top),
+              bottom: Math.round(box.bottom),
+            },
+          });
+        }
+      });
+    return details;
   });
   const overviewNextStepButtonCount = await page.locator("#overview-next-step [data-overview-jump]").count();
   const overviewNextStepCardCount = await page.locator("#overview-next-step [data-overview-next-step-card]").count();
@@ -1281,6 +1390,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewReadinessStates = overviewReadinessStates;
   state.overviewReadinessSymbols = overviewReadinessSymbols;
   state.overviewReadinessOverflowCount = overviewReadinessOverflowCount;
+  state.overviewReadinessOverflowDetails = overviewReadinessOverflowDetails;
+  state.overviewGuideProgressCount = overviewGuideProgressCount;
+  state.overviewGuideProgressValue = overviewGuideProgressValue;
+  state.overviewGuideCurrentCount = overviewGuideCurrentCount;
+  state.overviewGuideCurrentActionSymbolCount = overviewGuideCurrentActionSymbolCount;
+  state.overviewGuideHintCount = overviewGuideHintCount;
+  state.overviewGuideOverflowCount = overviewGuideOverflowCount;
+  state.overviewGuideOverflowDetails = overviewGuideOverflowDetails;
   state.overviewNextStepButtonCount = overviewNextStepButtonCount;
   state.overviewNextStepCardCount = overviewNextStepCardCount;
   state.overviewNextStepActionCount = overviewNextStepActionCount;
@@ -1437,6 +1554,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsResultChipCount = opsResultChipCount;
   state.opsVisualOverflowCount = opsVisualOverflowCount;
   state.calmOpsStylesheetCount = calmOpsStylesheetCount;
+  state.calmOpsResponseStatus = calmOpsResponseStatus;
   if (tokenRowCount > 0 && (tokenExtendInputCount !== tokenRowCount || tokenQuotaInputCount !== tokenRowCount)) {
     throw new Error(`token custom controls missing: ${JSON.stringify(state)}`);
   }
@@ -1739,6 +1857,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     overviewReadinessStates.some((state) => !["就绪", "待补"].includes(state)) ||
     expectedOverviewReadinessSymbols.some((symbol, index) => overviewReadinessSymbols[index] !== symbol) ||
     overviewReadinessOverflowCount > 0 ||
+    overviewGuideProgressCount !== 1 ||
+    !/^\d+\/5$/.test(overviewGuideProgressValue) ||
+    overviewGuideCurrentCount !== 1 ||
+    overviewGuideCurrentActionSymbolCount !== 1 ||
+    overviewGuideHintCount !== 5 ||
+    overviewGuideOverflowCount > 0 ||
     overviewNextStepButtonCount !== 1
   ) {
     throw new Error(`overview readiness board is incomplete: ${JSON.stringify(state)}`);
@@ -1785,6 +1909,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   if (
     calmOpsStylesheetCount !== 1 ||
+    calmOpsResponseStatus !== 200 ||
     !state.loginHidden ||
     state.loginVisible ||
     state.appHidden ||

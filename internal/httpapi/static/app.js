@@ -698,6 +698,54 @@ function setSubmitButtonPending(button, submitting) {
   delete button.dataset.formOriginalLabel;
 }
 
+function setInlineActionPending(container, button, pending) {
+  if (!container) return;
+  container.classList.toggle("is-action-pending", pending);
+  if (pending) {
+    container.setAttribute("aria-busy", "true");
+  } else {
+    container.removeAttribute("aria-busy");
+  }
+
+  setSubmitButtonPending(button, pending);
+  container.querySelectorAll("input, select, textarea, button").forEach((control) => {
+    if (pending) {
+      if (control.disabled) {
+        control.dataset.actionWasDisabled = "true";
+      } else {
+        delete control.dataset.actionWasDisabled;
+      }
+      control.disabled = true;
+      return;
+    }
+    control.disabled = control.dataset.actionWasDisabled === "true";
+    delete control.dataset.actionWasDisabled;
+  });
+}
+
+async function runInlineAction(container, button, statusMessage, action, failureMessage = "保存失败") {
+  if (container?.dataset.actionPending === "true") {
+    return { ok: false, skipped: true };
+  }
+  if (container) {
+    container.dataset.actionPending = "true";
+  }
+  setInlineActionPending(container, button, true);
+  setStatus(statusMessage, "loading");
+  try {
+    const value = await action();
+    return { ok: true, value };
+  } catch (error) {
+    setStatus(failureMessage, "danger");
+    return { ok: false, error };
+  } finally {
+    if (container) {
+      delete container.dataset.actionPending;
+    }
+    setInlineActionPending(container, button, false);
+  }
+}
+
 async function runFormDrawerSubmit(drawer, action) {
   if (drawer.dataset.formSubmitting === "true") {
     return { ok: false, skipped: true };
@@ -920,7 +968,7 @@ async function handleTeamAction(event) {
 }
 
 async function saveTeam(button) {
-  const row = button.closest("[data-team-id]");
+  const row = button.closest(".identity-card[data-team-id]");
   if (!row) return;
   const id = row.dataset.teamId;
   const payload = {
@@ -928,20 +976,11 @@ async function saveTeam(button) {
     description: teamFieldValue(row, "description"),
     status: teamFieldValue(row, "status") || "active",
   };
-  row.querySelectorAll("button").forEach((item) => {
-    item.disabled = true;
-  });
-  setStatus("保存团队中", "loading");
-  try {
+  await runInlineAction(row, button, "保存团队中", async () => {
     await patchJSON(`/api/teams/${id}`, payload);
     appState.editingTeamID = null;
     await load();
-  } catch (error) {
-    setStatus("保存失败", "danger");
-    row.querySelectorAll("button").forEach((item) => {
-      item.disabled = false;
-    });
-  }
+  });
 }
 
 function teamFieldValue(row, name) {
@@ -970,7 +1009,7 @@ async function handleUserAction(event) {
 }
 
 async function saveUser(button) {
-  const row = button.closest("[data-user-id]");
+  const row = button.closest(".identity-card[data-user-id]");
   if (!row) return;
   const id = row.dataset.userId;
   const teamID = Number.parseInt(row.querySelector('[data-user-field="team_id"]')?.value || "0", 10);
@@ -981,20 +1020,11 @@ async function saveUser(button) {
     remark: userFieldValue(row, "remark"),
     status: userFieldValue(row, "status") || "active",
   };
-  row.querySelectorAll("button").forEach((item) => {
-    item.disabled = true;
-  });
-  setStatus("保存成员中", "loading");
-  try {
+  await runInlineAction(row, button, "保存成员中", async () => {
     await patchJSON(`/api/users/${id}`, payload);
     appState.editingUserID = null;
     await load();
-  } catch (error) {
-    setStatus("保存失败", "danger");
-    row.querySelectorAll("button").forEach((item) => {
-      item.disabled = false;
-    });
-  }
+  });
 }
 
 function userFieldValue(row, name) {
@@ -1026,19 +1056,15 @@ async function handleSourceAction(event) {
     return;
   }
   if (action !== "refresh") return;
-  button.disabled = true;
-  setStatus("刷新来源中", "loading");
-  try {
+  const row = button.closest(".source-card[data-source-id]") || button;
+  await runInlineAction(row, button, "刷新来源中", async () => {
     await postJSON(`/api/sources/${id}/refresh`, {});
     await load();
-  } catch (error) {
-    setStatus("刷新失败", "danger");
-    button.disabled = false;
-  }
+  }, "刷新失败");
 }
 
 async function saveSource(button) {
-  const row = button.closest("[data-source-id]");
+  const row = button.closest(".source-card[data-source-id]");
   if (!row) return;
   const id = row.dataset.sourceId;
   const refreshInterval = Number.parseInt(row.querySelector('[data-source-field="refresh_interval_minutes"]')?.value || "0", 10);
@@ -1050,33 +1076,20 @@ async function saveSource(button) {
     default_tags: sourceFieldValue(row, "default_tags"),
     refresh_interval_minutes: Number.isFinite(refreshInterval) ? refreshInterval : 0,
   };
-  row.querySelectorAll("button").forEach((item) => {
-    item.disabled = true;
-  });
-  setStatus("保存来源中", "loading");
-  try {
+  await runInlineAction(row, button, "保存来源中", async () => {
     await patchJSON(`/api/sources/${id}`, payload);
     appState.editingSourceID = null;
     await load();
-  } catch (error) {
-    setStatus("保存失败", "danger");
-    row.querySelectorAll("button").forEach((item) => {
-      item.disabled = false;
-    });
-  }
+  });
 }
 
 async function regenerateSourceNames(button) {
   const id = button.dataset.sourceId;
-  button.disabled = true;
-  setStatus("同步节点命名中", "loading");
-  try {
+  const row = button.closest(".source-card[data-source-id]") || button;
+  await runInlineAction(row, button, "同步节点命名中", async () => {
     await postJSON(`/api/sources/${id}/regenerate-node-names`, {});
     await load();
-  } catch (error) {
-    setStatus("同步失败", "danger");
-    button.disabled = false;
-  }
+  }, "同步失败");
 }
 
 function sourceFieldValue(row, name) {
@@ -1105,7 +1118,7 @@ async function handleVirtualNodeAction(event) {
 }
 
 async function saveVirtualNode(button) {
-  const row = button.closest("[data-virtual-node-id]");
+  const row = button.closest(".virtual-node-card[data-virtual-node-id]");
   if (!row) return;
   const id = row.dataset.virtualNodeId;
   const listenPort = Number.parseInt(row.querySelector('[data-virtual-node-field="listen_port"]')?.value || "0", 10);
@@ -1117,20 +1130,11 @@ async function saveVirtualNode(button) {
     strategy: virtualNodeFieldValue(row, "strategy") || "selector",
     status: virtualNodeFieldValue(row, "status") || "active",
   };
-  row.querySelectorAll("button").forEach((item) => {
-    item.disabled = true;
-  });
-  setStatus("保存虚拟节点中", "loading");
-  try {
+  await runInlineAction(row, button, "保存虚拟节点中", async () => {
     await patchJSON(`/api/virtual-nodes/${id}`, payload);
     appState.editingVirtualNodeID = null;
     await load();
-  } catch (error) {
-    setStatus("保存失败", "danger");
-    row.querySelectorAll("button").forEach((item) => {
-      item.disabled = false;
-    });
-  }
+  });
 }
 
 function virtualNodeFieldValue(row, name) {
@@ -1159,7 +1163,7 @@ async function handlePolicyAction(event) {
 }
 
 async function savePolicy(button) {
-  const row = button.closest("[data-policy-id]");
+  const row = button.closest(".policy-card[data-policy-id]");
   if (!row) return;
   const id = row.dataset.policyId;
   const scopeID = Number.parseInt(row.querySelector('[data-policy-field="scope_id"]')?.value || "0", 10);
@@ -1174,20 +1178,11 @@ async function savePolicy(button) {
     max_nodes: Number.isFinite(maxNodes) ? maxNodes : 0,
     status: policyFieldValue(row, "status") || "active",
   };
-  row.querySelectorAll("button").forEach((item) => {
-    item.disabled = true;
-  });
-  setStatus("保存策略中", "loading");
-  try {
+  await runInlineAction(row, button, "保存策略中", async () => {
     await patchJSON(`/api/policies/${id}`, payload);
     appState.editingPolicyID = null;
     await load();
-  } catch (error) {
-    setStatus("保存失败", "danger");
-    row.querySelectorAll("button").forEach((item) => {
-      item.disabled = false;
-    });
-  }
+  });
 }
 
 function policyFieldValue(row, name) {
@@ -1290,16 +1285,12 @@ async function handleNodeAction(event) {
     return;
   }
   if (action !== "reset-name") return;
-  button.disabled = true;
-  setStatus("恢复节点命名中", "loading");
-  try {
+  const card = button.closest(".node-card") || button;
+  await runInlineAction(card, button, "恢复节点命名中", async () => {
     await postJSON(`/api/nodes/${id}/reset-display-name`, {});
     appState.editingNodeID = null;
     await load();
-  } catch (error) {
-    setStatus("恢复失败", "danger");
-    button.disabled = false;
-  }
+  }, "恢复失败");
 }
 
 function handleNodeFilterInput(event) {
@@ -1329,20 +1320,13 @@ async function handleNodeEditSubmit(event) {
   const region = textField(formData, "region");
   const tags = textField(formData, "tags");
   const nameMode = textField(formData, "name_mode") || "manual";
-  form.querySelectorAll("button").forEach((button) => {
-    button.disabled = true;
-  });
-  setStatus("保存节点中", "loading");
-  try {
+  const button = form.querySelector('button[type="submit"]');
+  const card = form.closest(".node-card") || form;
+  await runInlineAction(card, button, "保存节点中", async () => {
     await patchJSON(`/api/nodes/${id}`, { display_name: displayName, region, tags, name_mode: nameMode });
     appState.editingNodeID = null;
     await load();
-  } catch (error) {
-    setStatus("保存失败", "danger");
-    form.querySelectorAll("button").forEach((button) => {
-      button.disabled = false;
-    });
-  }
+  });
 }
 
 async function handleTokenAction(event) {

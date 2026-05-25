@@ -1227,6 +1227,16 @@ main {
   letter-spacing: 0;
 }
 
+.table-button.is-pending,
+.ghost-button.is-pending {
+  cursor: wait;
+}
+
+.table-button.is-pending .button-symbol,
+.ghost-button.is-pending .button-symbol {
+  letter-spacing: 0;
+}
+
 .login-panel button[type="submit"] {
   gap: 6px;
   max-width: 100%;
@@ -1875,6 +1885,28 @@ textarea {
   gap: 12px;
   min-width: 0;
   padding: 14px;
+}
+
+.source-card.is-action-pending,
+.identity-card.is-action-pending,
+.virtual-node-card.is-action-pending,
+.policy-card.is-action-pending,
+.node-card.is-action-pending {
+  border-color: #93c5fd;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2), 0 10px 24px rgba(37, 99, 235, 0.08);
+}
+
+.source-card.is-action-pending input,
+.source-card.is-action-pending select,
+.identity-card.is-action-pending input,
+.identity-card.is-action-pending select,
+.virtual-node-card.is-action-pending input,
+.virtual-node-card.is-action-pending select,
+.policy-card.is-action-pending input,
+.policy-card.is-action-pending select,
+.node-card.is-action-pending input,
+.node-card.is-action-pending select {
+  cursor: wait;
 }
 
 .source-card-heading,

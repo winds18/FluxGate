@@ -48,6 +48,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const responses = [];
   const consoleMessages = [];
   let calmOpsResponseStatus = 0;
+  let sourceInlineSaveFeedback = null;
+  let sourceInlineSaveRestored = null;
   const expectedViewSymbols = {
     overview: "概",
     access: "源",
@@ -443,41 +445,50 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     dirty: document.querySelector("#source-form")?.classList.contains("is-dirty") ? 1 : 0,
     draftHidden: document.querySelector("#source-form [data-form-draft]")?.hidden ?? true,
   }));
-  let releaseSourceSubmit = null;
-  let sourceSubmitRouteSeen = false;
-  await page.route("**/api/sources", async (route, request) => {
-    if (request.method().toUpperCase() !== "POST") {
-      await route.fallback();
-      return;
-    }
-    sourceSubmitRouteSeen = true;
-    await new Promise((resolve) => {
-      releaseSourceSubmit = resolve;
-    });
-    await route.fulfill({
-      status: 200,
-      contentType: "application/json",
-      body: JSON.stringify({
-        id: 999001,
-        name: "QA pending source",
-        type: "manual",
-        url: "",
-        display_prefix: "[QA pending source]",
-        default_tags: "",
-        refresh_interval_minutes: 0,
-        status: "active",
-      }),
-    });
+  await page.evaluate(() => {
+    const originalFetch = window.fetch.bind(window);
+    window.__sourceSubmitSeen = false;
+    window.__releaseSourceSubmit = null;
+    window.fetch = (input, init = {}) => {
+      const url = typeof input === "string" ? input : input?.url || "";
+      const method = String(init?.method || "GET").toUpperCase();
+      if (method === "POST" && String(url).endsWith("/api/sources")) {
+        window.__sourceSubmitSeen = true;
+        window.__releaseSourceSubmit = () => {
+          window.fetch = originalFetch;
+        };
+        return new Promise((resolve) => {
+          window.__releaseSourceSubmit = () => {
+            window.fetch = originalFetch;
+            resolve(
+              new Response(
+                JSON.stringify({
+                  id: 999001,
+                  name: "QA pending source",
+                  type: "manual",
+                  url: "",
+                  display_prefix: "[QA pending source]",
+                  default_tags: "",
+                  refresh_interval_minutes: 0,
+                  status: "active",
+                }),
+                {
+                  status: 200,
+                  headers: { "content-type": "application/json" },
+                },
+              ),
+            );
+          };
+        });
+      }
+      return originalFetch(input, init);
+    };
   });
   await page.locator("#view-primary-action").click();
   await expect(page.locator("#source-form:not(.is-collapsed)")).toBeVisible({ timeout: 5000 });
   await page.locator('#source-form input[name="name"]').fill("QA pending source");
-  const sourceSubmitResponse = page.waitForResponse(
-    (response) => response.url().includes("/api/sources") && response.request().method().toUpperCase() === "POST",
-    { timeout: 5000 },
-  );
   await page.locator('#source-form button[type="submit"]').click();
-  await expect.poll(() => sourceSubmitRouteSeen, { timeout: 1000 }).toBe(true);
+  await expect.poll(() => page.evaluate(() => Boolean(window.__sourceSubmitSeen)), { timeout: 1000 }).toBe(true);
   await page.waitForTimeout(100);
   formDrawerSubmitFeedback = await page.evaluate(() => {
     const drawer = document.querySelector("#source-form");
@@ -511,9 +522,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       overflow: buttonOverflow,
     };
   });
-  if (releaseSourceSubmit) releaseSourceSubmit();
-  await sourceSubmitResponse;
-  await page.unroute("**/api/sources");
+  await page.evaluate(() => window.__releaseSourceSubmit?.());
   await expect(page.locator("#status")).toHaveText("已连接", { timeout: 15000 });
   await expect(page.locator('#source-form button[type="submit"]')).toBeEnabled({ timeout: 15000 });
   formDrawerSubmitRestored = await page.evaluate(() => {
@@ -1198,7 +1207,93 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await expect(page.locator('#sources [data-source-field="name"]').first()).toBeVisible({ timeout: 5000 });
     await expect(page.locator('#sources [data-source-field="display_prefix"]').first()).toBeVisible({ timeout: 5000 });
     sourceEditFieldsVisible = true;
-    await page.locator("#sources button[data-source-action='cancel']").first().click();
+    await page.evaluate(() => {
+      const originalFetch = window.fetch.bind(window);
+      window.__sourceSavePatchSeen = false;
+      window.__releaseSourceSavePatch = null;
+      window.fetch = (input, init = {}) => {
+        const url = typeof input === "string" ? input : input?.url || "";
+        const method = String(init?.method || "GET").toUpperCase();
+        if (method === "PATCH" && url.includes("/api/sources/")) {
+          window.__sourceSavePatchSeen = true;
+          const id = Number.parseInt(String(url).split("/").pop() || "0", 10);
+          const payload = JSON.parse(init?.body || "{}");
+          return new Promise((resolve) => {
+            window.__releaseSourceSavePatch = () => {
+              window.fetch = originalFetch;
+              resolve(
+                new Response(
+                  JSON.stringify({
+                    id,
+                    ...payload,
+                    last_sync_at: null,
+                    last_error: "",
+                    status: "active",
+                  }),
+                  {
+                    status: 200,
+                    headers: { "content-type": "application/json" },
+                  },
+                ),
+              );
+            };
+          });
+        }
+        return originalFetch(input, init);
+      };
+    });
+    await page.locator("#sources button[data-source-action='save']").first().click();
+    await expect.poll(() => page.evaluate(() => Boolean(window.__sourceSavePatchSeen)), { timeout: 1000 }).toBe(true);
+    await page.waitForTimeout(100);
+    sourceInlineSaveFeedback = await page.evaluate(() => {
+      const card = document.querySelector("#sources .source-card-editing");
+      const saveButton = card?.querySelector("button[data-source-action='save']");
+      const cancelButton = card?.querySelector("button[data-source-action='cancel']");
+      const nameInput = card?.querySelector('[data-source-field="name"]');
+      const typeSelect = card?.querySelector('[data-source-field="type"]');
+      const label = saveButton?.querySelector(".button-label")?.textContent?.trim() || "";
+      const symbol = saveButton?.querySelector(".button-symbol")?.textContent?.trim() || "";
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      const buttonBox = saveButton?.getBoundingClientRect();
+      const overflow = buttonBox
+        ? Array.from(saveButton.querySelectorAll(".button-symbol, .button-label")).reduce((total, element) => {
+            const box = element.getBoundingClientRect();
+            return total + (box.width > 0 && box.height > 0 && outside(box, buttonBox) ? 1 : 0);
+          }, 0)
+        : 1;
+      return {
+        pending: card?.classList.contains("is-action-pending") ? 1 : 0,
+        ariaBusy: card?.getAttribute("aria-busy") || "",
+        saveDisabled: saveButton?.disabled ? 1 : 0,
+        cancelDisabled: cancelButton?.disabled ? 1 : 0,
+        inputDisabled: nameInput?.disabled ? 1 : 0,
+        selectDisabled: typeSelect?.disabled ? 1 : 0,
+        label,
+        symbol,
+        status: document.querySelector("#status")?.textContent?.trim() || "",
+        tone: document.querySelector("#status")?.dataset.statusTone || "",
+        overflow,
+      };
+    });
+    await page.evaluate(() => window.__releaseSourceSavePatch?.());
+    await expect(page.locator("#status")).toHaveText("已连接", { timeout: 15000 });
+    await expect(page.locator("#sources button[data-source-action='edit']").first()).toBeEnabled({ timeout: 15000 });
+    sourceInlineSaveRestored = await page.evaluate(() => {
+      const card = document.querySelector("#sources .source-card");
+      const editButton = card?.querySelector("button[data-source-action='edit']");
+      return {
+        pending: card?.classList.contains("is-action-pending") ? 1 : 0,
+        ariaBusy: card?.getAttribute("aria-busy") || "",
+        editDisabled: editButton?.disabled ? 1 : 0,
+        saveCount: card?.querySelectorAll("button[data-source-action='save']").length || 0,
+        label: editButton?.querySelector(".button-label")?.textContent?.trim() || "",
+        symbol: editButton?.querySelector(".button-symbol")?.textContent?.trim() || "",
+      };
+    });
   }
 
   await switchView("nodes");
@@ -1711,6 +1806,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.sourceVisualOverflowCount = sourceVisualOverflowCount;
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
+  state.sourceInlineSaveFeedback = sourceInlineSaveFeedback;
+  state.sourceInlineSaveRestored = sourceInlineSaveRestored;
   state.virtualNodeCardCount = virtualNodeCardCount;
   state.virtualNodeSummaryChipCount = virtualNodeSummaryChipCount;
   state.virtualNodeActionButtonSymbolCount = virtualNodeActionButtonSymbolCount;
@@ -1946,7 +2043,26 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (sourceCardCount !== sourceEditCount ||
       sourceSummaryChipCount !== sourceCardCount * 4 ||
       sourceActionButtonSymbolCount !== sourceCardCount * 3 ||
-      sourceVisualOverflowCount > 0)
+      sourceVisualOverflowCount > 0 ||
+      !sourceInlineSaveFeedback ||
+      sourceInlineSaveFeedback.pending !== 1 ||
+      sourceInlineSaveFeedback.ariaBusy !== "true" ||
+      sourceInlineSaveFeedback.saveDisabled !== 1 ||
+      sourceInlineSaveFeedback.cancelDisabled !== 1 ||
+      sourceInlineSaveFeedback.inputDisabled !== 1 ||
+      sourceInlineSaveFeedback.selectDisabled !== 1 ||
+      sourceInlineSaveFeedback.label !== "保存中" ||
+      sourceInlineSaveFeedback.symbol !== "…" ||
+      sourceInlineSaveFeedback.status !== "保存来源中" ||
+      sourceInlineSaveFeedback.tone !== "loading" ||
+      sourceInlineSaveFeedback.overflow > 0 ||
+      !sourceInlineSaveRestored ||
+      sourceInlineSaveRestored.pending !== 0 ||
+      sourceInlineSaveRestored.ariaBusy !== "" ||
+      sourceInlineSaveRestored.editDisabled !== 0 ||
+      sourceInlineSaveRestored.saveCount !== 0 ||
+      sourceInlineSaveRestored.label !== "编辑" ||
+      sourceInlineSaveRestored.symbol !== "✎")
   ) {
     throw new Error(`source cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }

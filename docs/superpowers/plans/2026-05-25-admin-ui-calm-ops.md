@@ -350,3 +350,34 @@ The server now serves `/assets/calm-ops.css`, and browser QA asserts the stylesh
 - [x] **Step 5: Verify through build, full QA, cleanup, and public scan**
 
 Run `scripts/qa/local-suite.sh`, `scripts/dev/build.sh`, `scripts/dev/test.sh`, `scripts/qa/cleanup.sh`, `scripts/qa/public-scan.sh`, and `git diff --check`; expected result is zero exit status with guide overflow counts at 0.
+
+## Task 10: Add Per-Module Workspace Insight
+
+**Files:**
+- Modify: `internal/httpapi/static/index.html`
+- Modify: `internal/httpapi/static/app.js`
+- Modify: `internal/httpapi/static/calm-ops.css`
+- Modify: `scripts/qa/ui-static.sh`
+- Modify: `scripts/qa/browser-login.sh`
+- Modify: `docs/11-current-implementation.md`
+- Modify: `docs/superpowers/specs/2026-05-25-admin-ui-calm-ops-design.md`
+
+- [x] **Step 1: Add failing static UI contract**
+
+Static QA requires `#workspace-insight`, a per-view insight renderer, direct contextual actions, and governed Calm Ops styles.
+
+- [x] **Step 2: Render data-driven module insight**
+
+The workspace header now shows a compact status strip for overview, access, nodes, identity, policies, traffic and ops using live counts, readiness state and risk hints.
+
+- [x] **Step 3: Add direct contextual navigation**
+
+Each insight strip exposes one action button that deep-links to the relevant form, list, Token section, traffic section or publish button and reuses the shared target highlight/status feedback.
+
+- [x] **Step 4: Extend browser visual QA**
+
+Browser QA verifies every module has one insight strip, one symbol, one action button, no visual overflow, and that the insight action can locate a target.
+
+- [x] **Step 5: Verify, clean and scan**
+
+Run the project validation, cleanup and public-scan workflow before the repository commit and remote deployment loop.

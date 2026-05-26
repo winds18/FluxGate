@@ -380,6 +380,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const viewRailBadgeCounts = {};
   const viewRailOverflow = {};
   const viewHeaderSymbols = {};
+  const workspaceInsightCounts = {};
+  const workspaceInsightTitles = {};
+  const workspaceInsightActionCounts = {};
+  const workspaceInsightSymbolCounts = {};
+  const workspaceInsightActionSymbolCounts = {};
+  const workspaceInsightOverflow = {};
   const workspacePrimaryActionCounts = {};
   const workspacePrimaryActionLabels = {};
   const workspacePrimaryActionSymbolCounts = {};
@@ -404,6 +410,36 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     formSubmitOverflow[view] = await visibleFormSubmitOverflow();
     formDrawerNarrowCount[view] = await visibleFormDrawerNarrowCount();
     viewHeaderSymbols[view] = (await page.locator("#view-symbol").textContent())?.trim();
+    workspaceInsightCounts[view] = await page.locator("#workspace-insight:not([hidden])").count();
+    workspaceInsightTitles[view] = workspaceInsightCounts[view] > 0
+      ? (await page.locator("#workspace-insight .workspace-insight-title").first().textContent())?.trim() || ""
+      : "";
+    workspaceInsightActionCounts[view] = await page.locator("#workspace-insight [data-workspace-insight-action]").count();
+    workspaceInsightSymbolCounts[view] = await page.locator("#workspace-insight .workspace-insight-symbol").count();
+    workspaceInsightActionSymbolCounts[view] = await page.locator("#workspace-insight .workspace-insight-action .button-symbol").count();
+    workspaceInsightOverflow[view] = await page.evaluate(() => {
+      const insight = document.querySelector("#workspace-insight:not([hidden])");
+      if (!insight) return 1;
+      const insightBox = insight.getBoundingClientRect();
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(
+        insight.querySelectorAll(
+          ".workspace-insight-symbol, .workspace-insight-copy, .workspace-insight-kicker, .workspace-insight-title, .workspace-insight-detail, .workspace-insight-action, .workspace-insight-action .button-symbol, .workspace-insight-action .button-label",
+        ),
+      )
+        .filter((element) => element.offsetParent !== null)
+        .reduce((total, element) => {
+          const parent = element.closest(".workspace-insight-action") && !element.classList.contains("workspace-insight-action")
+            ? element.closest(".workspace-insight-action").getBoundingClientRect()
+            : insightBox;
+          const box = element.getBoundingClientRect();
+          return total + (box.width > 0 && box.height > 0 && outside(box, parent) ? 1 : 0);
+        }, 0);
+    });
     workspacePrimaryActionCounts[view] = await page.locator("#view-primary-action").count();
     workspacePrimaryActionLabels[view] = workspacePrimaryActionCounts[view] > 0
       ? (await page.locator("#view-primary-action .button-label").first().textContent())?.trim() || ""
@@ -492,6 +528,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         return total;
       }, 0);
     }, view);
+  }
+  let workspaceInsightActionNavigates = false;
+  await switchView("overview");
+  const workspaceInsightAction = page.locator("#workspace-insight [data-workspace-insight-action]").first();
+  if (await workspaceInsightAction.isVisible()) {
+    const targetID = (await workspaceInsightAction.getAttribute("data-workspace-insight-target")) || "";
+    await workspaceInsightAction.click();
+    if (targetID) {
+      await expect(page.locator(`#${targetID}`).first()).toBeVisible({ timeout: 5000 });
+    }
+    await expect(page.locator("#status")).toContainText("已定位", { timeout: 5000 });
+    workspaceInsightActionNavigates = true;
   }
   await switchView("access");
   await page.locator("#view-primary-action").click();
@@ -2214,6 +2262,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.viewRailBadgeCounts = viewRailBadgeCounts;
   state.viewRailOverflow = viewRailOverflow;
   state.viewHeaderSymbols = viewHeaderSymbols;
+  state.workspaceInsightCounts = workspaceInsightCounts;
+  state.workspaceInsightTitles = workspaceInsightTitles;
+  state.workspaceInsightActionCounts = workspaceInsightActionCounts;
+  state.workspaceInsightSymbolCounts = workspaceInsightSymbolCounts;
+  state.workspaceInsightActionSymbolCounts = workspaceInsightActionSymbolCounts;
+  state.workspaceInsightOverflow = workspaceInsightOverflow;
+  state.workspaceInsightActionNavigates = workspaceInsightActionNavigates;
   state.workspacePrimaryActionCounts = workspacePrimaryActionCounts;
   state.workspacePrimaryActionLabels = workspacePrimaryActionLabels;
   state.workspacePrimaryActionSymbolCounts = workspacePrimaryActionSymbolCounts;
@@ -2891,6 +2946,23 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const overflowingContextView = Object.entries(viewContextOverflow).find(([, overflow]) => overflow > 0);
   if (sparseContextView || overflowingContextView) {
     throw new Error(`dashboard view context is incomplete: ${JSON.stringify(state)}`);
+  }
+  const missingInsightView = Object.entries(workspaceInsightCounts).find(([, count]) => count !== 1);
+  const emptyInsightTitleView = Object.entries(workspaceInsightTitles).find(([, title]) => title.length === 0);
+  const missingInsightActionView = Object.entries(workspaceInsightActionCounts).find(([, count]) => count !== 1);
+  const missingInsightSymbolView = Object.entries(workspaceInsightSymbolCounts).find(([, count]) => count !== 1);
+  const missingInsightActionSymbolView = Object.entries(workspaceInsightActionSymbolCounts).find(([, count]) => count !== 1);
+  const overflowingInsightView = Object.entries(workspaceInsightOverflow).find(([, overflow]) => overflow > 0);
+  if (
+    missingInsightView ||
+    emptyInsightTitleView ||
+    missingInsightActionView ||
+    missingInsightSymbolView ||
+    missingInsightActionSymbolView ||
+    overflowingInsightView ||
+    !workspaceInsightActionNavigates
+  ) {
+    throw new Error(`dashboard workspace insight is incomplete: ${JSON.stringify(state)}`);
   }
   const missingPrimaryActionView = Object.entries(workspacePrimaryActionCounts).find(([, count]) => count !== 1);
   const missingPrimaryActionSymbolView = Object.entries(workspacePrimaryActionSymbolCounts).find(([, count]) => count !== 1);

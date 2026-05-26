@@ -3172,10 +3172,10 @@ function renderNodeCard(row) {
       <div class="table-actions node-actions">
         ${
           isEditing
-            ? `<button class="table-button ghost-button" type="button" data-node-action="cancel" data-node-id="${row.id}">${buttonLabel("×", "取消")}</button>`
-            : `<button class="table-button" type="button" data-node-action="edit" data-node-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
+            ? `<button class="table-button ghost-button" type="button" data-node-action="cancel" data-node-id="${row.id}" aria-label="取消节点编辑" title="取消节点编辑">${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-node-action="edit" data-node-id="${row.id}" aria-label="编辑节点" title="编辑节点">${buttonLabel("✎", "编辑")}</button>`
         }
-        <button class="table-button ghost-button" type="button" data-node-action="reset-name" data-node-id="${row.id}" ${row.name_mode === "auto" ? "disabled" : ""}>${buttonLabel("↺", "恢复自动")}</button>
+        <button class="table-button ghost-button" type="button" data-node-action="reset-name" data-node-id="${row.id}" aria-label="恢复自动命名" title="恢复自动命名" ${row.name_mode === "auto" ? "disabled" : ""}>${buttonLabel("↺", "恢复自动")}</button>
       </div>
     </article>
   `;

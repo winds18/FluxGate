@@ -62,6 +62,10 @@ require_multiline_pattern "$CALM_CSS_FILE" '\.node-card \{[^}]*position: relativ
 require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \{[^}]*position: absolute;' "node card actions must be docked instead of consuming a full card row"
 require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \{[^}]*top: 12px;' "node card actions must stay close to the card title"
 require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \.table-button \{[^}]*flex: 0 0 auto;' "node card action buttons must not stretch into full-width blocks on desktop"
-require_pattern "$CALM_CSS_FILE" 'padding-right: 118px;' "node card content must reserve space for docked actions"
+require_pattern "$CALM_CSS_FILE" 'padding-right: 64px;' "node card content must reserve only the compact icon action lane"
+require_pattern "$APP_FILE" 'aria-label="编辑节点"' "node edit icon button must have an accessible label"
+require_pattern "$APP_FILE" 'title="恢复自动命名"' "node reset icon button must explain the action on hover"
+require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \.button-label \{[^}]*clip-path: inset\(50%\);' "desktop node icon actions must hide truncated text labels visually"
+require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \.table-button \{[^}]*aspect-ratio: 1;' "desktop node icon actions must be stable square controls"
 
 log "static UI contract checks passed"

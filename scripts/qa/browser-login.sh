@@ -832,6 +832,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     : "";
   const overviewGuideCurrentCount = await page.locator("#overview-readiness [data-guide-current]").count();
   const overviewGuideCurrentActionSymbolCount = await page.locator("#overview-readiness [data-guide-current] .button-symbol").count();
+  const overviewGuideActionStripCount = await page.locator("#overview-readiness [data-guide-action-strip]").count();
+  const overviewGuideActionButtonCount = await page.locator("#overview-readiness [data-guide-action]").count();
+  const overviewGuideActionSymbolCount = await page.locator("#overview-readiness .guide-action-symbol").count();
+  const overviewGuideActionLabels = await page
+    .locator("#overview-readiness [data-guide-action] strong")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const overviewGuideActionTargets = await page
+    .locator("#overview-readiness [data-guide-action]")
+    .evaluateAll((elements) => elements.map((element) => element.getAttribute("data-overview-jump-target") || ""));
   const overviewGuideHintCount = await page.locator("#overview-readiness .readiness-hint").count();
   const overviewGuideOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
@@ -844,7 +853,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     const panelBox = panel.getBoundingClientRect();
     return Array.from(
       panel.querySelectorAll(
-        "[data-guide-progress], [data-guide-current], .guide-progress-bar, .guide-current-copy, .guide-current-action, .readiness-hint",
+        "[data-guide-progress], [data-guide-current], [data-guide-action-strip], [data-guide-action], .guide-progress-bar, .guide-current-copy, .guide-current-action, .guide-action-symbol, .guide-action-copy, .readiness-hint",
       ),
     )
       .filter((element) => element.offsetParent !== null)
@@ -865,7 +874,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     const details = [];
     Array.from(
       panel.querySelectorAll(
-        "[data-guide-progress], [data-guide-current], .guide-progress-bar, .guide-current-copy, .guide-current-action, .readiness-hint",
+        "[data-guide-progress], [data-guide-current], [data-guide-action-strip], [data-guide-action], .guide-progress-bar, .guide-current-copy, .guide-current-action, .guide-action-symbol, .guide-action-copy, .readiness-hint",
       ),
     )
       .filter((element) => element.offsetParent !== null)
@@ -892,6 +901,24 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       });
     return details;
   });
+  let overviewGuideTokenActionNavigates = false;
+  let overviewGuidePublishActionNavigates = false;
+  const tokenGuideAction = page.locator('#overview-readiness [data-guide-action][data-overview-jump-target="tokens"]').first();
+  if ((await tokenGuideAction.count()) > 0) {
+    await tokenGuideAction.click();
+    await page.waitForFunction(() => document.querySelector('[data-dashboard-view="identity"]')?.hidden === false);
+    await page.waitForFunction(() => document.querySelector("#status")?.textContent?.includes("已定位：Token"));
+    overviewGuideTokenActionNavigates = true;
+    await switchView("overview");
+  }
+  const publishGuideAction = page.locator('#overview-readiness [data-guide-action][data-overview-jump-target="config-publish"]').first();
+  if ((await publishGuideAction.count()) > 0) {
+    await publishGuideAction.click();
+    await page.waitForFunction(() => document.querySelector('[data-dashboard-view="ops"]')?.hidden === false);
+    await page.waitForFunction(() => document.querySelector("#status")?.textContent?.includes("已定位：发布配置"));
+    overviewGuidePublishActionNavigates = true;
+    await switchView("overview");
+  }
   const overviewNextStepButtonCount = await page.locator("#overview-next-step [data-overview-jump]").count();
   const overviewNextStepCardCount = await page.locator("#overview-next-step [data-overview-next-step-card]").count();
   const overviewNextStepActionCount = await page.locator("#overview-next-step .next-step-action").count();
@@ -2131,6 +2158,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewGuideProgressValue = overviewGuideProgressValue;
   state.overviewGuideCurrentCount = overviewGuideCurrentCount;
   state.overviewGuideCurrentActionSymbolCount = overviewGuideCurrentActionSymbolCount;
+  state.overviewGuideActionStripCount = overviewGuideActionStripCount;
+  state.overviewGuideActionButtonCount = overviewGuideActionButtonCount;
+  state.overviewGuideActionSymbolCount = overviewGuideActionSymbolCount;
+  state.overviewGuideActionLabels = overviewGuideActionLabels;
+  state.overviewGuideActionTargets = overviewGuideActionTargets;
+  state.overviewGuideTokenActionNavigates = overviewGuideTokenActionNavigates;
+  state.overviewGuidePublishActionNavigates = overviewGuidePublishActionNavigates;
   state.overviewGuideHintCount = overviewGuideHintCount;
   state.overviewGuideOverflowCount = overviewGuideOverflowCount;
   state.overviewGuideOverflowDetails = overviewGuideOverflowDetails;
@@ -2842,6 +2876,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`overview metric cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   const expectedOverviewReadinessSymbols = ["源", "点", "网", "身", "订", "策", "发"];
+  const expectedOverviewGuideActionLabels = ["去复制订阅", "检查收口", "发布配置"];
+  const expectedOverviewGuideActionTargets = ["tokens", "delivery-readiness", "config-publish"];
   if (
     overviewReadinessCount !== 7 ||
     overviewReadinessIndexCount !== 7 ||
@@ -2854,6 +2890,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     !/^\d+\/7$/.test(overviewGuideProgressValue) ||
     overviewGuideCurrentCount !== 1 ||
     overviewGuideCurrentActionSymbolCount !== 1 ||
+    overviewGuideActionStripCount !== 1 ||
+    overviewGuideActionButtonCount !== 3 ||
+    overviewGuideActionSymbolCount !== 3 ||
+    expectedOverviewGuideActionLabels.some((label, index) => overviewGuideActionLabels[index] !== label) ||
+    expectedOverviewGuideActionTargets.some((target, index) => overviewGuideActionTargets[index] !== target) ||
+    !overviewGuideTokenActionNavigates ||
+    !overviewGuidePublishActionNavigates ||
     overviewGuideHintCount !== 7 ||
     overviewGuideOverflowCount > 0 ||
     overviewNextStepButtonCount !== 1

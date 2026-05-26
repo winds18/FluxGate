@@ -1969,6 +1969,32 @@ function renderOverviewReadiness(data) {
         expand: false,
         action: "去运维发布",
       };
+  const guideActions = [
+    {
+      symbol: "订",
+      title: "去复制订阅",
+      hint: "默认 / Mihomo / sing-box",
+      view: "identity",
+      target: "tokens",
+      expand: false,
+    },
+    {
+      symbol: "收",
+      title: "检查收口",
+      hint: "确认真实可测",
+      view: "ops",
+      target: "delivery-readiness",
+      expand: false,
+    },
+    {
+      symbol: "发",
+      title: "发布配置",
+      hint: "写入网关配置",
+      view: "ops",
+      target: "config-publish",
+      expand: false,
+    },
+  ];
 
   overviewReadinessEl.innerHTML = `
     <div class="overview-panel-heading">
@@ -1993,6 +2019,21 @@ function renderOverviewReadiness(data) {
         <button class="primary-link-button guide-current-action" type="button" data-overview-jump="${guideCurrent.view}" data-overview-jump-target="${escapeHTML(guideCurrent.target || "")}" data-overview-jump-expand="${guideCurrent.expand ? "true" : "false"}">
           ${buttonLabel("→", guideCurrent.action)}
         </button>
+      </div>
+      <div class="guide-action-strip" data-guide-action-strip aria-label="真实测试动作">
+        ${guideActions
+          .map(
+            (action) => `
+              <button class="guide-action-button" type="button" data-guide-action data-overview-jump="${escapeHTML(action.view)}" data-overview-jump-target="${escapeHTML(action.target)}" data-overview-jump-expand="${action.expand ? "true" : "false"}">
+                <span class="guide-action-symbol" aria-hidden="true">${escapeHTML(action.symbol)}</span>
+                <span class="guide-action-copy">
+                  <strong>${escapeHTML(action.title)}</strong>
+                  <small>${escapeHTML(action.hint)}</small>
+                </span>
+              </button>
+            `,
+          )
+          .join("")}
       </div>
     </div>
     <div class="readiness-list" data-overview-readiness>
@@ -2394,6 +2435,11 @@ function openDashboardTarget(targetID, expand = false) {
 
 function dashboardTargetLabel(targetID) {
   const target = document.getElementById(targetID || "");
+  const directTargetLabels = {
+    "delivery-readiness": "检查收口",
+    "config-publish": "发布配置",
+  };
+  if (directTargetLabels[targetID]) return directTargetLabels[targetID];
   const railItem = Object.values(dashboardViewRail)
     .flat()
     .find(([, target]) => target === targetID);

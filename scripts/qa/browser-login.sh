@@ -948,6 +948,42 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   });
   let overviewGuideTokenActionNavigates = false;
   let overviewGuidePublishActionNavigates = false;
+  const overviewHeroCount = await page.locator("#overview-hero").count();
+  const overviewHeroTitle = overviewHeroCount
+    ? (await page.locator("#overview-hero .overview-hero-title strong").first().textContent())?.trim() || ""
+    : "";
+  const overviewHeroActionCount = await page.locator("#overview-hero [data-overview-hero-action]").count();
+  const overviewHeroActionSymbolCount = await page.locator("#overview-hero [data-overview-hero-action] .button-symbol").count();
+  const overviewHeroStatCount = await page.locator("#overview-hero .overview-hero-stat").count();
+  const overviewHeroStatSymbolCount = await page.locator("#overview-hero .overview-hero-stat-symbol").count();
+  const overviewHeroOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const hero = document.querySelector("#overview-hero");
+    if (!hero) return 1;
+    const heroBox = hero.getBoundingClientRect();
+    return Array.from(
+      hero.querySelectorAll(
+        ".overview-hero-title, .overview-hero-title strong, .overview-hero-kicker, .overview-hero-copy, .overview-hero-stat, .overview-hero-stat-symbol, .overview-hero-stat-copy, [data-overview-hero-action]",
+      ),
+    )
+      .filter((element) => element.offsetParent !== null)
+      .reduce((total, element) => {
+        const box = element.getBoundingClientRect();
+        return box.width > 0 && box.height > 0 && outside(box, heroBox) ? total + 1 : total;
+      }, 0);
+  });
+  let overviewHeroActionNavigates = false;
+  const heroAction = page.locator("#overview-hero [data-overview-hero-action]").first();
+  if ((await heroAction.count()) > 0) {
+    await heroAction.click();
+    await page.waitForFunction(() => document.querySelector("#status")?.textContent?.includes("已定位："));
+    overviewHeroActionNavigates = true;
+    await switchView("overview");
+  }
   const tokenGuideAction = page.locator('#overview-readiness [data-guide-action][data-overview-jump-target="tokens"]').first();
   if ((await tokenGuideAction.count()) > 0) {
     await tokenGuideAction.click();
@@ -2195,6 +2231,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewMetricSymbolCount = overviewMetricSymbolCount;
   state.overviewMetricValueCount = overviewMetricValueCount;
   state.overviewMetricOverflowCount = overviewMetricOverflowCount;
+  state.overviewHeroCount = overviewHeroCount;
+  state.overviewHeroTitle = overviewHeroTitle;
+  state.overviewHeroActionCount = overviewHeroActionCount;
+  state.overviewHeroActionSymbolCount = overviewHeroActionSymbolCount;
+  state.overviewHeroStatCount = overviewHeroStatCount;
+  state.overviewHeroStatSymbolCount = overviewHeroStatSymbolCount;
+  state.overviewHeroOverflowCount = overviewHeroOverflowCount;
+  state.overviewHeroActionNavigates = overviewHeroActionNavigates;
   state.overviewReadinessCount = overviewReadinessCount;
   state.overviewReadinessIndexCount = overviewReadinessIndexCount;
   state.overviewReadinessSymbolCount = overviewReadinessSymbolCount;
@@ -2948,6 +2992,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`dashboard view header symbol is stale: ${JSON.stringify(state)}`);
   }
   if (
+    overviewHeroCount !== 1 ||
+    !overviewHeroTitle ||
+    overviewHeroActionCount !== 1 ||
+    overviewHeroActionSymbolCount !== 1 ||
+    overviewHeroStatCount !== 3 ||
+    overviewHeroStatSymbolCount !== 3 ||
+    overviewHeroOverflowCount > 0 ||
+    !overviewHeroActionNavigates ||
     overviewMetricCount !== 7 ||
     overviewMetricSymbolCount !== 7 ||
     overviewMetricValueCount !== 7 ||

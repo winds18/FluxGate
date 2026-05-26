@@ -20,6 +20,7 @@ const loginErrorEl = document.querySelector("#login-error");
 const loginUsernameEl = document.querySelector("#login-username");
 const loginPasswordEl = document.querySelector("#login-password");
 const logoutEl = document.querySelector("#logout");
+const overviewHeroEl = document.querySelector("#overview-hero");
 const metricsEl = document.querySelector("#metrics");
 const overviewReadinessEl = document.querySelector("#overview-readiness");
 const overviewNextStepEl = document.querySelector("#overview-next-step");
@@ -1007,6 +1008,7 @@ async function load() {
       trafficOutbounds,
       trafficTokens,
     };
+    renderOverviewHero(overview);
     renderMetrics(overview);
     renderOverviewReadiness(overview);
     renderSelectors();
@@ -1034,6 +1036,9 @@ async function load() {
       return;
     }
     setStatus("异常", "danger");
+    if (overviewHeroEl) {
+      overviewHeroEl.innerHTML = emptyState("警", "加载失败", error.message || "请稍后重试");
+    }
     metricsEl.innerHTML = emptyState("警", "加载失败", error.message || "请稍后重试");
   } finally {
     setRefreshPending(false);
@@ -1918,6 +1923,75 @@ function numberField(form, name) {
 function numberInputValue(input, fallback) {
   const value = Number.parseInt(String(input?.value || fallback || "0"), 10);
   return Number.isFinite(value) ? value : 0;
+}
+
+function renderOverviewHero(data) {
+  if (!overviewHeroEl) return;
+  const checks = overviewReadinessChecks(data);
+  const readyCount = checks.filter(([, ready]) => ready).length;
+  const firstMissingIndex = checks.findIndex(([, ready]) => !ready);
+  const firstMissing = checks[firstMissingIndex] || null;
+  const remainingCount = checks.length - readyCount;
+  const tokens = appState.tokens || [];
+  const nodes = appState.nodes || [];
+  const virtualNodes = appState.virtualNodes || [];
+  const activeTokens = countBy(tokens, (row) => row.status === "active");
+  const activeNodes = countBy(nodes, (row) => row.status === "active");
+  const activeVirtualNodes = countBy(virtualNodes, (row) => row.status === "active");
+  const ready = remainingCount === 0;
+  const action = firstMissing
+    ? {
+        label: `去${dashboardViewMeta[firstMissing[3]]?.[0] || "处理"}`,
+        view: firstMissing[3],
+        target: firstMissing[6] || "",
+        expand: !!firstMissing[7],
+      }
+    : {
+        label: "发布配置",
+        view: "ops",
+        target: "config-publish",
+        expand: false,
+      };
+  const title = ready ? "现在可以真实测试" : `还差 ${remainingCount} 步可真实测试`;
+  const copy = ready
+    ? "基础数据已经形成闭环，下一步发布网关配置后复制订阅到客户端验证。"
+    : `先补齐「${firstMissing?.[0] || "待办"}」，后台会保留你的上下文并直接定位到对应操作。`;
+  const stats = [
+    overviewHeroStat("订", "订阅", activeTokens > 0 ? `${formatPlainNumber(activeTokens)} 个可用` : "待签发", activeTokens > 0),
+    overviewHeroStat("点", "节点池", activeNodes > 0 ? `${formatPlainNumber(activeNodes)} 个可用` : "待同步", activeNodes > 0),
+    overviewHeroStat("网", "网关", activeVirtualNodes > 0 ? `${formatPlainNumber(activeVirtualNodes)} 个入口` : "待创建", activeVirtualNodes > 0),
+  ];
+
+  overviewHeroEl.innerHTML = `
+    <div class="overview-hero-main">
+      <span class="overview-hero-kicker">${ready ? "交付闭环" : `初始化 ${readyCount}/${checks.length}`}</span>
+      <span class="overview-hero-title">
+        <span class="overview-hero-status ${ready ? "is-ready" : "is-warning"}" aria-hidden="true"></span>
+        <strong>${escapeHTML(title)}</strong>
+      </span>
+      <span class="overview-hero-copy">${escapeHTML(copy)}</span>
+    </div>
+    <div class="overview-hero-side">
+      <div class="overview-hero-stats" aria-label="核心状态">
+        ${stats.join("")}
+      </div>
+      <button class="primary-link-button overview-hero-action" type="button" data-overview-hero-action data-overview-jump="${escapeHTML(action.view)}" data-overview-jump-target="${escapeHTML(action.target)}" data-overview-jump-expand="${action.expand ? "true" : "false"}">
+        ${buttonLabel(ready ? "发" : "→", action.label)}
+      </button>
+    </div>
+  `;
+}
+
+function overviewHeroStat(symbol, label, value, ready) {
+  return `
+    <span class="overview-hero-stat ${ready ? "is-ready" : "is-warning"}">
+      <span class="overview-hero-stat-symbol" aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="overview-hero-stat-copy">
+        <small>${escapeHTML(label)}</small>
+        <strong>${escapeHTML(value)}</strong>
+      </span>
+    </span>
+  `;
 }
 
 function renderMetrics(data) {

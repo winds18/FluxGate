@@ -2841,20 +2841,20 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`overview metric cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  const expectedOverviewReadinessSymbols = ["源", "点", "网", "身", "策"];
+  const expectedOverviewReadinessSymbols = ["源", "点", "网", "身", "订", "策", "发"];
   if (
-    overviewReadinessCount !== 5 ||
-    overviewReadinessIndexCount !== 5 ||
-    overviewReadinessSymbolCount !== 5 ||
-    overviewReadinessStateCount !== 5 ||
+    overviewReadinessCount !== 7 ||
+    overviewReadinessIndexCount !== 7 ||
+    overviewReadinessSymbolCount !== 7 ||
+    overviewReadinessStateCount !== 7 ||
     overviewReadinessStates.some((state) => !["就绪", "待补"].includes(state)) ||
     expectedOverviewReadinessSymbols.some((symbol, index) => overviewReadinessSymbols[index] !== symbol) ||
     overviewReadinessOverflowCount > 0 ||
     overviewGuideProgressCount !== 1 ||
-    !/^\d+\/5$/.test(overviewGuideProgressValue) ||
+    !/^\d+\/7$/.test(overviewGuideProgressValue) ||
     overviewGuideCurrentCount !== 1 ||
     overviewGuideCurrentActionSymbolCount !== 1 ||
-    overviewGuideHintCount !== 5 ||
+    overviewGuideHintCount !== 7 ||
     overviewGuideOverflowCount > 0 ||
     overviewNextStepButtonCount !== 1
   ) {

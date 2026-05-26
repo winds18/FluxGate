@@ -225,7 +225,11 @@ document.addEventListener("keydown", (event) => {
 document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-overview-jump]");
   if (!button) return;
-  setActiveView(button.dataset.overviewJump || "overview");
+  navigateToDashboardTarget(
+    button.dataset.overviewJump || "overview",
+    button.dataset.overviewJumpTarget || "",
+    button.dataset.overviewJumpExpand === "true",
+  );
 });
 document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-view-rail-target]");
@@ -252,6 +256,7 @@ let appState = {
   virtualNodes: [],
   policies: [],
   tokens: [],
+  deliveryReadiness: {},
   trafficHourly: [],
   trafficDaily: [],
   trafficOutbounds: [],
@@ -904,7 +909,21 @@ async function load() {
   setRefreshPending(true);
   setStatus("刷新中", "loading");
   try {
-    const [overview, teams, users, sources, nodes, virtualNodes, policies, tokens, trafficHourly, trafficDaily, trafficOutbounds, trafficTokens] = await Promise.all([
+    const [
+      overview,
+      teams,
+      users,
+      sources,
+      nodes,
+      virtualNodes,
+      policies,
+      tokens,
+      deliveryReadiness,
+      trafficHourly,
+      trafficDaily,
+      trafficOutbounds,
+      trafficTokens,
+    ] = await Promise.all([
       getJSON("/api/overview"),
       getJSON("/api/teams"),
       getJSON("/api/users"),
@@ -913,6 +932,7 @@ async function load() {
       getJSON("/api/virtual-nodes"),
       getJSON("/api/policies"),
       getJSON("/api/tokens"),
+      getJSON("/api/delivery/readiness"),
       getJSON("/api/traffic/hourly?hours=24"),
       getJSON("/api/traffic/daily?days=14"),
       getJSON("/api/traffic/outbounds?days=14"),
@@ -928,6 +948,7 @@ async function load() {
       virtualNodes,
       policies,
       tokens,
+      deliveryReadiness,
       trafficHourly,
       trafficDaily,
       trafficOutbounds,
@@ -1879,12 +1900,30 @@ function renderMetrics(data) {
 }
 
 function overviewReadinessChecks(data) {
+  const delivery = appState.deliveryReadiness || {};
+  const deliveryChecks = Array.isArray(delivery.checks) ? delivery.checks : [];
+  const deliveryByKey = Object.fromEntries(deliveryChecks.map((check) => [check.key, check]));
+  const sourceCount = Number(data.sources || 0);
+  const nodeCount = Number(data.nodes || 0);
+  const virtualNodeCount = Number(data.virtual_nodes || 0);
+  const tokenCount = Number(data.tokens || 0);
+  const policyCount = Number(data.policies || 0);
+  const activeTokenCount = countBy(appState.tokens || [], (row) => row.status === "active");
+  const usableTokenCount = Number(deliveryByKey.tokens?.summary?.match(/^\d+/)?.[0] || activeTokenCount || tokenCount || 0);
+  const subscriptionReady = usableTokenCount > 0;
+  const publishReady = delivery.ready === true;
+  const publishSummary =
+    Number.isFinite(Number(delivery.ready_count)) && Number.isFinite(Number(delivery.total_checks))
+      ? `${formatPlainNumber(delivery.ready_count)}/${formatPlainNumber(delivery.total_checks)} 项`
+      : "待检查";
   return [
-    ["接入来源", Number(data.sources || 0) > 0, `${data.sources || 0} 个来源`, "access", "源", "先添加或导入机场订阅，让节点池有可用上游。"],
-    ["节点池", Number(data.nodes || 0) > 0, `${data.nodes || 0} 个节点`, "nodes", "点", "检查地区聚合、节点详情和命名，确保伙伴能看懂节点来源。"],
-    ["虚拟网关", Number(data.virtual_nodes || 0) > 0, `${data.virtual_nodes || 0} 个入口`, "nodes", "网", "创建 sing-box 入站入口，把节点池组合成可分发网关。"],
-    ["团队 Token", Number(data.tokens || 0) > 0, `${data.tokens || 0} 个 Token`, "identity", "身", "为团队伙伴创建 Token，并复制对应客户端订阅地址。"],
-    ["访问策略", Number(data.policies || 0) > 0, `${data.policies || 0} 条策略`, "policies", "策", "给团队或 Token 绑定可见范围和节点上限，避免误分发。"],
+    ["接入来源", sourceCount > 0, `${sourceCount} 个来源`, "access", "源", "先添加或导入机场订阅，让节点池有可用上游。", "source-form", true],
+    ["节点池", nodeCount > 0, `${nodeCount} 个节点`, "nodes", "点", "检查地区聚合、节点详情和命名，确保伙伴能看懂节点来源。", "nodes", false],
+    ["虚拟网关", virtualNodeCount > 0, `${virtualNodeCount} 个入口`, "nodes", "网", "创建 sing-box 入站入口，把节点池组合成可分发网关。", "virtual-node-form", true],
+    ["团队 Token", tokenCount > 0, `${tokenCount} 个 Token`, "identity", "身", "为团队伙伴创建 Token，绑定团队伙伴的有效期和额度。", "token-form", true],
+    ["订阅分发", subscriptionReady, `${usableTokenCount} 个可用订阅`, "identity", "订", "复制默认、Mihomo 或 sing-box 订阅地址，直接导入客户端测试。", "tokens", false],
+    ["访问策略", policyCount > 0, `${policyCount} 条策略`, "policies", "策", "给团队或 Token 绑定可见范围和节点上限，避免误分发。", "policy-form", true],
+    ["发布检查", publishReady, publishSummary, "ops", "发", "在运维模块检查交付收口并发布 sing-box 配置。", "ops-actions", false],
   ];
 }
 
@@ -1899,12 +1938,16 @@ function renderOverviewReadiness(data) {
         title: `补齐${firstMissing[0]}`,
         description: "补齐后再回到运维模块检查并发布 sing-box 配置，订阅地址才更接近真实客户端体验。",
         view: firstMissing[3],
+        target: firstMissing[6] || "",
+        expand: !!firstMissing[7],
         action: `去${dashboardViewMeta[firstMissing[3]]?.[0] || "处理"}`,
       }
     : {
         title: "闭环已具备真实测试条件",
         description: "基础数据已齐备，可以发布网关配置，再复制 Clash/Mihomo 或 sing-box 订阅地址做客户端导入验证。",
         view: "ops",
+        target: "ops-actions",
+        expand: false,
         action: "去运维发布",
       };
   const guideCurrent = firstMissing
@@ -1913,6 +1956,8 @@ function renderOverviewReadiness(data) {
         title: next.title,
         description: firstMissing[5],
         view: next.view,
+        target: next.target,
+        expand: next.expand,
         action: next.action,
       }
     : {
@@ -1920,6 +1965,8 @@ function renderOverviewReadiness(data) {
         title: "发布配置并导入客户端",
         description: "基础数据已齐备，现在可以发布网关配置，然后复制订阅地址到 Mihomo 或 sing-box 真实验证。",
         view: "ops",
+        target: "ops-actions",
+        expand: false,
         action: "去运维发布",
       };
 
@@ -1943,7 +1990,7 @@ function renderOverviewReadiness(data) {
           <strong>${escapeHTML(guideCurrent.title)}</strong>
           <span>${escapeHTML(guideCurrent.description)}</span>
         </span>
-        <button class="primary-link-button guide-current-action" type="button" data-overview-jump="${guideCurrent.view}">
+        <button class="primary-link-button guide-current-action" type="button" data-overview-jump="${guideCurrent.view}" data-overview-jump-target="${escapeHTML(guideCurrent.target || "")}" data-overview-jump-expand="${guideCurrent.expand ? "true" : "false"}">
           ${buttonLabel("→", guideCurrent.action)}
         </button>
       </div>
@@ -1951,8 +1998,8 @@ function renderOverviewReadiness(data) {
     <div class="readiness-list" data-overview-readiness>
       ${checks
         .map(
-          ([label, ready, summary, view, symbol, hint], index) => `
-            <button class="readiness-item ${ready ? "is-ready" : ""}" type="button" data-overview-jump="${view}">
+          ([label, ready, summary, view, symbol, hint, target, expand], index) => `
+            <button class="readiness-item ${ready ? "is-ready" : ""}" type="button" data-overview-jump="${view}" data-overview-jump-target="${escapeHTML(target || "")}" data-overview-jump-expand="${expand ? "true" : "false"}">
               <span class="readiness-symbol-wrap" aria-hidden="true">
                 <span class="readiness-index">${String(index + 1).padStart(2, "0")}</span>
                 <span class="readiness-symbol">${escapeHTML(symbol)}</span>
@@ -1983,7 +2030,7 @@ function renderOverviewReadiness(data) {
         <strong>${escapeHTML(next.title)}</strong>
         <small>${escapeHTML(next.description)}</small>
       </span>
-      <button class="primary-link-button next-step-action" type="button" data-overview-jump="${next.view}">
+      <button class="primary-link-button next-step-action" type="button" data-overview-jump="${next.view}" data-overview-jump-target="${escapeHTML(next.target || "")}" data-overview-jump-expand="${next.expand ? "true" : "false"}">
         ${buttonLabel("→", next.action)}
       </button>
     </div>
@@ -2148,7 +2195,7 @@ function updateNavigationCounts() {
     const view = element.dataset.viewCount || "";
     const value = counts[view] || "0";
     element.textContent = value;
-    element.classList.toggle("is-empty", value === "0" || value === "0/5" || value === "待检");
+    element.classList.toggle("is-empty", value === "0" || /^0\/\d+$/.test(value) || value === "待检");
     element.setAttribute("title", `${dashboardViewMeta[view]?.[0] || view}：${value}`);
   });
 }

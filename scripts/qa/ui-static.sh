@@ -73,5 +73,11 @@ require_pattern "$APP_FILE" 'aria-label="编辑节点"' "node edit icon button m
 require_pattern "$APP_FILE" 'title="恢复自动命名"' "node reset icon button must explain the action on hover"
 require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \.button-label \{[^}]*clip-path: inset\(50%\);' "desktop node icon actions must hide truncated text labels visually"
 require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \.table-button \{[^}]*aspect-ratio: 1;' "desktop node icon actions must be stable square controls"
+require_pattern "$APP_FILE" 'syncFormDrawerShellState\(' "form drawers must synchronize a real side-sheet shell state"
+require_pattern "$APP_FILE" 'document\.body\.classList\.toggle\("has-form-drawer-open"' "opening a form drawer must mark the page shell"
+require_pattern "$APP_FILE" 'aria-modal' "expanded form drawers must expose dialog semantics"
+require_multiline_pattern "$CALM_CSS_FILE" '\.form-drawer:not\(\.is-collapsed\) \{[^}]*position: fixed;' "expanded form drawers must float as side sheets instead of pushing the page"
+require_multiline_pattern "$CALM_CSS_FILE" '\.form-drawer:not\(\.is-collapsed\) \{[^}]*width: min\(520px, calc\(100vw - 36px\)\);' "desktop form side sheets must use a stable humane width"
+require_multiline_pattern "$CALM_CSS_FILE" 'body\.has-form-drawer-open::before \{[^}]*backdrop-filter: blur\(2px\);' "open form side sheets must calm the background instead of competing with content"
 
 log "static UI contract checks passed"

@@ -220,6 +220,7 @@ document.addEventListener("click", (event) => {
 document.addEventListener("keydown", (event) => {
   if (event.key === "Escape") {
     setMobileMoreMenuOpen(false);
+    collapseActiveFormDrawer();
   }
 });
 document.addEventListener("click", (event) => {
@@ -593,6 +594,8 @@ async function logout() {
 }
 
 function showLogin() {
+  document.querySelectorAll("[data-form-drawer]").forEach((drawer) => applyFormDrawerCollapsed(drawer, true));
+  syncFormDrawerShellState();
   appView.hidden = true;
   loginView.hidden = false;
   logoutEl.hidden = true;
@@ -614,6 +617,10 @@ function setActiveView(view) {
   dashboardViewSections.forEach((section) => {
     section.hidden = section.dataset.dashboardView !== nextView;
   });
+  const activeDrawer = document.querySelector("[data-form-drawer]:not(.is-collapsed)");
+  if (activeDrawer && !activeDrawer.closest(`[data-dashboard-view="${nextView}"]`)) {
+    setFormDrawerCollapsed(activeDrawer, true);
+  }
   dashboardNavButtons.forEach((button) => {
     const isActive = button.dataset.viewNav === nextView;
     button.classList.toggle("is-active", isActive);
@@ -641,11 +648,50 @@ function setMobileMoreMenuOpen(open) {
 }
 
 function setFormDrawerCollapsed(drawer, collapsed) {
+  if (!collapsed) {
+    document.querySelectorAll("[data-form-drawer]").forEach((otherDrawer) => {
+      if (otherDrawer !== drawer) {
+        applyFormDrawerCollapsed(otherDrawer, true);
+      }
+    });
+  }
+  applyFormDrawerCollapsed(drawer, collapsed);
+  syncFormDrawerShellState();
+}
+
+function applyFormDrawerCollapsed(drawer, collapsed) {
   drawer.classList.toggle("is-collapsed", collapsed);
+  drawer.classList.toggle("is-side-sheet", !collapsed);
+  if (!collapsed) {
+    drawer.setAttribute("role", "dialog");
+    drawer.setAttribute("aria-modal", "true");
+  } else {
+    drawer.removeAttribute("role");
+    drawer.removeAttribute("aria-modal");
+  }
   const toggle = drawer.querySelector("[data-form-drawer-toggle]");
   if (toggle) {
     toggle.innerHTML = buttonLabel(collapsed ? "+" : "−", collapsed ? "展开" : "收起");
+    toggle.setAttribute("aria-expanded", collapsed ? "false" : "true");
   }
+}
+
+function syncFormDrawerShellState() {
+  const activeDrawer = document.querySelector("[data-form-drawer]:not(.is-collapsed)");
+  document.body.classList.toggle("has-form-drawer-open", Boolean(activeDrawer));
+  if (activeDrawer?.id) {
+    document.body.dataset.activeFormDrawer = activeDrawer.id;
+  } else {
+    delete document.body.dataset.activeFormDrawer;
+  }
+}
+
+function collapseActiveFormDrawer() {
+  const activeDrawer = document.querySelector("[data-form-drawer]:not(.is-collapsed)");
+  if (!activeDrawer) return;
+  setFormDrawerCollapsed(activeDrawer, true);
+  setStatus(`已收起：${dashboardTargetLabel(activeDrawer.id)}`, "info");
+  activeDrawer.querySelector("[data-form-drawer-toggle]")?.focus({ preventScroll: true });
 }
 
 function handleFormDrawerDraft(event) {
@@ -905,6 +951,13 @@ function cancelFormDrawer(drawer) {
   drawer.querySelector("[data-form-drawer-toggle]")?.focus({ preventScroll: true });
 }
 
+function completeFormDrawerSuccess(drawer) {
+  drawer.reset();
+  clearInvalidFieldFeedback({ currentTarget: drawer, clearAll: true });
+  setFormDrawerDirty(drawer, false);
+  setFormDrawerCollapsed(drawer, true);
+}
+
 async function load() {
   setRefreshPending(true);
   setStatus("刷新中", "loading");
@@ -995,8 +1048,7 @@ async function submitTeam(event) {
     description: textField(form, "description"),
   }));
   if (!result.ok) return;
-  teamForm.reset();
-  setFormDrawerDirty(teamForm, false);
+  completeFormDrawerSuccess(teamForm);
 }
 
 async function submitUser(event) {
@@ -1009,8 +1061,7 @@ async function submitUser(event) {
     email: textField(form, "email"),
   }));
   if (!result.ok) return;
-  userForm.reset();
-  setFormDrawerDirty(userForm, false);
+  completeFormDrawerSuccess(userForm);
 }
 
 async function submitSource(event) {
@@ -1024,8 +1075,7 @@ async function submitSource(event) {
     refresh_interval_minutes: numberField(form, "refresh_interval_minutes"),
   }));
   if (!result.ok) return;
-  sourceForm.reset();
-  setFormDrawerDirty(sourceForm, false);
+  completeFormDrawerSuccess(sourceForm);
 }
 
 async function submitNodeImport(event) {
@@ -1036,8 +1086,7 @@ async function submitNodeImport(event) {
     content: textField(form, "content"),
   }));
   if (!result.ok) return;
-  nodeImportForm.reset();
-  setFormDrawerDirty(nodeImportForm, false);
+  completeFormDrawerSuccess(nodeImportForm);
 }
 
 async function submitVirtualNode(event) {
@@ -1050,8 +1099,7 @@ async function submitVirtualNode(event) {
     tag_selector: textField(form, "tag_selector"),
   }));
   if (!result.ok) return;
-  virtualNodeForm.reset();
-  setFormDrawerDirty(virtualNodeForm, false);
+  completeFormDrawerSuccess(virtualNodeForm);
 }
 
 async function submitPolicy(event) {
@@ -1068,8 +1116,7 @@ async function submitPolicy(event) {
     max_nodes: numberField(form, "max_nodes"),
   }));
   if (!result.ok) return;
-  policyForm.reset();
-  setFormDrawerDirty(policyForm, false);
+  completeFormDrawerSuccess(policyForm);
 }
 
 async function submitToken(event) {
@@ -1084,8 +1131,7 @@ async function submitToken(event) {
   }));
   if (!result.ok) return;
   showTokenSubscriptionResult(result.value, "订阅地址");
-  tokenForm.reset();
-  setFormDrawerDirty(tokenForm, false);
+  completeFormDrawerSuccess(tokenForm);
 }
 
 async function handleTeamAction(event) {

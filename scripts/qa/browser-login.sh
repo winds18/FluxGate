@@ -351,6 +351,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       if (gridBox.width <= 0) return total;
       return total + Array.from(grid.querySelectorAll("[data-form-drawer]"))
         .filter(isVisible)
+        .filter((drawer) => drawer.classList.contains("is-collapsed"))
         .reduce((count, drawer) => {
           const drawerBox = drawer.getBoundingClientRect();
           return count + (drawerBox.width / gridBox.width < 0.92 ? 1 : 0);
@@ -390,6 +391,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const activeRailTargets = {};
   let formDrawerCancelFeedback = {};
   let formDrawerDraftFeedback = {};
+  let formDrawerEscapeFeedback = {};
+  let formDrawerSideSheetFeedback = {};
   let formDrawerSubmitFeedback = {};
   let formDrawerSubmitRestored = {};
   let refreshButtonPendingFeedback = {};
@@ -494,6 +497,28 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await page.locator("#view-primary-action").click();
   await expect(page.locator("#source-form:not(.is-collapsed)")).toBeVisible({ timeout: 5000 });
   await expect(page.locator("#source-form.is-target-highlighted")).toHaveCount(1, { timeout: 1000 });
+  formDrawerSideSheetFeedback = await page.evaluate(() => {
+    const drawer = document.querySelector("#source-form");
+    const drawerBox = drawer?.getBoundingClientRect();
+    const formBody = drawer?.querySelector(".form-body");
+    const style = drawer ? getComputedStyle(drawer) : null;
+    return {
+      bodyHasOpen: document.body.classList.contains("has-form-drawer-open") ? 1 : 0,
+      activeDrawer: document.body.dataset.activeFormDrawer || "",
+      role: drawer?.getAttribute("role") || "",
+      ariaModal: drawer?.getAttribute("aria-modal") || "",
+      toggleExpanded: drawer?.querySelector("[data-form-drawer-toggle]")?.getAttribute("aria-expanded") || "",
+      position: style?.position || "",
+      zIndex: Number.parseInt(style?.zIndex || "0", 10) || 0,
+      width: Math.round(drawerBox?.width || 0),
+      height: Math.round(drawerBox?.height || 0),
+      viewportWidth: window.innerWidth,
+      viewportHeight: window.innerHeight,
+      formBodyOverflowY: formBody ? getComputedStyle(formBody).overflowY : "",
+      openDrawerCount: document.querySelectorAll("[data-form-drawer]:not(.is-collapsed)").length,
+      pageOverflow: Math.max(0, document.documentElement.scrollWidth - window.innerWidth),
+    };
+  });
   workspacePrimaryActionFocus.access = await page.evaluate(() => document.activeElement?.getAttribute("name") || "");
   workspacePrimaryActionHighlight.access = await page.locator("#source-form.is-target-highlighted").count();
   workspacePrimaryActionStatus.access = (await page.locator("#status").textContent())?.trim() || "";
@@ -537,6 +562,25 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       overflow: headerBox && draftBox && draftBox.width > 0 && draftBox.height > 0 && outside(draftBox, headerBox) ? 1 : 0,
     };
   });
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#source-form.is-collapsed")).toHaveCount(1, { timeout: 1000 });
+  formDrawerEscapeFeedback = await page.evaluate(() => {
+    const drawer = document.querySelector("#source-form");
+    return {
+      bodyHasOpen: document.body.classList.contains("has-form-drawer-open") ? 1 : 0,
+      activeDrawer: document.body.dataset.activeFormDrawer || "",
+      role: drawer?.getAttribute("role") || "",
+      ariaModal: drawer?.getAttribute("aria-modal") || "",
+      toggleExpanded: drawer?.querySelector("[data-form-drawer-toggle]")?.getAttribute("aria-expanded") || "",
+      dirty: drawer?.classList.contains("is-dirty") ? 1 : 0,
+      value: document.querySelector('#source-form input[name="name"]')?.value || "",
+      status: document.querySelector("#status")?.textContent?.trim() || "",
+      tone: document.querySelector("#status")?.dataset.statusTone || "",
+      pageOverflow: Math.max(0, document.documentElement.scrollWidth - window.innerWidth),
+    };
+  });
+  await page.locator('#source-form [data-form-drawer-toggle]').click();
+  await expect(page.locator("#source-form:not(.is-collapsed)")).toBeVisible({ timeout: 1000 });
   await page.locator('#source-form [data-form-drawer-cancel]').click();
   await expect(page.locator("#source-form.is-collapsed")).toHaveCount(1, { timeout: 1000 });
   formDrawerCancelFeedback = await page.evaluate(() => ({
@@ -634,6 +678,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     const cancelButton = drawer?.querySelector("[data-form-drawer-cancel]");
     const nameInput = drawer?.querySelector('input[name="name"]');
     return {
+      collapsed: drawer?.classList.contains("is-collapsed") ? 1 : 0,
       submitting: drawer?.classList.contains("is-submitting") ? 1 : 0,
       ariaBusy: drawer?.getAttribute("aria-busy") || "",
       submitDisabled: submitButton?.disabled ? 1 : 0,
@@ -1192,6 +1237,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return total;
     }, 0);
   });
+  await page.keyboard.press("Escape");
+  await expect(page.locator("#token-form.is-collapsed")).toHaveCount(1, { timeout: 1000 });
   const tokenCardCount = await page.locator("#tokens .token-card").count();
   const tokenRowCount = tokenCardCount || (await page.locator("#tokens tbody tr").count());
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
@@ -2098,6 +2145,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.formDrawerDraftCount = formDrawerDraftCount;
   state.formDrawerCancelFeedback = formDrawerCancelFeedback;
   state.formDrawerDraftFeedback = formDrawerDraftFeedback;
+  state.formDrawerEscapeFeedback = formDrawerEscapeFeedback;
+  state.formDrawerSideSheetFeedback = formDrawerSideSheetFeedback;
   state.formDrawerSubmitFeedback = formDrawerSubmitFeedback;
   state.formDrawerSubmitRestored = formDrawerSubmitRestored;
   state.formSubmitButtonSymbolCount = formSubmitButtonSymbolCount;
@@ -2671,12 +2720,42 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`form drawers should be collapsed and visually stable by default: ${JSON.stringify(state)}`);
   }
   if (
+    formDrawerSideSheetFeedback.bodyHasOpen !== 1 ||
+    formDrawerSideSheetFeedback.activeDrawer !== "source-form" ||
+    formDrawerSideSheetFeedback.role !== "dialog" ||
+    formDrawerSideSheetFeedback.ariaModal !== "true" ||
+    formDrawerSideSheetFeedback.toggleExpanded !== "true" ||
+    formDrawerSideSheetFeedback.position !== "fixed" ||
+    formDrawerSideSheetFeedback.zIndex < 90 ||
+    formDrawerSideSheetFeedback.openDrawerCount !== 1 ||
+    formDrawerSideSheetFeedback.formBodyOverflowY !== "auto" ||
+    formDrawerSideSheetFeedback.width <= 0 ||
+    formDrawerSideSheetFeedback.width > formDrawerSideSheetFeedback.viewportWidth ||
+    formDrawerSideSheetFeedback.pageOverflow > 2
+  ) {
+    throw new Error(`form drawer should open as a stable side sheet: ${JSON.stringify(state)}`);
+  }
+  if (
     formDrawerDraftFeedback.dirty !== 1 ||
     formDrawerDraftFeedback.draftHidden !== false ||
     formDrawerDraftFeedback.text !== "草稿未提交" ||
     formDrawerDraftFeedback.overflow > 0
   ) {
     throw new Error(`form drawer should show a stable unsaved draft marker after input: ${JSON.stringify(state)}`);
+  }
+  if (
+    formDrawerEscapeFeedback.bodyHasOpen !== 0 ||
+    formDrawerEscapeFeedback.activeDrawer ||
+    formDrawerEscapeFeedback.role ||
+    formDrawerEscapeFeedback.ariaModal ||
+    formDrawerEscapeFeedback.toggleExpanded !== "false" ||
+    formDrawerEscapeFeedback.dirty !== 1 ||
+    formDrawerEscapeFeedback.value !== "QA inline source" ||
+    !formDrawerEscapeFeedback.status?.includes("已收起：添加来源") ||
+    formDrawerEscapeFeedback.tone !== "info" ||
+    formDrawerEscapeFeedback.pageOverflow > 2
+  ) {
+    throw new Error(`form drawer escape should collapse the side sheet without losing draft: ${JSON.stringify(state)}`);
   }
   if (
     !formDrawerCancelFeedback.status?.includes("已取消：添加来源") ||
@@ -2704,6 +2783,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`form drawer submit should show a stable pending state: ${JSON.stringify(state)}`);
   }
   if (
+    formDrawerSubmitRestored.collapsed !== 1 ||
     formDrawerSubmitRestored.submitting !== 0 ||
     formDrawerSubmitRestored.ariaBusy ||
     formDrawerSubmitRestored.submitDisabled !== 0 ||

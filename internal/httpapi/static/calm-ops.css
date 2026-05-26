@@ -340,6 +340,73 @@ a.table-button:hover {
   transform: none;
 }
 
+.source-actions,
+.identity-card-actions,
+.virtual-node-actions,
+.policy-actions,
+.node-actions {
+  align-items: center;
+  background: rgba(247, 250, 249, 0.76);
+  border: 1px solid rgba(221, 231, 228, 0.92);
+  border-radius: var(--fg-radius);
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  justify-self: end;
+  max-width: 100%;
+  min-width: 0;
+  padding: 6px;
+  width: auto;
+}
+
+.source-actions .table-button,
+.identity-card-actions .table-button,
+.virtual-node-actions .table-button,
+.policy-actions .table-button,
+.node-actions .table-button {
+  flex: 0 1 auto;
+  min-width: 84px;
+}
+
+.source-actions button[data-source-action="edit"],
+.source-actions button[data-source-action="refresh"],
+.source-actions button[data-source-action="regenerate"],
+.identity-card-actions button[data-team-action="edit"],
+.identity-card-actions button[data-user-action="edit"],
+.virtual-node-actions button[data-virtual-node-action="edit"],
+.policy-actions button[data-policy-action="edit"],
+.node-actions button[data-node-action="edit"],
+.node-actions button[data-node-action="reset-name"] {
+  background: #ffffff;
+  border-color: #d9e5e2;
+  color: #22322f;
+}
+
+.source-actions button[data-source-action="edit"]:hover,
+.source-actions button[data-source-action="refresh"]:hover,
+.source-actions button[data-source-action="regenerate"]:hover,
+.identity-card-actions button[data-team-action="edit"]:hover,
+.identity-card-actions button[data-user-action="edit"]:hover,
+.virtual-node-actions button[data-virtual-node-action="edit"]:hover,
+.policy-actions button[data-policy-action="edit"]:hover,
+.node-actions button[data-node-action="edit"]:hover,
+.node-actions button[data-node-action="reset-name"]:hover {
+  background: #f3f8f6;
+  border-color: #aacdc7;
+  color: #123e38;
+}
+
+.source-actions button[data-source-action="save"],
+.identity-card-actions button[data-team-action="save"],
+.identity-card-actions button[data-user-action="save"],
+.virtual-node-actions button[data-virtual-node-action="save"],
+.policy-actions button[data-policy-action="save"],
+.node-edit-actions .table-button[type="submit"] {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #ffffff;
+}
+
 .button-label,
 .button-symbol {
   min-width: 0;
@@ -953,8 +1020,21 @@ a.table-button:hover {
   }
 
   .node-actions .table-button,
+  .source-actions .table-button,
+  .identity-card-actions .table-button,
+  .virtual-node-actions .table-button,
+  .policy-actions .table-button,
   .token-subscription-actions .table-button {
     flex: 1 1 auto;
+    width: 100%;
+  }
+
+  .source-actions,
+  .identity-card-actions,
+  .virtual-node-actions,
+  .policy-actions,
+  .node-actions {
+    justify-self: stretch;
     width: 100%;
   }
 

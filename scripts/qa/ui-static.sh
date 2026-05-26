@@ -42,5 +42,11 @@ require_pattern "$CALM_CSS_FILE" 'scrollbar-width: none;' "module command strips
 require_pattern "$CALM_CSS_FILE" 'flex: 0 0 auto;' "command chips and rail items must not shrink into unreadable pills"
 require_pattern "$CALM_CSS_FILE" '\.workspace-actions \{' "workspace actions must be governed by the calm ops layer"
 require_pattern "$CALM_CSS_FILE" 'grid-template-columns: repeat\(2, minmax\(0, 1fr\)\);' "mobile workspace actions must remain balanced and tappable"
+require_pattern "$CALM_CSS_FILE" '\.source-actions,' "card action toolbars must be governed by the calm ops layer"
+require_pattern "$CALM_CSS_FILE" 'justify-content: flex-end;' "desktop card action toolbars must not look like full-width primary blocks"
+require_pattern "$CALM_CSS_FILE" 'flex: 0 1 auto;' "desktop card action buttons must stay compact"
+require_pattern "$CALM_CSS_FILE" 'button\[data-source-action="edit"\]' "low-risk inline edit actions must be quiet secondary controls"
+require_pattern "$CALM_CSS_FILE" 'button\[data-source-action="save"\]' "inline save actions must keep a clear primary affordance"
+require_pattern "$CALM_CSS_FILE" '\.source-actions \.table-button,' "mobile card action bars must retain tappable full-width behavior"
 
 log "static UI contract checks passed"

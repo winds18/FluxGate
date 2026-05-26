@@ -10,6 +10,17 @@ KEEP_ARTIFACTS="${KEEP_ARTIFACTS:-false}"
 ADMIN_BOOTSTRAP_USERNAME="${ADMIN_BOOTSTRAP_USERNAME:-admin}"
 ADMIN_BOOTSTRAP_PASSWORD="${ADMIN_BOOTSTRAP_PASSWORD:-qa-admin-change-me}"
 SESSION_SECRET="${SESSION_SECRET:-qa-session-secret-change-me}"
+LOCAL_NO_PROXY="127.0.0.1,localhost,::1"
+
+if [[ -n "${NO_PROXY:-}" ]]; then
+  case ",$NO_PROXY," in
+    *",127.0.0.1,"*) ;;
+    *) NO_PROXY="$LOCAL_NO_PROXY,$NO_PROXY" ;;
+  esac
+else
+  NO_PROXY="$LOCAL_NO_PROXY"
+fi
+export NO_PROXY no_proxy="$NO_PROXY"
 
 cleanup() {
   PORT="$PORT" "$ROOT_DIR/scripts/dev/stop.sh" >/dev/null 2>&1 || true

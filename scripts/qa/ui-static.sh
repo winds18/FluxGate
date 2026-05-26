@@ -16,6 +16,16 @@ require_pattern() {
   fi
 }
 
+require_multiline_pattern() {
+  local file="$1"
+  local pattern="$2"
+  local message="$3"
+  if ! rg -Uq "$pattern" "$file"; then
+    log "$message"
+    exit 1
+  fi
+}
+
 require_count() {
   local file="$1"
   local pattern="$2"
@@ -48,5 +58,10 @@ require_pattern "$CALM_CSS_FILE" 'flex: 0 1 auto;' "desktop card action buttons 
 require_pattern "$CALM_CSS_FILE" 'button\[data-source-action="edit"\]' "low-risk inline edit actions must be quiet secondary controls"
 require_pattern "$CALM_CSS_FILE" 'button\[data-source-action="save"\]' "inline save actions must keep a clear primary affordance"
 require_pattern "$CALM_CSS_FILE" '\.source-actions \.table-button,' "mobile card action bars must retain tappable full-width behavior"
+require_multiline_pattern "$CALM_CSS_FILE" '\.node-card \{[^}]*position: relative;' "node cards must anchor actions without adding empty vertical space"
+require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \{[^}]*position: absolute;' "node card actions must be docked instead of consuming a full card row"
+require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \{[^}]*top: 12px;' "node card actions must stay close to the card title"
+require_multiline_pattern "$CALM_CSS_FILE" '\.node-actions \.table-button \{[^}]*flex: 0 0 auto;' "node card action buttons must not stretch into full-width blocks on desktop"
+require_pattern "$CALM_CSS_FILE" 'padding-right: 118px;' "node card content must reserve space for docked actions"
 
 log "static UI contract checks passed"

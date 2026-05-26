@@ -448,6 +448,7 @@ a.table-button:hover {
 .node-card {
   align-content: start;
   overflow: visible;
+  position: relative;
 }
 
 .node-card-expanded {
@@ -461,6 +462,7 @@ a.table-button:hover {
   border-color: #e2ebe8;
   min-height: 126px;
   padding: 12px;
+  padding-right: 118px;
 }
 
 .node-card-main:hover {
@@ -497,13 +499,26 @@ a.table-button:hover {
 }
 
 .node-actions {
+  background: transparent;
+  border: 0;
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  flex-direction: column;
+  flex-wrap: nowrap;
+  gap: 6px;
+  padding: 0;
+  position: absolute;
+  right: 12px;
+  top: 12px;
+  width: 96px;
+  z-index: 2;
 }
 
 .node-actions .table-button {
-  flex: 1 1 120px;
+  flex: 0 0 auto;
+  min-height: 34px;
+  min-width: 0;
+  padding-inline: 8px;
+  width: 100%;
 }
 
 .node-edit-form {
@@ -1035,7 +1050,12 @@ a.table-button:hover {
   .policy-actions,
   .node-actions {
     justify-self: stretch;
+    position: static;
     width: 100%;
+  }
+
+  .node-card-main {
+    padding-right: 12px;
   }
 
   .node-edit-form {

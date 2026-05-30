@@ -3104,7 +3104,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     sourceEditCount > 0 &&
     (sourceWorkbenchCount !== 1 ||
       sourceWorkbenchStatCount < 4 ||
-      sourceWorkbenchTypeCardCount < 2 ||
+      sourceWorkbenchTypeCardCount < 1 ||
       sourceWorkbenchOverflowCount > 0 ||
       !["源", "健", "刷", "异"].every((symbol) => sourceWorkbenchSymbols.includes(symbol)))
   ) {

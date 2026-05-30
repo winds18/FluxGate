@@ -1139,6 +1139,50 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`east8 time display failed: ${JSON.stringify(east8TimeSamples)}`);
   }
   await switchView("traffic");
+  const trafficWorkbenchCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-workbench]').count();
+  const trafficWorkbenchStatCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-workbench-stat]').count();
+  const trafficWorkbenchSignalCardCount = await page
+    .locator('[data-dashboard-view="traffic"] [data-traffic-workbench-signal-card]')
+    .count();
+  const trafficWorkbenchSymbols = await page
+    .locator('[data-dashboard-view="traffic"] [data-traffic-workbench-symbol]')
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const trafficWorkbenchOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll('[data-dashboard-view="traffic"] [data-traffic-workbench]')).reduce(
+      (total, workbench) => {
+        const workbenchBox = workbench.getBoundingClientRect();
+        const elements = Array.from(
+          workbench.querySelectorAll(
+            ".traffic-workbench-heading, .traffic-workbench-copy, .traffic-workbench-title, .traffic-workbench-kicker, .traffic-workbench-stat, .traffic-workbench-stat-symbol, .traffic-workbench-stat-value, .traffic-workbench-stat-detail, .traffic-workbench-signal-card, .traffic-workbench-signal-copy, .traffic-workbench-signal-name, .traffic-workbench-signal-meta, .traffic-workbench-signal-hint",
+          ),
+        ).filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const box = element.getBoundingClientRect();
+          const parent =
+            element.classList.contains("traffic-workbench-heading") ||
+            element.classList.contains("traffic-workbench-stat") ||
+            element.classList.contains("traffic-workbench-signal-card")
+              ? workbenchBox
+              : (
+                  element.closest(".traffic-workbench-heading") ||
+                  element.closest(".traffic-workbench-stat") ||
+                  element.closest(".traffic-workbench-signal-card") ||
+                  workbench
+                ).getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && (outside(box, parent) || outside(box, workbenchBox))) {
+            total += 1;
+          }
+        }
+        return total;
+      },
+      0,
+    );
+  });
   const trafficTokenTableRowCount = await page.locator("#traffic-tokens tbody tr").count();
   const trafficTokenCardCount = await page.locator("#traffic-tokens .traffic-token-card").count();
   const trafficTokenRowCount = trafficTokenCardCount || trafficTokenTableRowCount;
@@ -2642,6 +2686,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeEditInputNames = nodeEditInputNames;
   state.nodeEditFormOverflowCount = nodeEditFormOverflowCount;
   state.east8TimeSamples = east8TimeSamples;
+  state.trafficWorkbenchCount = trafficWorkbenchCount;
+  state.trafficWorkbenchStatCount = trafficWorkbenchStatCount;
+  state.trafficWorkbenchSignalCardCount = trafficWorkbenchSignalCardCount;
+  state.trafficWorkbenchSymbols = trafficWorkbenchSymbols;
+  state.trafficWorkbenchOverflowCount = trafficWorkbenchOverflowCount;
   state.trafficTokenRowCount = trafficTokenRowCount;
   state.trafficTokenCardCount = trafficTokenCardCount;
   state.trafficOutboundRowCount = trafficOutboundRowCount;
@@ -2840,6 +2889,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`token controls visually overflow or overlap: ${JSON.stringify(state)}`);
   }
   if (
+    trafficWorkbenchCount !== 1 ||
+    trafficWorkbenchStatCount !== 4 ||
+    trafficWorkbenchSignalCardCount !== 3 ||
+    !["量", "钥", "时", "出", "额", "日"].every((symbol) => trafficWorkbenchSymbols.includes(symbol)) ||
+    trafficWorkbenchOverflowCount > 0 ||
     (trafficTokenRowCount > 0 && trafficTokenCardCount !== trafficTokenRowCount) ||
     (trafficOutboundRowCount > 0 && trafficOutboundCardCount !== trafficOutboundRowCount) ||
     (trafficTokenCardCount > 0 && trafficTokenSummaryChipCount !== trafficTokenCardCount * 4) ||

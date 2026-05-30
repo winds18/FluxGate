@@ -367,6 +367,9 @@ textarea:hover {
 .virtual-node-workbench,
 .virtual-node-workbench-stats,
 .virtual-node-workbench-strategy-grid,
+.traffic-workbench,
+.traffic-workbench-stats,
+.traffic-workbench-signal-grid,
 .node-region-grid,
 .node-card-grid {
   min-width: 0;
@@ -575,6 +578,165 @@ textarea:hover {
 .action-grid #token-form {
   grid-column: 1 / -1;
   width: 100%;
+}
+
+.traffic-workbench {
+  background: linear-gradient(135deg, #ffffff 0%, #f6fbf9 100%);
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  box-shadow: var(--fg-soft-shadow);
+  display: grid;
+  gap: 12px;
+  margin: 12px 0;
+  min-width: 0;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.traffic-workbench-heading {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.traffic-workbench-symbol,
+.traffic-workbench-stat-symbol,
+.traffic-workbench-signal-symbol {
+  align-items: center;
+  background: #ecfdf5;
+  border: 1px solid #bbf7d0;
+  border-radius: 8px;
+  color: #047857;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 860;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
+.traffic-workbench-copy,
+.traffic-workbench-stat-copy,
+.traffic-workbench-signal-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.traffic-workbench-kicker,
+.traffic-workbench-title,
+.traffic-workbench-stat-label,
+.traffic-workbench-stat-value,
+.traffic-workbench-stat-detail,
+.traffic-workbench-signal-name,
+.traffic-workbench-signal-meta,
+.traffic-workbench-signal-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.traffic-workbench-kicker,
+.traffic-workbench-stat-label,
+.traffic-workbench-stat-detail,
+.traffic-workbench-signal-meta {
+  color: var(--fg-muted);
+  font-size: 11px;
+  font-weight: 680;
+  line-height: 1.25;
+}
+
+.traffic-workbench-title {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.traffic-workbench-stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.traffic-workbench-stat {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.traffic-workbench-stat-value {
+  color: #111827;
+  font-size: 17px;
+  font-weight: 850;
+}
+
+.traffic-workbench-signal-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  min-width: 0;
+}
+
+.traffic-workbench-signal-card {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 58px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.traffic-workbench-signal-name {
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 830;
+}
+
+.traffic-workbench-signal-hint {
+  background: var(--fg-blue-soft);
+  border: 1px solid #cfe1ff;
+  border-radius: 999px;
+  color: var(--fg-blue);
+  font-size: 11px;
+  font-weight: 760;
+  max-width: 154px;
+  padding: 4px 8px;
+}
+
+.traffic-workbench-signal-card-success .traffic-workbench-signal-hint {
+  background: var(--fg-green-soft);
+  border-color: #bae7d4;
+  color: var(--fg-green);
+}
+
+.traffic-workbench-signal-card-warning .traffic-workbench-signal-hint {
+  background: #fff7ed;
+  border-color: #fed7aa;
+  color: #b45309;
+}
+
+.traffic-workbench-signal-card-muted .traffic-workbench-signal-hint {
+  background: #f8fafc;
+  border-color: #e2e8f0;
+  color: var(--fg-muted);
 }
 
 .source-workbench {
@@ -2320,6 +2482,8 @@ body.has-form-drawer-open::before {
   .policy-workbench-scope-grid,
   .virtual-node-workbench-stats,
   .virtual-node-workbench-strategy-grid,
+  .traffic-workbench-stats,
+  .traffic-workbench-signal-grid,
   .node-workbench-stats,
   .node-workbench-region-grid {
     grid-template-columns: 1fr;
@@ -2329,6 +2493,7 @@ body.has-form-drawer-open::before {
   .source-workbench-type-card,
   .policy-workbench-scope-card,
   .virtual-node-workbench-strategy-card,
+  .traffic-workbench-signal-card,
   .node-workbench-region-card {
     grid-template-columns: auto minmax(0, 1fr);
   }
@@ -2337,6 +2502,7 @@ body.has-form-drawer-open::before {
   .source-workbench-type-hint,
   .policy-workbench-scope-hint,
   .virtual-node-workbench-strategy-hint,
+  .traffic-workbench-signal-hint,
   .node-workbench-region-rate {
     grid-column: 1 / -1;
     justify-self: start;
@@ -3016,6 +3182,7 @@ button[type="submit"]:hover,
 .node-workbench *,
 .policy-workbench *,
 .virtual-node-workbench *,
+.traffic-workbench *,
 .token-card *,
 .source-card *,
 .identity-card *,

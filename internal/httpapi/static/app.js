@@ -37,6 +37,7 @@ const trafficHourlyEl = document.querySelector("#traffic-hourly");
 const trafficDailyEl = document.querySelector("#traffic-daily");
 const trafficOutboundsEl = document.querySelector("#traffic-outbounds");
 const trafficTokensEl = document.querySelector("#traffic-tokens");
+const trafficWorkbenchEl = document.querySelector("#traffic-workbench");
 const panelCountEls = {
   sources: document.querySelector("#sources-panel-count"),
   nodes: document.querySelector("#nodes-panel-count"),
@@ -1032,6 +1033,12 @@ async function load() {
     renderVirtualNodes(virtualNodes);
     renderPolicies(policies);
     renderTokens(tokens);
+    renderTrafficWorkbench({
+      hourly: trafficHourly,
+      daily: trafficDaily,
+      outbounds: trafficOutbounds,
+      tokens: trafficTokens,
+    });
     renderTrafficHourly(trafficHourly);
     renderTrafficDaily(trafficDaily);
     renderTrafficOutbounds(trafficOutbounds);
@@ -4705,6 +4712,95 @@ function showTokenSubscriptionResult(result, title) {
       ${items.length > 0 ? renderSubscriptionCardList(items, result.id || result.token_id || "") : `<div class="token-subscription-empty">暂无可显示的订阅地址</div>`}
     </div>
   `;
+}
+
+function renderTrafficWorkbench(data) {
+  if (!trafficWorkbenchEl) return;
+  const tokens = Array.isArray(data?.tokens) ? data.tokens : [];
+  const hourly = Array.isArray(data?.hourly) ? data.hourly : [];
+  const daily = Array.isArray(data?.daily) ? data.daily : [];
+  const outbounds = Array.isArray(data?.outbounds) ? data.outbounds : [];
+  const todayTotal = sumBytes(tokens, "today_total_bytes");
+  const monthTotal = sumBytes(tokens, "month_total_bytes");
+  const hourlyActive = hourly.filter((row) => Number(row.total_bytes || 0) > 0).length;
+  const outboundTotal = sumBytes(outbounds, "total_bytes");
+  const overQuotaCount = tokens.filter((row) => row.token_status === "over_quota").length;
+  const activeTokenCount = tokens.filter((row) => row.token_status === "active").length;
+  trafficWorkbenchEl.innerHTML = `
+    <section class="traffic-workbench" data-traffic-workbench aria-label="流量观测工作台">
+      <div class="traffic-workbench-heading">
+        <span class="traffic-workbench-symbol" data-traffic-workbench-symbol aria-hidden="true">量</span>
+        <div class="traffic-workbench-copy">
+          <span class="traffic-workbench-kicker">流量观测</span>
+          <strong class="traffic-workbench-title">先看用量、趋势和出口是否进入统计链路</strong>
+        </div>
+      </div>
+      <div class="traffic-workbench-stats" aria-label="流量核心状态">
+        ${trafficWorkbenchStat("钥", "Token 用量", formatPlainNumber(tokens.length), `${formatPlainNumber(activeTokenCount)} 个启用`)}
+        ${trafficWorkbenchStat("日", "今日流量", formatBytes(todayTotal), `本月 ${formatBytes(monthTotal)}`)}
+        ${trafficWorkbenchStat("时", "24h 活跃", `${formatPlainNumber(hourlyActive)}/${formatPlainNumber(hourly.length)}`, "小时样本")}
+        ${trafficWorkbenchStat("出", "出口摘要", formatPlainNumber(outbounds.length), `总量 ${formatBytes(outboundTotal)}`)}
+      </div>
+      <div class="traffic-workbench-signal-grid" aria-label="流量信号分布">
+        ${trafficWorkbenchSignalCard({
+          symbol: "额",
+          title: "额度风险",
+          meta: overQuotaCount > 0 ? `${formatPlainNumber(overQuotaCount)} 个超额` : "额度正常",
+          hint: overQuotaCount > 0 ? "需要加额或恢复 Token" : `${formatPlainNumber(tokens.length)} 个 Token 可观测`,
+          tone: overQuotaCount > 0 ? "warning" : "success",
+        })}
+        ${trafficWorkbenchSignalCard({
+          symbol: "时",
+          title: "最近小时",
+          meta: hourly.length > 0 ? `${formatPlainNumber(hourlyActive)} 个活跃点` : "暂无样本",
+          hint: hourly.length > 0 ? `峰值 ${formatBytes(trafficPeakBytes(hourly))}` : "真实转发后生成曲线",
+          tone: hourlyActive > 0 ? "success" : "muted",
+        })}
+        ${trafficWorkbenchSignalCard({
+          symbol: "出",
+          title: "出口链路",
+          meta: outbounds.length > 0 ? `${formatPlainNumber(outbounds.length)} 个出口` : "暂无出口",
+          hint: outbounds.length > 0 ? `累计 ${formatBytes(outboundTotal)}` : "先发布并产生网关流量",
+          tone: outbounds.length > 0 ? "success" : "muted",
+        })}
+      </div>
+    </section>
+  `;
+}
+
+function trafficWorkbenchStat(symbol, label, value, detail) {
+  return `
+    <span class="traffic-workbench-stat" data-traffic-workbench-stat>
+      <span class="traffic-workbench-stat-symbol" data-traffic-workbench-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="traffic-workbench-stat-copy">
+        <span class="traffic-workbench-stat-label">${escapeHTML(label)}</span>
+        <strong class="traffic-workbench-stat-value">${escapeHTML(value)}</strong>
+        <span class="traffic-workbench-stat-detail">${escapeHTML(detail)}</span>
+      </span>
+    </span>
+  `;
+}
+
+function trafficWorkbenchSignalCard(signal) {
+  const tone = signal.tone ? ` traffic-workbench-signal-card-${signal.tone}` : "";
+  return `
+    <article class="traffic-workbench-signal-card${tone}" data-traffic-workbench-signal-card>
+      <span class="traffic-workbench-signal-symbol" data-traffic-workbench-symbol aria-hidden="true">${escapeHTML(signal.symbol)}</span>
+      <span class="traffic-workbench-signal-copy">
+        <strong class="traffic-workbench-signal-name">${escapeHTML(signal.title)}</strong>
+        <span class="traffic-workbench-signal-meta">${escapeHTML(signal.meta)}</span>
+      </span>
+      <span class="traffic-workbench-signal-hint">${escapeHTML(signal.hint)}</span>
+    </article>
+  `;
+}
+
+function sumBytes(rows, key) {
+  return rows.reduce((sum, row) => sum + Number(row?.[key] || 0), 0);
+}
+
+function trafficPeakBytes(rows) {
+  return rows.reduce((peak, row) => Math.max(peak, Number(row.total_bytes || 0)), 0);
 }
 
 function renderTrafficTokens(rows) {

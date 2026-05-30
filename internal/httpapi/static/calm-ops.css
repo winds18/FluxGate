@@ -1882,8 +1882,11 @@ a.table-button:hover {
 
 .node-detail-panel {
   align-content: start;
+  background: #fff;
+  border-radius: inherit;
   display: grid;
   gap: 0;
+  isolation: isolate;
   max-height: inherit;
   min-height: 0;
   overflow-y: auto;
@@ -1894,9 +1897,10 @@ a.table-button:hover {
 
 .node-detail-toolbar {
   align-items: center;
-  background: rgba(255, 255, 255, 0.98);
+  background: #fff;
   border-bottom: 1px solid var(--border-soft);
   border-radius: var(--fg-radius) var(--fg-radius) 0 0;
+  box-shadow: 0 1px 0 rgba(222, 232, 230, 0.9);
   display: flex;
   gap: 10px;
   justify-content: space-between;
@@ -1905,7 +1909,7 @@ a.table-button:hover {
   padding: 14px 14px 12px;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 5;
 }
 
 .node-detail-summary,

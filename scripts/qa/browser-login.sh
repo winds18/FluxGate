@@ -2490,8 +2490,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return {
         drawerOverflowY: drawerStyle.overflowY,
         panelDisplay: panelStyle.display,
+        panelIsolation: panelStyle.isolation,
         panelMaxHeight: panelStyle.maxHeight,
         panelOverflowY: panelStyle.overflowY,
+        toolbarBackground: toolbarStyle.backgroundColor,
         toolbarPosition: toolbarStyle.position,
         toolbarTop: toolbarStyle.top,
         toolbarVisualOffset: Math.round(toolbarRect.top - drawerRect.top),
@@ -3407,8 +3409,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (!nodeDetailLayoutStyle ||
       nodeDetailLayoutStyle.drawerOverflowY !== "hidden" ||
       nodeDetailLayoutStyle.panelDisplay !== "grid" ||
+      nodeDetailLayoutStyle.panelIsolation !== "isolate" ||
       nodeDetailLayoutStyle.panelOverflowY !== "auto" ||
       nodeDetailLayoutStyle.panelMaxHeight === "none" ||
+      nodeDetailLayoutStyle.toolbarBackground !== "rgb(255, 255, 255)" ||
       nodeDetailLayoutStyle.toolbarPosition !== "sticky" ||
       nodeDetailLayoutStyle.toolbarVisualOffset > 4)
   ) {

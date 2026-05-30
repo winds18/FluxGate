@@ -1868,10 +1868,12 @@ a.table-button:hover {
   border-radius: var(--fg-radius);
   box-shadow: 0 20px 54px rgba(18, 32, 30, 0.2);
   color: var(--text);
+  display: grid;
+  grid-template-rows: minmax(0, 1fr);
   max-height: calc(100vh - 110px);
   max-width: none;
   min-width: 0;
-  overflow: auto;
+  overflow: hidden;
   position: sticky;
   top: 86px;
   width: auto;
@@ -1879,18 +1881,29 @@ a.table-button:hover {
 }
 
 .node-detail-panel {
+  align-content: start;
+  display: grid;
   gap: 14px;
+  max-height: inherit;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 14px;
+  scrollbar-gutter: stable;
 }
 
 .node-detail-toolbar {
   align-items: center;
+  background: rgba(255, 255, 255, 0.98);
   border-bottom: 1px solid var(--border-soft);
   display: flex;
   gap: 10px;
   justify-content: space-between;
   min-width: 0;
   padding-bottom: 12px;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .node-detail-eyebrow {
@@ -2786,6 +2799,7 @@ body.has-form-drawer-open::before {
     border-radius: var(--fg-radius) var(--fg-radius) 0 0;
     bottom: 76px;
     left: 8px;
+    max-height: none;
     max-width: none;
     position: fixed;
     right: 8px;

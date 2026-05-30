@@ -2399,6 +2399,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let nodeDetailSummaryOverflowCount = 0;
   let nodeDetailCodeOverflowCount = 0;
   let nodeDetailOverlapCount = 0;
+  let nodeDetailLayoutStyle = null;
   let nodeDetailCopyVisible = false;
   let nodeDetailCopyFeedbackVisible = false;
   let nodeEditSaveSymbolCount = 0;
@@ -2474,6 +2475,26 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         (element) => element.scrollWidth > element.clientWidth + 2,
       ).length,
     );
+    nodeDetailLayoutStyle = await page.evaluate(() => {
+      const drawer = document.querySelector("#nodes .node-detail-drawer");
+      const panel = document.querySelector("#nodes .node-detail-panel");
+      const toolbar = document.querySelector("#nodes .node-detail-toolbar");
+      const detailGrid = document.querySelector("#nodes .node-detail-drawer .detail-grid");
+      if (!drawer || !panel || !toolbar || !detailGrid) return null;
+      const drawerStyle = getComputedStyle(drawer);
+      const panelStyle = getComputedStyle(panel);
+      const toolbarStyle = getComputedStyle(toolbar);
+      const gridStyle = getComputedStyle(detailGrid);
+      return {
+        drawerOverflowY: drawerStyle.overflowY,
+        panelDisplay: panelStyle.display,
+        panelMaxHeight: panelStyle.maxHeight,
+        panelOverflowY: panelStyle.overflowY,
+        toolbarPosition: toolbarStyle.position,
+        toolbarTop: toolbarStyle.top,
+        detailGridColumns: gridStyle.gridTemplateColumns,
+      };
+    });
     nodeDetailOverlapCount = await page.evaluate(() => {
       const isVisible = (element) => {
         if (!element) return false;
@@ -2946,6 +2967,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeDetailCopyFeedbackVisible = nodeDetailCopyFeedbackVisible;
   state.nodeDetailCodeOverflowCount = nodeDetailCodeOverflowCount;
   state.nodeDetailOverlapCount = nodeDetailOverlapCount;
+  state.nodeDetailLayoutStyle = nodeDetailLayoutStyle;
   state.nodeEditSaveSymbolCount = nodeEditSaveSymbolCount;
   state.nodeEditFieldCount = nodeEditFieldCount;
   state.nodeEditInputNames = nodeEditInputNames;
@@ -3376,6 +3398,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeDetailVisible && nodeDetailOverlapCount > 0) {
     throw new Error(`node detail should not cover node cards on desktop: ${JSON.stringify(state)}`);
+  }
+  if (
+    nodeDetailVisible &&
+    (!nodeDetailLayoutStyle ||
+      nodeDetailLayoutStyle.drawerOverflowY !== "hidden" ||
+      nodeDetailLayoutStyle.panelDisplay !== "grid" ||
+      nodeDetailLayoutStyle.panelOverflowY !== "auto" ||
+      nodeDetailLayoutStyle.panelMaxHeight === "none" ||
+      nodeDetailLayoutStyle.toolbarPosition !== "sticky")
+  ) {
+    throw new Error(`node detail should use a fixed shell with internal scroll: ${JSON.stringify(state)}`);
   }
   if (
     nodeEditCount > 0 &&

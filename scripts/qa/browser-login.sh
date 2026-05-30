@@ -2485,6 +2485,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const panelStyle = getComputedStyle(panel);
       const toolbarStyle = getComputedStyle(toolbar);
       const gridStyle = getComputedStyle(detailGrid);
+      const drawerRect = drawer.getBoundingClientRect();
+      const toolbarRect = toolbar.getBoundingClientRect();
       return {
         drawerOverflowY: drawerStyle.overflowY,
         panelDisplay: panelStyle.display,
@@ -2492,6 +2494,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         panelOverflowY: panelStyle.overflowY,
         toolbarPosition: toolbarStyle.position,
         toolbarTop: toolbarStyle.top,
+        toolbarVisualOffset: Math.round(toolbarRect.top - drawerRect.top),
         detailGridColumns: gridStyle.gridTemplateColumns,
       };
     });
@@ -3406,7 +3409,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       nodeDetailLayoutStyle.panelDisplay !== "grid" ||
       nodeDetailLayoutStyle.panelOverflowY !== "auto" ||
       nodeDetailLayoutStyle.panelMaxHeight === "none" ||
-      nodeDetailLayoutStyle.toolbarPosition !== "sticky")
+      nodeDetailLayoutStyle.toolbarPosition !== "sticky" ||
+      nodeDetailLayoutStyle.toolbarVisualOffset > 4)
   ) {
     throw new Error(`node detail should use a fixed shell with internal scroll: ${JSON.stringify(state)}`);
   }

@@ -3110,19 +3110,7 @@ body {
 
 /* FluxGate UI v2 authenticated shell */
 body.is-authenticated .topbar {
-  align-items: center;
-  background: rgba(248, 250, 252, 0.94);
-  border-bottom: 1px solid rgba(229, 234, 240, 0.9);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  display: flex;
-  justify-content: flex-end;
-  left: 220px;
-  min-height: 62px;
-  padding: 10px 22px;
-  position: fixed;
-  right: 0;
-  top: 0;
-  z-index: 72;
+  display: none;
 }
 
 body.is-authenticated .topbar .brand {
@@ -3142,11 +3130,11 @@ body.is-authenticated .dashboard-sidebar {
 }
 
 body.is-authenticated .workspace {
-  padding-top: 76px;
+  padding-top: 16px;
 }
 
 body.is-authenticated .workspace-header {
-  top: 74px;
+  top: 12px;
 }
 
 /* FluxGate UI v2 command center */
@@ -3280,6 +3268,32 @@ body.is-authenticated .workspace-header {
   justify-self: end;
   min-width: 0;
   padding: 4px;
+}
+
+.workspace-session-controls {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--fg-line);
+  border-radius: 7px;
+  display: inline-flex;
+  gap: 6px;
+  justify-content: flex-end;
+  min-height: 32px;
+  min-width: 0;
+  padding: 3px;
+}
+
+.workspace-session-controls .status {
+  border: 0;
+  max-width: 154px;
+  min-height: 28px;
+  overflow: hidden;
+  padding: 0 9px;
+  text-overflow: ellipsis;
+}
+
+.workspace-session-controls #logout {
+  min-height: 28px;
 }
 
 .workspace-command-center .workspace-actions .primary-link-button,
@@ -4030,7 +4044,7 @@ code {
   }
 
   body.is-authenticated .topbar {
-    left: 204px;
+    display: none;
   }
 
   .metrics,
@@ -4045,9 +4059,7 @@ code {
   }
 
   body.is-authenticated .topbar {
-    left: 0;
-    min-height: 56px;
-    padding: 10px 12px;
+    display: none;
   }
 
   .app-shell {
@@ -4064,7 +4076,7 @@ code {
   }
 
   body.is-authenticated .workspace {
-    padding: 68px 10px 94px;
+    padding: 12px 10px 94px;
   }
 
   .workspace-header,
@@ -4073,14 +4085,14 @@ code {
   }
 
   body.is-authenticated .workspace-header {
-    top: 62px;
+    top: 8px;
   }
 
   .workspace-command-center {
     gap: 10px;
     grid-template-columns: 1fr;
     padding: 10px;
-    top: 62px;
+    top: 8px;
   }
 
   .workspace-command-main {
@@ -4096,10 +4108,16 @@ code {
 
   .workspace-command-center .workspace-actions {
     grid-column: auto;
-    grid-auto-flow: column;
+    grid-auto-flow: row;
     grid-row: auto;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     min-width: 0;
+    width: 100%;
+  }
+
+  .workspace-session-controls {
+    grid-column: 1 / -1;
+    justify-content: space-between;
     width: 100%;
   }
 

@@ -325,6 +325,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     const commandBox = commandCenter?.getBoundingClientRect();
     return {
       bodyClass: document.body.classList.contains("is-authenticated") ? 1 : 0,
+      topbarDisplay: topbarStyle?.display || "",
       topbarPosition: topbarStyle?.position || "",
       topbarBrandVisible: topbar?.querySelector(".brand")?.offsetParent !== null ? 1 : 0,
       topbarLeft: Math.round(topbarBox?.left || 0),
@@ -339,20 +340,25 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       overlapsCommandCenter: topbarBox && commandBox && topbarBox.bottom > commandBox.top + 1 ? 1 : 0,
     };
   });
-  const topbarButtonOverflowCount = await page.evaluate(() => {
+  const workspaceSessionControlCount = await page.locator(".workspace-actions .workspace-session-controls").count();
+  const statusInWorkspaceActions = await page.locator(".workspace-actions #status").count();
+  const logoutInWorkspaceActions = await page.locator(".workspace-actions #logout").count();
+  const workspaceSessionOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
       child.right > parent.right + 1 ||
       child.top < parent.top - 1 ||
       child.bottom > parent.bottom + 1;
-    return Array.from(document.querySelectorAll(".topbar-actions button")).reduce((total, button) => {
-      const buttonBox = button.getBoundingClientRect();
-      const elements = Array.from(button.querySelectorAll(".button-symbol, .button-label")).filter(
+    return Array.from(document.querySelectorAll(".workspace-actions .workspace-session-controls")).reduce((total, container) => {
+      const containerBox = container.getBoundingClientRect();
+      const elements = Array.from(container.querySelectorAll("#status, #logout, #logout .button-symbol, #logout .button-label")).filter(
         (element) => element.offsetParent !== null,
       );
       for (const element of elements) {
+        const buttonParent = element.closest("#logout");
+        const parent = buttonParent && !element.matches("#logout") ? buttonParent.getBoundingClientRect() : containerBox;
         const box = element.getBoundingClientRect();
-        if (box.width > 0 && box.height > 0 && outside(box, buttonBox)) {
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
           total += 1;
         }
       }
@@ -547,13 +553,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         child.bottom > parent.bottom + 1;
       return Array.from(
         center.querySelectorAll(
-          ".workspace-command-main, .workspace-command-title, .workspace-title-row, .workspace-view-symbol, #view-title, #view-description, .workspace-insight, .workspace-command-rail, #view-context, #view-rail, .workspace-actions, #view-primary-action, #refresh",
+          ".workspace-command-main, .workspace-command-title, .workspace-title-row, .workspace-view-symbol, #view-title, #view-description, .workspace-insight, .workspace-command-rail, #view-context, #view-rail, .workspace-actions, .workspace-session-controls, #status, #view-primary-action, #refresh, #logout",
         ),
       )
         .filter((element) => element.offsetParent !== null)
         .reduce((total, element) => {
-          const buttonParent = element.closest("#view-primary-action, #refresh");
-          const parent = buttonParent && !element.matches("#view-primary-action, #refresh")
+          const buttonParent = element.closest("#view-primary-action, #refresh, #logout");
+          const parent = buttonParent && !element.matches("#view-primary-action, #refresh, #logout")
             ? buttonParent.getBoundingClientRect()
             : centerBox;
           const box = element.getBoundingClientRect();
@@ -2815,7 +2821,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.refreshButtonPendingFeedback = refreshButtonPendingFeedback;
   state.refreshButtonPendingRestored = refreshButtonPendingRestored;
   state.logoutButtonSymbolCount = logoutButtonSymbolCount;
-  state.topbarButtonOverflowCount = topbarButtonOverflowCount;
+  state.workspaceSessionControlCount = workspaceSessionControlCount;
+  state.statusInWorkspaceActions = statusInWorkspaceActions;
+  state.logoutInWorkspaceActions = logoutInWorkspaceActions;
+  state.workspaceSessionOverflowCount = workspaceSessionOverflowCount;
   state.formDrawerSymbols = formDrawerSymbols;
   state.formDrawerHeaderOverflow = formDrawerHeaderOverflow;
   state.formSubmitOverflow = formSubmitOverflow;
@@ -3142,15 +3151,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     !workspaceCommandCenterMetrics ||
     !authenticatedShellLayout ||
     authenticatedShellLayout.bodyClass !== 1 ||
-    authenticatedShellLayout.topbarPosition !== "fixed" ||
+    authenticatedShellLayout.topbarDisplay !== "none" ||
     authenticatedShellLayout.topbarBrandVisible !== 0 ||
-    authenticatedShellLayout.topbarLeft < 200 ||
-    authenticatedShellLayout.topbarRightGap > 1 ||
     authenticatedShellLayout.sidebarPosition !== "sticky" ||
     authenticatedShellLayout.sidebarTop > 1 ||
     authenticatedShellLayout.sidebarHeight < authenticatedShellLayout.viewportHeight - 2 ||
     authenticatedShellLayout.workspaceTop > 1 ||
-    authenticatedShellLayout.commandCenterTop <= authenticatedShellLayout.topbarHeight ||
+    authenticatedShellLayout.commandCenterTop > 32 ||
     authenticatedShellLayout.overlapsCommandCenter !== 0 ||
     workspaceCommandCenterStyle.display !== "grid" ||
     workspaceCommandCenterMetrics.height > 136 ||
@@ -3589,8 +3596,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     loginButtonOverflowCount > 0 ||
     refreshButtonSymbolCount !== 1 ||
     logoutButtonSymbolCount !== 1 ||
+    workspaceSessionControlCount !== 1 ||
+    statusInWorkspaceActions !== 1 ||
+    logoutInWorkspaceActions !== 1 ||
     refreshButtonOverflowCount > 0 ||
-    topbarButtonOverflowCount > 0 ||
+    workspaceSessionOverflowCount > 0 ||
     expectedFormDrawerSymbols.some((symbol, index) => formDrawerSymbols[index] !== symbol) ||
     overflowingFormDrawerHeader ||
     overflowingFormSubmit ||

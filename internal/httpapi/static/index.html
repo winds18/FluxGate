@@ -13,13 +13,6 @@
         <h1>FluxGate</h1>
         <p>sing-box 数据面控制平台</p>
       </div>
-      <div class="topbar-actions">
-        <span id="status" class="status">连接中</span>
-        <button id="logout" class="ghost-button" hidden>
-          <span class="button-symbol" aria-hidden="true">⇥</span>
-          <span class="button-label">退出</span>
-        </button>
-      </div>
     </header>
 
     <main id="login-view" class="login-view" hidden>
@@ -151,6 +144,13 @@
               <span class="button-symbol" aria-hidden="true">↻</span>
               <span class="button-label">刷新</span>
             </button>
+            <div class="workspace-session-controls" aria-label="会话状态">
+              <span id="status" class="status">连接中</span>
+              <button id="logout" class="ghost-button" type="button" hidden>
+                <span class="button-symbol" aria-hidden="true">⇥</span>
+                <span class="button-label">退出</span>
+              </button>
+            </div>
           </div>
         </div>
 

@@ -10,7 +10,7 @@ require_pattern() {
   local file="$1"
   local pattern="$2"
   local message="$3"
-  if ! rg -q "$pattern" "$file"; then
+  if ! rg -q -- "$pattern" "$file"; then
     log "$message"
     exit 1
   fi
@@ -20,7 +20,7 @@ require_multiline_pattern() {
   local file="$1"
   local pattern="$2"
   local message="$3"
-  if ! rg -Uq "$pattern" "$file"; then
+  if ! rg -Uq -- "$pattern" "$file"; then
     log "$message"
     exit 1
   fi
@@ -32,7 +32,7 @@ require_count() {
   local expected="$3"
   local message="$4"
   local count
-  count="$(rg -c "$pattern" "$file" || true)"
+  count="$(rg -c -- "$pattern" "$file" || true)"
   if [[ "$count" != "$expected" ]]; then
     log "$message: expected=$expected actual=$count"
     exit 1
@@ -58,6 +58,14 @@ require_pattern "$INDEX_FILE" 'id="workspace-insight"' "workspace header must ex
 require_pattern "$APP_FILE" 'updateWorkspaceInsight\(' "workspace insight strip must be refreshed from live state"
 require_pattern "$APP_FILE" 'workspaceInsightForView\(' "workspace insight strip must derive per-module guidance"
 require_pattern "$APP_FILE" 'data-workspace-insight-action' "workspace insight strip must expose a direct contextual action"
+require_pattern "$CALM_CSS_FILE" 'FluxGate UI v2 shell' "UI v2 shell layer must be documented in CSS"
+require_pattern "$CALM_CSS_FILE" '--fg-sidebar-bg: #ffffff;' "UI v2 shell must use a light sidebar surface"
+require_pattern "$CALM_CSS_FILE" '--fg-panel-shadow:' "UI v2 shell must define a restrained panel shadow"
+require_pattern "$CALM_CSS_FILE" '\.app-shell \{' "UI v2 shell must govern the application frame"
+require_pattern "$CALM_CSS_FILE" '\.dashboard-sidebar \{' "UI v2 shell must govern the sidebar"
+require_pattern "$CALM_CSS_FILE" '\.overview-hero \{' "UI v2 shell must govern the real-test overview strip"
+require_pattern "$CALM_CSS_FILE" 'overflow-wrap: anywhere;' "UI v2 shell must protect long text from escaping cards"
+require_pattern "$CALM_CSS_FILE" 'text-overflow: ellipsis;' "UI v2 shell must provide single-line truncation where needed"
 require_pattern "$CALM_CSS_FILE" '\.workspace-header \{' "workspace command header styles are missing"
 require_pattern "$CALM_CSS_FILE" 'position: sticky;' "workspace header must keep module actions reachable on desktop"
 require_pattern "$CALM_CSS_FILE" 'scroll-snap-type: x proximity;' "module command strips must remain horizontally scannable"

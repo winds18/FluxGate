@@ -355,6 +355,9 @@ textarea:hover {
 .quick-grid,
 .overview-board,
 .token-card-list,
+.identity-workbench,
+.identity-workbench-stats,
+.identity-workbench-stage-grid,
 .source-workbench,
 .source-workbench-stats,
 .source-workbench-type-grid,
@@ -1919,6 +1922,153 @@ a.table-button:hover {
   color: var(--fg-amber);
 }
 
+.identity-workbench {
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbfa 100%);
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  box-shadow: var(--fg-soft-shadow);
+  display: grid;
+  gap: 12px;
+  margin: 0 0 16px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.identity-workbench-heading {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.identity-workbench-symbol,
+.identity-workbench-stat-symbol,
+.identity-workbench-stage-symbol {
+  align-items: center;
+  background: var(--accent-soft);
+  border: 1px solid #cfe8de;
+  border-radius: 8px;
+  color: var(--accent);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 860;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
+.identity-workbench-copy,
+.identity-workbench-stat-copy,
+.identity-workbench-stage-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.identity-workbench-kicker,
+.identity-workbench-title,
+.identity-workbench-stat-label,
+.identity-workbench-stat-value,
+.identity-workbench-stat-detail,
+.identity-workbench-stage-name,
+.identity-workbench-stage-meta,
+.identity-workbench-stage-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.identity-workbench-kicker,
+.identity-workbench-stat-label,
+.identity-workbench-stat-detail,
+.identity-workbench-stage-meta {
+  color: var(--fg-muted);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+}
+
+.identity-workbench-title {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.identity-workbench-stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.identity-workbench-stat {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+  padding: 9px;
+}
+
+.identity-workbench-stat-value {
+  color: #111827;
+  font-size: 18px;
+  font-weight: 850;
+}
+
+.identity-workbench-stage-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.identity-workbench-stage-card {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 58px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.identity-workbench-stage-name {
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 820;
+}
+
+.identity-workbench-stage-hint {
+  background: var(--fg-green-soft);
+  border: 1px solid #bae7d4;
+  border-radius: 999px;
+  color: var(--fg-green);
+  font-size: 11px;
+  font-weight: 760;
+  max-width: 144px;
+  padding: 4px 8px;
+}
+
+.identity-workbench-stage-card-warning .identity-workbench-stage-hint {
+  background: var(--fg-amber-soft);
+  border-color: #f4d18d;
+  color: var(--fg-amber);
+}
+
 .token-card {
   overflow: hidden;
 }
@@ -2476,6 +2626,8 @@ body.has-form-drawer-open::before {
 
   .token-workbench-stats,
   .token-workbench-format-grid,
+  .identity-workbench-stats,
+  .identity-workbench-stage-grid,
   .source-workbench-stats,
   .source-workbench-type-grid,
   .policy-workbench-stats,
@@ -2490,6 +2642,7 @@ body.has-form-drawer-open::before {
   }
 
   .token-workbench-format-card,
+  .identity-workbench-stage-card,
   .source-workbench-type-card,
   .policy-workbench-scope-card,
   .virtual-node-workbench-strategy-card,
@@ -2499,6 +2652,7 @@ body.has-form-drawer-open::before {
   }
 
   .token-workbench-format-hint,
+  .identity-workbench-stage-hint,
   .source-workbench-type-hint,
   .policy-workbench-scope-hint,
   .virtual-node-workbench-strategy-hint,
@@ -3178,6 +3332,7 @@ button[type="submit"]:hover,
 
 .panel *,
 .overview-panel *,
+.identity-workbench *,
 .source-workbench *,
 .node-workbench *,
 .policy-workbench *,

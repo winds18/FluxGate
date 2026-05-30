@@ -28,6 +28,7 @@ const overviewReadinessEl = document.querySelector("#overview-readiness");
 const overviewNextStepEl = document.querySelector("#overview-next-step");
 const teamsEl = document.querySelector("#teams");
 const usersEl = document.querySelector("#users");
+const identityWorkbenchEl = document.querySelector("#identity-workbench");
 const sourcesEl = document.querySelector("#sources");
 const nodesEl = document.querySelector("#nodes");
 const virtualNodesEl = document.querySelector("#virtual-nodes");
@@ -1026,6 +1027,7 @@ async function load() {
     renderOverviewReadiness(overview);
     renderOverviewInsights(overview);
     renderSelectors();
+    renderIdentityWorkbench({ teams, users, tokens });
     renderTeams(teams);
     renderUsers(users);
     renderSources(sources);
@@ -3075,6 +3077,87 @@ function countBy(rows, predicate) {
 
 function formatPlainNumber(value) {
   return new Intl.NumberFormat("zh-CN").format(Number(value || 0));
+}
+
+function renderIdentityWorkbench(data) {
+  if (!identityWorkbenchEl) return;
+  const teams = Array.isArray(data?.teams) ? data.teams : [];
+  const users = Array.isArray(data?.users) ? data.users : [];
+  const tokens = Array.isArray(data?.tokens) ? data.tokens : [];
+  const activeTeams = teams.filter((row) => String(row.status || "active").toLowerCase() === "active");
+  const activeUsers = users.filter((row) => String(row.status || "active").toLowerCase() === "active");
+  const activeTokens = tokens.filter((row) => String(row.status || "active").toLowerCase() === "active");
+  const reusableTokens = tokens.filter((row) => row.subscription_available && tokenSubscriptionItems(row).length > 0);
+  const teamReady = teams.length > 0;
+  const userReady = users.length > 0;
+  const tokenReady = reusableTokens.length > 0;
+  identityWorkbenchEl.innerHTML = `
+    <section class="identity-workbench" data-identity-workbench aria-label="身份分发总控">
+      <div class="identity-workbench-heading">
+        <span class="identity-workbench-symbol" data-identity-workbench-symbol aria-hidden="true">身</span>
+        <div class="identity-workbench-copy">
+          <span class="identity-workbench-kicker">身份分发</span>
+          <strong class="identity-workbench-title">先确认团队、成员和订阅 Token 是否能真实分发</strong>
+        </div>
+      </div>
+      <div class="identity-workbench-stats" aria-label="身份核心状态">
+        ${identityWorkbenchStat("团", "团队", formatPlainNumber(teams.length), `${formatPlainNumber(activeTeams.length)} 个启用`)}
+        ${identityWorkbenchStat("员", "成员", formatPlainNumber(users.length), `${formatPlainNumber(activeUsers.length)} 个启用`)}
+        ${identityWorkbenchStat("钥", "Token", formatPlainNumber(tokens.length), `${formatPlainNumber(activeTokens.length)} 个 active`)}
+        ${identityWorkbenchStat("订", "可分发", `${formatPlainNumber(reusableTokens.length)}/${formatPlainNumber(tokens.length)}`, "可复制订阅地址")}
+      </div>
+      <div class="identity-workbench-stage-grid" aria-label="身份分发生命周期">
+        ${identityWorkbenchStageCard({
+          symbol: "团",
+          title: "团队归属",
+          meta: teamReady ? `${formatPlainNumber(teams.length)} 个团队` : "还没有团队",
+          hint: teamReady ? "成员和 Token 有归属" : "先创建团队",
+          tone: teamReady ? "success" : "warning",
+        })}
+        ${identityWorkbenchStageCard({
+          symbol: "员",
+          title: "成员承接",
+          meta: userReady ? `${formatPlainNumber(users.length)} 个成员` : "还没有成员",
+          hint: userReady ? "可签发独立 Token" : "添加成员后再签发",
+          tone: userReady ? "success" : "warning",
+        })}
+        ${identityWorkbenchStageCard({
+          symbol: "订",
+          title: "订阅分发",
+          meta: tokenReady ? `${formatPlainNumber(reusableTokens.length)} 个 Token 可用` : "暂无可复制订阅",
+          hint: tokenReady ? "通用 / Mihomo / sing-box 可选" : "签发或重置 Token",
+          tone: tokenReady ? "success" : "warning",
+        })}
+      </div>
+    </section>
+  `;
+}
+
+function identityWorkbenchStat(symbol, label, value, detail) {
+  return `
+    <span class="identity-workbench-stat" data-identity-workbench-stat>
+      <span class="identity-workbench-stat-symbol" data-identity-workbench-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="identity-workbench-stat-copy">
+        <span class="identity-workbench-stat-label">${escapeHTML(label)}</span>
+        <strong class="identity-workbench-stat-value">${escapeHTML(String(value))}</strong>
+        <span class="identity-workbench-stat-detail">${escapeHTML(detail)}</span>
+      </span>
+    </span>
+  `;
+}
+
+function identityWorkbenchStageCard(stage) {
+  const tone = stage.tone ? ` identity-workbench-stage-card-${stage.tone}` : "";
+  return `
+    <article class="identity-workbench-stage-card${tone}" data-identity-workbench-stage-card>
+      <span class="identity-workbench-stage-symbol" data-identity-workbench-symbol aria-hidden="true">${escapeHTML(stage.symbol)}</span>
+      <span class="identity-workbench-stage-copy">
+        <strong class="identity-workbench-stage-name">${escapeHTML(stage.title)}</strong>
+        <span class="identity-workbench-stage-meta">${escapeHTML(stage.meta)}</span>
+      </span>
+      <span class="identity-workbench-stage-hint">${escapeHTML(stage.hint)}</span>
+    </article>
+  `;
 }
 
 function renderTeams(rows) {

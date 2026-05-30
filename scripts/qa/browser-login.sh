@@ -1636,6 +1636,40 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     }, 0);
   });
 
+  await switchView("identity");
+  const identityWorkbenchCount = await page.locator("#identity-workbench [data-identity-workbench]").count();
+  const identityWorkbenchStatCount = await page.locator("#identity-workbench [data-identity-workbench-stat]").count();
+  const identityWorkbenchStageCardCount = await page.locator("#identity-workbench [data-identity-workbench-stage-card]").count();
+  const identityWorkbenchSymbols = await page
+    .locator("#identity-workbench [data-identity-workbench-symbol]")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const identityWorkbenchOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#identity-workbench [data-identity-workbench]")).reduce((total, workbench) => {
+      const workbenchBox = workbench.getBoundingClientRect();
+      const elements = Array.from(
+        workbench.querySelectorAll(
+          ".identity-workbench-symbol, .identity-workbench-copy, .identity-workbench-kicker, .identity-workbench-title, .identity-workbench-stat, .identity-workbench-stat-symbol, .identity-workbench-stat-copy, .identity-workbench-stat-label, .identity-workbench-stat-value, .identity-workbench-stat-detail, .identity-workbench-stage-card, .identity-workbench-stage-symbol, .identity-workbench-stage-copy, .identity-workbench-stage-name, .identity-workbench-stage-meta, .identity-workbench-stage-hint",
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const parent = element.closest(".identity-workbench-stat")
+          ? element.closest(".identity-workbench-stat").getBoundingClientRect()
+          : element.closest(".identity-workbench-stage-card")
+            ? element.closest(".identity-workbench-stage-card").getBoundingClientRect()
+            : workbenchBox;
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && (outside(box, parent) || outside(box, workbenchBox))) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const teamCardCount = await page.locator("#teams .identity-card").count();
   const userCardCount = await page.locator("#users .identity-card").count();
   const identitySummaryChipCount = await page.locator('[data-dashboard-view="identity"] [data-identity-summary-chip]').count();
@@ -2603,6 +2637,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileOpsOverflow = mobileOpsOverflow;
   state.mobileMoreToggleActiveForOps = mobileMoreToggleActiveForOps;
   state.teamCardCount = teamCardCount;
+  state.identityWorkbenchCount = identityWorkbenchCount;
+  state.identityWorkbenchStatCount = identityWorkbenchStatCount;
+  state.identityWorkbenchStageCardCount = identityWorkbenchStageCardCount;
+  state.identityWorkbenchSymbols = identityWorkbenchSymbols;
+  state.identityWorkbenchOverflowCount = identityWorkbenchOverflowCount;
   state.teamEditCount = teamEditCount;
   state.teamEditFieldsVisible = teamEditFieldsVisible;
   state.userCardCount = userCardCount;
@@ -2780,6 +2819,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsVisualOverflowCount = opsVisualOverflowCount;
   state.calmOpsStylesheetCount = calmOpsStylesheetCount;
   state.calmOpsResponseStatus = calmOpsResponseStatus;
+  if (
+    identityWorkbenchCount !== 1 ||
+    identityWorkbenchStatCount !== 4 ||
+    identityWorkbenchStageCardCount !== 3 ||
+    !["身", "团", "员", "钥", "订"].every((symbol) => identityWorkbenchSymbols.includes(symbol)) ||
+    identityWorkbenchOverflowCount > 0
+  ) {
+    throw new Error(`identity distribution workbench is incomplete or overflowing: ${JSON.stringify(state)}`);
+  }
   const expectedTokenWorkbenchSymbols = ["通", "米", "箱"];
   if (
     tokenRowCount > 0 &&

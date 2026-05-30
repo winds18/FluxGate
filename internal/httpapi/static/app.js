@@ -182,6 +182,18 @@ nodesEl.addEventListener("submit", handleNodeEditSubmit);
 virtualNodesEl.addEventListener("click", handleVirtualNodeAction);
 policiesEl.addEventListener("click", handlePolicyAction);
 tokensEl.addEventListener("click", handleTokenAction);
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-token-workbench-action='focus-subscriptions']");
+  if (!button) return;
+  const target = tokensEl.querySelector(".token-card-subscriptions");
+  if (!target) {
+    setStatus("暂无可定位订阅卡", "warning");
+    return;
+  }
+  highlightDashboardTarget(target);
+  target.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+  setStatus("已定位：订阅地址", "info");
+});
 dashboardNavButtons.forEach((button) => {
   button.addEventListener("click", () => setActiveView(button.dataset.viewNav || "overview"));
 });
@@ -4578,6 +4590,7 @@ function renderTokenWorkbench(rows) {
           <strong>订阅分发工作台</strong>
           <small>先确认格式、地址来源和可用 Token，再在下方卡片复制或探测。</small>
         </span>
+        ${renderTokenWorkbenchActions(tokenRows)}
       </div>
       <div class="token-workbench-stats" aria-label="订阅分发摘要">
         ${tokenWorkbenchStat("可用 Token", `${formatPlainNumber(reusableRows.length)}/${formatPlainNumber(tokenRows.length)}`, "可反复复制订阅")}
@@ -4589,6 +4602,33 @@ function renderTokenWorkbench(rows) {
       </div>
     </section>
   `;
+}
+
+function renderTokenWorkbenchActions(rows) {
+  const mihomoEntry = firstTokenSubscriptionEntry(rows, "Mihomo");
+  const mihomoURL = mihomoEntry?.url || "";
+  const mihomoTokenID = mihomoEntry?.tokenID || "";
+  return `
+    <span class="token-workbench-command-strip" data-token-workbench-action-strip aria-label="订阅快捷动作">
+      <button class="table-button ghost-button" type="button" data-token-workbench-action="focus-subscriptions">${buttonLabel("订", "定位订阅卡")}</button>
+      <button class="table-button ghost-button" type="button" data-token-workbench-action="copy-mihomo" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(mihomoTokenID))}" data-token-url="${escapeHTML(mihomoURL)}" data-button-symbol="米" data-copy-label="复制 Mihomo" ${mihomoURL ? "" : "disabled"}>${buttonLabel("米", "复制 Mihomo")}</button>
+      ${
+        mihomoURL
+          ? `<a class="table-button ghost-button link-button" href="${escapeHTML(mihomoURL)}" target="_blank" rel="noopener noreferrer" data-token-workbench-action="open-mihomo">${buttonLabel("↗", "打开 Mihomo")}</a>`
+          : `<button class="table-button ghost-button" type="button" data-token-workbench-action="open-mihomo" disabled>${buttonLabel("↗", "打开 Mihomo")}</button>`
+      }
+    </span>
+  `;
+}
+
+function firstTokenSubscriptionEntry(rows, label) {
+  for (const row of rows || []) {
+    const item = tokenSubscriptionItems(row).find(([itemLabel]) => itemLabel === label);
+    if (item?.[1]) {
+      return { tokenID: row.id, url: item[1] };
+    }
+  }
+  return null;
 }
 
 function tokenWorkbenchStat(label, value, detail) {

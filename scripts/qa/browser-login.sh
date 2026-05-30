@@ -1404,6 +1404,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenWorkbenchFormatSymbols = await page
     .locator("#tokens [data-token-format-symbol]")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const tokenWorkbenchActionStripCount = await page.locator("#tokens [data-token-workbench-action-strip]").count();
+  const tokenWorkbenchActionCount = await page.locator("#tokens [data-token-workbench-action]").count();
+  const tokenWorkbenchActionSymbols = await page
+    .locator("#tokens [data-token-workbench-action] .button-symbol")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  let tokenWorkbenchActionNavigates = false;
+  if (tokenWorkbenchActionCount > 0) {
+    await page.locator("#tokens [data-token-workbench-action='focus-subscriptions']").first().click();
+    await expect(page.locator("#tokens .token-card-subscriptions.is-target-highlighted").first()).toHaveCount(1, { timeout: 1000 });
+    await expect(page.locator("#status")).toContainText("已定位：订阅地址", { timeout: 5000 });
+    tokenWorkbenchActionNavigates = true;
+  }
   const tokenWorkbenchOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -1414,7 +1426,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const workbenchBox = workbench.getBoundingClientRect();
       const elements = Array.from(
         workbench.querySelectorAll(
-          ".token-workbench-heading, .token-workbench-symbol, .token-workbench-title, .token-workbench-stat, .token-workbench-format-card, .token-workbench-format-symbol, .token-workbench-format-title, .token-workbench-format-meta, .token-workbench-format-hint",
+          ".token-workbench-heading, .token-workbench-symbol, .token-workbench-title, .token-workbench-command-strip, [data-token-workbench-action], .token-workbench-stat, .token-workbench-format-card, .token-workbench-format-symbol, .token-workbench-format-title, .token-workbench-format-meta, .token-workbench-format-hint",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
@@ -1460,7 +1472,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenSubscriptionKindCount = await page.locator("#tokens [data-token-subscription-kind]").count();
   const tokenSubscriptionProfileCount = await page.locator("#tokens [data-token-subscription-profile]").count();
   const tokenSubscriptionOriginCount = await page.locator("#tokens [data-token-subscription-origin]").count();
-  const tokenSubscriptionCopyCount = await page.locator("#tokens button[data-token-action='copy-subscription']").count();
+  const tokenSubscriptionCopyCount = await page
+    .locator("#tokens .token-subscription-item button[data-token-action='copy-subscription']")
+    .count();
   const tokenSubscriptionOpenCount = await page.locator("#tokens a[data-token-subscription-link]").count();
   const tokenSubscriptionProbeCount = await page.locator("#tokens button[data-token-action='probe-subscription']").count();
   const tokenSubscriptionActionSymbolCount = await page.locator("#tokens .token-subscription-actions .button-symbol").count();
@@ -1475,7 +1489,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let confirmDialogButtonCount = 0;
   let confirmDialogCancelled = false;
   if (tokenSubscriptionCopyCount > 0) {
-    const firstCopyButton = page.locator("#tokens button[data-token-action='copy-subscription']").first();
+    const firstCopyButton = page.locator("#tokens .token-subscription-item button[data-token-action='copy-subscription']").first();
     await firstCopyButton.click();
     await expect(firstCopyButton).toHaveText("已复制", { timeout: 5000 });
     await expect(page.locator("#status")).toContainText("订阅地址已复制", { timeout: 5000 });
@@ -2787,6 +2801,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenWorkbenchStatCount = tokenWorkbenchStatCount;
   state.tokenWorkbenchFormatCount = tokenWorkbenchFormatCount;
   state.tokenWorkbenchFormatSymbols = tokenWorkbenchFormatSymbols;
+  state.tokenWorkbenchActionStripCount = tokenWorkbenchActionStripCount;
+  state.tokenWorkbenchActionCount = tokenWorkbenchActionCount;
+  state.tokenWorkbenchActionSymbols = tokenWorkbenchActionSymbols;
+  state.tokenWorkbenchActionNavigates = tokenWorkbenchActionNavigates;
   state.tokenWorkbenchOverflowCount = tokenWorkbenchOverflowCount;
   state.tokenResultSubscriptionItemCount = tokenResultSubscriptionItemCount;
   state.tokenResultSubscriptionKindCount = tokenResultSubscriptionKindCount;
@@ -2862,12 +2880,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`identity distribution workbench is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   const expectedTokenWorkbenchSymbols = ["通", "米", "箱"];
+  const expectedTokenWorkbenchActionSymbols = ["订", "米", "↗"];
   if (
     tokenRowCount > 0 &&
     (tokenWorkbenchCount !== 1 ||
       tokenWorkbenchStatCount < 3 ||
       tokenWorkbenchFormatCount !== 3 ||
+      tokenWorkbenchActionStripCount !== 1 ||
+      tokenWorkbenchActionCount !== 3 ||
       expectedTokenWorkbenchSymbols.some((symbol, index) => tokenWorkbenchFormatSymbols[index] !== symbol) ||
+      expectedTokenWorkbenchActionSymbols.some((symbol, index) => tokenWorkbenchActionSymbols[index] !== symbol) ||
+      !tokenWorkbenchActionNavigates ||
       tokenWorkbenchOverflowCount > 0)
   ) {
     throw new Error(`token subscription workbench is incomplete or overflowing: ${JSON.stringify(state)}`);

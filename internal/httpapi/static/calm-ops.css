@@ -2892,6 +2892,8 @@ body.has-form-drawer-open::before {
   --fg-line-strong: #d6dee8;
   --fg-command-bg: #ffffff;
   --fg-command-rail-bg: #f8fafc;
+  --fg-content-panel-header-bg: #f8fafc;
+  --fg-content-panel-body-bg: #ffffff;
   --fg-workbench-bg: #ffffff;
   --fg-workbench-card-bg: #f8fafc;
   --fg-workbench-symbol-bg: var(--fg-blue-soft);
@@ -3141,6 +3143,71 @@ body {
 .workspace-command-center .workspace-actions .primary-link-button,
 .workspace-command-center .workspace-actions .ghost-button {
   width: 100%;
+}
+
+/* FluxGate UI v2 content panels */
+.content-panel {
+  background: #ffffff;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  box-shadow: var(--fg-panel-shadow);
+  display: grid;
+  gap: 0;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.content-panel > .panel-header {
+  align-items: center;
+  background: var(--fg-content-panel-header-bg);
+  border-bottom: 1px solid var(--fg-line);
+  display: flex;
+  min-height: 64px;
+  padding: 12px 14px;
+}
+
+.content-panel .panel-title {
+  align-items: center;
+  display: grid;
+  gap: 3px 9px;
+  grid-template-columns: auto minmax(0, max-content) auto;
+  min-width: 0;
+  width: 100%;
+}
+
+.content-panel .panel-title h2 {
+  color: #111827;
+  font-size: 16px;
+  font-weight: 840;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.content-panel .panel-count {
+  justify-self: start;
+}
+
+.content-panel .panel-meta {
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 650;
+  grid-column: 2 / -1;
+  line-height: 1.35;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.content-panel > .table,
+.content-panel > .content-panel-body {
+  background: var(--fg-content-panel-body-bg);
+  min-width: 0;
+}
+
+.content-panel > .table:empty,
+.content-panel > .content-panel-body:empty {
+  min-height: 8px;
 }
 
 .workspace-header p,
@@ -3848,6 +3915,22 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     min-width: 0;
     width: 100%;
+  }
+
+  .content-panel > .panel-header {
+    align-items: stretch;
+  }
+
+  .content-panel .panel-title {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .content-panel .panel-count {
+    grid-column: 2;
+  }
+
+  .content-panel .panel-meta {
+    grid-column: 1 / -1;
   }
 
   .overview-hero-title strong {

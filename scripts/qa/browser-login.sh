@@ -400,11 +400,52 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const panelSymbols = await page
     .locator(".panel-title .panel-symbol")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const contentPanelCount = await page.locator("[data-content-panel]").count();
+  const contentPanelMetaCount = await page.locator("[data-content-panel-meta]").count();
+  const contentPanelStyles = await page.evaluate(() =>
+    Array.from(document.querySelectorAll("[data-content-panel]")).map((panel) => {
+      const style = getComputedStyle(panel);
+      const header = panel.querySelector(".panel-header");
+      const headerStyle = header ? getComputedStyle(header) : null;
+      return {
+        panel: panel.getAttribute("data-content-panel") || "",
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+        boxShadow: style.boxShadow,
+        display: style.display,
+        headerBackgroundColor: headerStyle?.backgroundColor || "",
+      };
+    }),
+  );
+  const visibleContentPanelHeaderOverflow = async () => page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("[data-content-panel] .panel-title"))
+      .filter((title) => title.offsetParent !== null)
+      .reduce((total, title) => {
+        const titleBox = title.getBoundingClientRect();
+        const elements = Array.from(title.querySelectorAll(".panel-symbol, h2, .panel-count, .panel-meta"))
+          .filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, titleBox)) {
+            total += 1;
+          }
+        }
+        return total;
+      }, 0);
+  });
   const viewOverflow = {};
   const formDrawerHeaderOverflow = {};
   const formSubmitOverflow = {};
   const formDrawerNarrowCount = {};
   const panelTitleOverflow = {};
+  const contentPanelHeaderOverflow = {};
   const viewContextChipCounts = {};
   const viewContextOverflow = {};
   const viewRailButtonCounts = {};
@@ -582,7 +623,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         child.bottom > parent.bottom + 1;
       return Array.from(document.querySelectorAll(`[data-dashboard-view="${viewName}"] .panel-title`)).reduce((total, title) => {
         const titleBox = title.getBoundingClientRect();
-        const elements = Array.from(title.querySelectorAll(".panel-symbol, h2, .panel-count"))
+        const elements = Array.from(title.querySelectorAll(".panel-symbol, h2, .panel-count, .panel-meta"))
           .filter((element) => element.offsetParent !== null);
         for (const element of elements) {
           const box = element.getBoundingClientRect();
@@ -593,6 +634,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         return total;
       }, 0);
     }, view);
+    contentPanelHeaderOverflow[view] = await visibleContentPanelHeaderOverflow();
   }
   let workspaceInsightActionNavigates = false;
   await switchView("overview");
@@ -2670,6 +2712,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.panelSymbolCount = panelSymbolCount;
   state.panelSymbols = panelSymbols;
   state.panelTitleOverflow = panelTitleOverflow;
+  state.contentPanelCount = contentPanelCount;
+  state.contentPanelMetaCount = contentPanelMetaCount;
+  state.contentPanelStyles = contentPanelStyles;
+  state.contentPanelHeaderOverflow = contentPanelHeaderOverflow;
   state.viewContextChipCounts = viewContextChipCounts;
   state.viewContextOverflow = viewContextOverflow;
   state.viewRailButtonCounts = viewRailButtonCounts;
@@ -2962,6 +3008,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.calmOpsResponseStatus = calmOpsResponseStatus;
   const overflowingCommandCenter = Object.entries(workspaceCommandCenterOverflow).find(([, overflow]) => overflow > 0);
   const scrollingCommandRail = Object.entries(workspaceCommandRailScrollOverflow).find(([, overflow]) => overflow > 0);
+  const overflowingContentPanel = Object.entries(contentPanelHeaderOverflow).find(([, overflow]) => overflow > 0);
+  const contentPanelStyleMismatches = contentPanelStyles.filter(
+    (entry) =>
+      entry.backgroundColor !== "rgb(255, 255, 255)" ||
+      entry.backgroundImage !== "none" ||
+      !entry.borderRadius.startsWith("8px") ||
+      entry.borderColor === "rgba(0, 0, 0, 0)" ||
+      entry.boxShadow === "none" ||
+      !entry.headerBackgroundColor.includes("248, 250, 252"),
+  );
   if (
     workspaceCommandCenterCount !== 1 ||
     !workspaceCommandCenterStyle ||
@@ -2974,6 +3030,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     scrollingCommandRail
   ) {
     throw new Error(`workspace command center is incomplete or overflowing: ${JSON.stringify(state)}`);
+  }
+  if (contentPanelCount !== 9 || contentPanelMetaCount !== 9 || overflowingContentPanel || contentPanelStyleMismatches.length > 0) {
+    throw new Error(`content panels are incomplete, inconsistent, or overflowing: ${JSON.stringify(state)}`);
   }
   if (unifiedWorkbenchStyles.count < 8 || unifiedWorkbenchStyles.mismatches.length > 0) {
     throw new Error(`module workbenches do not share the v2 surface style: ${JSON.stringify(state)}`);

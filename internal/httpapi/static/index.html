@@ -284,15 +284,16 @@
             </form>
           </section>
 
-          <section class="panel">
+          <section class="panel content-panel" data-content-panel="sources">
             <div class="panel-header">
               <div class="panel-title">
                 <span class="panel-symbol" aria-hidden="true">源</span>
                 <h2>上游来源</h2>
                 <span id="sources-panel-count" class="panel-count">0 个</span>
+                <span class="panel-meta" data-content-panel-meta>订阅来源、刷新周期和默认标签集中维护</span>
               </div>
             </div>
-            <div id="sources" class="table"></div>
+            <div id="sources" class="table content-panel-body"></div>
           </section>
         </section>
 
@@ -337,26 +338,28 @@
             </form>
           </section>
 
-          <section class="panel">
+          <section class="panel content-panel" data-content-panel="nodes">
             <div class="panel-header">
               <div class="panel-title">
                 <span class="panel-symbol" aria-hidden="true">点</span>
                 <h2>节点池</h2>
                 <span id="nodes-panel-count" class="panel-count">0 个</span>
+                <span class="panel-meta" data-content-panel-meta>按地区聚合，进入地区查看节点卡片与详情</span>
               </div>
             </div>
-            <div id="nodes" class="table"></div>
+            <div id="nodes" class="table content-panel-body"></div>
           </section>
 
-          <section class="panel">
+          <section class="panel content-panel" data-content-panel="virtual-nodes">
             <div class="panel-header">
               <div class="panel-title">
                 <span class="panel-symbol" aria-hidden="true">网</span>
                 <h2>虚拟节点</h2>
                 <span id="virtual-nodes-panel-count" class="panel-count">0 个</span>
+                <span class="panel-meta" data-content-panel-meta>监听入口、策略和标签筛选集中管理</span>
               </div>
             </div>
-            <div id="virtual-nodes" class="table"></div>
+            <div id="virtual-nodes" class="table content-panel-body"></div>
           </section>
         </section>
 
@@ -479,37 +482,40 @@
             </form>
           </section>
 
-          <section class="panel">
+          <section class="panel content-panel" data-content-panel="teams">
             <div class="panel-header">
               <div class="panel-title">
                 <span class="panel-symbol" aria-hidden="true">团</span>
                 <h2>团队</h2>
                 <span id="teams-panel-count" class="panel-count">0 个</span>
+                <span class="panel-meta" data-content-panel-meta>团队是成员与订阅 Token 的归属边界</span>
               </div>
             </div>
-            <div id="teams" class="table"></div>
+            <div id="teams" class="table content-panel-body"></div>
           </section>
 
-          <section class="panel">
+          <section class="panel content-panel" data-content-panel="users">
             <div class="panel-header">
               <div class="panel-title">
                 <span class="panel-symbol" aria-hidden="true">员</span>
                 <h2>成员</h2>
                 <span id="users-panel-count" class="panel-count">0 个</span>
+                <span class="panel-meta" data-content-panel-meta>成员绑定团队后可独立签发 Token</span>
               </div>
             </div>
-            <div id="users" class="table"></div>
+            <div id="users" class="table content-panel-body"></div>
           </section>
 
-          <section class="panel">
+          <section class="panel content-panel" data-content-panel="tokens">
             <div class="panel-header">
               <div class="panel-title">
                 <span class="panel-symbol" aria-hidden="true">钥</span>
                 <h2>Token</h2>
                 <span id="tokens-panel-count" class="panel-count">0 个</span>
+                <span class="panel-meta" data-content-panel-meta>订阅地址、额度、续期与客户端格式集中查看</span>
               </div>
             </div>
-            <div id="tokens" class="table"></div>
+            <div id="tokens" class="table content-panel-body"></div>
           </section>
         </section>
 
@@ -574,46 +580,49 @@
             </form>
           </section>
 
-          <section class="panel">
+          <section class="panel content-panel" data-content-panel="policies">
             <div class="panel-header">
               <div class="panel-title">
                 <span class="panel-symbol" aria-hidden="true">策</span>
                 <h2>策略</h2>
                 <span id="policies-panel-count" class="panel-count">0 条</span>
+                <span class="panel-meta" data-content-panel-meta>控制标签、网关和节点数量边界</span>
               </div>
             </div>
-            <div id="policies" class="table"></div>
+            <div id="policies" class="table content-panel-body"></div>
           </section>
         </section>
 
         <section class="dashboard-view" data-dashboard-view="traffic" hidden>
-          <section class="panel">
+          <section class="panel content-panel" data-content-panel="traffic">
             <div class="panel-header">
               <div class="panel-title">
                 <span class="panel-symbol" aria-hidden="true">量</span>
                 <h2>流量统计</h2>
                 <span id="traffic-panel-count" class="panel-count">0 Token</span>
+                <span class="panel-meta" data-content-panel-meta>按 Token 与出站看用量走势</span>
               </div>
             </div>
             <div id="traffic-workbench"></div>
             <div id="traffic-hourly" class="traffic-chart"></div>
             <div id="traffic-daily" class="traffic-chart"></div>
-            <div id="traffic-outbounds" class="table"></div>
-            <div id="traffic-tokens" class="table"></div>
+            <div id="traffic-outbounds" class="table content-panel-body"></div>
+            <div id="traffic-tokens" class="table content-panel-body"></div>
           </section>
         </section>
 
         <section class="dashboard-view" data-dashboard-view="ops" hidden>
-          <section class="panel">
+          <section class="panel content-panel" data-content-panel="ops">
             <div class="panel-header">
               <div class="panel-title">
                 <span class="panel-symbol" aria-hidden="true">运</span>
                 <h2>sing-box 配置</h2>
                 <span id="config-panel-count" class="panel-count">待补齐</span>
+                <span class="panel-meta" data-content-panel-meta>配置检查、发布、回滚和网关重启</span>
               </div>
             </div>
             <div id="ops-workbench"></div>
-            <div id="ops-actions" class="ops-action-grid">
+            <div id="ops-actions" class="ops-action-grid content-panel-body">
               <article class="ops-action-card">
                 <span class="ops-action-symbol" aria-hidden="true">收</span>
                 <div class="ops-action-copy">

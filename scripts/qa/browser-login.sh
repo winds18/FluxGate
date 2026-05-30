@@ -2321,6 +2321,34 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
 
   await switchView("ops");
+  const opsWorkbenchCount = await page.locator("[data-ops-workbench]").count();
+  const opsWorkbenchStatCount = await page.locator("[data-ops-workbench-stat]").count();
+  const opsWorkbenchStepCardCount = await page.locator("[data-ops-workbench-step-card]").count();
+  const opsWorkbenchSymbols = await page.locator("[data-ops-workbench-symbol]").evaluateAll((nodes) =>
+    nodes.map((node) => node.textContent?.trim() || "").filter(Boolean),
+  );
+  const opsWorkbenchOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("[data-ops-workbench], [data-ops-workbench-step-card]")).reduce((total, card) => {
+      const cardBox = card.getBoundingClientRect();
+      const elements = Array.from(
+        card.querySelectorAll(
+          "[data-ops-workbench-symbol], [data-ops-workbench-stat], [data-ops-workbench-step-card], .ops-workbench-title, .ops-workbench-copy, .ops-workbench-step-title, .ops-workbench-step-meta, .ops-workbench-next-action, code, strong, small",
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, cardBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const opsActionCardCount = await page.locator("#ops-actions .ops-action-card").count();
   const opsActionSymbolCount = await page.locator("#ops-actions .ops-action-symbol").count();
   const opsActionChipCount = await page.locator("#ops-actions [data-ops-action-chip]").count();
@@ -2810,6 +2838,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsActionSymbolCount = opsActionSymbolCount;
   state.opsActionChipCount = opsActionChipCount;
   state.opsActionButtonSymbolCount = opsActionButtonSymbolCount;
+  state.opsWorkbenchCount = opsWorkbenchCount;
+  state.opsWorkbenchStatCount = opsWorkbenchStatCount;
+  state.opsWorkbenchStepCardCount = opsWorkbenchStepCardCount;
+  state.opsWorkbenchSymbols = opsWorkbenchSymbols;
+  state.opsWorkbenchOverflowCount = opsWorkbenchOverflowCount;
   state.opsActionPendingFeedback = opsActionPendingFeedback;
   state.opsActionPendingRestored = opsActionPendingRestored;
   state.opsResultVisible = opsResultVisible;
@@ -3100,6 +3133,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (nodeDetailVisible && (!nodeDetailCopyVisible || !nodeDetailCopyFeedbackVisible)) {
     throw new Error(`node detail copy feedback missing: ${JSON.stringify(state)}`);
+  }
+  if (
+    opsWorkbenchCount !== 1 ||
+    opsWorkbenchStatCount !== 4 ||
+    opsWorkbenchStepCardCount < 3 ||
+    !["运", "闭", "配", "入", "上", "源", "点", "网", "钥", "策"].every((symbol) => opsWorkbenchSymbols.includes(symbol)) ||
+    opsWorkbenchOverflowCount > 0
+  ) {
+    throw new Error(`ops delivery workbench is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (
     opsActionCardCount > 0 &&

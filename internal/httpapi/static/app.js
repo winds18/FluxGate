@@ -57,6 +57,7 @@ const configPublishEl = document.querySelector("#config-publish");
 const configRollbackEl = document.querySelector("#config-rollback");
 const configRestartEl = document.querySelector("#config-restart");
 const configCheckResultEl = document.querySelector("#config-check-result");
+const opsWorkbenchEl = document.querySelector("#ops-workbench");
 const teamForm = document.querySelector("#team-form");
 const userForm = document.querySelector("#user-form");
 const sourceForm = document.querySelector("#source-form");
@@ -1045,6 +1046,7 @@ async function load() {
     renderTrafficDaily(trafficDaily);
     renderTrafficOutbounds(trafficOutbounds);
     renderTrafficTokens(trafficTokens);
+    renderOpsWorkbench(deliveryReadiness);
     updatePanelCounts();
     updateWorkspaceInsight();
     updateViewContext();
@@ -1718,6 +1720,88 @@ function showCopyFeedback(button, label, fallbackLabel = "复制") {
     button.classList.remove("is-copied");
     button.removeAttribute("aria-label");
   }, 1600);
+}
+
+function renderOpsWorkbench(readiness) {
+  if (!opsWorkbenchEl) return;
+  const delivery = readiness || {};
+  const checks = Array.isArray(delivery.checks) ? delivery.checks : [];
+  const config = delivery.config || {};
+  const readyCount = Number.isFinite(Number(delivery.ready_count))
+    ? Number(delivery.ready_count)
+    : checks.filter((check) => check.ready).length;
+  const totalChecks = Number.isFinite(Number(delivery.total_checks)) ? Number(delivery.total_checks) : checks.length;
+  const nextAction =
+    Array.isArray(delivery.next_actions) && delivery.next_actions.length > 0
+      ? delivery.next_actions[0]
+      : delivery.ready
+        ? "复制 Token 订阅地址导入客户端"
+        : "先运行交付收口检查";
+  const updatedAt = delivery.updated_at ? formatDateTimeForDisplay(delivery.updated_at) : "--";
+  const configHash = String(config.config_hash || "").slice(0, 12) || "待生成";
+  const inboundCount = Number(config.inbound_count || 0);
+  const upstreamCount = Number(config.upstream_outbound_count || 0);
+  const stepCards =
+    checks.length > 0
+      ? checks.map((check) => opsWorkbenchStepCard(check)).join("")
+      : opsWorkbenchStepCard({
+          symbol: "检",
+          title: "等待检查",
+          status: "待检",
+          summary: "刷新后展示交付闭环状态",
+          ready: false,
+        });
+
+  opsWorkbenchEl.innerHTML = `
+    <section class="ops-workbench" data-ops-workbench aria-label="交付发布工作台">
+      <div class="ops-workbench-heading">
+        <span class="ops-workbench-symbol" data-ops-workbench-symbol aria-hidden="true">运</span>
+        <div class="ops-workbench-copy">
+          <span class="ops-workbench-kicker">交付发布</span>
+          <strong class="ops-workbench-title">${delivery.ready ? "闭环已就绪，可以进入真实客户端测试" : "先确认收口状态，再发布网关配置"}</strong>
+          <small>最近检查 ${escapeHTML(updatedAt)} · 下一步：${escapeHTML(nextAction)}</small>
+        </div>
+        <span class="ops-workbench-next-action ops-workbench-next-action-${delivery.ready ? "success" : "warning"}">${delivery.ready ? "可测" : "待补"}</span>
+      </div>
+      <div class="ops-workbench-stats" aria-label="发布核心状态">
+        ${opsWorkbenchStat("闭", "闭环进度", `${formatPlainNumber(readyCount)}/${formatPlainNumber(totalChecks || checks.length || 0)}`, delivery.ready ? "全部就绪" : "仍有待补")}
+        ${opsWorkbenchStat("配", "配置 Hash", configHash, config.valid ? "配置有效" : "待校验")}
+        ${opsWorkbenchStat("入", "入站", formatPlainNumber(inboundCount), `${formatPlainNumber(Number(config.user_count || 0))} 个用户`)}
+        ${opsWorkbenchStat("上", "上游出口", formatPlainNumber(upstreamCount), `${formatPlainNumber(Number(config.outbound_count || 0))} 个出口`)}
+      </div>
+      <div class="ops-workbench-step-grid" aria-label="交付步骤">
+        ${stepCards}
+      </div>
+    </section>
+  `;
+}
+
+function opsWorkbenchStat(symbol, label, value, detail) {
+  return `
+    <span class="ops-workbench-stat" data-ops-workbench-stat>
+      <span class="ops-workbench-stat-symbol" data-ops-workbench-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="ops-workbench-stat-copy">
+        <span class="ops-workbench-stat-label">${escapeHTML(label)}</span>
+        <strong class="ops-workbench-stat-value">${escapeHTML(String(value))}</strong>
+        <span class="ops-workbench-stat-detail">${escapeHTML(detail)}</span>
+      </span>
+    </span>
+  `;
+}
+
+function opsWorkbenchStepCard(check) {
+  const ready = Boolean(check.ready);
+  const tone = ready ? "success" : "warning";
+  return `
+    <article class="ops-workbench-step-card ops-workbench-step-card-${tone}" data-ops-workbench-step-card>
+      <span class="ops-workbench-step-symbol" data-ops-workbench-symbol aria-hidden="true">${escapeHTML(check.symbol || "检")}</span>
+      <span class="ops-workbench-step-copy">
+        <strong class="ops-workbench-step-title">${escapeHTML(check.title || "检查项")}</strong>
+        <small class="ops-workbench-step-meta">${escapeHTML(check.summary || "--")}</small>
+      </span>
+      <span class="ops-workbench-step-state">${escapeHTML(check.status || (ready ? "就绪" : "待补"))}</span>
+    </article>
+  `;
 }
 
 async function checkDeliveryReadiness() {

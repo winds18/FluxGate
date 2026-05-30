@@ -2527,10 +2527,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const panelStyle = getComputedStyle(panel);
       const toolbarStyle = getComputedStyle(toolbar);
       const gridStyle = getComputedStyle(detailGrid);
+      const firstDetailItem = detailGrid.querySelector(".detail-item");
+      const itemStyle = firstDetailItem ? getComputedStyle(firstDetailItem) : null;
       const drawerRect = drawer.getBoundingClientRect();
       const toolbarRect = toolbar.getBoundingClientRect();
       return {
         drawerOverflowY: drawerStyle.overflowY,
+        detailItemBackground: itemStyle?.backgroundColor || "",
+        detailItemBorderRadius: itemStyle?.borderRadius || "",
+        detailItemBoxShadow: itemStyle?.boxShadow || "",
         panelDisplay: panelStyle.display,
         panelIsolation: panelStyle.isolation,
         panelMaxHeight: panelStyle.maxHeight,
@@ -3474,6 +3479,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       nodeDetailLayoutStyle.panelIsolation !== "isolate" ||
       nodeDetailLayoutStyle.panelOverflowY !== "auto" ||
       nodeDetailLayoutStyle.panelMaxHeight === "none" ||
+      nodeDetailLayoutStyle.detailItemBackground !== "rgba(0, 0, 0, 0)" ||
+      nodeDetailLayoutStyle.detailItemBorderRadius !== "0px" ||
+      nodeDetailLayoutStyle.detailItemBoxShadow !== "none" ||
       nodeDetailLayoutStyle.toolbarBackground !== "rgb(255, 255, 255)" ||
       nodeDetailLayoutStyle.toolbarPosition !== "sticky" ||
       nodeDetailLayoutStyle.toolbarVisualOffset > 4)

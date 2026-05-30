@@ -273,6 +273,26 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       gridTemplateColumns: style.gridTemplateColumns,
     };
   });
+  const workspaceCommandCenterMetrics = await page.evaluate(() => {
+    const center = document.querySelector("[data-view-command-center]");
+    const main = document.querySelector(".workspace-command-main");
+    const rail = document.querySelector(".workspace-command-rail");
+    if (!center || !main || !rail) return null;
+    const columnCount = (value) =>
+      !value || value === "none" ? 0 : value.split(" ").filter((part) => part.trim().length > 0).length;
+    const centerStyle = getComputedStyle(center);
+    const mainStyle = getComputedStyle(main);
+    const railStyle = getComputedStyle(rail);
+    const centerBox = center.getBoundingClientRect();
+    return {
+      height: Math.round(centerBox.height),
+      columnCount: columnCount(centerStyle.gridTemplateColumns),
+      mainColumnCount: columnCount(mainStyle.gridTemplateColumns),
+      railColumnCount: columnCount(railStyle.gridTemplateColumns),
+      railGridColumnStart: railStyle.gridColumnStart,
+      railGridColumnEnd: railStyle.gridColumnEnd,
+    };
+  });
   let populatedNavBadgeCount = 0;
   let navBadgeValues = {};
   const dashboardViewCount = await page.locator("[data-dashboard-view]").count();
@@ -2701,6 +2721,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileMoreBadgeCount = mobileMoreBadgeCount;
   state.workspaceCommandCenterCount = workspaceCommandCenterCount;
   state.workspaceCommandCenterStyle = workspaceCommandCenterStyle;
+  state.workspaceCommandCenterMetrics = workspaceCommandCenterMetrics;
   state.workspaceCommandCenterOverflow = workspaceCommandCenterOverflow;
   state.workspaceCommandRailScrollOverflow = workspaceCommandRailScrollOverflow;
   state.authenticatedShellLayout = authenticatedShellLayout;
@@ -3049,6 +3070,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (
     workspaceCommandCenterCount !== 1 ||
     !workspaceCommandCenterStyle ||
+    !workspaceCommandCenterMetrics ||
     !authenticatedShellLayout ||
     authenticatedShellLayout.bodyClass !== 1 ||
     authenticatedShellLayout.topbarPosition !== "fixed" ||
@@ -3062,6 +3084,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     authenticatedShellLayout.commandCenterTop <= authenticatedShellLayout.topbarHeight ||
     authenticatedShellLayout.overlapsCommandCenter !== 0 ||
     workspaceCommandCenterStyle.display !== "grid" ||
+    workspaceCommandCenterMetrics.height > 136 ||
+    workspaceCommandCenterMetrics.columnCount > 2 ||
+    workspaceCommandCenterMetrics.mainColumnCount < 2 ||
+    workspaceCommandCenterMetrics.railGridColumnStart !== "1" ||
+    workspaceCommandCenterMetrics.railGridColumnEnd !== "-1" ||
+    workspaceCommandCenterMetrics.railColumnCount < 2 ||
     !workspaceCommandCenterStyle.backgroundColor.includes("255, 255, 255") ||
     workspaceCommandCenterStyle.backgroundImage !== "none" ||
     !workspaceCommandCenterStyle.borderRadius.startsWith("8px") ||

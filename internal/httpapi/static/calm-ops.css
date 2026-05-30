@@ -358,6 +358,9 @@ textarea:hover {
 .source-workbench,
 .source-workbench-stats,
 .source-workbench-type-grid,
+.policy-workbench,
+.policy-workbench-stats,
+.policy-workbench-scope-grid,
 .node-workbench,
 .node-workbench-stats,
 .node-workbench-region-grid,
@@ -710,6 +713,154 @@ textarea:hover {
   font-weight: 760;
   max-width: 128px;
   padding: 4px 8px;
+}
+
+.policy-workbench {
+  background: linear-gradient(135deg, #ffffff 0%, #fbfaf6 100%);
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  box-shadow: var(--fg-soft-shadow);
+  display: grid;
+  gap: 12px;
+  margin: 12px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 12px;
+}
+
+.policy-workbench-heading {
+  align-items: center;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+}
+
+.policy-workbench-symbol,
+.policy-workbench-stat-symbol,
+.policy-workbench-scope-symbol {
+  align-items: center;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  color: #b45309;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 13px;
+  font-weight: 860;
+  height: 34px;
+  justify-content: center;
+  line-height: 1;
+  width: 34px;
+}
+
+.policy-workbench-copy,
+.policy-workbench-stat-copy,
+.policy-workbench-scope-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.policy-workbench-kicker,
+.policy-workbench-title,
+.policy-workbench-stat-label,
+.policy-workbench-stat-value,
+.policy-workbench-stat-detail,
+.policy-workbench-scope-name,
+.policy-workbench-scope-meta,
+.policy-workbench-scope-hint {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.policy-workbench-kicker,
+.policy-workbench-stat-label,
+.policy-workbench-stat-detail,
+.policy-workbench-scope-meta {
+  color: var(--fg-muted);
+  font-size: 11px;
+  font-weight: 680;
+  line-height: 1.25;
+}
+
+.policy-workbench-title {
+  color: #111827;
+  font-size: 15px;
+  font-weight: 850;
+}
+
+.policy-workbench-stats {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  min-width: 0;
+}
+
+.policy-workbench-stat {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: auto minmax(0, 1fr);
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.policy-workbench-stat-value {
+  color: #111827;
+  font-size: 17px;
+  font-weight: 850;
+}
+
+.policy-workbench-scope-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr));
+  min-width: 0;
+}
+
+.policy-workbench-scope-card {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 9px;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  min-height: 58px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.policy-workbench-scope-name {
+  color: #1f2937;
+  font-size: 13px;
+  font-weight: 830;
+}
+
+.policy-workbench-scope-hint {
+  background: var(--fg-blue-soft);
+  border: 1px solid #cfe1ff;
+  border-radius: 999px;
+  color: var(--fg-blue);
+  font-size: 11px;
+  font-weight: 760;
+  max-width: 132px;
+  padding: 4px 8px;
+}
+
+.policy-workbench-scope-empty {
+  color: var(--fg-muted);
+  font-size: 12px;
+  font-weight: 720;
+  padding: 8px 2px;
 }
 
 .source-card.is-action-pending,
@@ -2014,6 +2165,8 @@ body.has-form-drawer-open::before {
   .token-workbench-format-grid,
   .source-workbench-stats,
   .source-workbench-type-grid,
+  .policy-workbench-stats,
+  .policy-workbench-scope-grid,
   .node-workbench-stats,
   .node-workbench-region-grid {
     grid-template-columns: 1fr;
@@ -2021,12 +2174,14 @@ body.has-form-drawer-open::before {
 
   .token-workbench-format-card,
   .source-workbench-type-card,
+  .policy-workbench-scope-card,
   .node-workbench-region-card {
     grid-template-columns: auto minmax(0, 1fr);
   }
 
   .token-workbench-format-hint,
   .source-workbench-type-hint,
+  .policy-workbench-scope-hint,
   .node-workbench-region-rate {
     grid-column: 1 / -1;
     justify-self: start;
@@ -2704,6 +2859,7 @@ button[type="submit"]:hover,
 .overview-panel *,
 .source-workbench *,
 .node-workbench *,
+.policy-workbench *,
 .token-card *,
 .source-card *,
 .identity-card *,

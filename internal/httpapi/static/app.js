@@ -3582,10 +3582,110 @@ function renderPolicies(rows) {
     return;
   }
   policiesEl.innerHTML = `
+    ${renderPolicyWorkbench(rows)}
     <div class="policy-card-list">
       ${rows.map((row) => renderPolicyCard(row)).join("")}
     </div>
   `;
+}
+
+function renderPolicyWorkbench(rows) {
+  const policies = rows || [];
+  const activeCount = policies.filter((row) => String(row.status || "active") === "active").length;
+  const scopedCount = policies.filter((row) => String(row.scope_type || "").trim() && Number(row.scope_id || 0) > 0).length;
+  const cappedCount = policies.filter((row) => Number(row.max_nodes || 0) > 0).length;
+  const gatewayBoundCount = policies.filter((row) => String(row.allowed_virtual_nodes || "").trim()).length;
+  const scopeOrder = ["team", "user", "token"];
+  const scopeGroups = scopeOrder
+    .map((scope) => ({
+      scope,
+      items: policies.filter((row) => String(row.scope_type || "team") === scope),
+    }))
+    .filter((group) => group.items.length > 0);
+  const otherScopes = policies.filter((row) => !scopeOrder.includes(String(row.scope_type || "team")));
+  if (otherScopes.length > 0) {
+    scopeGroups.push({ scope: "other", items: otherScopes });
+  }
+
+  return `
+    <section class="policy-workbench" data-policy-workbench aria-label="策略边界工作台">
+      <div class="policy-workbench-heading">
+        <span class="policy-workbench-symbol" data-policy-workbench-symbol aria-hidden="true">策</span>
+        <span class="policy-workbench-copy">
+          <small class="policy-workbench-kicker">策略边界工作台</small>
+          <strong class="policy-workbench-title">先看访问边界，再编辑单条策略</strong>
+        </span>
+      </div>
+      <div class="policy-workbench-stats" aria-label="策略边界摘要">
+        ${policyWorkbenchStat("策", "策略总数", policies.length, `${formatPlainNumber(scopedCount)} 条已绑定对象`)}
+        ${policyWorkbenchStat("启", "启用策略", activeCount, `${formatPlainNumber(policies.length - activeCount)} 条未启用`)}
+        ${policyWorkbenchStat("限", "节点上限", cappedCount, cappedCount > 0 ? "已设置最大节点数" : "当前不限节点")}
+        ${policyWorkbenchStat("网", "网关边界", gatewayBoundCount, gatewayBoundCount > 0 ? "已限制可用网关" : "默认全部网关")}
+      </div>
+      <div class="policy-workbench-scope-grid" aria-label="策略作用域分布">
+        ${
+          scopeGroups.length > 0
+            ? scopeGroups.map((group) => policyWorkbenchScopeCard(group)).join("")
+            : `<div class="policy-workbench-scope-empty">暂无作用域分布</div>`
+        }
+      </div>
+    </section>
+  `;
+}
+
+function policyWorkbenchStat(symbol, label, value, detail) {
+  return `
+    <span class="policy-workbench-stat" data-policy-workbench-stat>
+      <span class="policy-workbench-stat-symbol" data-policy-workbench-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="policy-workbench-stat-copy">
+        <span class="policy-workbench-stat-label">${escapeHTML(label)}</span>
+        <strong class="policy-workbench-stat-value">${escapeHTML(formatPlainNumber(value))}</strong>
+        <small class="policy-workbench-stat-detail">${escapeHTML(detail || "")}</small>
+      </span>
+    </span>
+  `;
+}
+
+function policyWorkbenchScopeCard(group) {
+  const activeCount = group.items.filter((row) => String(row.status || "active") === "active").length;
+  const cappedCount = group.items.filter((row) => Number(row.max_nodes || 0) > 0).length;
+  const gatewayBoundCount = group.items.filter((row) => String(row.allowed_virtual_nodes || "").trim()).length;
+  return `
+    <article class="policy-workbench-scope-card" data-policy-workbench-scope-card>
+      <span class="policy-workbench-scope-symbol" aria-hidden="true">${escapeHTML(policyScopeSymbol(group.scope))}</span>
+      <span class="policy-workbench-scope-copy">
+        <strong class="policy-workbench-scope-name">${escapeHTML(policyScopeLabel(group.scope))}</strong>
+        <small class="policy-workbench-scope-meta">${formatPlainNumber(group.items.length)} 条策略 · ${formatPlainNumber(activeCount)} 启用 · ${formatPlainNumber(cappedCount)} 限额</small>
+      </span>
+      <span class="policy-workbench-scope-hint">${gatewayBoundCount > 0 ? `${formatPlainNumber(gatewayBoundCount)} 网关边界` : "全部网关"}</span>
+    </article>
+  `;
+}
+
+function policyScopeLabel(scope) {
+  switch (String(scope || "team")) {
+    case "team":
+      return "团队作用域";
+    case "user":
+      return "成员作用域";
+    case "token":
+      return "Token 作用域";
+    default:
+      return "其他作用域";
+  }
+}
+
+function policyScopeSymbol(scope) {
+  switch (String(scope || "team")) {
+    case "team":
+      return "团";
+    case "user":
+      return "员";
+    case "token":
+      return "钥";
+    default:
+      return "边";
+  }
 }
 
 function renderPolicyCard(row) {

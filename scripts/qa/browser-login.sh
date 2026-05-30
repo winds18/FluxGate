@@ -1853,6 +1853,45 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const policyCardCount = await page.locator("#policies .policy-card").count();
   const policySummaryChipCount = await page.locator("#policies [data-policy-summary-chip]").count();
   const policyActionButtonSymbolCount = await page.locator("#policies .policy-actions .button-symbol").count();
+  const policyWorkbenchCount = await page.locator("#policies [data-policy-workbench]").count();
+  const policyWorkbenchStatCount = await page.locator("#policies [data-policy-workbench-stat]").count();
+  const policyWorkbenchScopeCardCount = await page.locator("#policies [data-policy-workbench-scope-card]").count();
+  const policyWorkbenchSymbols = await page
+    .locator("#policies [data-policy-workbench-symbol]")
+    .evaluateAll((elements) => elements.map((element) => (element.textContent || "").trim()).filter(Boolean));
+  const policyWorkbenchOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#policies [data-policy-workbench]")).reduce((total, workbench) => {
+      const workbenchBox = workbench.getBoundingClientRect();
+      const elements = Array.from(
+        workbench.querySelectorAll(
+          ".policy-workbench-heading, .policy-workbench-copy, .policy-workbench-title, .policy-workbench-kicker, .policy-workbench-stat, .policy-workbench-stat-symbol, .policy-workbench-stat-value, .policy-workbench-stat-detail, .policy-workbench-scope-card, .policy-workbench-scope-copy, .policy-workbench-scope-name, .policy-workbench-scope-meta, .policy-workbench-scope-hint",
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const parent =
+          element.classList.contains("policy-workbench-heading") ||
+          element.classList.contains("policy-workbench-stat") ||
+          element.classList.contains("policy-workbench-scope-card")
+            ? workbenchBox
+            : (
+                element.closest(".policy-workbench-heading") ||
+                element.closest(".policy-workbench-stat") ||
+                element.closest(".policy-workbench-scope-card") ||
+                workbench
+              ).getBoundingClientRect();
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const policyVisualOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -2504,6 +2543,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.virtualNodeEditCount = virtualNodeEditCount;
   state.virtualNodeEditFieldsVisible = virtualNodeEditFieldsVisible;
   state.policyCardCount = policyCardCount;
+  state.policyWorkbenchCount = policyWorkbenchCount;
+  state.policyWorkbenchStatCount = policyWorkbenchStatCount;
+  state.policyWorkbenchScopeCardCount = policyWorkbenchScopeCardCount;
+  state.policyWorkbenchSymbols = policyWorkbenchSymbols;
+  state.policyWorkbenchOverflowCount = policyWorkbenchOverflowCount;
   state.policySummaryChipCount = policySummaryChipCount;
   state.policyActionButtonSymbolCount = policyActionButtonSymbolCount;
   state.policyVisualOverflowCount = policyVisualOverflowCount;
@@ -2827,7 +2871,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (
     policyEditCount > 0 &&
-    (policyCardCount !== policyEditCount ||
+    (policyWorkbenchCount !== 1 ||
+      policyWorkbenchStatCount < 4 ||
+      policyWorkbenchScopeCardCount < 1 ||
+      policyWorkbenchOverflowCount > 0 ||
+      !["策", "启", "限", "网"].every((symbol) => policyWorkbenchSymbols.includes(symbol)) ||
+      policyCardCount !== policyEditCount ||
       policySummaryChipCount !== policyCardCount * 4 ||
       policyActionButtonSymbolCount !== policyCardCount ||
       policyVisualOverflowCount > 0)

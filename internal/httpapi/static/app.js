@@ -3460,10 +3460,111 @@ function renderVirtualNodes(rows) {
     return;
   }
   virtualNodesEl.innerHTML = `
+    ${renderVirtualNodeWorkbench(rows)}
     <div class="virtual-node-card-list">
       ${rows.map((row) => renderVirtualNodeCard(row)).join("")}
     </div>
   `;
+}
+
+function renderVirtualNodeWorkbench(rows) {
+  const gateways = rows || [];
+  const activeCount = gateways.filter((row) => String(row.status || "active") === "active").length;
+  const listenPorts = new Set(
+    gateways
+      .map((row) => Number(row.listen_port || 0))
+      .filter((port) => Number.isFinite(port) && port > 0),
+  );
+  const selectorCount = gateways.filter((row) => String(row.tag_selector || "").trim()).length;
+  const strategyMap = new Map();
+  for (const row of gateways) {
+    const strategy = String(row.strategy || "selector");
+    if (!strategyMap.has(strategy)) {
+      strategyMap.set(strategy, []);
+    }
+    strategyMap.get(strategy).push(row);
+  }
+  const strategyGroups = Array.from(strategyMap.entries())
+    .map(([key, items]) => ({ key, items }))
+    .sort((left, right) => left.key.localeCompare(right.key, "zh-CN"));
+
+  return `
+    <section class="virtual-node-workbench" data-virtual-node-workbench aria-label="虚拟网关工作台">
+      <div class="virtual-node-workbench-heading">
+        <span class="virtual-node-workbench-symbol" data-virtual-node-workbench-symbol aria-hidden="true">网</span>
+        <span class="virtual-node-workbench-copy">
+          <small class="virtual-node-workbench-kicker">虚拟网关工作台</small>
+          <strong class="virtual-node-workbench-title">先看入站承载，再编辑监听与标签筛选</strong>
+        </span>
+      </div>
+      <div class="virtual-node-workbench-stats" aria-label="虚拟网关摘要">
+        ${virtualNodeWorkbenchStat("网", "网关总数", gateways.length, "可分发的入站入口")}
+        ${virtualNodeWorkbenchStat("启", "启用网关", activeCount, `${formatPlainNumber(gateways.length - activeCount)} 个未启用`)}
+        ${virtualNodeWorkbenchStat("端", "监听端口", listenPorts.size, `${formatPlainNumber(listenPorts.size)} 个端口承载`)}
+        ${virtualNodeWorkbenchStat("筛", "标签筛选", selectorCount, selectorCount > 0 ? "已限定上游范围" : "默认全部节点")}
+      </div>
+      <div class="virtual-node-workbench-strategy-grid" aria-label="出口策略分布">
+        ${
+          strategyGroups.length > 0
+            ? strategyGroups.map((group) => virtualNodeWorkbenchStrategyCard(group)).join("")
+            : `<div class="virtual-node-workbench-strategy-empty">暂无出口策略分布</div>`
+        }
+      </div>
+    </section>
+  `;
+}
+
+function virtualNodeWorkbenchStat(symbol, label, value, detail) {
+  return `
+    <span class="virtual-node-workbench-stat" data-virtual-node-workbench-stat>
+      <span class="virtual-node-workbench-stat-symbol" data-virtual-node-workbench-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="virtual-node-workbench-stat-copy">
+        <span class="virtual-node-workbench-stat-label">${escapeHTML(label)}</span>
+        <strong class="virtual-node-workbench-stat-value">${escapeHTML(formatPlainNumber(value))}</strong>
+        <small class="virtual-node-workbench-stat-detail">${escapeHTML(detail || "")}</small>
+      </span>
+    </span>
+  `;
+}
+
+function virtualNodeWorkbenchStrategyCard(group) {
+  const activeCount = group.items.filter((row) => String(row.status || "active") === "active").length;
+  const portCount = new Set(
+    group.items
+      .map((row) => Number(row.listen_port || 0))
+      .filter((port) => Number.isFinite(port) && port > 0),
+  ).size;
+  const selectorCount = group.items.filter((row) => String(row.tag_selector || "").trim()).length;
+  return `
+    <article class="virtual-node-workbench-strategy-card" data-virtual-node-workbench-strategy-card>
+      <span class="virtual-node-workbench-strategy-symbol" aria-hidden="true">${escapeHTML(virtualNodeStrategySymbol(group.key))}</span>
+      <span class="virtual-node-workbench-strategy-copy">
+        <strong class="virtual-node-workbench-strategy-name">${escapeHTML(virtualNodeStrategyLabel(group.key))}</strong>
+        <small class="virtual-node-workbench-strategy-meta">${formatPlainNumber(group.items.length)} 个网关 · ${formatPlainNumber(activeCount)} 启用 · ${formatPlainNumber(portCount)} 端口</small>
+      </span>
+      <span class="virtual-node-workbench-strategy-hint">${selectorCount > 0 ? `${formatPlainNumber(selectorCount)} 标签筛选` : "全部节点"}</span>
+    </article>
+  `;
+}
+
+function virtualNodeStrategyLabel(value) {
+  const strategy = String(value || "selector");
+  switch (strategy) {
+    case "selector":
+      return "Selector 出口";
+    default:
+      return `${strategy} 出口`;
+  }
+}
+
+function virtualNodeStrategySymbol(value) {
+  const strategy = String(value || "selector");
+  switch (strategy) {
+    case "selector":
+      return "选";
+    default:
+      return "出";
+  }
 }
 
 function renderVirtualNodeCard(row) {

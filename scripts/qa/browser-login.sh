@@ -1809,6 +1809,50 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   await switchView("nodes");
   const virtualNodeCardCount = await page.locator("#virtual-nodes .virtual-node-card").count();
+  const virtualNodeWorkbenchCount = await page.locator("#virtual-nodes [data-virtual-node-workbench]").count();
+  const virtualNodeWorkbenchStatCount = await page.locator("#virtual-nodes [data-virtual-node-workbench-stat]").count();
+  const virtualNodeWorkbenchStrategyCardCount = await page
+    .locator("#virtual-nodes [data-virtual-node-workbench-strategy-card]")
+    .count();
+  const virtualNodeWorkbenchSymbols = await page
+    .locator("#virtual-nodes [data-virtual-node-workbench-symbol]")
+    .evaluateAll((elements) => elements.map((element) => (element.textContent || "").trim()).filter(Boolean));
+  const virtualNodeWorkbenchOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#virtual-nodes [data-virtual-node-workbench]")).reduce(
+      (total, workbench) => {
+        const workbenchBox = workbench.getBoundingClientRect();
+        const elements = Array.from(
+          workbench.querySelectorAll(
+            ".virtual-node-workbench-heading, .virtual-node-workbench-copy, .virtual-node-workbench-title, .virtual-node-workbench-kicker, .virtual-node-workbench-stat, .virtual-node-workbench-stat-symbol, .virtual-node-workbench-stat-value, .virtual-node-workbench-stat-detail, .virtual-node-workbench-strategy-card, .virtual-node-workbench-strategy-copy, .virtual-node-workbench-strategy-name, .virtual-node-workbench-strategy-meta, .virtual-node-workbench-strategy-hint",
+          ),
+        ).filter((element) => element.offsetParent !== null);
+        for (const element of elements) {
+          const parent =
+            element.classList.contains("virtual-node-workbench-heading") ||
+            element.classList.contains("virtual-node-workbench-stat") ||
+            element.classList.contains("virtual-node-workbench-strategy-card")
+              ? workbenchBox
+              : (
+                  element.closest(".virtual-node-workbench-heading") ||
+                  element.closest(".virtual-node-workbench-stat") ||
+                  element.closest(".virtual-node-workbench-strategy-card") ||
+                  workbench
+                ).getBoundingClientRect();
+          const box = element.getBoundingClientRect();
+          if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+            total += 1;
+          }
+        }
+        return total;
+      },
+      0,
+    );
+  });
   const virtualNodeSummaryChipCount = await page.locator("#virtual-nodes [data-virtual-node-summary-chip]").count();
   const virtualNodeActionButtonSymbolCount = await page.locator("#virtual-nodes .virtual-node-actions .button-symbol").count();
   const virtualNodeVisualOverflowCount = await page.evaluate(() => {
@@ -2537,6 +2581,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.sourceInlineSaveFeedback = sourceInlineSaveFeedback;
   state.sourceInlineSaveRestored = sourceInlineSaveRestored;
   state.virtualNodeCardCount = virtualNodeCardCount;
+  state.virtualNodeWorkbenchCount = virtualNodeWorkbenchCount;
+  state.virtualNodeWorkbenchStatCount = virtualNodeWorkbenchStatCount;
+  state.virtualNodeWorkbenchStrategyCardCount = virtualNodeWorkbenchStrategyCardCount;
+  state.virtualNodeWorkbenchSymbols = virtualNodeWorkbenchSymbols;
+  state.virtualNodeWorkbenchOverflowCount = virtualNodeWorkbenchOverflowCount;
   state.virtualNodeSummaryChipCount = virtualNodeSummaryChipCount;
   state.virtualNodeActionButtonSymbolCount = virtualNodeActionButtonSymbolCount;
   state.virtualNodeVisualOverflowCount = virtualNodeVisualOverflowCount;
@@ -2862,7 +2911,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (
     virtualNodeEditCount > 0 &&
-    (virtualNodeCardCount !== virtualNodeEditCount ||
+    (virtualNodeWorkbenchCount !== 1 ||
+      virtualNodeWorkbenchStatCount < 4 ||
+      virtualNodeWorkbenchStrategyCardCount < 1 ||
+      virtualNodeWorkbenchOverflowCount > 0 ||
+      !["网", "启", "端", "筛"].every((symbol) => virtualNodeWorkbenchSymbols.includes(symbol)) ||
+      virtualNodeCardCount !== virtualNodeEditCount ||
       virtualNodeSummaryChipCount !== virtualNodeCardCount * 4 ||
       virtualNodeActionButtonSymbolCount !== virtualNodeCardCount ||
       virtualNodeVisualOverflowCount > 0)

@@ -1866,6 +1866,40 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await page.locator("#nodes button[data-node-filter-action='clear']").first().click();
   await expect(page.locator("#nodes [data-node-filter]").first()).toHaveValue("", { timeout: 5000 });
   const nodeSearchClears = (await page.locator("#nodes [data-node-filter]").first().inputValue()) === "";
+  const nodeWorkbenchCount = await page.locator("#nodes [data-node-workbench]").count();
+  const nodeWorkbenchStatCount = await page.locator("#nodes [data-node-workbench-stat]").count();
+  const nodeWorkbenchRegionCardCount = await page.locator("#nodes [data-node-workbench-region-card]").count();
+  const nodeWorkbenchSymbols = await page
+    .locator("#nodes [data-node-workbench-symbol]")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const nodeWorkbenchOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#nodes [data-node-workbench]")).reduce((total, workbench) => {
+      const workbenchBox = workbench.getBoundingClientRect();
+      const elements = Array.from(
+        workbench.querySelectorAll(".node-workbench-heading, .node-workbench-copy, .node-workbench-kicker, .node-workbench-title, .node-workbench-stat, .node-workbench-stat-symbol, .node-workbench-stat-value, .node-workbench-stat-detail, .node-workbench-region-card, .node-workbench-region-heading, .node-workbench-region-copy, .node-workbench-region-name, .node-workbench-region-meta, .node-workbench-region-bar"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const parent = element.classList.contains("node-workbench-heading") ||
+          element.classList.contains("node-workbench-stat") ||
+          element.classList.contains("node-workbench-region-card")
+          ? workbenchBox
+          : (element.closest(".node-workbench-heading") ||
+              element.closest(".node-workbench-stat") ||
+              element.closest(".node-workbench-region-card") ||
+              workbench).getBoundingClientRect();
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const nodeRegionCount = await page.locator("#nodes button[data-node-region-action='open']").count();
   const nodeRegionSymbolCount = await page.locator("#nodes .node-region-symbol").count();
   const nodeRegionBadgeCount = await page.locator("#nodes .node-region-badge").count();
@@ -2440,6 +2474,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeFilterValue = nodeFilterValue;
   state.nodeFilteredRegionCount = nodeFilteredRegionCount;
   state.nodeSearchClears = nodeSearchClears;
+  state.nodeWorkbenchCount = nodeWorkbenchCount;
+  state.nodeWorkbenchStatCount = nodeWorkbenchStatCount;
+  state.nodeWorkbenchRegionCardCount = nodeWorkbenchRegionCardCount;
+  state.nodeWorkbenchSymbols = nodeWorkbenchSymbols;
+  state.nodeWorkbenchOverflowCount = nodeWorkbenchOverflowCount;
   state.nodeRegionCount = nodeRegionCount;
   state.nodeRegionSymbolCount = nodeRegionSymbolCount;
   state.nodeRegionBadgeCount = nodeRegionBadgeCount;
@@ -2755,6 +2794,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       nodeVisualOverflowCount > 0)
   ) {
     throw new Error(`node cards are incomplete or visually overflow their parent: ${JSON.stringify(state)}`);
+  }
+  if (
+    nodeRegionCount > 0 &&
+    (nodeWorkbenchCount !== 1 ||
+      nodeWorkbenchStatCount < 4 ||
+      nodeWorkbenchRegionCardCount < Math.min(nodeRegionCount, 4) ||
+      nodeWorkbenchOverflowCount > 0 ||
+      !["点", "活", "区", "协"].every((symbol) => nodeWorkbenchSymbols.includes(symbol)))
+  ) {
+    throw new Error(`node pool workbench is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (
     nodeRegionCount > 0 &&

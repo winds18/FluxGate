@@ -3689,6 +3689,7 @@ function normalizeSearchText(value) {
 
 function renderNodeRegions(groups, total, matched) {
   return `
+    ${renderNodeWorkbench(groups, total, matched)}
     <div class="node-browser" data-node-view="regions">
       <div class="node-browser-header">
         <div>
@@ -3703,6 +3704,74 @@ function renderNodeRegions(groups, total, matched) {
           : emptyState("搜", "没有匹配的节点", "换一个地区、协议、来源、标签或服务器关键词试试")
       }
     </div>
+  `;
+}
+
+function renderNodeWorkbench(groups, total, matched) {
+  const safeGroups = groups || [];
+  const nodes = safeGroups.flatMap((group) => group.items || []);
+  const activeCount = countBy(nodes, (node) => node.status === "active");
+  const protocolCount = new Set(nodes.map((node) => node.protocol).filter(Boolean)).size;
+  const sourceCount = new Set(nodes.map((node) => node.source_name || node.source_id).filter(Boolean)).size;
+  const topRegions = [...safeGroups]
+    .sort((left, right) => right.items.length - left.items.length || left.region.localeCompare(right.region, "zh-CN"))
+    .slice(0, 4);
+  return `
+    <section class="node-workbench" data-node-workbench aria-label="节点池工作台">
+      <div class="node-workbench-heading">
+        <span class="node-workbench-symbol" aria-hidden="true">池</span>
+        <span class="node-workbench-copy">
+          <small class="node-workbench-kicker">节点池工作台</small>
+          <strong class="node-workbench-title">先看地区承载，再进入节点卡片和详情</strong>
+        </span>
+      </div>
+      <div class="node-workbench-stats" aria-label="节点池摘要">
+        ${nodeWorkbenchStat("点", "节点匹配", `${formatPlainNumber(matched)}/${formatPlainNumber(total)}`, "地区、协议、来源都可搜索")}
+        ${nodeWorkbenchStat("活", "可用节点", `${formatPlainNumber(activeCount)}/${formatPlainNumber(matched)}`, "active 节点可进入分发")}
+        ${nodeWorkbenchStat("区", "地区类别", `${formatPlainNumber(safeGroups.length)} 个`, "无地区信息自动归到其他")}
+        ${nodeWorkbenchStat("协", "协议/来源", `${formatPlainNumber(protocolCount)}/${formatPlainNumber(sourceCount)}`, "协议数 / 来源数")}
+      </div>
+      <div class="node-workbench-region-grid" aria-label="重点地区">
+        ${
+          topRegions.length > 0
+            ? topRegions.map((group) => nodeWorkbenchRegionCard(group, matched)).join("")
+            : `<div class="node-workbench-region-empty">当前筛选没有匹配地区</div>`
+        }
+      </div>
+    </section>
+  `;
+}
+
+function nodeWorkbenchStat(symbol, label, value, detail) {
+  return `
+    <span class="node-workbench-stat" data-node-workbench-stat>
+      <span class="node-workbench-stat-symbol" data-node-workbench-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="node-workbench-stat-copy">
+        <span class="node-workbench-stat-label">${escapeHTML(label)}</span>
+        <strong class="node-workbench-stat-value">${escapeHTML(String(value))}</strong>
+        <small class="node-workbench-stat-detail">${escapeHTML(detail || "")}</small>
+      </span>
+    </span>
+  `;
+}
+
+function nodeWorkbenchRegionCard(group, matched) {
+  const activeCount = countBy(group.items, (node) => node.status === "active");
+  const activeRatio = group.items.length > 0 ? Math.round((activeCount / group.items.length) * 100) : 0;
+  const shareRatio = matched > 0 ? Math.round((group.items.length / matched) * 100) : 0;
+  const barWidth = Math.max(4, Math.min(100, activeRatio));
+  return `
+    <article class="node-workbench-region-card" data-node-workbench-region-card>
+      <span class="node-workbench-region-symbol" aria-hidden="true">${escapeHTML(regionSymbolForRegion(group.region))}</span>
+      <span class="node-workbench-region-copy">
+        <strong class="node-workbench-region-name">${escapeHTML(group.region)}</strong>
+        <small class="node-workbench-region-meta">${formatPlainNumber(group.items.length)} 个节点 · ${formatPlainNumber(activeCount)} 可用 · 占 ${formatPlainNumber(shareRatio)}%</small>
+        <span class="node-workbench-region-bar" aria-hidden="true">
+          <span style="width: ${barWidth}%"></span>
+        </span>
+      </span>
+      <span class="node-workbench-region-rate">${formatPlainNumber(activeRatio)}%</span>
+    </article>
   `;
 }
 

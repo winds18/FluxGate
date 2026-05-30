@@ -286,6 +286,33 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const formSubmitButtonSymbolCount = await page.locator('[data-form-drawer] button[type="submit"] .button-symbol').count();
   const refreshButtonSymbolCount = await page.locator("#refresh .button-symbol").count();
   const logoutButtonSymbolCount = await page.locator("#logout .button-symbol").count();
+  const authenticatedShellLayout = await page.evaluate(() => {
+    const topbar = document.querySelector(".topbar");
+    const sidebar = document.querySelector(".dashboard-sidebar");
+    const workspace = document.querySelector(".workspace");
+    const commandCenter = document.querySelector("[data-view-command-center]");
+    const topbarStyle = topbar ? getComputedStyle(topbar) : null;
+    const sidebarStyle = sidebar ? getComputedStyle(sidebar) : null;
+    const topbarBox = topbar?.getBoundingClientRect();
+    const sidebarBox = sidebar?.getBoundingClientRect();
+    const workspaceBox = workspace?.getBoundingClientRect();
+    const commandBox = commandCenter?.getBoundingClientRect();
+    return {
+      bodyClass: document.body.classList.contains("is-authenticated") ? 1 : 0,
+      topbarPosition: topbarStyle?.position || "",
+      topbarBrandVisible: topbar?.querySelector(".brand")?.offsetParent !== null ? 1 : 0,
+      topbarLeft: Math.round(topbarBox?.left || 0),
+      topbarRightGap: Math.round(Math.max(0, window.innerWidth - (topbarBox?.right || 0))),
+      topbarHeight: Math.round(topbarBox?.height || 0),
+      sidebarPosition: sidebarStyle?.position || "",
+      sidebarTop: Math.round(sidebarBox?.top || 0),
+      sidebarHeight: Math.round(sidebarBox?.height || 0),
+      viewportHeight: window.innerHeight,
+      workspaceTop: Math.round(workspaceBox?.top || 0),
+      commandCenterTop: Math.round(commandBox?.top || 0),
+      overlapsCommandCenter: topbarBox && commandBox && topbarBox.bottom > commandBox.top + 1 ? 1 : 0,
+    };
+  });
   const topbarButtonOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -2676,6 +2703,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.workspaceCommandCenterStyle = workspaceCommandCenterStyle;
   state.workspaceCommandCenterOverflow = workspaceCommandCenterOverflow;
   state.workspaceCommandRailScrollOverflow = workspaceCommandRailScrollOverflow;
+  state.authenticatedShellLayout = authenticatedShellLayout;
   state.populatedNavBadgeCount = populatedNavBadgeCount;
   state.navBadgeValues = navBadgeValues;
   state.dashboardViewCount = dashboardViewCount;
@@ -3021,6 +3049,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (
     workspaceCommandCenterCount !== 1 ||
     !workspaceCommandCenterStyle ||
+    !authenticatedShellLayout ||
+    authenticatedShellLayout.bodyClass !== 1 ||
+    authenticatedShellLayout.topbarPosition !== "fixed" ||
+    authenticatedShellLayout.topbarBrandVisible !== 0 ||
+    authenticatedShellLayout.topbarLeft < 200 ||
+    authenticatedShellLayout.topbarRightGap > 1 ||
+    authenticatedShellLayout.sidebarPosition !== "sticky" ||
+    authenticatedShellLayout.sidebarTop > 1 ||
+    authenticatedShellLayout.sidebarHeight < authenticatedShellLayout.viewportHeight - 2 ||
+    authenticatedShellLayout.workspaceTop > 1 ||
+    authenticatedShellLayout.commandCenterTop <= authenticatedShellLayout.topbarHeight ||
+    authenticatedShellLayout.overlapsCommandCenter !== 0 ||
     workspaceCommandCenterStyle.display !== "grid" ||
     !workspaceCommandCenterStyle.backgroundColor.includes("255, 255, 255") ||
     workspaceCommandCenterStyle.backgroundImage !== "none" ||

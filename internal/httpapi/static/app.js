@@ -621,6 +621,7 @@ async function logout() {
 }
 
 function showLogin() {
+  document.body.classList.toggle("is-authenticated", false);
   document.querySelectorAll("[data-form-drawer]").forEach((drawer) => applyFormDrawerCollapsed(drawer, true));
   syncFormDrawerShellState();
   appView.hidden = true;
@@ -631,6 +632,7 @@ function showLogin() {
 }
 
 function showApp() {
+  document.body.classList.toggle("is-authenticated", true);
   loginView.hidden = true;
   appView.hidden = false;
   logoutEl.hidden = false;

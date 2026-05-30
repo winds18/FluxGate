@@ -56,7 +56,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     overview: "概",
     access: "源",
     nodes: "点",
-    identity: "身",
+    identity: "订",
     policies: "策",
     traffic: "量",
     ops: "运",
@@ -251,10 +251,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const dashboardNavCount = await page.locator(".dashboard-sidebar [data-view-nav]").count();
   const dashboardNavSymbolCount = await page.locator(".dashboard-sidebar .nav-symbol").count();
   const dashboardNavBadgeCount = await page.locator(".dashboard-sidebar [data-view-count]").count();
+  const dashboardNavLabels = await page
+    .locator(".dashboard-sidebar .nav-label")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
   const mobileDockCount = await page.locator(".mobile-dock > button").count();
   const mobileDockDirectNavCount = await page.locator(".mobile-dock [data-view-nav]").count();
   const mobileDockSymbolCount = await page.locator(".mobile-dock .mobile-dock-symbol").count();
   const mobileDockBadgeCount = await page.locator(".mobile-dock .mobile-dock-badge").count();
+  const mobileDockLabels = await page
+    .locator(".mobile-dock > button > span:nth-child(2)")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
   const mobileMoreToggleCount = await page.locator("[data-mobile-more-toggle]").count();
   const mobileMoreNavCount = await page.locator("#mobile-more-menu [data-view-nav]").count();
   const mobileMoreBadgeCount = await page.locator("#mobile-more-menu [data-view-count]").count();
@@ -1832,6 +1838,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   });
 
   await switchView("identity");
+  const identityPanelOrder = await page.evaluate(() =>
+    Array.from(document.querySelectorAll('[data-dashboard-view="identity"] [data-content-panel]'))
+      .filter((element) => element.offsetParent !== null)
+      .map((element) => element.getAttribute("data-content-panel")),
+  );
   const identityWorkbenchCount = await page.locator("#identity-workbench [data-identity-workbench]").count();
   await collectWorkbenchStyles(["[data-identity-workbench]"]);
   const identityWorkbenchStatCount = await page.locator("#identity-workbench [data-identity-workbench-stat]").count();
@@ -2763,10 +2774,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardNavCount = dashboardNavCount;
   state.dashboardNavSymbolCount = dashboardNavSymbolCount;
   state.dashboardNavBadgeCount = dashboardNavBadgeCount;
+  state.dashboardNavLabels = dashboardNavLabels;
   state.mobileDockCount = mobileDockCount;
   state.mobileDockDirectNavCount = mobileDockDirectNavCount;
   state.mobileDockSymbolCount = mobileDockSymbolCount;
   state.mobileDockBadgeCount = mobileDockBadgeCount;
+  state.mobileDockLabels = mobileDockLabels;
   state.mobileMoreToggleCount = mobileMoreToggleCount;
   state.mobileMoreNavCount = mobileMoreNavCount;
   state.mobileMoreBadgeCount = mobileMoreBadgeCount;
@@ -2914,6 +2927,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileOpsOverflow = mobileOpsOverflow;
   state.mobileMoreToggleActiveForOps = mobileMoreToggleActiveForOps;
   state.teamCardCount = teamCardCount;
+  state.identityPanelOrder = identityPanelOrder;
   state.identityWorkbenchCount = identityWorkbenchCount;
   state.identityWorkbenchStatCount = identityWorkbenchStatCount;
   state.identityWorkbenchStageCardCount = identityWorkbenchStageCardCount;
@@ -3164,7 +3178,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     identityWorkbenchCount !== 1 ||
     identityWorkbenchStatCount !== 4 ||
     identityWorkbenchStageCardCount !== 3 ||
-    !["身", "团", "员", "钥", "订"].every((symbol) => identityWorkbenchSymbols.includes(symbol)) ||
+    identityWorkbenchSymbols[0] !== "订" ||
+    !["订", "钥", "团", "员"].every((symbol) => identityWorkbenchSymbols.includes(symbol)) ||
     identityWorkbenchOverflowCount > 0
   ) {
     throw new Error(`identity distribution workbench is incomplete or overflowing: ${JSON.stringify(state)}`);
@@ -3557,7 +3572,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`dashboard navigation is incomplete: ${JSON.stringify(state)}`);
   }
-  const expectedFormDrawerSymbols = ["源", "导", "网", "团", "员", "钥", "策"];
+  const expectedFormDrawerSymbols = ["源", "导", "网", "钥", "团", "员", "策"];
   const overflowingFormDrawerHeader = Object.entries(formDrawerHeaderOverflow).find(([, overflow]) => overflow > 0);
   const overflowingFormSubmit = Object.entries(formSubmitOverflow).find(([, overflow]) => overflow > 0);
   const narrowFormDrawer = Object.entries(formDrawerNarrowCount).find(([, count]) => count > 0);
@@ -3696,7 +3711,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`refresh should show and restore a stable pending state: ${JSON.stringify(state)}`);
   }
-  const expectedPanelSymbols = ["源", "点", "网", "团", "员", "钥", "策", "量", "运"];
+  const expectedPanelSymbols = ["源", "点", "网", "钥", "团", "员", "策", "量", "运"];
   const overflowingPanelTitle = Object.entries(panelTitleOverflow).find(([, overflow]) => overflow > 0);
   if (
     panelCountCount !== 9 ||
@@ -3829,6 +3844,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     throw new Error(`dashboard view header symbol is stale: ${JSON.stringify(state)}`);
   }
   if (
+    dashboardNavLabels[3] !== "订阅" ||
+    !mobileDockLabels.includes("订阅") ||
+    ["tokens", "teams", "users"].some((panel, index) => identityPanelOrder[index] !== panel)
+  ) {
+    throw new Error(`subscription distribution should be a first-class navigation surface: ${JSON.stringify(state)}`);
+  }
+  if (
     overviewHeroCount !== 1 ||
     !overviewHeroTitle ||
     overviewHeroActionCount !== 1 ||
@@ -3856,7 +3878,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`overview insight panels are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  const expectedOverviewReadinessSymbols = ["源", "点", "网", "身", "订", "策", "发"];
+  const expectedOverviewReadinessSymbols = ["源", "点", "网", "钥", "订", "策", "发"];
   const expectedOverviewGuideActionLabels = ["去复制订阅", "检查收口", "发布配置"];
   const expectedOverviewGuideActionTargets = ["tokens", "delivery-readiness", "config-publish"];
   if (
@@ -3892,7 +3914,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`overview next step action card is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  const expectedOverviewQuickCardSymbols = ["源", "点", "身", "运"];
+  const expectedOverviewQuickCardSymbols = ["源", "点", "订", "运"];
   if (
     overviewQuickCardCount !== 4 ||
     overviewQuickCardSymbolCount !== 4 ||

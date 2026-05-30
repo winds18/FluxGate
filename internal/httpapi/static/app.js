@@ -89,7 +89,7 @@ const dashboardViewMeta = {
   overview: ["概览", "运行状态、资源规模和下一步入口"],
   access: ["接入", "维护上游来源、刷新订阅和导入节点"],
   nodes: ["节点", "按地区聚合节点，查看详情并维护虚拟网关"],
-  identity: ["身份", "管理团队、成员、Token 和可复制订阅地址"],
+  identity: ["订阅", "复制 Token 订阅地址，管理团队和成员归属"],
   policies: ["策略", "控制 Token、成员和团队可见的节点范围"],
   traffic: ["流量", "查看用量、额度消耗和上游出口流量"],
   ops: ["运维", "检查、发布、回滚并重启 sing-box 配置"],
@@ -98,7 +98,7 @@ const dashboardViewSymbols = {
   overview: "概",
   access: "源",
   nodes: "点",
-  identity: "身",
+  identity: "订",
   policies: "策",
   traffic: "量",
   ops: "运",
@@ -2369,7 +2369,7 @@ function overviewReadinessChecks(data) {
     ["接入来源", sourceCount > 0, `${sourceCount} 个来源`, "access", "源", "先添加或导入机场订阅，让节点池有可用上游。", "source-form", true],
     ["节点池", nodeCount > 0, `${nodeCount} 个节点`, "nodes", "点", "检查地区聚合、节点详情和命名，确保伙伴能看懂节点来源。", "nodes", false],
     ["虚拟网关", virtualNodeCount > 0, `${virtualNodeCount} 个入口`, "nodes", "网", "创建 sing-box 入站入口，把节点池组合成可分发网关。", "virtual-node-form", true],
-    ["团队 Token", tokenCount > 0, `${tokenCount} 个 Token`, "identity", "身", "为团队伙伴创建 Token，绑定团队伙伴的有效期和额度。", "token-form", true],
+    ["订阅 Token", tokenCount > 0, `${tokenCount} 个 Token`, "identity", "钥", "为成员签发 Token，绑定订阅有效期和流量额度。", "token-form", true],
     ["订阅分发", subscriptionReady, `${usableTokenCount} 个可用订阅`, "identity", "订", "复制默认、Mihomo 或 sing-box 订阅地址，直接导入客户端测试。", "tokens", false],
     ["访问策略", policyCount > 0, `${policyCount} 条策略`, "policies", "策", "给团队或 Token 绑定可见范围和节点上限，避免误分发。", "policy-form", true],
     ["发布检查", publishReady, publishSummary, "ops", "发", "在运维模块检查交付收口并发布 sing-box 配置。", "ops-actions", false],
@@ -2666,8 +2666,8 @@ function workspaceInsightForView(view) {
     if (teams.length === 0 || users.length === 0) {
       return {
         tone: "warning",
-        symbol: "身",
-        kicker: "身份分发",
+        symbol: "订",
+        kicker: "订阅分发",
         title: "团队或成员未齐",
         detail: `${formatPlainNumber(teams.length)} 个团队、${formatPlainNumber(users.length)} 个成员，先补齐归属再签发 Token。`,
         action: { label: teams.length === 0 ? "建团队" : "加成员", symbol: teams.length === 0 ? "团" : "员", view: "identity", target: teams.length === 0 ? "team-form" : "user-form", expand: true },
@@ -2677,7 +2677,7 @@ function workspaceInsightForView(view) {
       return {
         tone: "warning",
         symbol: "钥",
-        kicker: "身份分发",
+        kicker: "订阅分发",
         title: "还没有可复制订阅",
         detail: "为成员签发 Token 后，后台会给出通用、Mihomo 和 sing-box 地址。",
         action: { label: "签发 Token", symbol: "钥", view: "identity", target: "token-form", expand: true },
@@ -2686,7 +2686,7 @@ function workspaceInsightForView(view) {
     return {
       tone: activeTokens > 0 ? "success" : "warning",
       symbol: "订",
-      kicker: "身份分发",
+      kicker: "订阅分发",
       title: activeTokens > 0 ? "订阅可分发" : "Token 待启用",
       detail: `${formatPlainNumber(tokens.length)} 个 Token，${formatPlainNumber(activeTokens)} 个有效，可在卡片里反复复制地址。`,
       action: { label: "查看 Token", symbol: "钥", view: "identity", target: "tokens", expand: false },
@@ -2799,7 +2799,7 @@ function overviewPrimaryAction() {
     "接入来源": { label: "添加来源", symbol: "源", view: "access", target: "source-form", expand: true },
     "节点池": { label: "导入节点", symbol: "导", view: "access", target: "node-import-form", expand: true },
     "虚拟网关": { label: "创建网关", symbol: "网", view: "nodes", target: "virtual-node-form", expand: true },
-    "团队 Token": { label: "签发 Token", symbol: "钥", view: "identity", target: "token-form", expand: true },
+    "订阅 Token": { label: "签发 Token", symbol: "钥", view: "identity", target: "token-form", expand: true },
     "访问策略": { label: "创建策略", symbol: "策", view: "policies", target: "policy-form", expand: true },
   };
   return actions[firstMissing[0]] || { label: "继续初始化", symbol: "步", view: firstMissing[3], target: "overview-next-step" };
@@ -3190,21 +3190,21 @@ function renderIdentityWorkbench(data) {
   const userReady = users.length > 0;
   const tokenReady = reusableTokens.length > 0;
   identityWorkbenchEl.innerHTML = `
-    <section class="identity-workbench" data-identity-workbench aria-label="身份分发总控">
+    <section class="identity-workbench" data-identity-workbench aria-label="订阅分发总控">
       <div class="identity-workbench-heading">
-        <span class="identity-workbench-symbol" data-identity-workbench-symbol aria-hidden="true">身</span>
+        <span class="identity-workbench-symbol" data-identity-workbench-symbol aria-hidden="true">订</span>
         <div class="identity-workbench-copy">
-          <span class="identity-workbench-kicker">身份分发</span>
-          <strong class="identity-workbench-title">先确认团队、成员和订阅 Token 是否能真实分发</strong>
+          <span class="identity-workbench-kicker">订阅分发</span>
+          <strong class="identity-workbench-title">先确认 Token 订阅地址能否真实分发</strong>
         </div>
       </div>
-      <div class="identity-workbench-stats" aria-label="身份核心状态">
-        ${identityWorkbenchStat("团", "团队", formatPlainNumber(teams.length), `${formatPlainNumber(activeTeams.length)} 个启用`)}
-        ${identityWorkbenchStat("员", "成员", formatPlainNumber(users.length), `${formatPlainNumber(activeUsers.length)} 个启用`)}
+      <div class="identity-workbench-stats" aria-label="订阅核心状态">
         ${identityWorkbenchStat("钥", "Token", formatPlainNumber(tokens.length), `${formatPlainNumber(activeTokens.length)} 个 active`)}
         ${identityWorkbenchStat("订", "可分发", `${formatPlainNumber(reusableTokens.length)}/${formatPlainNumber(tokens.length)}`, "可复制订阅地址")}
+        ${identityWorkbenchStat("团", "团队", formatPlainNumber(teams.length), `${formatPlainNumber(activeTeams.length)} 个启用`)}
+        ${identityWorkbenchStat("员", "成员", formatPlainNumber(users.length), `${formatPlainNumber(activeUsers.length)} 个启用`)}
       </div>
-      <div class="identity-workbench-stage-grid" aria-label="身份分发生命周期">
+      <div class="identity-workbench-stage-grid" aria-label="订阅分发生命周期">
         ${identityWorkbenchStageCard({
           symbol: "团",
           title: "团队归属",

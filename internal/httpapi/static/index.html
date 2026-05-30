@@ -76,10 +76,10 @@
             <span class="nav-stat" data-view-count="nodes">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="identity">
-            <span class="nav-symbol" aria-hidden="true">身</span>
+            <span class="nav-symbol" aria-hidden="true">订</span>
             <span class="nav-copy">
-              <span class="nav-label">身份</span>
-              <small>团队与 Token</small>
+              <span class="nav-label">订阅</span>
+              <small>Token 分发</small>
             </span>
             <span class="nav-stat" data-view-count="identity">--</span>
           </button>
@@ -114,7 +114,7 @@
         <button type="button" data-view-nav="overview"><span class="mobile-dock-symbol" aria-hidden="true">概</span><span>概览</span><span class="mobile-dock-badge" data-view-count="overview">--</span></button>
         <button type="button" data-view-nav="access"><span class="mobile-dock-symbol" aria-hidden="true">源</span><span>接入</span><span class="mobile-dock-badge" data-view-count="access">--</span></button>
         <button type="button" data-view-nav="nodes"><span class="mobile-dock-symbol" aria-hidden="true">点</span><span>节点</span><span class="mobile-dock-badge" data-view-count="nodes">--</span></button>
-        <button type="button" data-view-nav="identity"><span class="mobile-dock-symbol" aria-hidden="true">身</span><span>身份</span><span class="mobile-dock-badge" data-view-count="identity">--</span></button>
+        <button type="button" data-view-nav="identity"><span class="mobile-dock-symbol" aria-hidden="true">订</span><span>订阅</span><span class="mobile-dock-badge" data-view-count="identity">--</span></button>
         <button type="button" data-mobile-more-toggle aria-controls="mobile-more-menu" aria-expanded="false"><span class="mobile-dock-symbol" aria-hidden="true">···</span><span>更多</span><span class="mobile-dock-badge">3</span></button>
       </nav>
       <div id="mobile-more-menu" class="mobile-more-menu" hidden>
@@ -181,11 +181,11 @@
             </button>
             <button class="quick-card" type="button" data-view-jump="identity" data-view-jump-target="tokens">
               <span class="quick-card-heading">
-                <span class="quick-card-symbol" aria-hidden="true">身</span>
+                <span class="quick-card-symbol" aria-hidden="true">订</span>
                 <strong>分发订阅</strong>
                 <span class="quick-card-badge" data-overview-card-count="identity">--</span>
               </span>
-              <span>创建成员 Token、复制客户端地址</span>
+              <span>复制 Token 订阅、导入客户端</span>
             </button>
             <button class="quick-card" type="button" data-view-jump="ops" data-view-jump-target="ops-actions">
               <span class="quick-card-heading">
@@ -366,6 +366,49 @@
         <section class="dashboard-view" data-dashboard-view="identity" hidden>
           <div id="identity-workbench"></div>
           <section class="action-grid">
+            <form id="token-form" class="panel form-panel wide-panel form-drawer is-collapsed" data-form-drawer>
+              <div class="panel-header">
+                <div class="drawer-title">
+                  <span class="drawer-symbol" aria-hidden="true">钥</span>
+                  <h2>创建 Token</h2>
+                  <span class="drawer-draft" data-form-draft hidden>草稿未提交</span>
+                </div>
+                <div class="drawer-actions">
+                  <button class="drawer-toggle" type="button" data-form-drawer-toggle>
+                    <span class="button-symbol" aria-hidden="true">+</span>
+                    <span class="button-label">展开</span>
+                  </button>
+                  <button class="drawer-cancel" type="button" data-form-drawer-cancel>
+                    <span class="button-symbol" aria-hidden="true">×</span>
+                    <span class="button-label">取消</span>
+                  </button>
+                </div>
+              </div>
+              <div class="form-body token-form-grid">
+                <label>
+                  成员
+                  <select id="token-user" name="user_id" required></select>
+                </label>
+                <label>
+                  名称
+                  <input name="name" />
+                </label>
+                <label>
+                  有效天数
+                  <input name="expire_days" type="number" min="0" value="30" />
+                </label>
+                <label>
+                  流量额度 MiB
+                  <input name="quota_mib" type="number" min="0" value="1024" />
+                </label>
+                <button type="submit">
+                  <span class="button-symbol" aria-hidden="true">+</span>
+                  <span class="button-label">创建</span>
+                </button>
+              </div>
+              <div id="token-result" class="result-box" hidden></div>
+            </form>
+
             <form id="team-form" class="panel form-panel form-drawer is-collapsed" data-form-drawer>
               <div class="panel-header">
                 <div class="drawer-title">
@@ -437,49 +480,18 @@
                 </button>
               </div>
             </form>
+          </section>
 
-            <form id="token-form" class="panel form-panel wide-panel form-drawer is-collapsed" data-form-drawer>
-              <div class="panel-header">
-                <div class="drawer-title">
-                  <span class="drawer-symbol" aria-hidden="true">钥</span>
-                  <h2>创建 Token</h2>
-                  <span class="drawer-draft" data-form-draft hidden>草稿未提交</span>
-                </div>
-                <div class="drawer-actions">
-                  <button class="drawer-toggle" type="button" data-form-drawer-toggle>
-                    <span class="button-symbol" aria-hidden="true">+</span>
-                    <span class="button-label">展开</span>
-                  </button>
-                  <button class="drawer-cancel" type="button" data-form-drawer-cancel>
-                    <span class="button-symbol" aria-hidden="true">×</span>
-                    <span class="button-label">取消</span>
-                  </button>
-                </div>
+          <section class="panel content-panel" data-content-panel="tokens">
+            <div class="panel-header">
+              <div class="panel-title">
+                <span class="panel-symbol" aria-hidden="true">钥</span>
+                <h2>Token</h2>
+                <span id="tokens-panel-count" class="panel-count">0 个</span>
+                <span class="panel-meta" data-content-panel-meta>订阅地址、额度、续期与客户端格式集中查看</span>
               </div>
-              <div class="form-body token-form-grid">
-                <label>
-                  成员
-                  <select id="token-user" name="user_id" required></select>
-                </label>
-                <label>
-                  名称
-                  <input name="name" />
-                </label>
-                <label>
-                  有效天数
-                  <input name="expire_days" type="number" min="0" value="30" />
-                </label>
-                <label>
-                  流量额度 MiB
-                  <input name="quota_mib" type="number" min="0" value="1024" />
-                </label>
-                <button type="submit">
-                  <span class="button-symbol" aria-hidden="true">+</span>
-                  <span class="button-label">创建</span>
-                </button>
-              </div>
-              <div id="token-result" class="result-box" hidden></div>
-            </form>
+            </div>
+            <div id="tokens" class="table content-panel-body"></div>
           </section>
 
           <section class="panel content-panel" data-content-panel="teams">
@@ -504,18 +516,6 @@
               </div>
             </div>
             <div id="users" class="table content-panel-body"></div>
-          </section>
-
-          <section class="panel content-panel" data-content-panel="tokens">
-            <div class="panel-header">
-              <div class="panel-title">
-                <span class="panel-symbol" aria-hidden="true">钥</span>
-                <h2>Token</h2>
-                <span id="tokens-panel-count" class="panel-count">0 个</span>
-                <span class="panel-meta" data-content-panel-meta>订阅地址、额度、续期与客户端格式集中查看</span>
-              </div>
-            </div>
-            <div id="tokens" class="table content-panel-body"></div>
           </section>
         </section>
 

@@ -227,6 +227,25 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       throw new Error(`active navigation missing for ${view}`);
     }
   };
+  const workbenchStyleEntries = [];
+  const collectWorkbenchStyles = async (selectors) => {
+    const entries = await page.evaluate((requestedSelectors) => {
+      return requestedSelectors.flatMap((selector) =>
+        Array.from(document.querySelectorAll(selector)).map((element) => {
+          const style = getComputedStyle(element);
+          return {
+            selector,
+            backgroundColor: style.backgroundColor,
+            backgroundImage: style.backgroundImage,
+            borderColor: style.borderColor,
+            borderRadius: style.borderRadius,
+            boxShadow: style.boxShadow,
+          };
+        }),
+      );
+    }, selectors);
+    workbenchStyleEntries.push(...entries);
+  };
   const pageHorizontalOverflow = async () =>
     page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - window.innerWidth));
   const dashboardNavCount = await page.locator(".dashboard-sidebar [data-view-nav]").count();
@@ -1140,6 +1159,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   await switchView("traffic");
   const trafficWorkbenchCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-workbench]').count();
+  await collectWorkbenchStyles(["[data-traffic-workbench]"]);
   const trafficWorkbenchStatCount = await page.locator('[data-dashboard-view="traffic"] [data-traffic-workbench-stat]').count();
   const trafficWorkbenchSignalCardCount = await page
     .locator('[data-dashboard-view="traffic"] [data-traffic-workbench-signal-card]')
@@ -1399,6 +1419,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenCardCount = await page.locator("#tokens .token-card").count();
   const tokenRowCount = tokenCardCount || (await page.locator("#tokens tbody tr").count());
   const tokenWorkbenchCount = await page.locator("#tokens [data-token-workbench]").count();
+  await collectWorkbenchStyles(["[data-token-workbench]"]);
   const tokenWorkbenchStatCount = await page.locator("#tokens [data-token-workbench-stat]").count();
   const tokenWorkbenchFormatCount = await page.locator("#tokens [data-token-format-card]").count();
   const tokenWorkbenchFormatSymbols = await page
@@ -1652,6 +1673,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   await switchView("identity");
   const identityWorkbenchCount = await page.locator("#identity-workbench [data-identity-workbench]").count();
+  await collectWorkbenchStyles(["[data-identity-workbench]"]);
   const identityWorkbenchStatCount = await page.locator("#identity-workbench [data-identity-workbench-stat]").count();
   const identityWorkbenchStageCardCount = await page.locator("#identity-workbench [data-identity-workbench-stage-card]").count();
   const identityWorkbenchSymbols = await page
@@ -1740,6 +1762,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   await switchView("access");
   const sourceWorkbenchCount = await page.locator("#sources [data-source-workbench]").count();
+  await collectWorkbenchStyles(["[data-source-workbench]"]);
   const sourceWorkbenchStatCount = await page.locator("#sources [data-source-workbench-stat]").count();
   const sourceWorkbenchTypeCardCount = await page.locator("#sources [data-source-workbench-type-card]").count();
   const sourceWorkbenchSymbols = await page
@@ -1902,6 +1925,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await switchView("nodes");
   const virtualNodeCardCount = await page.locator("#virtual-nodes .virtual-node-card").count();
   const virtualNodeWorkbenchCount = await page.locator("#virtual-nodes [data-virtual-node-workbench]").count();
+  await collectWorkbenchStyles(["[data-virtual-node-workbench]"]);
   const virtualNodeWorkbenchStatCount = await page.locator("#virtual-nodes [data-virtual-node-workbench-stat]").count();
   const virtualNodeWorkbenchStrategyCardCount = await page
     .locator("#virtual-nodes [data-virtual-node-workbench-strategy-card]")
@@ -1990,6 +2014,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const policySummaryChipCount = await page.locator("#policies [data-policy-summary-chip]").count();
   const policyActionButtonSymbolCount = await page.locator("#policies .policy-actions .button-symbol").count();
   const policyWorkbenchCount = await page.locator("#policies [data-policy-workbench]").count();
+  await collectWorkbenchStyles(["[data-policy-workbench]"]);
   const policyWorkbenchStatCount = await page.locator("#policies [data-policy-workbench-stat]").count();
   const policyWorkbenchScopeCardCount = await page.locator("#policies [data-policy-workbench-scope-card]").count();
   const policyWorkbenchSymbols = await page
@@ -2076,6 +2101,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await expect(page.locator("#nodes [data-node-filter]").first()).toHaveValue("", { timeout: 5000 });
   const nodeSearchClears = (await page.locator("#nodes [data-node-filter]").first().inputValue()) === "";
   const nodeWorkbenchCount = await page.locator("#nodes [data-node-workbench]").count();
+  await collectWorkbenchStyles(["[data-node-workbench]"]);
   const nodeWorkbenchStatCount = await page.locator("#nodes [data-node-workbench-stat]").count();
   const nodeWorkbenchRegionCardCount = await page.locator("#nodes [data-node-workbench-region-card]").count();
   const nodeWorkbenchSymbols = await page
@@ -2336,6 +2362,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   await switchView("ops");
   const opsWorkbenchCount = await page.locator("[data-ops-workbench]").count();
+  await collectWorkbenchStyles(["[data-ops-workbench]"]);
   const opsWorkbenchStatCount = await page.locator("[data-ops-workbench-stat]").count();
   const opsWorkbenchStepCardCount = await page.locator("[data-ops-workbench-step-card]").count();
   const opsWorkbenchSymbols = await page.locator("[data-ops-workbench-symbol]").evaluateAll((nodes) =>
@@ -2516,6 +2543,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   navBadgeValues = await page
     .locator(".dashboard-sidebar [data-view-count]")
     .evaluateAll((elements) => Object.fromEntries(elements.map((element) => [element.dataset.viewCount, element.textContent.trim()])));
+  const unifiedWorkbenchStyles = {
+    count: new Set(workbenchStyleEntries.map((entry) => entry.selector)).size,
+    entries: workbenchStyleEntries,
+    mismatches: workbenchStyleEntries.filter(
+      (entry) =>
+        entry.backgroundColor !== "rgb(255, 255, 255)" ||
+        entry.backgroundImage !== "none" ||
+        !entry.borderRadius.startsWith("8px") ||
+        entry.borderColor === "rgba(0, 0, 0, 0)" ||
+        entry.boxShadow === "none",
+    ),
+  };
 
   const state = await page.evaluate(() => ({
     loginHidden: document.querySelector("#login-view")?.hidden,
@@ -2868,8 +2907,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsResultSymbolCount = opsResultSymbolCount;
   state.opsResultChipCount = opsResultChipCount;
   state.opsVisualOverflowCount = opsVisualOverflowCount;
+  state.unifiedWorkbenchStyles = unifiedWorkbenchStyles;
   state.calmOpsStylesheetCount = calmOpsStylesheetCount;
   state.calmOpsResponseStatus = calmOpsResponseStatus;
+  if (unifiedWorkbenchStyles.count < 8 || unifiedWorkbenchStyles.mismatches.length > 0) {
+    throw new Error(`module workbenches do not share the v2 surface style: ${JSON.stringify(state)}`);
+  }
   if (
     identityWorkbenchCount !== 1 ||
     identityWorkbenchStatCount !== 4 ||

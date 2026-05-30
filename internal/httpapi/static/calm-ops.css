@@ -2890,6 +2890,11 @@ body.has-form-drawer-open::before {
   --fg-muted: #667085;
   --fg-line: #e5eaf0;
   --fg-line-strong: #d6dee8;
+  --fg-workbench-bg: #ffffff;
+  --fg-workbench-card-bg: #f8fafc;
+  --fg-workbench-symbol-bg: var(--fg-blue-soft);
+  --fg-workbench-symbol-border: #cfe1ff;
+  --fg-workbench-symbol-color: var(--fg-blue);
 }
 
 html,
@@ -3546,6 +3551,97 @@ button[type="submit"]:hover,
 .token-subscription-item *,
 .ops-action-card * {
   min-width: 0;
+}
+
+/* FluxGate UI v2 unified workbenches */
+.source-workbench,
+[data-source-workbench],
+.node-workbench,
+[data-node-workbench],
+.identity-workbench,
+[data-identity-workbench],
+.token-workbench,
+[data-token-workbench],
+.policy-workbench,
+[data-policy-workbench],
+.virtual-node-workbench,
+[data-virtual-node-workbench],
+.traffic-workbench,
+[data-traffic-workbench],
+.ops-workbench,
+[data-ops-workbench] {
+  background: var(--fg-workbench-bg);
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  box-shadow: var(--fg-soft-shadow);
+  color: var(--fg-ink);
+  overflow: hidden;
+}
+
+.source-workbench-stat,
+.source-workbench-type-card,
+.node-workbench-stat,
+.node-workbench-region-card,
+.node-workbench-region-empty,
+.identity-workbench-stat,
+.identity-workbench-stage-card,
+.token-workbench-stat,
+.token-workbench-format-card,
+.policy-workbench-stat,
+.policy-workbench-scope-card,
+.virtual-node-workbench-stat,
+.virtual-node-workbench-strategy-card,
+.traffic-workbench-stat,
+.traffic-workbench-signal-card,
+.ops-workbench-stat,
+.ops-workbench-step-card {
+  background: var(--fg-workbench-card-bg);
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.source-workbench-symbol,
+.source-workbench-stat-symbol,
+.source-workbench-type-symbol,
+.node-workbench-symbol,
+.node-workbench-stat-symbol,
+.node-workbench-region-symbol,
+.identity-workbench-symbol,
+.identity-workbench-stat-symbol,
+.identity-workbench-stage-symbol,
+.token-workbench-symbol,
+.token-workbench-format-symbol,
+.policy-workbench-symbol,
+.policy-workbench-stat-symbol,
+.policy-workbench-scope-symbol,
+.virtual-node-workbench-symbol,
+.virtual-node-workbench-stat-symbol,
+.virtual-node-workbench-strategy-symbol,
+.traffic-workbench-symbol,
+.traffic-workbench-stat-symbol,
+.traffic-workbench-signal-symbol,
+.ops-workbench-symbol,
+.ops-workbench-stat-symbol,
+.ops-workbench-step-symbol {
+  background: var(--fg-workbench-symbol-bg);
+  border: 1px solid var(--fg-workbench-symbol-border);
+  color: var(--fg-workbench-symbol-color);
+}
+
+.identity-workbench-stage-card-warning,
+.token-workbench-format-card-warning,
+.ops-workbench-step-card-warning {
+  background: var(--fg-amber-soft);
+  border-color: #f4d18d;
+}
+
+.identity-workbench-stage-card-warning .identity-workbench-stage-symbol,
+.token-workbench-format-card-warning .token-workbench-format-symbol,
+.ops-workbench-step-card-warning .ops-workbench-step-symbol {
+  background: #ffffff;
+  border-color: #f4d18d;
+  color: var(--fg-amber);
 }
 
 .panel-header,

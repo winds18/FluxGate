@@ -1566,11 +1566,24 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     .locator("#tokens [data-token-workbench-action] .button-symbol")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
   let tokenWorkbenchActionNavigates = false;
+  let tokenWorkbenchMihomoCopyFeedback = false;
+  let tokenWorkbenchMihomoCopyLabelRestored = false;
   if (tokenWorkbenchActionCount > 0) {
     await page.locator("#tokens [data-token-workbench-action='focus-subscriptions']").first().click();
     await expect(page.locator("#tokens .token-card-subscriptions.is-target-highlighted").first()).toHaveCount(1, { timeout: 1000 });
     await expect(page.locator("#status")).toContainText("已定位：订阅地址", { timeout: 5000 });
     tokenWorkbenchActionNavigates = true;
+    const mihomoCopyButton = page.locator("#tokens [data-token-workbench-action='copy-mihomo']").first();
+    if ((await mihomoCopyButton.count()) > 0 && !(await mihomoCopyButton.isDisabled())) {
+      await mihomoCopyButton.click();
+      await expect(mihomoCopyButton).toHaveText("已复制", { timeout: 5000 });
+      await expect(page.locator("#status")).toContainText("订阅地址已复制", { timeout: 5000 });
+      tokenWorkbenchMihomoCopyFeedback = true;
+      await page.waitForTimeout(1700);
+      await expect(mihomoCopyButton.locator(".button-symbol")).toHaveText("米", { timeout: 5000 });
+      await expect(mihomoCopyButton.locator(".button-label")).toHaveText("复制 Mihomo", { timeout: 5000 });
+      tokenWorkbenchMihomoCopyLabelRestored = true;
+    }
   }
   const tokenWorkbenchOverflowCount = await page.evaluate(() => {
     const outside = (child, parent) =>
@@ -1634,6 +1647,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenSubscriptionOpenCount = await page.locator("#tokens a[data-token-subscription-link]").count();
   const tokenSubscriptionProbeCount = await page.locator("#tokens button[data-token-action='probe-subscription']").count();
   const tokenSubscriptionActionSymbolCount = await page.locator("#tokens .token-subscription-actions .button-symbol").count();
+  const tokenSubscriptionCodeLayout = await page.evaluate(() => {
+    const codes = Array.from(document.querySelectorAll("#tokens .token-subscription-item code")).filter(
+      (element) => element.offsetParent !== null,
+    );
+    return {
+      count: codes.length,
+      displayValues: [...new Set(codes.map((element) => getComputedStyle(element).display))],
+      lineClampValues: [...new Set(codes.map((element) => getComputedStyle(element).webkitLineClamp || ""))],
+      overflowValues: [...new Set(codes.map((element) => getComputedStyle(element).overflow))],
+      maxHeightValues: [...new Set(codes.map((element) => getComputedStyle(element).maxHeight))],
+    };
+  });
   const tokenRotateSubscriptionCount = await page.locator("#tokens button[data-token-action='rotate-subscription']").count();
   let tokenCopyFeedbackVisible = false;
   let tokenCopySymbolRestored = false;
@@ -3016,6 +3041,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenWorkbenchActionCount = tokenWorkbenchActionCount;
   state.tokenWorkbenchActionSymbols = tokenWorkbenchActionSymbols;
   state.tokenWorkbenchActionNavigates = tokenWorkbenchActionNavigates;
+  state.tokenWorkbenchMihomoCopyFeedback = tokenWorkbenchMihomoCopyFeedback;
+  state.tokenWorkbenchMihomoCopyLabelRestored = tokenWorkbenchMihomoCopyLabelRestored;
   state.tokenWorkbenchOverflowCount = tokenWorkbenchOverflowCount;
   state.tokenResultSubscriptionItemCount = tokenResultSubscriptionItemCount;
   state.tokenResultSubscriptionKindCount = tokenResultSubscriptionKindCount;
@@ -3050,6 +3077,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenSubscriptionOpenCount = tokenSubscriptionOpenCount;
   state.tokenSubscriptionProbeCount = tokenSubscriptionProbeCount;
   state.tokenSubscriptionActionSymbolCount = tokenSubscriptionActionSymbolCount;
+  state.tokenSubscriptionCodeLayout = tokenSubscriptionCodeLayout;
   state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
   state.tokenCopySymbolRestored = tokenCopySymbolRestored;
   state.tokenProbeFeedbackVisible = tokenProbeFeedbackVisible;
@@ -3153,6 +3181,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       expectedTokenWorkbenchSymbols.some((symbol, index) => tokenWorkbenchFormatSymbols[index] !== symbol) ||
       expectedTokenWorkbenchActionSymbols.some((symbol, index) => tokenWorkbenchActionSymbols[index] !== symbol) ||
       !tokenWorkbenchActionNavigates ||
+      !tokenWorkbenchMihomoCopyFeedback ||
+      !tokenWorkbenchMihomoCopyLabelRestored ||
       tokenWorkbenchOverflowCount > 0)
   ) {
     throw new Error(`token subscription workbench is incomplete or overflowing: ${JSON.stringify(state)}`);
@@ -3216,6 +3246,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       tokenSubscriptionActionSymbolCount !== tokenSubscriptionCopyCount * 3)
   ) {
     throw new Error(`token subscription cards are incomplete: ${JSON.stringify(state)}`);
+  }
+  if (
+    tokenSubscriptionCopyCount > 0 &&
+    (!tokenSubscriptionCodeLayout ||
+      tokenSubscriptionCodeLayout.count !== tokenSubscriptionCopyCount ||
+      !tokenSubscriptionCodeLayout.lineClampValues.every((value) => value === "2") ||
+      !tokenSubscriptionCodeLayout.overflowValues.every((value) => value === "hidden") ||
+      !tokenSubscriptionCodeLayout.maxHeightValues.every((value) => value !== "none"))
+  ) {
+    throw new Error(`token subscription URLs should be clamped inside cards: ${JSON.stringify(state)}`);
   }
   if (tokenSubscriptionCopyCount > 0 && !tokenCopyFeedbackVisible) {
     throw new Error(`token subscription copy feedback missing: ${JSON.stringify(state)}`);

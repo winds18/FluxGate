@@ -3976,6 +3976,16 @@ code {
   word-break: break-word;
 }
 
+.token-subscription-item code {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  line-height: 1.45;
+  max-height: 3em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .node-card-title,
 .token-subscription-title > span:first-child,
 .source-card-heading strong,

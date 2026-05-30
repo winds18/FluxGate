@@ -3260,10 +3260,97 @@ function renderSources(rows) {
     return;
   }
   sourcesEl.innerHTML = `
+    ${renderSourceWorkbench(rows)}
     <div class="source-card-list">
       ${rows.map((row) => renderSourceCard(row)).join("")}
     </div>
   `;
+}
+
+function renderSourceWorkbench(rows) {
+  const sourceRows = rows || [];
+  const healthyCount = countBy(sourceRows, (row) => !row.last_error);
+  const subscriptionCount = countBy(sourceRows, (row) => row.type === "subscription");
+  const refreshableCount = countBy(sourceRows, (row) => Number(row.refresh_interval_minutes || 0) > 0);
+  const errorCount = countBy(sourceRows, (row) => row.last_error);
+  const typeGroups = [...sourceRows.reduce((map, row) => {
+    const type = String(row.type || "unknown");
+    if (!map.has(type)) map.set(type, []);
+    map.get(type).push(row);
+    return map;
+  }, new Map()).entries()]
+    .map(([type, items]) => ({ type, items }))
+    .sort((left, right) => right.items.length - left.items.length || left.type.localeCompare(right.type, "zh-CN"));
+  return `
+    <section class="source-workbench" data-source-workbench aria-label="接入来源工作台">
+      <div class="source-workbench-heading">
+        <span class="source-workbench-symbol" aria-hidden="true">接</span>
+        <span class="source-workbench-copy">
+          <small class="source-workbench-kicker">接入来源工作台</small>
+          <strong class="source-workbench-title">先看同步健康，再处理单个来源</strong>
+        </span>
+      </div>
+      <div class="source-workbench-stats" aria-label="来源健康摘要">
+        ${sourceWorkbenchStat("源", "来源总数", `${formatPlainNumber(sourceRows.length)} 个`, `${formatPlainNumber(subscriptionCount)} 个订阅源`)}
+        ${sourceWorkbenchStat("健", "健康来源", `${formatPlainNumber(healthyCount)}/${formatPlainNumber(sourceRows.length)}`, "无错误才进入稳定导入")}
+        ${sourceWorkbenchStat("刷", "自动刷新", `${formatPlainNumber(refreshableCount)} 个`, "刷新后进入节点池")}
+        ${sourceWorkbenchStat("异", "异常来源", `${formatPlainNumber(errorCount)} 个`, errorCount > 0 ? "优先查看错误字段" : "暂无同步异常")}
+      </div>
+      <div class="source-workbench-type-grid" aria-label="来源类型分布">
+        ${typeGroups.map((group) => sourceWorkbenchTypeCard(group)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function sourceWorkbenchStat(symbol, label, value, detail) {
+  return `
+    <span class="source-workbench-stat" data-source-workbench-stat>
+      <span class="source-workbench-stat-symbol" data-source-workbench-symbol aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="source-workbench-stat-copy">
+        <span class="source-workbench-stat-label">${escapeHTML(label)}</span>
+        <strong class="source-workbench-stat-value">${escapeHTML(String(value))}</strong>
+        <small class="source-workbench-stat-detail">${escapeHTML(detail || "")}</small>
+      </span>
+    </span>
+  `;
+}
+
+function sourceWorkbenchTypeCard(group) {
+  const syncedCount = countBy(group.items, (row) => row.last_sync_at && !row.last_error);
+  const refreshableCount = countBy(group.items, (row) => Number(row.refresh_interval_minutes || 0) > 0);
+  return `
+    <article class="source-workbench-type-card" data-source-workbench-type-card>
+      <span class="source-workbench-type-symbol" aria-hidden="true">${escapeHTML(sourceTypeSymbol(group.type))}</span>
+      <span class="source-workbench-type-copy">
+        <strong class="source-workbench-type-name">${escapeHTML(sourceTypeLabel(group.type))}</strong>
+        <small class="source-workbench-type-meta">${formatPlainNumber(group.items.length)} 个来源 · ${formatPlainNumber(syncedCount)} 已同步</small>
+      </span>
+      <span class="source-workbench-type-hint">${formatPlainNumber(refreshableCount)} 自动刷新</span>
+    </article>
+  `;
+}
+
+function sourceTypeLabel(type) {
+  const normalized = String(type || "unknown");
+  const labels = {
+    subscription: "订阅来源",
+    manual: "手动来源",
+    url: "URL 来源",
+    unknown: "未知来源",
+  };
+  return labels[normalized] || normalized;
+}
+
+function sourceTypeSymbol(type) {
+  const normalized = String(type || "unknown");
+  const symbols = {
+    subscription: "订",
+    manual: "手",
+    url: "链",
+    unknown: "?",
+  };
+  return symbols[normalized] || normalized.slice(0, 1).toUpperCase() || "源";
 }
 
 function renderSourceCard(row) {

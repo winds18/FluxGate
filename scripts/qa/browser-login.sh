@@ -1647,6 +1647,40 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
 
   await switchView("access");
+  const sourceWorkbenchCount = await page.locator("#sources [data-source-workbench]").count();
+  const sourceWorkbenchStatCount = await page.locator("#sources [data-source-workbench-stat]").count();
+  const sourceWorkbenchTypeCardCount = await page.locator("#sources [data-source-workbench-type-card]").count();
+  const sourceWorkbenchSymbols = await page
+    .locator("#sources [data-source-workbench-symbol]")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const sourceWorkbenchOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#sources [data-source-workbench]")).reduce((total, workbench) => {
+      const workbenchBox = workbench.getBoundingClientRect();
+      const elements = Array.from(
+        workbench.querySelectorAll(".source-workbench-heading, .source-workbench-copy, .source-workbench-title, .source-workbench-kicker, .source-workbench-stat, .source-workbench-stat-symbol, .source-workbench-stat-value, .source-workbench-stat-detail, .source-workbench-type-card, .source-workbench-type-copy, .source-workbench-type-name, .source-workbench-type-meta, .source-workbench-type-hint"),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const parent = element.classList.contains("source-workbench-heading") ||
+          element.classList.contains("source-workbench-stat") ||
+          element.classList.contains("source-workbench-type-card")
+          ? workbenchBox
+          : (element.closest(".source-workbench-heading") ||
+              element.closest(".source-workbench-stat") ||
+              element.closest(".source-workbench-type-card") ||
+              workbench).getBoundingClientRect();
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const sourceCardCount = await page.locator("#sources .source-card").count();
   const sourceSummaryChipCount = await page.locator("#sources [data-source-summary-chip]").count();
   const sourceActionButtonSymbolCount = await page.locator("#sources .source-actions .button-symbol").count();
@@ -2451,6 +2485,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.identityActionButtonSymbolCount = identityActionButtonSymbolCount;
   state.identityVisualOverflowCount = identityVisualOverflowCount;
   state.sourceCardCount = sourceCardCount;
+  state.sourceWorkbenchCount = sourceWorkbenchCount;
+  state.sourceWorkbenchStatCount = sourceWorkbenchStatCount;
+  state.sourceWorkbenchTypeCardCount = sourceWorkbenchTypeCardCount;
+  state.sourceWorkbenchSymbols = sourceWorkbenchSymbols;
+  state.sourceWorkbenchOverflowCount = sourceWorkbenchOverflowCount;
   state.sourceSummaryChipCount = sourceSummaryChipCount;
   state.sourceActionButtonSymbolCount = sourceActionButtonSymbolCount;
   state.sourceVisualOverflowCount = sourceVisualOverflowCount;
@@ -2766,6 +2805,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       sourceInlineSaveRestored.symbol !== "✎")
   ) {
     throw new Error(`source cards are incomplete or overflowing: ${JSON.stringify(state)}`);
+  }
+  if (
+    sourceEditCount > 0 &&
+    (sourceWorkbenchCount !== 1 ||
+      sourceWorkbenchStatCount < 4 ||
+      sourceWorkbenchTypeCardCount < 2 ||
+      sourceWorkbenchOverflowCount > 0 ||
+      !["源", "健", "刷", "异"].every((symbol) => sourceWorkbenchSymbols.includes(symbol)))
+  ) {
+    throw new Error(`source workbench is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   if (
     virtualNodeEditCount > 0 &&

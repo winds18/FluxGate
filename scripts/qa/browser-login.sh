@@ -258,6 +258,21 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const mobileMoreToggleCount = await page.locator("[data-mobile-more-toggle]").count();
   const mobileMoreNavCount = await page.locator("#mobile-more-menu [data-view-nav]").count();
   const mobileMoreBadgeCount = await page.locator("#mobile-more-menu [data-view-count]").count();
+  const workspaceCommandCenterCount = await page.locator("[data-view-command-center]").count();
+  const workspaceCommandCenterStyle = await page.evaluate(() => {
+    const element = document.querySelector("[data-view-command-center]");
+    if (!element) return null;
+    const style = getComputedStyle(element);
+    return {
+      backgroundColor: style.backgroundColor,
+      backgroundImage: style.backgroundImage,
+      borderColor: style.borderColor,
+      borderRadius: style.borderRadius,
+      boxShadow: style.boxShadow,
+      display: style.display,
+      gridTemplateColumns: style.gridTemplateColumns,
+    };
+  });
   let populatedNavBadgeCount = 0;
   let navBadgeValues = {};
   const dashboardViewCount = await page.locator("[data-dashboard-view]").count();
@@ -405,6 +420,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const workspaceInsightSymbolCounts = {};
   const workspaceInsightActionSymbolCounts = {};
   const workspaceInsightOverflow = {};
+  const workspaceCommandCenterOverflow = {};
+  const workspaceCommandRailScrollOverflow = {};
   const workspacePrimaryActionCounts = {};
   const workspacePrimaryActionLabels = {};
   const workspacePrimaryActionSymbolCounts = {};
@@ -425,6 +442,35 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   for (const view of viewNames) {
     await switchView(view);
     viewOverflow[view] = await pageHorizontalOverflow();
+    workspaceCommandCenterOverflow[view] = await page.evaluate(() => {
+      const center = document.querySelector("[data-view-command-center]");
+      if (!center) return 1;
+      const centerBox = center.getBoundingClientRect();
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      return Array.from(
+        center.querySelectorAll(
+          ".workspace-command-main, .workspace-command-title, .workspace-title-row, .workspace-view-symbol, #view-title, #view-description, .workspace-insight, .workspace-command-rail, #view-context, #view-rail, .workspace-actions, #view-primary-action, #refresh",
+        ),
+      )
+        .filter((element) => element.offsetParent !== null)
+        .reduce((total, element) => {
+          const buttonParent = element.closest("#view-primary-action, #refresh");
+          const parent = buttonParent && !element.matches("#view-primary-action, #refresh")
+            ? buttonParent.getBoundingClientRect()
+            : centerBox;
+          const box = element.getBoundingClientRect();
+          return total + (box.width > 0 && box.height > 0 && outside(box, parent) ? 1 : 0);
+        }, 0);
+    });
+    workspaceCommandRailScrollOverflow[view] = await page.evaluate(() => {
+      const rail = document.querySelector(".workspace-command-rail");
+      if (!rail) return 1;
+      return rail.scrollWidth > rail.clientWidth + 1 ? 1 : 0;
+    });
     formDrawerHeaderOverflow[view] = await visibleFormDrawerHeaderOverflow();
     formSubmitOverflow[view] = await visibleFormSubmitOverflow();
     formDrawerNarrowCount[view] = await visibleFormDrawerNarrowCount();
@@ -2584,6 +2630,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileMoreToggleCount = mobileMoreToggleCount;
   state.mobileMoreNavCount = mobileMoreNavCount;
   state.mobileMoreBadgeCount = mobileMoreBadgeCount;
+  state.workspaceCommandCenterCount = workspaceCommandCenterCount;
+  state.workspaceCommandCenterStyle = workspaceCommandCenterStyle;
+  state.workspaceCommandCenterOverflow = workspaceCommandCenterOverflow;
+  state.workspaceCommandRailScrollOverflow = workspaceCommandRailScrollOverflow;
   state.populatedNavBadgeCount = populatedNavBadgeCount;
   state.navBadgeValues = navBadgeValues;
   state.dashboardViewCount = dashboardViewCount;
@@ -2910,6 +2960,21 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.unifiedWorkbenchStyles = unifiedWorkbenchStyles;
   state.calmOpsStylesheetCount = calmOpsStylesheetCount;
   state.calmOpsResponseStatus = calmOpsResponseStatus;
+  const overflowingCommandCenter = Object.entries(workspaceCommandCenterOverflow).find(([, overflow]) => overflow > 0);
+  const scrollingCommandRail = Object.entries(workspaceCommandRailScrollOverflow).find(([, overflow]) => overflow > 0);
+  if (
+    workspaceCommandCenterCount !== 1 ||
+    !workspaceCommandCenterStyle ||
+    workspaceCommandCenterStyle.display !== "grid" ||
+    !workspaceCommandCenterStyle.backgroundColor.includes("255, 255, 255") ||
+    workspaceCommandCenterStyle.backgroundImage !== "none" ||
+    !workspaceCommandCenterStyle.borderRadius.startsWith("8px") ||
+    workspaceCommandCenterStyle.boxShadow === "none" ||
+    overflowingCommandCenter ||
+    scrollingCommandRail
+  ) {
+    throw new Error(`workspace command center is incomplete or overflowing: ${JSON.stringify(state)}`);
+  }
   if (unifiedWorkbenchStyles.count < 8 || unifiedWorkbenchStyles.mismatches.length > 0) {
     throw new Error(`module workbenches do not share the v2 surface style: ${JSON.stringify(state)}`);
   }

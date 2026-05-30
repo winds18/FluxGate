@@ -2890,6 +2890,8 @@ body.has-form-drawer-open::before {
   --fg-muted: #667085;
   --fg-line: #e5eaf0;
   --fg-line-strong: #d6dee8;
+  --fg-command-bg: #ffffff;
+  --fg-command-rail-bg: #f8fafc;
   --fg-workbench-bg: #ffffff;
   --fg-workbench-card-bg: #f8fafc;
   --fg-workbench-symbol-bg: var(--fg-blue-soft);
@@ -3072,6 +3074,73 @@ body {
   color: #111827;
   font-size: 20px;
   font-weight: 840;
+}
+
+/* FluxGate UI v2 command center */
+.workspace-command-center {
+  align-items: stretch;
+  background: var(--fg-command-bg);
+  border: 1px solid var(--fg-line);
+  box-shadow: var(--fg-panel-shadow);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(300px, 0.9fr) minmax(360px, 1.1fr) minmax(148px, max-content);
+  overflow: visible;
+  padding: 12px;
+}
+
+.workspace-command-main {
+  align-content: start;
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.workspace-command-title {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.workspace-command-rail {
+  align-content: start;
+  background: var(--fg-command-rail-bg);
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  display: grid;
+  gap: 8px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 8px;
+}
+
+.workspace-command-rail .view-context,
+.workspace-command-rail .view-rail {
+  margin-top: 0;
+  padding-bottom: 0;
+}
+
+.workspace-command-rail .context-chip,
+.workspace-command-rail .view-rail-button {
+  background: #ffffff;
+}
+
+.workspace-command-center .workspace-insight {
+  margin-top: 0;
+}
+
+.workspace-command-center .workspace-actions {
+  align-self: stretch;
+  display: grid;
+  grid-auto-flow: row;
+  grid-auto-rows: minmax(36px, max-content);
+  min-width: 148px;
+  padding: 8px;
+}
+
+.workspace-command-center .workspace-actions .primary-link-button,
+.workspace-command-center .workspace-actions .ghost-button {
+  width: 100%;
 }
 
 .workspace-header p,
@@ -3762,6 +3831,23 @@ code {
   .workspace-header,
   .overview-hero {
     grid-template-columns: 1fr;
+  }
+
+  .workspace-command-center {
+    gap: 10px;
+    padding: 10px;
+    top: 62px;
+  }
+
+  .workspace-command-rail {
+    padding: 7px;
+  }
+
+  .workspace-command-center .workspace-actions {
+    grid-auto-flow: column;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    min-width: 0;
+    width: 100%;
   }
 
   .overview-hero-title strong {

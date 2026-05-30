@@ -126,15 +126,19 @@
       </div>
 
       <section class="workspace">
-        <div class="workspace-header">
-          <div>
-            <p class="eyebrow">控制台</p>
-            <div class="workspace-title-row">
-              <span id="view-symbol" class="workspace-view-symbol" aria-hidden="true">概</span>
-              <h2 id="view-title">概览</h2>
+        <div class="workspace-header workspace-command-center" data-view-command-center>
+          <div class="workspace-command-main">
+            <div class="workspace-command-title">
+              <p class="eyebrow">控制台</p>
+              <div class="workspace-title-row">
+                <span id="view-symbol" class="workspace-view-symbol" aria-hidden="true">概</span>
+                <h2 id="view-title">概览</h2>
+              </div>
+              <p id="view-description">运行状态、资源规模和下一步入口</p>
             </div>
-            <p id="view-description">运行状态、资源规模和下一步入口</p>
             <div id="workspace-insight" class="workspace-insight" aria-label="当前模块重点"></div>
+          </div>
+          <div class="workspace-command-rail" aria-label="当前模块上下文">
             <div id="view-context" class="view-context" aria-label="当前模块摘要"></div>
             <div id="view-rail" class="view-rail" aria-label="当前模块面板入口"></div>
           </div>

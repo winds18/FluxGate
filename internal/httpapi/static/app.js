@@ -4003,10 +4003,99 @@ function renderTokens(rows) {
     return;
   }
   tokensEl.innerHTML = `
+    ${renderTokenWorkbench(rows)}
     <div class="token-card-list">
       ${rows.map((row) => renderTokenCard(row)).join("")}
     </div>
   `;
+}
+
+function renderTokenWorkbench(rows) {
+  const tokenRows = rows || [];
+  const activeRows = tokenRows.filter((row) => String(row.status || "active").toLowerCase() === "active");
+  const reusableRows = tokenRows.filter((row) => row.subscription_available && tokenSubscriptionItems(row).length > 0);
+  const formatCards = [
+    {
+      key: "default",
+      symbol: "通",
+      title: "通用 URI",
+      detail: "Clash、Shadowrocket 等通用导入",
+      urls: tokenRows.map((row) => tokenSubscriptionItems(row).find(([label]) => label === "默认订阅")?.[1]).filter(Boolean),
+    },
+    {
+      key: "mihomo",
+      symbol: "米",
+      title: "Mihomo YAML",
+      detail: "可直接导入 Mihomo / Clash Meta",
+      urls: tokenRows.map((row) => tokenSubscriptionItems(row).find(([label]) => label === "Mihomo")?.[1]).filter(Boolean),
+    },
+    {
+      key: "sing-box",
+      symbol: "箱",
+      title: "sing-box JSON",
+      detail: "可直接导入 sing-box 客户端",
+      urls: tokenRows.map((row) => tokenSubscriptionItems(row).find(([label]) => label === "sing-box")?.[1]).filter(Boolean),
+    },
+  ];
+  const totalURLs = formatCards.reduce((total, card) => total + card.urls.length, 0);
+  const allURLs = formatCards.flatMap((card) => card.urls);
+  return `
+    <section class="token-workbench" data-token-workbench aria-label="订阅分发工作台">
+      <div class="token-workbench-heading">
+        <span class="token-workbench-symbol" aria-hidden="true">订</span>
+        <span class="token-workbench-title">
+          <strong>订阅分发工作台</strong>
+          <small>先确认格式、地址来源和可用 Token，再在下方卡片复制或探测。</small>
+        </span>
+      </div>
+      <div class="token-workbench-stats" aria-label="订阅分发摘要">
+        ${tokenWorkbenchStat("可用 Token", `${formatPlainNumber(reusableRows.length)}/${formatPlainNumber(tokenRows.length)}`, "可反复复制订阅")}
+        ${tokenWorkbenchStat("启用状态", `${formatPlainNumber(activeRows.length)}/${formatPlainNumber(tokenRows.length)}`, "active 才可稳定分发")}
+        ${tokenWorkbenchStat("订阅地址", `${formatPlainNumber(totalURLs)} 条`, tokenWorkbenchOriginSummary(allURLs))}
+      </div>
+      <div class="token-workbench-format-grid" aria-label="客户端格式">
+        ${formatCards.map((card) => tokenWorkbenchFormatCard(card)).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function tokenWorkbenchStat(label, value, detail) {
+  return `
+    <span class="token-workbench-stat" data-token-workbench-stat>
+      <span>${escapeHTML(label)}</span>
+      <strong>${escapeHTML(String(value))}</strong>
+      <small>${escapeHTML(detail || "")}</small>
+    </span>
+  `;
+}
+
+function tokenWorkbenchFormatCard(card) {
+  const count = card.urls.length;
+  const tone = count > 0 ? "success" : "warning";
+  return `
+    <article class="token-workbench-format-card token-workbench-format-card-${tone}" data-token-format-card="${escapeHTML(card.key)}">
+      <span class="token-workbench-format-symbol" data-token-format-symbol aria-hidden="true">${escapeHTML(card.symbol)}</span>
+      <span class="token-workbench-format-copy">
+        <strong class="token-workbench-format-title">${escapeHTML(card.title)}</strong>
+        <small class="token-workbench-format-meta">${escapeHTML(card.detail)}</small>
+      </span>
+      <span class="token-workbench-format-hint">${escapeHTML(count > 0 ? `${formatPlainNumber(count)} 条可用` : "待重置订阅")}</span>
+    </article>
+  `;
+}
+
+function tokenWorkbenchOriginSummary(urls) {
+  if (!urls.length) return "暂无可用地址";
+  const counts = urls.reduce((map, url) => {
+    const origin = subscriptionOriginForURL(url);
+    map.set(origin, (map.get(origin) || 0) + 1);
+    return map;
+  }, new Map());
+  return [...counts.entries()]
+    .sort((left, right) => right[1] - left[1] || left[0].localeCompare(right[0], "zh-CN"))
+    .map(([origin, count]) => `${origin} ${formatPlainNumber(count)}`)
+    .join(" · ");
 }
 
 function renderTokenCard(row) {
@@ -4159,17 +4248,21 @@ function tokenCardField(label, value, column = "") {
 }
 
 function renderTokenSubscriptions(row) {
-  const subscriptions = row.subscriptions || {};
-  const items = [
-    ["默认订阅", subscriptions.default || row.subscription || ""],
-    ["Mihomo", subscriptions.clash || ""],
-    ["sing-box", subscriptions.sing_box || ""],
-  ].filter((item) => item[1]);
+  const items = tokenSubscriptionItems(row);
   if (!row.subscription_available || items.length === 0) {
     const message = row.subscription_error || "旧 Token 无法反复显示，可重置订阅";
     return `<div class="token-subscription-empty">${escapeHTML(message)}</div>`;
   }
   return renderSubscriptionCardList(items, row.id);
+}
+
+function tokenSubscriptionItems(row) {
+  const subscriptions = row.subscriptions || {};
+  return [
+    ["默认订阅", subscriptions.default || row.subscription || ""],
+    ["Mihomo", subscriptions.clash || ""],
+    ["sing-box", subscriptions.sing_box || ""],
+  ].filter((item) => item[1]);
 }
 
 function renderSubscriptionCardList(items, tokenID = "") {

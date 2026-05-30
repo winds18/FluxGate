@@ -1354,6 +1354,34 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   await expect(page.locator("#token-form.is-collapsed")).toHaveCount(1, { timeout: 1000 });
   const tokenCardCount = await page.locator("#tokens .token-card").count();
   const tokenRowCount = tokenCardCount || (await page.locator("#tokens tbody tr").count());
+  const tokenWorkbenchCount = await page.locator("#tokens [data-token-workbench]").count();
+  const tokenWorkbenchStatCount = await page.locator("#tokens [data-token-workbench-stat]").count();
+  const tokenWorkbenchFormatCount = await page.locator("#tokens [data-token-format-card]").count();
+  const tokenWorkbenchFormatSymbols = await page
+    .locator("#tokens [data-token-format-symbol]")
+    .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
+  const tokenWorkbenchOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#tokens [data-token-workbench]")).reduce((total, workbench) => {
+      const workbenchBox = workbench.getBoundingClientRect();
+      const elements = Array.from(
+        workbench.querySelectorAll(
+          ".token-workbench-heading, .token-workbench-symbol, .token-workbench-title, .token-workbench-stat, .token-workbench-format-card, .token-workbench-format-symbol, .token-workbench-format-title, .token-workbench-format-meta, .token-workbench-format-hint",
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, workbenchBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
   const tokenExtendInputCount = await page.locator("#tokens input[data-token-extend-days]").count();
   const tokenQuotaInputCount = await page.locator("#tokens input[data-token-quota-mib]").count();
   const tokenActionFieldCount = await page.locator("#tokens .token-action-field").count();
@@ -2468,6 +2496,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.trafficVisualOverflowCount = trafficVisualOverflowCount;
   state.tokenRowCount = tokenRowCount;
   state.tokenCardCount = tokenCardCount;
+  state.tokenWorkbenchCount = tokenWorkbenchCount;
+  state.tokenWorkbenchStatCount = tokenWorkbenchStatCount;
+  state.tokenWorkbenchFormatCount = tokenWorkbenchFormatCount;
+  state.tokenWorkbenchFormatSymbols = tokenWorkbenchFormatSymbols;
+  state.tokenWorkbenchOverflowCount = tokenWorkbenchOverflowCount;
   state.tokenResultSubscriptionItemCount = tokenResultSubscriptionItemCount;
   state.tokenResultSubscriptionKindCount = tokenResultSubscriptionKindCount;
   state.tokenResultSubscriptionProfileCount = tokenResultSubscriptionProfileCount;
@@ -2527,6 +2560,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsVisualOverflowCount = opsVisualOverflowCount;
   state.calmOpsStylesheetCount = calmOpsStylesheetCount;
   state.calmOpsResponseStatus = calmOpsResponseStatus;
+  const expectedTokenWorkbenchSymbols = ["通", "米", "箱"];
+  if (
+    tokenRowCount > 0 &&
+    (tokenWorkbenchCount !== 1 ||
+      tokenWorkbenchStatCount < 3 ||
+      tokenWorkbenchFormatCount !== 3 ||
+      expectedTokenWorkbenchSymbols.some((symbol, index) => tokenWorkbenchFormatSymbols[index] !== symbol) ||
+      tokenWorkbenchOverflowCount > 0)
+  ) {
+    throw new Error(`token subscription workbench is incomplete or overflowing: ${JSON.stringify(state)}`);
+  }
   if (tokenRowCount > 0 && (tokenExtendInputCount !== tokenRowCount || tokenQuotaInputCount !== tokenRowCount)) {
     throw new Error(`token custom controls missing: ${JSON.stringify(state)}`);
   }

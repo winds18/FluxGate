@@ -825,7 +825,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     .evaluateAll((elements) => elements.map((element) => element.getAttribute("data-view-rail-target") || ""));
   const workspacePrimaryActionOpensTokenForm = true;
   await switchView("overview");
-  await expect(page.locator("#metrics .metric")).toHaveCount(7, { timeout: 5000 });
+  await expect(page.locator("#metrics .metric")).toHaveCount(6, { timeout: 5000 });
   const overviewMetricCount = await page.locator("#metrics .metric").count();
   const overviewMetricSymbolCount = await page.locator("#metrics .metric-symbol").count();
   const overviewMetricValueCount = await page.locator("#metrics .metric-value").count();
@@ -842,6 +842,35 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       for (const element of elements) {
         const box = element.getBoundingClientRect();
         if (box.width > 0 && box.height > 0 && outside(box, metricBox)) {
+          total += 1;
+        }
+      }
+      return total;
+    }, 0);
+  });
+  const overviewInsightPanelCount = await page.locator("#overview-insights [data-overview-insight]").count();
+  const overviewInsightSymbolCount = await page.locator("#overview-insights .overview-insight-symbol").count();
+  const overviewInsightTitleCount = await page.locator("#overview-insights .overview-insight-title").count();
+  const overviewHealthPillCount = await page.locator("#overview-insights .overview-health-pill").count();
+  const overviewRegionRowCount = await page.locator("#overview-insights .overview-distribution-row").count();
+  const overviewSyncRowCount = await page.locator("#overview-insights .overview-sync-row").count();
+  const overviewDeliveryRowCount = await page.locator("#overview-insights .overview-delivery-row").count();
+  const overviewInsightOverflowCount = await page.evaluate(() => {
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    return Array.from(document.querySelectorAll("#overview-insights [data-overview-insight]")).reduce((total, panel) => {
+      const panelBox = panel.getBoundingClientRect();
+      const elements = Array.from(
+        panel.querySelectorAll(
+          ".overview-insight-heading, .overview-insight-symbol, .overview-insight-title, .overview-insight-meta, .overview-health-pill, .overview-distribution-row, .overview-distribution-label, .overview-distribution-value, .overview-sync-row, .overview-sync-name, .overview-sync-meta, .overview-delivery-row",
+        ),
+      ).filter((element) => element.offsetParent !== null);
+      for (const element of elements) {
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, panelBox)) {
           total += 1;
         }
       }
@@ -2286,6 +2315,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewMetricSymbolCount = overviewMetricSymbolCount;
   state.overviewMetricValueCount = overviewMetricValueCount;
   state.overviewMetricOverflowCount = overviewMetricOverflowCount;
+  state.overviewInsightPanelCount = overviewInsightPanelCount;
+  state.overviewInsightSymbolCount = overviewInsightSymbolCount;
+  state.overviewInsightTitleCount = overviewInsightTitleCount;
+  state.overviewHealthPillCount = overviewHealthPillCount;
+  state.overviewRegionRowCount = overviewRegionRowCount;
+  state.overviewSyncRowCount = overviewSyncRowCount;
+  state.overviewDeliveryRowCount = overviewDeliveryRowCount;
+  state.overviewInsightOverflowCount = overviewInsightOverflowCount;
   state.overviewHeroCount = overviewHeroCount;
   state.overviewHeroTitle = overviewHeroTitle;
   state.overviewHeroActionCount = overviewHeroActionCount;
@@ -3072,12 +3109,24 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     overviewHeroStatSymbolCount !== 3 ||
     overviewHeroOverflowCount > 0 ||
     !overviewHeroActionNavigates ||
-    overviewMetricCount !== 7 ||
-    overviewMetricSymbolCount !== 7 ||
-    overviewMetricValueCount !== 7 ||
+    overviewMetricCount !== 6 ||
+    overviewMetricSymbolCount !== 6 ||
+    overviewMetricValueCount !== 6 ||
     overviewMetricOverflowCount > 0
   ) {
     throw new Error(`overview metric cards are incomplete or overflowing: ${JSON.stringify(state)}`);
+  }
+  if (
+    overviewInsightPanelCount !== 3 ||
+    overviewInsightSymbolCount !== 3 ||
+    overviewInsightTitleCount !== 3 ||
+    overviewHealthPillCount < 3 ||
+    overviewRegionRowCount < 1 ||
+    overviewSyncRowCount < 1 ||
+    overviewDeliveryRowCount < 4 ||
+    overviewInsightOverflowCount > 0
+  ) {
+    throw new Error(`overview insight panels are incomplete or overflowing: ${JSON.stringify(state)}`);
   }
   const expectedOverviewReadinessSymbols = ["源", "点", "网", "身", "订", "策", "发"];
   const expectedOverviewGuideActionLabels = ["去复制订阅", "检查收口", "发布配置"];

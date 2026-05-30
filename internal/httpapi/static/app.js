@@ -23,6 +23,7 @@ const loginPasswordEl = document.querySelector("#login-password");
 const logoutEl = document.querySelector("#logout");
 const overviewHeroEl = document.querySelector("#overview-hero");
 const metricsEl = document.querySelector("#metrics");
+const overviewInsightsEl = document.querySelector("#overview-insights");
 const overviewReadinessEl = document.querySelector("#overview-readiness");
 const overviewNextStepEl = document.querySelector("#overview-next-step");
 const teamsEl = document.querySelector("#teams");
@@ -1022,6 +1023,7 @@ async function load() {
     renderOverviewHero(overview);
     renderMetrics(overview);
     renderOverviewReadiness(overview);
+    renderOverviewInsights(overview);
     renderSelectors();
     renderTeams(teams);
     renderUsers(users);
@@ -1052,6 +1054,9 @@ async function load() {
       overviewHeroEl.innerHTML = emptyState("警", "加载失败", error.message || "请稍后重试");
     }
     metricsEl.innerHTML = emptyState("警", "加载失败", error.message || "请稍后重试");
+    if (overviewInsightsEl) {
+      overviewInsightsEl.innerHTML = emptyState("警", "加载失败", error.message || "请稍后重试");
+    }
   } finally {
     setRefreshPending(false);
   }
@@ -2007,28 +2012,233 @@ function overviewHeroStat(symbol, label, value, ready) {
 }
 
 function renderMetrics(data) {
+  const checks = overviewReadinessChecks(data);
+  const readyCount = checks.filter(([, ready]) => ready).length;
+  const sources = appState.sources || [];
+  const nodes = appState.nodes || [];
+  const virtualNodes = appState.virtualNodes || [];
+  const policies = appState.policies || [];
+  const tokens = appState.tokens || [];
+  const activeNodes = countBy(nodes, (row) => row.status === "active");
+  const healthySources = countBy(sources, (row) => !row.last_error);
+  const activeTokens = countBy(tokens, (row) => row.status === "active");
+  const activeVirtualNodes = countBy(virtualNodes, (row) => row.status === "active");
+  const activePolicies = countBy(policies, (row) => row.status === "active");
   const items = [
-    ["teams", "团", "团队", data.teams],
-    ["users", "员", "用户", data.users],
-    ["tokens", "令", "Token", data.tokens],
-    ["sources", "源", "来源", data.sources],
-    ["nodes", "点", "节点", data.nodes],
-    ["virtualNodes", "网", "虚拟节点", data.virtual_nodes],
-    ["policies", "策", "策略", data.policies],
+    {
+      key: "readiness",
+      symbol: "测",
+      label: "真实闭环",
+      value: `${formatPlainNumber(readyCount)}/${formatPlainNumber(checks.length)}`,
+      detail: readyCount === checks.length ? "可以真实测试" : "仍有待补齐项",
+      tone: readyCount === checks.length ? "success" : "warning",
+    },
+    {
+      key: "nodes",
+      symbol: "点",
+      label: "可用节点",
+      value: `${formatPlainNumber(activeNodes)}/${formatPlainNumber(nodes.length || data.nodes || 0)}`,
+      detail: `${formatPlainNumber(groupNodesByRegion(nodes).length)} 个地区`,
+      tone: activeNodes > 0 ? "success" : "warning",
+    },
+    {
+      key: "sources",
+      symbol: "源",
+      label: "上游来源",
+      value: `${formatPlainNumber(healthySources)}/${formatPlainNumber(sources.length || data.sources || 0)}`,
+      detail: `${formatPlainNumber(countBy(sources, (row) => row.last_error))} 个异常`,
+      tone: sources.length > 0 && healthySources === sources.length ? "success" : "warning",
+    },
+    {
+      key: "tokens",
+      symbol: "订",
+      label: "可用订阅",
+      value: `${formatPlainNumber(activeTokens)}/${formatPlainNumber(tokens.length || data.tokens || 0)}`,
+      detail: "通用 / Mihomo / sing-box",
+      tone: activeTokens > 0 ? "success" : "warning",
+    },
+    {
+      key: "virtualNodes",
+      symbol: "网",
+      label: "网关入口",
+      value: `${formatPlainNumber(activeVirtualNodes)}/${formatPlainNumber(virtualNodes.length || data.virtual_nodes || 0)}`,
+      detail: "sing-box 入站",
+      tone: activeVirtualNodes > 0 ? "success" : "warning",
+    },
+    {
+      key: "policies",
+      symbol: "策",
+      label: "访问策略",
+      value: `${formatPlainNumber(activePolicies)}/${formatPlainNumber(policies.length || data.policies || 0)}`,
+      detail: "分发边界",
+      tone: activePolicies > 0 ? "success" : "warning",
+    },
   ];
-  metricsEl.innerHTML = items
-    .map(
-      ([key, symbol, label, value]) => `
-        <div class="metric" data-metric-key="${escapeHTML(key)}">
-          <span class="metric-heading">
-            <span class="metric-symbol">${escapeHTML(symbol)}</span>
-            <span class="metric-label">${escapeHTML(label)}</span>
-          </span>
-          <strong class="metric-value">${formatPlainNumber(value ?? 0)}</strong>
-        </div>
-      `,
-    )
-    .join("");
+  metricsEl.innerHTML = items.map(overviewMetricCard).join("");
+}
+
+function overviewMetricCard(item) {
+  return `
+    <div class="metric metric-${escapeHTML(item.tone || "neutral")}" data-metric-key="${escapeHTML(item.key)}" data-metric-tone="${escapeHTML(item.tone || "neutral")}">
+      <span class="metric-heading">
+        <span class="metric-symbol">${escapeHTML(item.symbol)}</span>
+        <span class="metric-label">${escapeHTML(item.label)}</span>
+      </span>
+      <strong class="metric-value">${escapeHTML(String(item.value ?? 0))}</strong>
+      <span class="metric-detail">${escapeHTML(item.detail || "")}</span>
+    </div>
+  `;
+}
+
+function renderOverviewInsights(data) {
+  if (!overviewInsightsEl) return;
+  overviewInsightsEl.innerHTML = [
+    renderOverviewSourceInsight(data),
+    renderOverviewRegionInsight(data),
+    renderOverviewDeliveryInsight(data),
+  ].join("");
+}
+
+function renderOverviewSourceInsight() {
+  const sources = appState.sources || [];
+  const healthyCount = countBy(sources, (row) => !row.last_error);
+  const erroredCount = countBy(sources, (row) => row.last_error);
+  const syncingCount = countBy(sources, (row) => row.type === "subscription");
+  const recentSources = [...sources]
+    .sort((left, right) => overviewTimeSortValue(right.last_sync_at || right.updated_at) - overviewTimeSortValue(left.last_sync_at || left.updated_at))
+    .slice(0, 3);
+  const rows = recentSources.length
+    ? recentSources.map((row) => overviewSyncRow(row)).join("")
+    : overviewEmptyInsightRow("暂无上游来源", "先添加订阅源或导入节点");
+  return `
+    <article class="overview-insight-panel" data-overview-insight="source-health">
+      ${overviewInsightHeading("源", "上游健康", `${formatPlainNumber(healthyCount)}/${formatPlainNumber(sources.length)} 正常`)}
+      <div class="overview-health-pills" aria-label="上游健康摘要">
+        ${overviewHealthPill("正常", healthyCount, healthyCount > 0 ? "success" : "muted")}
+        ${overviewHealthPill("订阅源", syncingCount, syncingCount > 0 ? "info" : "muted")}
+        ${overviewHealthPill("异常", erroredCount, erroredCount > 0 ? "warning" : "success")}
+      </div>
+      <div class="overview-sync-list" aria-label="最近同步">
+        ${rows}
+      </div>
+    </article>
+  `;
+}
+
+function renderOverviewRegionInsight() {
+  const nodes = appState.nodes || [];
+  const groups = groupNodesByRegion(nodes)
+    .map((group) => ({
+      ...group,
+      activeCount: countBy(group.items, (row) => row.status === "active"),
+    }))
+    .sort((left, right) => right.items.length - left.items.length || left.region.localeCompare(right.region, "zh-CN"));
+  const visibleGroups = groups.slice(0, 5);
+  const rows = visibleGroups.length
+    ? visibleGroups.map((group) => overviewDistributionRow(group, nodes.length)).join("")
+    : overviewEmptyInsightRow("暂无地区数据", "同步节点后会按地区聚合");
+  return `
+    <article class="overview-insight-panel" data-overview-insight="region-distribution">
+      ${overviewInsightHeading("区", "地区分布", `${formatPlainNumber(groups.length)} 个地区`)}
+      <div class="overview-distribution-list" aria-label="地区节点分布">
+        ${rows}
+      </div>
+    </article>
+  `;
+}
+
+function renderOverviewDeliveryInsight() {
+  const delivery = appState.deliveryReadiness || {};
+  const tokens = appState.tokens || [];
+  const virtualNodes = appState.virtualNodes || [];
+  const policies = appState.policies || [];
+  const activeTokens = countBy(tokens, (row) => row.status === "active");
+  const activeVirtualNodes = countBy(virtualNodes, (row) => row.status === "active");
+  const activePolicies = countBy(policies, (row) => row.status === "active");
+  const publishSummary =
+    Number.isFinite(Number(delivery.ready_count)) && Number.isFinite(Number(delivery.total_checks))
+      ? `${formatPlainNumber(delivery.ready_count)}/${formatPlainNumber(delivery.total_checks)} 项`
+      : "待检查";
+  return `
+    <article class="overview-insight-panel" data-overview-insight="delivery">
+      ${overviewInsightHeading("发", "分发与发布", delivery.ready ? "可发布" : publishSummary)}
+      <div class="overview-delivery-list" aria-label="分发发布摘要">
+        ${overviewDeliveryRow("订", "有效订阅", `${formatPlainNumber(activeTokens)}/${formatPlainNumber(tokens.length)}`, activeTokens > 0 ? "success" : "warning")}
+        ${overviewDeliveryRow("网", "网关入口", `${formatPlainNumber(activeVirtualNodes)}/${formatPlainNumber(virtualNodes.length)}`, activeVirtualNodes > 0 ? "success" : "warning")}
+        ${overviewDeliveryRow("策", "策略生效", `${formatPlainNumber(activePolicies)}/${formatPlainNumber(policies.length)}`, activePolicies > 0 ? "success" : "warning")}
+        ${overviewDeliveryRow("检", "发布检查", delivery.ready ? "就绪" : publishSummary, delivery.ready ? "success" : "warning")}
+      </div>
+    </article>
+  `;
+}
+
+function overviewInsightHeading(symbol, title, meta) {
+  return `
+    <div class="overview-insight-heading">
+      <span class="overview-insight-symbol" aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="overview-insight-title">
+        <strong>${escapeHTML(title)}</strong>
+        <small>${escapeHTML(meta || "")}</small>
+      </span>
+    </div>
+  `;
+}
+
+function overviewHealthPill(label, value, tone = "muted") {
+  return `
+    <span class="overview-health-pill overview-health-pill-${escapeHTML(tone)}">
+      <span>${escapeHTML(label)}</span>
+      <strong>${formatPlainNumber(value)}</strong>
+    </span>
+  `;
+}
+
+function overviewSyncRow(row) {
+  const time = formatDateTimeForDisplay(row.last_sync_at) || "未同步";
+  const tone = row.last_error ? "warning" : row.last_sync_at ? "success" : "muted";
+  const status = row.last_error ? "异常" : row.last_sync_at ? "已同步" : "待同步";
+  return `
+    <div class="overview-sync-row overview-sync-row-${tone}">
+      <span class="overview-sync-name">${escapeHTML(row.name || `来源 ${row.id || ""}`)}</span>
+      <span class="overview-sync-meta">${escapeHTML(status)} · ${escapeHTML(time)}</span>
+    </div>
+  `;
+}
+
+function overviewDistributionRow(group, totalCount) {
+  const count = group.items.length;
+  const percent = totalCount > 0 ? Math.max(4, Math.round((count / totalCount) * 100)) : 0;
+  return `
+    <div class="overview-distribution-row">
+      <span class="overview-distribution-label">${escapeHTML(group.region)}</span>
+      <span class="overview-distribution-bar" aria-hidden="true"><span style="width: ${percent}%"></span></span>
+      <span class="overview-distribution-value">${formatPlainNumber(group.activeCount)}/${formatPlainNumber(count)}</span>
+    </div>
+  `;
+}
+
+function overviewDeliveryRow(symbol, label, value, tone = "muted") {
+  return `
+    <div class="overview-delivery-row overview-delivery-row-${escapeHTML(tone)}">
+      <span class="overview-delivery-symbol" aria-hidden="true">${escapeHTML(symbol)}</span>
+      <span class="overview-delivery-label">${escapeHTML(label)}</span>
+      <strong>${escapeHTML(value)}</strong>
+    </div>
+  `;
+}
+
+function overviewEmptyInsightRow(title, detail) {
+  return `
+    <div class="overview-sync-row overview-sync-row-muted">
+      <span class="overview-sync-name">${escapeHTML(title)}</span>
+      <span class="overview-sync-meta">${escapeHTML(detail)}</span>
+    </div>
+  `;
+}
+
+function overviewTimeSortValue(value) {
+  const date = parseDisplayTime(value);
+  return date ? date.getTime() : 0;
 }
 
 function overviewReadinessChecks(data) {

@@ -294,6 +294,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     return {
       height: Math.round(centerBox.height),
       columnCount: columnCount(centerStyle.gridTemplateColumns),
+      rowCount: columnCount(centerStyle.gridTemplateRows),
       mainColumnCount: columnCount(mainStyle.gridTemplateColumns),
       railColumnCount: columnCount(railStyle.gridTemplateColumns),
       railGridColumnStart: railStyle.gridColumnStart,
@@ -3280,8 +3281,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     authenticatedShellLayout.commandCenterTop > 32 ||
     authenticatedShellLayout.overlapsCommandCenter !== 0 ||
     workspaceCommandCenterStyle.display !== "grid" ||
-    workspaceCommandCenterMetrics.height > 112 ||
+    workspaceCommandCenterMetrics.height > 84 ||
     workspaceCommandCenterMetrics.columnCount > 2 ||
+    workspaceCommandCenterMetrics.rowCount > 2 ||
     workspaceCommandCenterMetrics.mainColumnCount < 2 ||
     workspaceCommandCenterMetrics.railGridColumnStart !== "1" ||
     workspaceCommandCenterMetrics.railGridColumnEnd !== "-1" ||

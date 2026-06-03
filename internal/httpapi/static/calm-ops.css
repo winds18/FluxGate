@@ -3242,25 +3242,26 @@ body.is-authenticated .workspace-header {
 
 /* FluxGate UI v2 command center */
 /* FluxGate UI v2 compact command center */
+/* FluxGate UI v2 slim workspace toolbar */
 .workspace-command-center {
   align-items: start;
   background: var(--fg-command-bg);
   border: 1px solid var(--fg-line);
   box-shadow: var(--fg-soft-shadow);
   display: grid;
-  gap: 4px 8px;
+  gap: 3px 8px;
   grid-template-columns: minmax(0, 1fr) max-content;
   grid-template-rows: auto auto;
   overflow: visible;
-  padding: 6px 8px;
+  padding: 5px 8px;
 }
 
 .workspace-command-main {
   align-content: start;
   align-items: center;
   display: grid;
-  gap: 6px;
-  grid-template-columns: minmax(196px, 0.38fr) minmax(0, 0.62fr);
+  gap: 5px;
+  grid-template-columns: minmax(140px, 0.32fr) minmax(0, 0.68fr);
   grid-column: 1;
   grid-row: 1;
   min-width: 0;
@@ -3276,6 +3277,10 @@ body.is-authenticated .workspace-header {
   display: none;
 }
 
+.workspace-command-title #view-description {
+  display: none;
+}
+
 .workspace-command-title .eyebrow,
 .workspace-command-title #view-description,
 .workspace-command-title #view-title {
@@ -3285,18 +3290,18 @@ body.is-authenticated .workspace-header {
 }
 
 .workspace-command-center .workspace-title-row {
-  gap: 8px;
+  gap: 7px;
 }
 
 .workspace-command-center .workspace-view-symbol {
   font-size: 12px;
-  height: 28px;
-  width: 28px;
+  height: 24px;
+  width: 24px;
 }
 
 .workspace-command-center h2 {
-  font-size: 18px;
-  line-height: 1.12;
+  font-size: 17px;
+  line-height: 1.08;
 }
 
 .workspace-command-center #view-description {
@@ -3318,53 +3323,80 @@ body.is-authenticated .workspace-header {
   grid-template-columns: minmax(220px, 0.68fr) minmax(0, 1.32fr);
   min-width: 0;
   overflow: hidden;
-  padding: 5px 0 0;
+  padding: 3px 0 0;
 }
 
 .workspace-command-rail .view-context,
 .workspace-command-rail .view-rail {
+  flex-wrap: nowrap;
+  gap: 4px;
   margin-top: 0;
+  overflow: hidden;
   padding-bottom: 0;
 }
 
 .workspace-command-rail .context-chip,
 .workspace-command-rail .view-rail-button {
   background: #ffffff;
-  min-height: 26px;
-  padding-left: 7px;
-  padding-right: 7px;
+  gap: 5px;
+  min-height: 23px;
+  padding-left: 6px;
+  padding-right: 6px;
+}
+
+.workspace-command-rail .context-chip span,
+.workspace-command-rail .context-chip strong,
+.workspace-command-rail .view-rail-label {
+  font-size: 11px;
+}
+
+.workspace-command-rail .view-rail-symbol {
+  border-radius: 6px;
+  height: 18px;
+  width: 18px;
+}
+
+.workspace-command-rail .view-rail-count {
+  font-size: 10px;
+  min-height: 17px;
+  padding-inline: 5px;
 }
 
 .workspace-command-center .workspace-insight {
   margin-top: 0;
-  min-height: 34px;
-  padding: 3px 5px;
+  min-height: 28px;
+  padding: 2px 4px;
 }
 
 .workspace-command-center .workspace-insight-symbol {
-  height: 24px;
-  width: 24px;
+  height: 20px;
+  width: 20px;
 }
 
 .workspace-command-center .workspace-insight-copy {
   gap: 1px;
 }
 
+.workspace-command-center .workspace-insight-kicker,
 .workspace-command-center .workspace-insight-detail {
+  display: none;
+}
+
+.workspace-command-center .workspace-insight-title {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .workspace-command-center .workspace-insight-action {
-  min-height: 28px;
-  padding: 0 7px;
+  min-height: 24px;
+  padding: 0 6px;
 }
 
 .workspace-command-center .workspace-actions {
   align-self: center;
   display: grid;
-  gap: 5px;
+  gap: 4px;
   grid-column: 2;
   grid-auto-columns: max-content;
   grid-auto-flow: column;
@@ -3382,7 +3414,7 @@ body.is-authenticated .workspace-header {
   display: inline-flex;
   gap: 6px;
   justify-content: flex-end;
-  min-height: 30px;
+  min-height: 28px;
   min-width: 0;
   padding: 2px;
 }
@@ -3390,19 +3422,19 @@ body.is-authenticated .workspace-header {
 .workspace-session-controls .status {
   border: 0;
   max-width: 154px;
-  min-height: 26px;
+  min-height: 24px;
   overflow: hidden;
-  padding: 0 8px;
+  padding: 0 7px;
   text-overflow: ellipsis;
 }
 
 .workspace-session-controls #logout {
-  min-height: 26px;
+  min-height: 24px;
 }
 
 .workspace-command-center .workspace-actions .primary-link-button,
 .workspace-command-center .workspace-actions .ghost-button {
-  min-height: 30px;
+  min-height: 28px;
   width: auto;
 }
 

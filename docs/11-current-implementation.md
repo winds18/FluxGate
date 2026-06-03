@@ -398,6 +398,7 @@ scripts/qa/browser-login.sh http://<lan-host>:<port> 可做真实浏览器登录
 scripts/qa/readiness.sh http://<lan-host>:<port> 可做真实实例只读就绪检查；STRICT=true 会把缺少体验数据视为失败。
 scripts/qa/substore-extraction.sh 使用内存 fake transport 验证 subscription URL 来源会先经 Sub-Store 提取节点再入库，不依赖真实机场或本地监听端口。
 scripts/qa/usable-probe.sh http://<lan-host>:<port> 可做真实实例只读可用性检查，包括 sing-box 配置摘要、局域网网关端口连通，以及从后台 Token 列表自动取订阅地址后的正文探测。
+scripts/deploy/ensure-usable.sh http://<lan-host>:<port> 可做真实实例可用性收口；已有 Token 过期或超额时会先续期或补额度，再生成、发布 sing-box 配置并重启远端 sing-box。
 ```
 
 截图结论：

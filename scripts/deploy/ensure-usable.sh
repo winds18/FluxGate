@@ -15,6 +15,8 @@ VIRTUAL_NODE_NAME="${VIRTUAL_NODE_NAME:-FluxGate-Gateway}"
 VIRTUAL_NODE_PORT="${VIRTUAL_NODE_PORT:-8443}"
 VIRTUAL_NODE_SELECTOR="${VIRTUAL_NODE_SELECTOR:-{}}"
 POLICY_NAME="${POLICY_NAME:-FluxGate 默认可用策略}"
+TOKEN_EXTEND_DAYS="${TOKEN_EXTEND_DAYS:-30}"
+TOKEN_QUOTA_BYTES="${TOKEN_QUOTA_BYTES:-1073741824}"
 PUBLISH_CONFIG="${PUBLISH_CONFIG:-true}"
 RELOAD_SING_BOX="${RELOAD_SING_BOX:-true}"
 KEEP_ARTIFACTS="${KEEP_ARTIFACTS:-false}"
@@ -95,8 +97,16 @@ fetch_state
 
 team_id="$(json_expr "$OUT_DIR/teams.json" "list(data).find((row) => row.status === 'active')?.id || list(data)[0]?.id || 0")"
 user_id="$(json_expr "$OUT_DIR/users.json" "list(data).find((row) => row.status === 'active')?.id || list(data)[0]?.id || 0")"
-token_id="$(json_expr "$OUT_DIR/tokens.json" "list(data).find((row) => row.status === 'active' && row.gateway_account?.status === 'active')?.id || 0")"
-token_team_id="$(json_expr "$OUT_DIR/tokens.json" "list(data).find((row) => row.status === 'active' && row.gateway_account?.status === 'active')?.user_team_id || 0")"
+token_id="$(json_expr "$OUT_DIR/tokens.json" "(() => {
+  const usable = list(data).find((row) =>
+    row.status === 'active' &&
+    row.gateway_account?.status === 'active' &&
+    row.gateway_account?.protocol === 'vless' &&
+    (!row.expire_at || Date.parse(row.expire_at) > Date.now()) &&
+    (!(Number(row.quota_bytes || 0) > 0) || (Number(row.used_upload_bytes || 0) + Number(row.used_download_bytes || 0) < Number(row.quota_bytes || 0)))
+  );
+  return usable?.id || list(data).find((row) => row.status === 'active' && row.gateway_account?.status === 'active' && row.gateway_account?.protocol === 'vless')?.id || 0;
+})()")"
 active_nodes="$(json_expr "$OUT_DIR/nodes.json" "list(data).filter((row) => row.status === 'active').length")"
 
 if [[ "$team_id" -lt 1 || "$user_id" -lt 1 || "$token_id" -lt 1 || "$active_nodes" -lt 1 ]]; then
@@ -104,6 +114,27 @@ if [[ "$team_id" -lt 1 || "$user_id" -lt 1 || "$token_id" -lt 1 || "$active_node
   log "create at least one team, user, active token, and upstream node before running this script"
   exit 1
 fi
+
+token_expired="$(TOKEN_ID="$token_id" json_expr "$OUT_DIR/tokens.json" "(() => {
+  const row = list(data).find((item) => item.id === Number(process.env.TOKEN_ID));
+  return Boolean(row?.expire_at && Date.parse(row.expire_at) <= Date.now());
+})()")"
+token_over_quota="$(TOKEN_ID="$token_id" json_expr "$OUT_DIR/tokens.json" "(() => {
+  const row = list(data).find((item) => item.id === Number(process.env.TOKEN_ID));
+  return Boolean(Number(row?.quota_bytes || 0) > 0 && Number(row?.used_upload_bytes || 0) + Number(row?.used_download_bytes || 0) >= Number(row?.quota_bytes || 0));
+})()")"
+if [[ "$token_expired" == "true" ]]; then
+  post_json "/api/tokens/$token_id/extend" "{\"extend_days\":$TOKEN_EXTEND_DAYS}" "$OUT_DIR/token-extend.json"
+  log "extended expired usable token: id=$token_id days=$TOKEN_EXTEND_DAYS"
+fi
+if [[ "$token_over_quota" == "true" ]]; then
+  post_json "/api/tokens/$token_id/quota" "{\"quota_bytes\":$TOKEN_QUOTA_BYTES}" "$OUT_DIR/token-quota.json"
+  log "added quota to over-quota usable token: id=$token_id bytes=$TOKEN_QUOTA_BYTES"
+fi
+if [[ "$token_expired" == "true" || "$token_over_quota" == "true" ]]; then
+  fetch_state
+fi
+token_team_id="$(TOKEN_ID="$token_id" json_expr "$OUT_DIR/tokens.json" "list(data).find((row) => row.id === Number(process.env.TOKEN_ID))?.user_team_id || 0")"
 
 virtual_node_id="$(json_expr "$OUT_DIR/virtual-nodes.json" "list(data).find((row) => row.status === 'active')?.id || 0")"
 if [[ "$virtual_node_id" -lt 1 ]]; then

@@ -4030,6 +4030,77 @@ button[type="submit"]:hover,
   color: var(--fg-amber);
 }
 
+/* FluxGate UI v2 actionable overview insights */
+.overview-insight-footer {
+  align-items: center;
+  border-top: 1px solid var(--fg-line);
+  display: grid;
+  gap: 8px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  min-width: 0;
+  padding-top: 8px;
+}
+
+.overview-insight-footnote {
+  color: var(--fg-muted);
+  font-size: 11px;
+  font-weight: 720;
+  line-height: 1.25;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.overview-insight-action {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid var(--fg-line-strong);
+  border-radius: 8px;
+  color: var(--fg-blue);
+  cursor: pointer;
+  display: inline-flex;
+  flex: 0 0 auto;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 820;
+  gap: 6px;
+  justify-content: center;
+  line-height: 1;
+  min-height: 30px;
+  min-width: 0;
+  padding: 0 9px;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.overview-insight-action:hover {
+  background: var(--fg-blue-soft);
+  border-color: #cfe1ff;
+}
+
+.overview-insight-action .button-symbol {
+  align-items: center;
+  background: var(--fg-blue-soft);
+  border-radius: 6px;
+  color: var(--fg-blue);
+  display: inline-flex;
+  flex: 0 0 auto;
+  font-size: 11px;
+  font-weight: 860;
+  height: 20px;
+  justify-content: center;
+  width: 20px;
+}
+
+.overview-insight-action .button-label {
+  max-width: min(88px, 28vw);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .panel,
 .login-panel,
 .form-panel,
@@ -4696,6 +4767,19 @@ code {
 
   .overview-insights {
     grid-template-columns: 1fr;
+  }
+
+  .overview-insight-footer {
+    gap: 6px;
+  }
+
+  .overview-insight-action {
+    min-height: 28px;
+    padding-inline: 8px;
+  }
+
+  .overview-insight-action .button-label {
+    max-width: 76px;
   }
 
   .workspace-insight {

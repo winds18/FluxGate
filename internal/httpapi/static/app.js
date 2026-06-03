@@ -2228,6 +2228,7 @@ function renderOverviewSourceInsight() {
       <div class="overview-sync-list" aria-label="最近同步">
         ${rows}
       </div>
+      ${overviewInsightFooter("最近同步", "查看接入", "源", "access", "sources")}
     </article>
   `;
 }
@@ -2250,6 +2251,7 @@ function renderOverviewRegionInsight() {
       <div class="overview-distribution-list" aria-label="地区节点分布">
         ${rows}
       </div>
+      ${overviewInsightFooter("按地区进入节点卡片", "查看节点", "点", "nodes", "nodes")}
     </article>
   `;
 }
@@ -2275,7 +2277,19 @@ function renderOverviewDeliveryInsight() {
         ${overviewDeliveryRow("策", "策略生效", `${formatPlainNumber(activePolicies)}/${formatPlainNumber(policies.length)}`, activePolicies > 0 ? "success" : "warning")}
         ${overviewDeliveryRow("检", "发布检查", delivery.ready ? "就绪" : publishSummary, delivery.ready ? "success" : "warning")}
       </div>
+      ${overviewInsightFooter("订阅与发布闭环", delivery.ready ? "发布配置" : "检查收口", delivery.ready ? "发" : "收", "ops", delivery.ready ? "config-publish" : "delivery-readiness")}
     </article>
+  `;
+}
+
+function overviewInsightFooter(meta, label, symbol, view, target, expand = false) {
+  return `
+    <div class="overview-insight-footer">
+      <span class="overview-insight-footnote">${escapeHTML(meta || "")}</span>
+      <button class="overview-insight-action" type="button" data-overview-insight-action data-overview-jump="${escapeHTML(view)}" data-overview-jump-target="${escapeHTML(target || "")}" data-overview-jump-expand="${expand ? "true" : "false"}">
+        ${buttonLabel(symbol, label)}
+      </button>
+    </div>
   `;
 }
 

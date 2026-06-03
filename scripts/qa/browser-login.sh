@@ -1228,6 +1228,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const overviewInsightPanelCount = await page.locator("#overview-insights [data-overview-insight]").count();
   const overviewInsightSymbolCount = await page.locator("#overview-insights .overview-insight-symbol").count();
   const overviewInsightTitleCount = await page.locator("#overview-insights .overview-insight-title").count();
+  const overviewInsightFooterCount = await page.locator("#overview-insights .overview-insight-footer").count();
+  const overviewInsightActionCount = await page.locator("#overview-insights [data-overview-insight-action]").count();
+  const overviewInsightActionSymbolCount = await page.locator("#overview-insights [data-overview-insight-action] .button-symbol").count();
+  const overviewInsightActionTargets = await page
+    .locator("#overview-insights [data-overview-insight-action]")
+    .evaluateAll((elements) => elements.map((element) => element.dataset.overviewJumpTarget || ""));
   const overviewHealthPillCount = await page.locator("#overview-insights .overview-health-pill").count();
   const overviewRegionRowCount = await page.locator("#overview-insights .overview-distribution-row").count();
   const overviewSyncRowCount = await page.locator("#overview-insights .overview-sync-row").count();
@@ -1242,7 +1248,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const panelBox = panel.getBoundingClientRect();
       const elements = Array.from(
         panel.querySelectorAll(
-          ".overview-insight-heading, .overview-insight-symbol, .overview-insight-title, .overview-insight-meta, .overview-health-pill, .overview-distribution-row, .overview-distribution-label, .overview-distribution-value, .overview-sync-row, .overview-sync-name, .overview-sync-meta, .overview-delivery-row",
+          ".overview-insight-heading, .overview-insight-symbol, .overview-insight-title, .overview-insight-meta, .overview-health-pill, .overview-distribution-row, .overview-distribution-label, .overview-distribution-value, .overview-sync-row, .overview-sync-name, .overview-sync-meta, .overview-delivery-row, .overview-insight-footer, .overview-insight-footnote, [data-overview-insight-action], [data-overview-insight-action] .button-symbol, [data-overview-insight-action] .button-label",
         ),
       ).filter((element) => element.offsetParent !== null);
       for (const element of elements) {
@@ -1402,6 +1408,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   });
   let overviewGuideTokenActionNavigates = false;
   let overviewGuidePublishActionNavigates = false;
+  let overviewInsightActionNavigates = false;
   const overviewHeroCount = await page.locator("#overview-hero").count();
   const overviewHeroTitle = overviewHeroCount
     ? (await page.locator("#overview-hero .overview-hero-title strong").first().textContent())?.trim() || ""
@@ -1452,6 +1459,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await page.waitForFunction(() => document.querySelector('[data-dashboard-view="ops"]')?.hidden === false);
     await page.waitForFunction(() => document.querySelector("#status")?.textContent?.includes("已定位：发布配置"));
     overviewGuidePublishActionNavigates = true;
+    await switchView("overview");
+  }
+  const sourceInsightAction = page
+    .locator('#overview-insights [data-overview-insight="source-health"] [data-overview-insight-action]')
+    .first();
+  if ((await sourceInsightAction.count()) > 0) {
+    await sourceInsightAction.click();
+    await page.waitForFunction(() => document.querySelector('[data-dashboard-view="access"]')?.hidden === false);
+    await page.waitForFunction(() => document.querySelector("#status")?.textContent?.includes("已定位：上游来源"));
+    overviewInsightActionNavigates = true;
     await switchView("overview");
   }
   const overviewNextStepButtonCount = await page.locator("#overview-next-step [data-overview-jump]").count();
@@ -3185,6 +3202,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewInsightPanelCount = overviewInsightPanelCount;
   state.overviewInsightSymbolCount = overviewInsightSymbolCount;
   state.overviewInsightTitleCount = overviewInsightTitleCount;
+  state.overviewInsightFooterCount = overviewInsightFooterCount;
+  state.overviewInsightActionCount = overviewInsightActionCount;
+  state.overviewInsightActionSymbolCount = overviewInsightActionSymbolCount;
+  state.overviewInsightActionTargets = overviewInsightActionTargets;
+  state.overviewInsightActionNavigates = overviewInsightActionNavigates;
   state.overviewHealthPillCount = overviewHealthPillCount;
   state.overviewRegionRowCount = overviewRegionRowCount;
   state.overviewSyncRowCount = overviewSyncRowCount;
@@ -4284,6 +4306,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     overviewInsightPanelCount !== 3 ||
     overviewInsightSymbolCount !== 3 ||
     overviewInsightTitleCount !== 3 ||
+    overviewInsightFooterCount !== 3 ||
+    overviewInsightActionCount !== 3 ||
+    overviewInsightActionSymbolCount !== 3 ||
+    !["sources", "nodes"].every((target) => overviewInsightActionTargets.includes(target)) ||
+    !overviewInsightActionTargets.some((target) => ["delivery-readiness", "config-publish"].includes(target)) ||
+    !overviewInsightActionNavigates ||
     overviewHealthPillCount < 3 ||
     overviewRegionRowCount < 1 ||
     overviewSyncRowCount < 1 ||

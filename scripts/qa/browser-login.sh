@@ -525,6 +525,138 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         return total;
       }, 0);
   });
+  const collectWideDesktopMetrics = async () => {
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const commandCenterOverflow = {};
+    const contentPanelHeaderOverflow = {};
+    const railScrollOverflow = {};
+    const viewOverflow = {};
+    for (const view of viewNames) {
+      await switchView(view);
+      await page.evaluate(() => window.scrollTo(0, 0));
+      viewOverflow[view] = await pageHorizontalOverflow();
+      commandCenterOverflow[view] = await page.evaluate(() => {
+        const center = document.querySelector("[data-view-command-center]");
+        if (!center) return 1;
+        const centerBox = center.getBoundingClientRect();
+        const outside = (child, parent) =>
+          child.left < parent.left - 1 ||
+          child.right > parent.right + 1 ||
+          child.top < parent.top - 1 ||
+          child.bottom > parent.bottom + 1;
+        return Array.from(
+          center.querySelectorAll(
+            ".workspace-command-main, .workspace-command-title, .workspace-title-row, .workspace-view-symbol, #view-title, #view-description, .workspace-insight, .workspace-command-rail, #view-context, #view-rail, .workspace-actions, .workspace-session-controls, #status, #view-primary-action, #refresh, #logout",
+          ),
+        )
+          .filter((element) => element.offsetParent !== null)
+          .reduce((total, element) => {
+            const buttonParent = element.closest("#view-primary-action, #refresh, #logout");
+            const parent = buttonParent && !element.matches("#view-primary-action, #refresh, #logout")
+              ? buttonParent.getBoundingClientRect()
+              : centerBox;
+            const box = element.getBoundingClientRect();
+            return total + (box.width > 0 && box.height > 0 && outside(box, parent) ? 1 : 0);
+          }, 0);
+      });
+      railScrollOverflow[view] = await page.evaluate(() => {
+        const rail = document.querySelector(".workspace-command-rail");
+        if (!rail) return 1;
+        return rail.scrollWidth > rail.clientWidth + 1 ? 1 : 0;
+      });
+      contentPanelHeaderOverflow[view] = await visibleContentPanelHeaderOverflow();
+    }
+    await switchView("overview");
+    await page.evaluate(() => window.scrollTo(0, 0));
+    const shell = await page.evaluate(() => {
+      const isVisible = (selector) => {
+        const element = document.querySelector(selector);
+        if (!element) return false;
+        const style = getComputedStyle(element);
+        const box = element.getBoundingClientRect();
+        return style.display !== "none" && style.visibility !== "hidden" && box.width > 0 && box.height > 0;
+      };
+      const sidebar = document.querySelector(".dashboard-sidebar");
+      const workspace = document.querySelector(".workspace");
+      const commandCenter = document.querySelector("[data-view-command-center]");
+      const sidebarBox = sidebar?.getBoundingClientRect();
+      const workspaceBox = workspace?.getBoundingClientRect();
+      const commandBox = commandCenter?.getBoundingClientRect();
+      return {
+        sidebarVisible: isVisible(".dashboard-sidebar"),
+        mobileDockVisible: isVisible(".mobile-dock"),
+        sidebarHeight: Math.round(sidebarBox?.height || 0),
+        workspaceTop: Math.round(workspaceBox?.top || 0),
+        commandCenterTop: Math.round(commandBox?.top || 0),
+        viewportHeight: window.innerHeight,
+        viewportWidth: window.innerWidth,
+      };
+    });
+    const command = await page.evaluate(() => {
+      const center = document.querySelector("[data-view-command-center]");
+      const main = document.querySelector(".workspace-command-main");
+      const rail = document.querySelector(".workspace-command-rail");
+      if (!center || !main || !rail) return null;
+      const columnCount = (value) =>
+        !value || value === "none" ? 0 : value.split(" ").filter((part) => part.trim().length > 0).length;
+      const centerStyle = getComputedStyle(center);
+      const mainStyle = getComputedStyle(main);
+      const railStyle = getComputedStyle(rail);
+      const centerBox = center.getBoundingClientRect();
+      return {
+        height: Math.round(centerBox.height),
+        columnCount: columnCount(centerStyle.gridTemplateColumns),
+        rowCount: columnCount(centerStyle.gridTemplateRows),
+        mainColumnCount: columnCount(mainStyle.gridTemplateColumns),
+        railColumnCount: columnCount(railStyle.gridTemplateColumns),
+        railGridColumnStart: railStyle.gridColumnStart,
+        railGridColumnEnd: railStyle.gridColumnEnd,
+        overflowX: Math.max(0, center.scrollWidth - center.clientWidth),
+      };
+    });
+    const overview = await page.evaluate(() => {
+      const columnCount = (value) =>
+        !value || value === "none" ? 0 : value.split(" ").filter((part) => part.trim().length > 0).length;
+      const hero = document.querySelector("#overview-hero");
+      const stats = document.querySelector("#overview-hero .overview-hero-stats");
+      const metrics = document.querySelector("#metrics");
+      const metricBoxes = Array.from(document.querySelectorAll("#metrics .metric")).map((metric) => metric.getBoundingClientRect());
+      if (!hero || !metrics || metricBoxes.length === 0) {
+        return null;
+      }
+      const heroBox = hero.getBoundingClientRect();
+      return {
+        heroHeight: Math.round(heroBox.height),
+        heroColumnCount: columnCount(getComputedStyle(hero).gridTemplateColumns),
+        heroStatsColumnCount: stats ? columnCount(getComputedStyle(stats).gridTemplateColumns) : 0,
+        heroOverflowX: Math.max(0, hero.scrollWidth - hero.clientWidth),
+        metricColumnCount: columnCount(getComputedStyle(metrics).gridTemplateColumns),
+        metricMaxHeight: Math.round(Math.max(...metricBoxes.map((box) => box.height))),
+        metricOverflowX: Math.max(0, metrics.scrollWidth - metrics.clientWidth),
+      };
+    });
+    const workbenchOverflow = await page.evaluate(() =>
+      Array.from(
+        document.querySelectorAll(
+          "[data-token-workbench], [data-identity-workbench], [data-source-workbench], [data-node-workbench], [data-virtual-node-workbench], [data-policy-workbench], [data-traffic-workbench], [data-ops-workbench]",
+        ),
+      )
+        .filter((element) => element.offsetParent !== null)
+        .filter((element) => element.scrollWidth > element.clientWidth + 1)
+        .length,
+    );
+    return {
+      viewport: { width: 1440, height: 900 },
+      shell,
+      command,
+      commandCenterOverflow,
+      contentPanelHeaderOverflow,
+      railScrollOverflow,
+      viewOverflow,
+      overview,
+      workbenchOverflow,
+    };
+  };
   const viewOverflow = {};
   const formDrawerHeaderOverflow = {};
   const formSubmitOverflow = {};
@@ -2762,6 +2894,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     }, 0);
   });
 
+  const wideDesktopMetrics = await collectWideDesktopMetrics();
+
   await page.setViewportSize({ width: 390, height: 844 });
   await switchView("overview");
   await page.evaluate(() => window.scrollTo(0, 0));
@@ -3062,6 +3196,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewQuickCardBadgeCount = overviewQuickCardBadgeCount;
   state.overviewQuickCardBadgeValues = overviewQuickCardBadgeValues;
   state.overviewQuickCardOverflowCount = overviewQuickCardOverflowCount;
+  state.wideDesktopMetrics = wideDesktopMetrics;
   state.viewOverflow = viewOverflow;
   state.mobileDockVisible = mobileDockVisible;
   state.mobileSidebarVisible = mobileSidebarVisible;
@@ -3291,6 +3426,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       entry.boxShadow === "none" ||
       !entry.headerBackgroundColor.includes("248, 250, 252"),
   );
+  const wideDesktopViewOverflowing = wideDesktopMetrics
+    ? Object.entries(wideDesktopMetrics.viewOverflow).find(([, overflow]) => overflow > 0)
+    : true;
+  const wideDesktopCommandOverflowing = wideDesktopMetrics
+    ? Object.entries(wideDesktopMetrics.commandCenterOverflow).find(([, overflow]) => overflow > 0)
+    : true;
+  const wideDesktopRailOverflowing = wideDesktopMetrics
+    ? Object.entries(wideDesktopMetrics.railScrollOverflow).find(([, overflow]) => overflow > 0)
+    : true;
+  const wideDesktopPanelOverflowing = wideDesktopMetrics
+    ? Object.entries(wideDesktopMetrics.contentPanelHeaderOverflow).find(([, overflow]) => overflow > 0)
+    : true;
   if (
     workspaceCommandCenterCount !== 1 ||
     !workspaceCommandCenterStyle ||
@@ -3325,6 +3472,40 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (contentPanelCount !== 9 || contentPanelMetaCount !== 9 || overflowingContentPanel || contentPanelStyleMismatches.length > 0) {
     throw new Error(`content panels are incomplete, inconsistent, or overflowing: ${JSON.stringify(state)}`);
+  }
+  if (
+    !wideDesktopMetrics ||
+    wideDesktopMetrics.viewport.width !== 1440 ||
+    wideDesktopMetrics.viewport.height !== 900 ||
+    !wideDesktopMetrics.shell.sidebarVisible ||
+    wideDesktopMetrics.shell.mobileDockVisible ||
+    wideDesktopMetrics.shell.sidebarHeight < wideDesktopMetrics.shell.viewportHeight - 2 ||
+    wideDesktopMetrics.shell.workspaceTop > 1 ||
+    wideDesktopMetrics.shell.commandCenterTop > 32 ||
+    !wideDesktopMetrics.command ||
+    wideDesktopMetrics.command.height > 84 ||
+    wideDesktopMetrics.command.columnCount > 2 ||
+    wideDesktopMetrics.command.rowCount > 2 ||
+    wideDesktopMetrics.command.mainColumnCount < 2 ||
+    wideDesktopMetrics.command.railGridColumnStart !== "1" ||
+    wideDesktopMetrics.command.railGridColumnEnd !== "-1" ||
+    wideDesktopMetrics.command.railColumnCount < 2 ||
+    wideDesktopMetrics.command.overflowX > 0 ||
+    wideDesktopViewOverflowing ||
+    wideDesktopCommandOverflowing ||
+    wideDesktopRailOverflowing ||
+    wideDesktopPanelOverflowing ||
+    wideDesktopMetrics.workbenchOverflow > 0 ||
+    !wideDesktopMetrics.overview ||
+    wideDesktopMetrics.overview.heroHeight > 145 ||
+    wideDesktopMetrics.overview.heroColumnCount !== 2 ||
+    wideDesktopMetrics.overview.heroStatsColumnCount !== 3 ||
+    wideDesktopMetrics.overview.heroOverflowX > 2 ||
+    wideDesktopMetrics.overview.metricColumnCount !== 6 ||
+    wideDesktopMetrics.overview.metricMaxHeight > 94 ||
+    wideDesktopMetrics.overview.metricOverflowX > 2
+  ) {
+    throw new Error(`wide desktop visual contract failed: ${JSON.stringify(state)}`);
   }
   if (unifiedWorkbenchStyles.count < 8 || unifiedWorkbenchStyles.mismatches.length > 0) {
     throw new Error(`module workbenches do not share the v2 surface style: ${JSON.stringify(state)}`);

@@ -3109,6 +3109,8 @@ body {
   border-right: 1px solid var(--fg-sidebar-border);
   box-shadow: 8px 0 24px rgba(15, 23, 42, 0.03);
   color: var(--fg-ink);
+  gap: 12px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   padding: 14px 12px;
 }
 
@@ -3136,6 +3138,26 @@ body {
 
 .side-nav {
   gap: 5px;
+  overflow: hidden auto;
+  padding: 0 2px 4px;
+  scrollbar-width: none;
+}
+
+.side-nav::-webkit-scrollbar {
+  display: none;
+}
+
+/* FluxGate UI v2 sidebar grouping */
+.side-nav-section-title {
+  color: #98a2b3;
+  font-size: 10px;
+  font-weight: 820;
+  letter-spacing: 0;
+  line-height: 1.2;
+  overflow: hidden;
+  padding: 8px 8px 3px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .nav-item {
@@ -3187,6 +3209,48 @@ body {
   background: #ffffff;
   border-color: #cfe1ff;
   color: var(--fg-blue);
+}
+
+.sidebar-footnote {
+  background: #f8fafc;
+  border: 1px solid var(--fg-line);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  color: var(--fg-muted);
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.sidebar-footnote-kicker,
+.sidebar-footnote strong,
+.sidebar-footnote span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.sidebar-footnote-kicker {
+  color: #98a2b3;
+  font-size: 10px;
+  font-weight: 820;
+  line-height: 1.2;
+}
+
+.sidebar-footnote strong {
+  color: #1d2939;
+  font-size: 12px;
+  font-weight: 840;
+  line-height: 1.25;
+}
+
+.sidebar-footnote span:not(.sidebar-footnote-kicker) {
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.3;
 }
 
 .workspace {

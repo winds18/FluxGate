@@ -275,6 +275,38 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const dashboardNavCount = await page.locator(".dashboard-sidebar [data-view-nav]").count();
   const dashboardNavSymbolCount = await page.locator(".dashboard-sidebar .nav-symbol").count();
   const dashboardNavBadgeCount = await page.locator(".dashboard-sidebar [data-view-count]").count();
+  const dashboardNavSectionCount = await page.locator(".dashboard-sidebar .side-nav-section-title").count();
+  const dashboardSidebarFootnoteCount = await page.locator(".dashboard-sidebar .sidebar-footnote").count();
+  const dashboardSidebarChrome = await page.evaluate(() => {
+    const sidebar = document.querySelector(".dashboard-sidebar");
+    const nav = document.querySelector(".dashboard-sidebar .side-nav");
+    const footnote = document.querySelector(".dashboard-sidebar .sidebar-footnote");
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const sidebarStyle = sidebar ? getComputedStyle(sidebar) : null;
+    const footnoteStyle = footnote ? getComputedStyle(footnote) : null;
+    const footnoteBox = footnote?.getBoundingClientRect();
+    const sidebarBox = sidebar?.getBoundingClientRect();
+    const footnoteOverflow = footnote && footnoteBox
+      ? Array.from(footnote.querySelectorAll(".sidebar-footnote-kicker, strong, span")).reduce((total, element) => {
+          const box = element.getBoundingClientRect();
+          return total + (box.width > 0 && box.height > 0 && outside(box, footnoteBox) ? 1 : 0);
+        }, 0)
+      : 1;
+    return {
+      gridTemplateRows: sidebarStyle?.gridTemplateRows || "",
+      navOverflowY: nav ? getComputedStyle(nav).overflowY : "",
+      footnoteBackground: footnoteStyle?.backgroundColor || "",
+      footnoteBorderRadius: footnoteStyle?.borderRadius || "",
+      footnoteInsideSidebar:
+        sidebarBox && footnoteBox && footnoteBox.right <= sidebarBox.right + 1 && footnoteBox.left >= sidebarBox.left - 1 ? 1 : 0,
+      footnoteOverflow,
+      footnoteText: footnote?.textContent?.trim() || "",
+    };
+  });
   const dashboardNavLabels = await page
     .locator(".dashboard-sidebar .nav-label")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
@@ -3055,6 +3087,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardNavCount = dashboardNavCount;
   state.dashboardNavSymbolCount = dashboardNavSymbolCount;
   state.dashboardNavBadgeCount = dashboardNavBadgeCount;
+  state.dashboardNavSectionCount = dashboardNavSectionCount;
+  state.dashboardSidebarFootnoteCount = dashboardSidebarFootnoteCount;
+  state.dashboardSidebarChrome = dashboardSidebarChrome;
   state.dashboardNavLabels = dashboardNavLabels;
   state.mobileDockCount = mobileDockCount;
   state.mobileDockDirectNavCount = mobileDockDirectNavCount;
@@ -3918,6 +3953,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     dashboardNavCount !== viewNames.length ||
     dashboardNavSymbolCount !== viewNames.length ||
     dashboardNavBadgeCount !== viewNames.length ||
+    dashboardNavSectionCount !== 2 ||
+    dashboardSidebarFootnoteCount !== 1 ||
+    !dashboardSidebarChrome ||
+    !dashboardSidebarChrome.gridTemplateRows ||
+    dashboardSidebarChrome.navOverflowY !== "auto" ||
+    !dashboardSidebarChrome.footnoteBackground.includes("248, 250, 252") ||
+    !dashboardSidebarChrome.footnoteBorderRadius.startsWith("8px") ||
+    dashboardSidebarChrome.footnoteInsideSidebar !== 1 ||
+    dashboardSidebarChrome.footnoteOverflow > 0 ||
+    !dashboardSidebarChrome.footnoteText.includes("复制订阅") ||
     mobileDockCount !== 5 ||
     mobileDockDirectNavCount !== primaryMobileViews.length ||
     mobileDockSymbolCount !== 5 ||

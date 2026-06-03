@@ -4086,6 +4086,174 @@ button[type="submit"]:hover,
   color: var(--fg-workbench-symbol-color);
 }
 
+/* FluxGate UI v2 compact module workbenches */
+.token-workbench,
+.identity-workbench,
+.source-workbench,
+.node-workbench,
+.virtual-node-workbench,
+.policy-workbench,
+.traffic-workbench,
+.ops-workbench {
+  background: var(--fg-workbench-bg);
+  background-image: none;
+  gap: 8px;
+  margin: 10px 12px 12px;
+  padding: 10px;
+}
+
+.identity-workbench {
+  margin: 0 0 12px;
+}
+
+.token-workbench-heading,
+.identity-workbench-heading,
+.source-workbench-heading,
+.node-workbench-heading,
+.virtual-node-workbench-heading,
+.policy-workbench-heading,
+.traffic-workbench-heading,
+.ops-workbench-heading {
+  gap: 8px;
+  min-height: 32px;
+}
+
+.token-workbench-symbol,
+.token-workbench-format-symbol,
+.identity-workbench-symbol,
+.identity-workbench-stat-symbol,
+.identity-workbench-stage-symbol,
+.source-workbench-symbol,
+.source-workbench-stat-symbol,
+.source-workbench-type-symbol,
+.node-workbench-symbol,
+.node-workbench-stat-symbol,
+.node-workbench-region-symbol,
+.virtual-node-workbench-symbol,
+.virtual-node-workbench-stat-symbol,
+.virtual-node-workbench-strategy-symbol,
+.policy-workbench-symbol,
+.policy-workbench-stat-symbol,
+.policy-workbench-scope-symbol,
+.traffic-workbench-symbol,
+.traffic-workbench-stat-symbol,
+.traffic-workbench-signal-symbol,
+.ops-workbench-symbol,
+.ops-workbench-stat-symbol,
+.ops-workbench-step-symbol {
+  border-radius: 7px;
+  font-size: 12px;
+  height: 28px;
+  width: 28px;
+}
+
+.token-workbench-title strong,
+.identity-workbench-title,
+.source-workbench-title,
+.node-workbench-title,
+.virtual-node-workbench-title,
+.policy-workbench-title,
+.traffic-workbench-title,
+.ops-workbench-title {
+  font-size: 14px;
+  line-height: 1.25;
+}
+
+.token-workbench-title small,
+.identity-workbench-kicker,
+.source-workbench-kicker,
+.node-workbench-kicker,
+.virtual-node-workbench-kicker,
+.policy-workbench-kicker,
+.traffic-workbench-kicker,
+.ops-workbench-kicker,
+.ops-workbench-copy small {
+  font-size: 11px;
+}
+
+.token-workbench-stats,
+.token-workbench-format-grid,
+.identity-workbench-stats,
+.identity-workbench-stage-grid,
+.source-workbench-stats,
+.source-workbench-type-grid,
+.node-workbench-stats,
+.node-workbench-region-grid,
+.virtual-node-workbench-stats,
+.virtual-node-workbench-strategy-grid,
+.policy-workbench-stats,
+.policy-workbench-scope-grid,
+.traffic-workbench-stats,
+.traffic-workbench-signal-grid,
+.ops-workbench-stats,
+.ops-workbench-step-grid {
+  gap: 6px;
+}
+
+.token-workbench-stat,
+.token-workbench-format-card,
+.identity-workbench-stat,
+.identity-workbench-stage-card,
+.source-workbench-stat,
+.source-workbench-type-card,
+.node-workbench-stat,
+.node-workbench-region-card,
+.virtual-node-workbench-stat,
+.virtual-node-workbench-strategy-card,
+.policy-workbench-stat,
+.policy-workbench-scope-card,
+.traffic-workbench-stat,
+.traffic-workbench-signal-card,
+.ops-workbench-stat,
+.ops-workbench-step-card {
+  border-radius: 7px;
+  gap: 7px;
+  min-height: 48px;
+  padding: 8px;
+}
+
+.token-workbench-stat strong,
+.identity-workbench-stat-value,
+.source-workbench-stat-value,
+.node-workbench-stat-value,
+.virtual-node-workbench-stat-value,
+.policy-workbench-stat-value,
+.traffic-workbench-stat-value,
+.ops-workbench-stat-value {
+  font-size: 15px;
+  line-height: 1.15;
+}
+
+.token-workbench-format-card,
+.identity-workbench-stage-card,
+.source-workbench-type-card,
+.node-workbench-region-card,
+.virtual-node-workbench-strategy-card,
+.policy-workbench-scope-card,
+.traffic-workbench-signal-card,
+.ops-workbench-step-card {
+  min-height: 50px;
+}
+
+.token-workbench-format-hint,
+.identity-workbench-stage-hint,
+.source-workbench-type-hint,
+.node-workbench-region-rate,
+.virtual-node-workbench-strategy-hint,
+.policy-workbench-scope-hint,
+.traffic-workbench-signal-hint,
+.ops-workbench-next-action,
+.ops-workbench-step-state {
+  font-size: 10px;
+  max-width: 128px;
+  padding: 3px 7px;
+}
+
+.token-workbench-command-strip .table-button {
+  min-height: 30px;
+  padding: 5px 8px;
+}
+
 .identity-workbench-stage-card-warning,
 .token-workbench-format-card-warning,
 .ops-workbench-step-card-warning {

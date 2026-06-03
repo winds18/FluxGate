@@ -233,6 +233,28 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return requestedSelectors.flatMap((selector) =>
         Array.from(document.querySelectorAll(selector)).map((element) => {
           const style = getComputedStyle(element);
+          const innerCards = Array.from(
+            element.querySelectorAll(
+              [
+                "[data-token-workbench-stat]",
+                ".token-workbench-format-card",
+                "[data-identity-workbench-stat]",
+                "[data-identity-workbench-stage-card]",
+                "[data-source-workbench-stat]",
+                "[data-source-workbench-type-card]",
+                "[data-node-workbench-stat]",
+                "[data-node-workbench-region-card]",
+                "[data-virtual-node-workbench-stat]",
+                "[data-virtual-node-workbench-strategy-card]",
+                "[data-policy-workbench-stat]",
+                "[data-policy-workbench-scope-card]",
+                "[data-traffic-workbench-stat]",
+                "[data-traffic-workbench-signal-card]",
+                "[data-ops-workbench-stat]",
+                "[data-ops-workbench-step-card]",
+              ].join(","),
+            ),
+          ).filter((card) => card.offsetParent !== null);
           return {
             selector,
             backgroundColor: style.backgroundColor,
@@ -240,6 +262,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
             borderColor: style.borderColor,
             borderRadius: style.borderRadius,
             boxShadow: style.boxShadow,
+            height: Math.round(element.getBoundingClientRect().height),
+            maxInnerCardHeight: Math.max(0, ...innerCards.map((card) => Math.round(card.getBoundingClientRect().height))),
           };
         }),
       );
@@ -2871,7 +2895,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         entry.backgroundImage !== "none" ||
         !entry.borderRadius.startsWith("8px") ||
         entry.borderColor === "rgba(0, 0, 0, 0)" ||
-        entry.boxShadow === "none",
+        entry.boxShadow === "none" ||
+        entry.maxInnerCardHeight > 78,
     ),
   };
 

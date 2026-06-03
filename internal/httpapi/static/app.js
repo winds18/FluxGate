@@ -3316,9 +3316,9 @@ function renderTeamCard(row) {
       <div class="table-actions identity-card-actions compact-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-team-action="save" data-team-id="${row.id}">${buttonLabel("✓", "保存")}</button>
-               <button class="table-button ghost-button" type="button" data-team-action="cancel" data-team-id="${row.id}">${buttonLabel("×", "取消")}</button>`
-            : `<button class="table-button" type="button" data-team-action="edit" data-team-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
+            ? `<button class="table-button" type="button" data-team-action="save" data-team-id="${row.id}" ${actionLabelAttrs("保存团队")}>${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-team-action="cancel" data-team-id="${row.id}" ${actionLabelAttrs("取消团队编辑")}>${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-team-action="edit" data-team-id="${row.id}" ${actionLabelAttrs("编辑团队")}>${buttonLabel("✎", "编辑")}</button>`
         }
       </div>
     </article>
@@ -3386,9 +3386,9 @@ function renderUserCard(row) {
       <div class="table-actions identity-card-actions compact-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-user-action="save" data-user-id="${row.id}">${buttonLabel("✓", "保存")}</button>
-               <button class="table-button ghost-button" type="button" data-user-action="cancel" data-user-id="${row.id}">${buttonLabel("×", "取消")}</button>`
-            : `<button class="table-button" type="button" data-user-action="edit" data-user-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
+            ? `<button class="table-button" type="button" data-user-action="save" data-user-id="${row.id}" ${actionLabelAttrs("保存成员")}>${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-user-action="cancel" data-user-id="${row.id}" ${actionLabelAttrs("取消成员编辑")}>${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-user-action="edit" data-user-id="${row.id}" ${actionLabelAttrs("编辑成员")}>${buttonLabel("✎", "编辑")}</button>`
         }
       </div>
     </article>
@@ -3584,12 +3584,12 @@ function renderSourceCard(row) {
       <div class="table-actions source-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-source-action="save" data-source-id="${row.id}">${buttonLabel("✓", "保存")}</button>
-               <button class="table-button ghost-button" type="button" data-source-action="cancel" data-source-id="${row.id}">${buttonLabel("×", "取消")}</button>`
-            : `<button class="table-button" type="button" data-source-action="edit" data-source-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
+            ? `<button class="table-button" type="button" data-source-action="save" data-source-id="${row.id}" ${actionLabelAttrs("保存来源")}>${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-source-action="cancel" data-source-id="${row.id}" ${actionLabelAttrs("取消来源编辑")}>${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-source-action="edit" data-source-id="${row.id}" ${actionLabelAttrs("编辑来源")}>${buttonLabel("✎", "编辑")}</button>`
         }
-        <button class="table-button" type="button" data-source-action="refresh" data-source-id="${row.id}">${buttonLabel("↻", "刷新")}</button>
-        <button class="table-button ghost-button" type="button" data-source-action="regenerate" data-source-id="${row.id}">${buttonLabel("↺", "同步命名")}</button>
+        <button class="table-button" type="button" data-source-action="refresh" data-source-id="${row.id}" ${actionLabelAttrs("刷新来源")}>${buttonLabel("↻", "刷新")}</button>
+        <button class="table-button ghost-button" type="button" data-source-action="regenerate" data-source-id="${row.id}" ${actionLabelAttrs("同步来源命名")}>${buttonLabel("↺", "同步命名")}</button>
       </div>
     </article>
   `;
@@ -3798,9 +3798,9 @@ function renderVirtualNodeCard(row) {
       <div class="table-actions virtual-node-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-virtual-node-action="save" data-virtual-node-id="${row.id}">${buttonLabel("✓", "保存")}</button>
-               <button class="table-button ghost-button" type="button" data-virtual-node-action="cancel" data-virtual-node-id="${row.id}">${buttonLabel("×", "取消")}</button>`
-            : `<button class="table-button" type="button" data-virtual-node-action="edit" data-virtual-node-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
+            ? `<button class="table-button" type="button" data-virtual-node-action="save" data-virtual-node-id="${row.id}" ${actionLabelAttrs("保存虚拟网关")}>${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-virtual-node-action="cancel" data-virtual-node-id="${row.id}" ${actionLabelAttrs("取消虚拟网关编辑")}>${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-virtual-node-action="edit" data-virtual-node-id="${row.id}" ${actionLabelAttrs("编辑虚拟网关")}>${buttonLabel("✎", "编辑")}</button>`
         }
       </div>
     </article>
@@ -4022,9 +4022,9 @@ function renderPolicyCard(row) {
       <div class="table-actions policy-actions">
         ${
           isEditing
-            ? `<button class="table-button" type="button" data-policy-action="save" data-policy-id="${row.id}">${buttonLabel("✓", "保存")}</button>
-               <button class="table-button ghost-button" type="button" data-policy-action="cancel" data-policy-id="${row.id}">${buttonLabel("×", "取消")}</button>`
-            : `<button class="table-button" type="button" data-policy-action="edit" data-policy-id="${row.id}">${buttonLabel("✎", "编辑")}</button>`
+            ? `<button class="table-button" type="button" data-policy-action="save" data-policy-id="${row.id}" ${actionLabelAttrs("保存策略")}>${buttonLabel("✓", "保存")}</button>
+               <button class="table-button ghost-button" type="button" data-policy-action="cancel" data-policy-id="${row.id}" ${actionLabelAttrs("取消策略编辑")}>${buttonLabel("×", "取消")}</button>`
+            : `<button class="table-button" type="button" data-policy-action="edit" data-policy-id="${row.id}" ${actionLabelAttrs("编辑策略")}>${buttonLabel("✎", "编辑")}</button>`
         }
       </div>
     </article>
@@ -4747,9 +4747,9 @@ function renderTokenCard(row) {
           <span class="token-command-group" data-token-command-group>
             <span class="token-command-label">状态控制</span>
             <span class="token-command-buttons">
-              <button class="table-button" data-token-action="restore" data-token-id="${row.id}">${buttonLabel("↺", "恢复")}</button>
-              <button class="table-button ghost-button" data-token-action="rotate-subscription" data-token-id="${row.id}">${buttonLabel("⧉", "重置订阅")}</button>
-              <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}">${buttonLabel("!", "撤销")}</button>
+              <button class="table-button" data-token-action="restore" data-token-id="${row.id}" ${actionLabelAttrs("恢复 Token")}>${buttonLabel("↺", "恢复")}</button>
+              <button class="table-button ghost-button" data-token-action="rotate-subscription" data-token-id="${row.id}" ${actionLabelAttrs("重置订阅地址")}>${buttonLabel("⧉", "重置订阅")}</button>
+              <button class="table-button danger-button" data-token-action="revoke" data-token-id="${row.id}" ${actionLabelAttrs("撤销 Token")}>${buttonLabel("!", "撤销")}</button>
             </span>
           </span>
         </div>
@@ -4865,9 +4865,9 @@ function renderSubscriptionCardList(items, tokenID = "") {
                   <span class="token-subscription-kind" data-token-subscription-kind>${escapeHTML(subscriptionKindForLabel(label))}</span>
                 </span>
                 <span class="token-subscription-actions">
-                  <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}" data-button-symbol="⧉" data-copy-label="复制">${buttonLabel("⧉", "复制")}</button>
-                  <button class="table-button ghost-button" type="button" data-token-action="probe-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}">${buttonLabel("测", "探测")}</button>
-                  <a class="table-button ghost-button link-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-token-subscription-link>${buttonLabel("↗", "打开")}</a>
+                  <button class="table-button ghost-button" type="button" data-token-action="copy-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}" data-button-symbol="⧉" data-copy-label="复制" ${actionLabelAttrs(`复制 ${label} 订阅地址`)}>${buttonLabel("⧉", "复制")}</button>
+                  <button class="table-button ghost-button" type="button" data-token-action="probe-subscription" data-token-id="${escapeHTML(String(tokenID || ""))}" data-token-url="${escapeHTML(url)}" ${actionLabelAttrs(`探测 ${label} 订阅地址`)}>${buttonLabel("测", "探测")}</button>
+                  <a class="table-button ghost-button link-button" href="${escapeHTML(url)}" target="_blank" rel="noopener noreferrer" data-token-subscription-link ${actionLabelAttrs(`打开 ${label} 订阅地址`)}>${buttonLabel("↗", "打开")}</a>
                 </span>
               </div>
               <span class="token-subscription-meta">
@@ -4885,6 +4885,11 @@ function renderSubscriptionCardList(items, tokenID = "") {
 
 function buttonLabel(symbol, label) {
   return `<span class="button-symbol" aria-hidden="true">${escapeHTML(symbol)}</span><span class="button-label">${escapeHTML(label)}</span>`;
+}
+
+function actionLabelAttrs(label) {
+  const safeLabel = escapeHTML(String(label || ""));
+  return `aria-label="${safeLabel}" title="${safeLabel}"`;
 }
 
 function subscriptionKindForLabel(label) {

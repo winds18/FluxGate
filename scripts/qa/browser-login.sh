@@ -2030,6 +2030,41 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenSubscriptionOpenCount = await page.locator("#tokens a[data-token-subscription-link]").count();
   const tokenSubscriptionProbeCount = await page.locator("#tokens button[data-token-action='probe-subscription']").count();
   const tokenSubscriptionActionSymbolCount = await page.locator("#tokens .token-subscription-actions .button-symbol").count();
+  const tokenSubscriptionActionChrome = await page.evaluate(() => {
+    const isVisible = (element) => element.offsetParent !== null;
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const groups = Array.from(document.querySelectorAll("#tokens .token-subscription-actions")).filter(isVisible);
+    const buttons = groups.flatMap((group) =>
+      Array.from(group.querySelectorAll(".table-button")).filter(isVisible),
+    );
+    return {
+      groupCount: groups.length,
+      buttonCount: buttons.length,
+      missingAccessibleCount: buttons.filter((button) => !button.getAttribute("aria-label") || !button.getAttribute("title")).length,
+      squareMismatchCount: buttons.filter((button) => {
+        const box = button.getBoundingClientRect();
+        return Math.abs(box.width - box.height) > 2 || box.width < 30 || box.width > 40 || box.height < 30 || box.height > 40;
+      }).length,
+      hiddenLabelMismatchCount: buttons.filter((button) => {
+        const label = button.querySelector(".button-label");
+        if (!label) return true;
+        const style = getComputedStyle(label);
+        const box = label.getBoundingClientRect();
+        return !style.clipPath.includes("inset") && box.width > 2;
+      }).length,
+      overflowCount: buttons.reduce((total, button) => {
+        const group = button.closest(".token-subscription-actions");
+        if (!group) return total + 1;
+        const buttonBox = button.getBoundingClientRect();
+        const groupBox = group.getBoundingClientRect();
+        return outside(buttonBox, groupBox) ? total + 1 : total;
+      }, 0),
+    };
+  });
   const tokenSubscriptionCodeLayout = await page.evaluate(() => {
     const codes = Array.from(document.querySelectorAll("#tokens .token-subscription-item code")).filter(
       (element) => element.offsetParent !== null,
@@ -2373,6 +2408,45 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       }
       return total;
     }, 0);
+  });
+  const sourceActionToolbarChrome = await page.evaluate(() => {
+    const isVisible = (element) => element.offsetParent !== null;
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const groups = Array.from(document.querySelectorAll("#sources .source-actions")).filter(isVisible);
+    const quietButtons = groups.flatMap((group) =>
+      Array.from(
+        group.querySelectorAll(
+          "button[data-source-action='edit'], button[data-source-action='refresh'], button[data-source-action='regenerate']",
+        ),
+      ).filter(isVisible),
+    );
+    return {
+      groupCount: groups.length,
+      quietButtonCount: quietButtons.length,
+      missingAccessibleCount: quietButtons.filter((button) => !button.getAttribute("aria-label") || !button.getAttribute("title")).length,
+      squareMismatchCount: quietButtons.filter((button) => {
+        const box = button.getBoundingClientRect();
+        return Math.abs(box.width - box.height) > 2 || box.width < 30 || box.width > 40 || box.height < 30 || box.height > 40;
+      }).length,
+      hiddenLabelMismatchCount: quietButtons.filter((button) => {
+        const label = button.querySelector(".button-label");
+        if (!label) return true;
+        const style = getComputedStyle(label);
+        const box = label.getBoundingClientRect();
+        return !style.clipPath.includes("inset") && box.width > 2;
+      }).length,
+      overflowCount: quietButtons.reduce((total, button) => {
+        const group = button.closest(".source-actions");
+        if (!group) return total + 1;
+        const buttonBox = button.getBoundingClientRect();
+        const groupBox = group.getBoundingClientRect();
+        return outside(buttonBox, groupBox) ? total + 1 : total;
+      }, 0),
+    };
   });
   const sourceEditCount = await page.locator("#sources button[data-source-action='edit']").count();
   let sourceEditFieldsVisible = false;
@@ -3486,6 +3560,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.sourceWorkbenchOverflowCount = sourceWorkbenchOverflowCount;
   state.sourceSummaryChipCount = sourceSummaryChipCount;
   state.sourceActionButtonSymbolCount = sourceActionButtonSymbolCount;
+  state.sourceActionToolbarChrome = sourceActionToolbarChrome;
   state.sourceVisualOverflowCount = sourceVisualOverflowCount;
   state.sourceEditCount = sourceEditCount;
   state.sourceEditFieldsVisible = sourceEditFieldsVisible;
@@ -3628,6 +3703,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenSubscriptionOpenCount = tokenSubscriptionOpenCount;
   state.tokenSubscriptionProbeCount = tokenSubscriptionProbeCount;
   state.tokenSubscriptionActionSymbolCount = tokenSubscriptionActionSymbolCount;
+  state.tokenSubscriptionActionChrome = tokenSubscriptionActionChrome;
   state.tokenSubscriptionCodeLayout = tokenSubscriptionCodeLayout;
   state.tokenCopyFeedbackVisible = tokenCopyFeedbackVisible;
   state.tokenCopySymbolRestored = tokenCopySymbolRestored;
@@ -3847,6 +3923,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (
     tokenSubscriptionCopyCount > 0 &&
+    (!tokenSubscriptionActionChrome ||
+      tokenSubscriptionActionChrome.groupCount !== tokenSubscriptionCopyCount ||
+      tokenSubscriptionActionChrome.buttonCount !== tokenSubscriptionCopyCount * 3 ||
+      tokenSubscriptionActionChrome.missingAccessibleCount > 0 ||
+      tokenSubscriptionActionChrome.squareMismatchCount > 0 ||
+      tokenSubscriptionActionChrome.hiddenLabelMismatchCount > 0 ||
+      tokenSubscriptionActionChrome.overflowCount > 0)
+  ) {
+    throw new Error(`token subscription action toolbars are not humane icon controls: ${JSON.stringify(state)}`);
+  }
+  if (
+    tokenSubscriptionCopyCount > 0 &&
     (!tokenSubscriptionCodeLayout ||
       tokenSubscriptionCodeLayout.count !== tokenSubscriptionCopyCount ||
       !tokenSubscriptionCodeLayout.lineClampValues.every((value) => value === "2") ||
@@ -3934,6 +4022,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (sourceCardCount !== sourceEditCount ||
       sourceSummaryChipCount !== sourceCardCount * 4 ||
       sourceActionButtonSymbolCount !== sourceCardCount * 3 ||
+      !sourceActionToolbarChrome ||
+      sourceActionToolbarChrome.groupCount !== sourceCardCount ||
+      sourceActionToolbarChrome.quietButtonCount !== sourceCardCount * 3 ||
+      sourceActionToolbarChrome.missingAccessibleCount > 0 ||
+      sourceActionToolbarChrome.squareMismatchCount > 0 ||
+      sourceActionToolbarChrome.hiddenLabelMismatchCount > 0 ||
+      sourceActionToolbarChrome.overflowCount > 0 ||
       sourceVisualOverflowCount > 0 ||
       !sourceInlineSaveFeedback ||
       sourceInlineSaveFeedback.pending !== 1 ||

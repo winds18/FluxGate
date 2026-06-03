@@ -22,6 +22,9 @@
   --warning-bg: #fff7e1;
   --shadow: 0 1px 2px rgba(18, 32, 30, 0.06), 0 12px 34px rgba(18, 32, 30, 0.08);
   --fg-control-height: 38px;
+  --fg-action-button-size: 34px;
+  --fg-action-toolbar-bg: #f8fafc;
+  --fg-action-toolbar-border: #dde8e5;
   --fg-radius: 8px;
   --fg-radius-sm: 6px;
 }
@@ -4562,12 +4565,87 @@ button[type="submit"]:hover,
 .identity-card-actions,
 .virtual-node-actions,
 .policy-actions {
-  background: #f8fafc;
-  border-color: var(--fg-line);
+  background: var(--fg-action-toolbar-bg);
+  border-color: var(--fg-action-toolbar-border);
 }
 
 .node-actions {
   background: transparent;
+}
+
+/* FluxGate UI v2 humane action toolbars */
+.source-actions,
+.identity-card-actions,
+.virtual-node-actions,
+.policy-actions,
+.token-subscription-actions {
+  align-items: center;
+  background: var(--fg-action-toolbar-bg);
+  border: 1px solid var(--fg-action-toolbar-border);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.72);
+  gap: 4px;
+  justify-content: flex-end;
+  max-width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  padding: 4px;
+}
+
+.source-actions .table-button,
+.identity-card-actions .table-button,
+.virtual-node-actions .table-button,
+.policy-actions .table-button,
+.token-subscription-actions .table-button {
+  flex: 0 0 auto;
+  gap: 0;
+  height: var(--fg-action-button-size);
+  min-height: var(--fg-action-button-size);
+  min-width: var(--fg-action-button-size);
+  padding: 0;
+  width: var(--fg-action-button-size);
+}
+
+.source-actions button[data-source-action="save"],
+.source-actions button[data-source-action="cancel"],
+.identity-card-actions button[data-team-action="save"],
+.identity-card-actions button[data-team-action="cancel"],
+.identity-card-actions button[data-user-action="save"],
+.identity-card-actions button[data-user-action="cancel"],
+.virtual-node-actions button[data-virtual-node-action="save"],
+.virtual-node-actions button[data-virtual-node-action="cancel"],
+.policy-actions button[data-policy-action="save"],
+.policy-actions button[data-policy-action="cancel"] {
+  gap: 6px;
+  min-width: 72px;
+  padding-inline: 10px;
+  width: auto;
+}
+
+.source-actions button[data-source-action="edit"] .button-label,
+.source-actions button[data-source-action="refresh"] .button-label,
+.source-actions button[data-source-action="regenerate"] .button-label,
+.identity-card-actions button[data-team-action="edit"] .button-label,
+.identity-card-actions button[data-user-action="edit"] .button-label,
+.virtual-node-actions button[data-virtual-node-action="edit"] .button-label,
+.policy-actions button[data-policy-action="edit"] .button-label,
+.token-subscription-actions .button-label {
+  border: 0;
+  clip-path: inset(50%);
+  height: 1px;
+  margin: -1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
+.source-actions .button-symbol,
+.identity-card-actions .button-symbol,
+.virtual-node-actions .button-symbol,
+.policy-actions .button-symbol,
+.token-subscription-actions .button-symbol {
+  flex: 0 0 auto;
 }
 
 .node-card-main {
@@ -4942,6 +5020,56 @@ code {
 
   .overview-insight-action .button-label {
     max-width: 76px;
+  }
+
+  .source-actions,
+  .identity-card-actions,
+  .virtual-node-actions,
+  .policy-actions,
+  .token-subscription-actions {
+    align-items: stretch;
+    flex-direction: column;
+    justify-content: stretch;
+    overflow: visible;
+    padding: 6px;
+    width: 100%;
+  }
+
+  .token-subscription-actions {
+    display: grid;
+    grid-auto-flow: row;
+    grid-template-columns: 1fr;
+  }
+
+  .source-actions .table-button,
+  .identity-card-actions .table-button,
+  .virtual-node-actions .table-button,
+  .policy-actions .table-button,
+  .token-subscription-actions .table-button {
+    gap: 6px;
+    height: auto;
+    min-height: var(--fg-control-height);
+    min-width: 0;
+    padding-inline: 12px;
+    width: 100%;
+  }
+
+  .source-actions button[data-source-action="edit"] .button-label,
+  .source-actions button[data-source-action="refresh"] .button-label,
+  .source-actions button[data-source-action="regenerate"] .button-label,
+  .identity-card-actions button[data-team-action="edit"] .button-label,
+  .identity-card-actions button[data-user-action="edit"] .button-label,
+  .virtual-node-actions button[data-virtual-node-action="edit"] .button-label,
+  .policy-actions button[data-policy-action="edit"] .button-label,
+  .token-subscription-actions .button-label {
+    clip-path: none;
+    height: auto;
+    margin: 0;
+    overflow: hidden;
+    position: static;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    width: auto;
   }
 
   .workspace-insight {

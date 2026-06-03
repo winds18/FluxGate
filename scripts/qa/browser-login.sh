@@ -307,6 +307,52 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       footnoteText: footnote?.textContent?.trim() || "",
     };
   });
+  const dashboardModuleGlyphChrome = await page.evaluate(() => {
+    const sidebar = document.querySelector(".dashboard-sidebar");
+    const mark = document.querySelector(".sidebar-mark");
+    const navSymbols = Array.from(document.querySelectorAll(".dashboard-sidebar .nav-symbol"));
+    const activeSymbol = document.querySelector(".dashboard-sidebar .nav-item.is-active .nav-symbol");
+    const inactiveSymbol = navSymbols.find((symbol) => !symbol.closest(".nav-item")?.classList.contains("is-active"));
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const styleBox = (element) => {
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      return {
+        backgroundColor: style.backgroundColor,
+        backgroundImage: style.backgroundImage,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+        boxShadow: style.boxShadow,
+        color: style.color,
+        fontSize: style.fontSize,
+        fontWeight: style.fontWeight,
+        height: Math.round(box.height),
+        width: Math.round(box.width),
+      };
+    };
+    const sidebarBox = sidebar?.getBoundingClientRect();
+    const markBox = mark?.getBoundingClientRect();
+    const navSymbolOverflow = navSymbols.reduce((total, symbol) => {
+      const navItem = symbol.closest(".nav-item");
+      const symbolBox = symbol.getBoundingClientRect();
+      const navBox = navItem?.getBoundingClientRect();
+      return total + (navBox && symbolBox.width > 0 && symbolBox.height > 0 && outside(symbolBox, navBox) ? 1 : 0);
+    }, 0);
+    return {
+      activeSymbol: styleBox(activeSymbol),
+      inactiveSymbol: styleBox(inactiveSymbol),
+      mark: styleBox(mark),
+      markInsideSidebar:
+        sidebarBox && markBox && markBox.left >= sidebarBox.left - 1 && markBox.right <= sidebarBox.right + 1 ? 1 : 0,
+      navSymbolCount: navSymbols.length,
+      navSymbolOverflow,
+    };
+  });
   const dashboardNavLabels = await page
     .locator(".dashboard-sidebar .nav-label")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
@@ -2954,6 +3000,50 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const mobileDockOverflow = await page.locator(".mobile-dock").evaluate((dock) =>
     Math.max(0, dock.scrollWidth - dock.clientWidth),
   );
+  const mobileModuleGlyphChrome = await page.evaluate(() => {
+    const dock = document.querySelector(".mobile-dock");
+    const dockSymbols = Array.from(document.querySelectorAll(".mobile-dock .mobile-dock-symbol"));
+    const activeSymbol = document.querySelector(".mobile-dock button.is-active .mobile-dock-symbol");
+    const inactiveSymbol = dockSymbols.find((symbol) => !symbol.closest("button")?.classList.contains("is-active"));
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const styleBox = (element) => {
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      return {
+        backgroundColor: style.backgroundColor,
+        borderColor: style.borderColor,
+        borderRadius: style.borderRadius,
+        color: style.color,
+        fontSize: style.fontSize,
+        height: Math.round(box.height),
+        width: Math.round(box.width),
+      };
+    };
+    const dockSymbolOverflow = dockSymbols.reduce((total, symbol) => {
+      const button = symbol.closest("button");
+      const symbolBox = symbol.getBoundingClientRect();
+      const buttonBox = button?.getBoundingClientRect();
+      return total + (buttonBox && symbolBox.width > 0 && symbolBox.height > 0 && outside(symbolBox, buttonBox) ? 1 : 0);
+    }, 0);
+    const dockBox = dock?.getBoundingClientRect();
+    const symbolWidthMin = Math.min(...dockSymbols.map((symbol) => Math.round(symbol.getBoundingClientRect().width)));
+    const symbolHeightMin = Math.min(...dockSymbols.map((symbol) => Math.round(symbol.getBoundingClientRect().height)));
+    return {
+      activeSymbol: styleBox(activeSymbol),
+      inactiveSymbol: styleBox(inactiveSymbol),
+      dockInsideViewport:
+        dockBox && dockBox.left >= -1 && dockBox.right <= window.innerWidth + 1 && dockBox.bottom <= window.innerHeight + 1 ? 1 : 0,
+      dockSymbolCount: dockSymbols.length,
+      dockSymbolOverflow,
+      symbolHeightMin: Number.isFinite(symbolHeightMin) ? symbolHeightMin : 0,
+      symbolWidthMin: Number.isFinite(symbolWidthMin) ? symbolWidthMin : 0,
+    };
+  });
   const mobileCommandCenterMetrics = await page.locator("[data-view-command-center]").evaluate((center) => {
     const main = center.querySelector(".workspace-command-main");
     const rail = center.querySelector(".workspace-command-rail");
@@ -3107,6 +3197,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardNavSectionCount = dashboardNavSectionCount;
   state.dashboardSidebarFootnoteCount = dashboardSidebarFootnoteCount;
   state.dashboardSidebarChrome = dashboardSidebarChrome;
+  state.dashboardModuleGlyphChrome = dashboardModuleGlyphChrome;
   state.dashboardNavLabels = dashboardNavLabels;
   state.mobileDockCount = mobileDockCount;
   state.mobileDockDirectNavCount = mobileDockDirectNavCount;
@@ -3259,6 +3350,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileSidebarVisible = mobileSidebarVisible;
   state.mobileOverviewOverflow = mobileOverviewOverflow;
   state.mobileDockOverflow = mobileDockOverflow;
+  state.mobileModuleGlyphChrome = mobileModuleGlyphChrome;
   state.mobileCommandCenterMetrics = mobileCommandCenterMetrics;
   state.mobileOverviewControlMetrics = mobileOverviewControlMetrics;
   state.mobileCommandCenterOverflow = mobileCommandCenterOverflow;
@@ -3971,6 +4063,35 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`mobile dashboard layout failed: ${JSON.stringify(state)}`);
   }
+  const dashboardGlyphBroken =
+    !dashboardModuleGlyphChrome ||
+    dashboardModuleGlyphChrome.navSymbolCount !== viewNames.length ||
+    dashboardModuleGlyphChrome.navSymbolOverflow > 0 ||
+    dashboardModuleGlyphChrome.markInsideSidebar !== 1 ||
+    !dashboardModuleGlyphChrome.mark ||
+    dashboardModuleGlyphChrome.mark.width !== 32 ||
+    dashboardModuleGlyphChrome.mark.height !== 32 ||
+    dashboardModuleGlyphChrome.mark.backgroundImage !== "none" ||
+    !dashboardModuleGlyphChrome.mark.borderRadius.startsWith("8px") ||
+    !dashboardModuleGlyphChrome.activeSymbol ||
+    !dashboardModuleGlyphChrome.inactiveSymbol ||
+    dashboardModuleGlyphChrome.activeSymbol.width < 27 ||
+    dashboardModuleGlyphChrome.activeSymbol.height < 27 ||
+    !dashboardModuleGlyphChrome.activeSymbol.borderRadius.startsWith("8px") ||
+    dashboardModuleGlyphChrome.activeSymbol.backgroundColor === dashboardModuleGlyphChrome.inactiveSymbol.backgroundColor ||
+    dashboardModuleGlyphChrome.activeSymbol.color === dashboardModuleGlyphChrome.inactiveSymbol.color;
+  const mobileGlyphBroken =
+    !mobileModuleGlyphChrome ||
+    mobileModuleGlyphChrome.dockSymbolCount !== 5 ||
+    mobileModuleGlyphChrome.dockSymbolOverflow > 0 ||
+    mobileModuleGlyphChrome.dockInsideViewport !== 1 ||
+    mobileModuleGlyphChrome.symbolWidthMin < 23 ||
+    mobileModuleGlyphChrome.symbolHeightMin < 23 ||
+    !mobileModuleGlyphChrome.activeSymbol ||
+    !mobileModuleGlyphChrome.inactiveSymbol ||
+    !mobileModuleGlyphChrome.activeSymbol.borderRadius.startsWith("8px") ||
+    mobileModuleGlyphChrome.activeSymbol.backgroundColor === mobileModuleGlyphChrome.inactiveSymbol.backgroundColor ||
+    mobileModuleGlyphChrome.activeSymbol.color === mobileModuleGlyphChrome.inactiveSymbol.color;
   if (
     dashboardNavCount !== viewNames.length ||
     dashboardNavSymbolCount !== viewNames.length ||
@@ -3992,6 +4113,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     mobileMoreToggleCount !== 1 ||
     mobileMoreNavCount !== overflowMobileViews.length ||
     mobileMoreBadgeCount !== overflowMobileViews.length ||
+    dashboardGlyphBroken ||
+    mobileGlyphBroken ||
     populatedNavBadgeCount !== viewNames.length * 2 ||
     dashboardViewCount !== viewNames.length
   ) {

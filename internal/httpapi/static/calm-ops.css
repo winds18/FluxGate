@@ -22,6 +22,10 @@
   --warning-bg: #fff7e1;
   --shadow: 0 1px 2px rgba(18, 32, 30, 0.06), 0 12px 34px rgba(18, 32, 30, 0.08);
   --fg-control-height: 38px;
+  --fg-control-padding-x: 12px;
+  --fg-control-label-gap: 6px;
+  --fg-control-panel-bg: #f8fafc;
+  --fg-control-panel-border: #dde8e5;
   --fg-action-button-size: 34px;
   --fg-action-toolbar-bg: #f8fafc;
   --fg-action-toolbar-border: #dde8e5;
@@ -68,15 +72,64 @@ input,
 select,
 textarea {
   background: #ffffff;
+  box-sizing: border-box;
   border-color: #cfdad8;
   border-radius: var(--fg-radius-sm);
+  color: var(--text);
+  font: inherit;
+  line-height: 1.2;
+  max-width: 100%;
   min-height: var(--fg-control-height);
+  min-width: 0;
+  padding-inline: var(--fg-control-padding-x);
 }
 
 input:hover,
 select:hover,
 textarea:hover {
   border-color: #aebdb9;
+}
+
+textarea {
+  min-height: 88px;
+  padding-block: 10px;
+  resize: vertical;
+}
+
+input[type="number"] {
+  font-variant-numeric: tabular-nums;
+}
+
+/* FluxGate UI v2 humane form controls */
+.login-panel label,
+.form-body label,
+.node-edit-field,
+.token-action-field {
+  color: var(--muted);
+  display: grid;
+  font-size: 12px;
+  font-weight: 760;
+  gap: var(--fg-control-label-gap);
+  line-height: 1.18;
+  min-width: 0;
+}
+
+.login-panel input,
+.form-body input,
+.form-body select,
+.form-body textarea,
+.node-edit-field input,
+.node-edit-field select,
+.token-action-input input {
+  height: var(--fg-control-height);
+  width: 100%;
+}
+
+.form-body button[type="submit"],
+.node-edit-actions .table-button,
+.token-action-group > .table-button,
+.token-command-buttons .table-button {
+  min-height: var(--fg-control-height);
 }
 
 .topbar {
@@ -1747,11 +1800,11 @@ a.table-button:hover {
 }
 
 .node-edit-form {
-  background: #f8fbfa;
-  border: 1px solid var(--border-soft);
+  background: var(--fg-control-panel-bg);
+  border: 1px solid var(--fg-control-panel-border);
   border-radius: var(--fg-radius);
   display: grid;
-  gap: 10px;
+  gap: 12px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   min-width: 0;
   padding: 12px;
@@ -1772,6 +1825,7 @@ a.table-button:hover {
 .node-edit-field input,
 .node-edit-field select {
   box-sizing: border-box;
+  height: var(--fg-control-height);
   min-width: 0;
   width: 100%;
 }
@@ -1783,6 +1837,7 @@ a.table-button:hover {
 
 .node-edit-actions {
   display: flex;
+  gap: 8px;
   justify-content: flex-end;
   min-width: 0;
 }
@@ -2346,6 +2401,11 @@ a.table-button:hover {
 .token-card-grid,
 .token-card-summary,
 .token-card-actions,
+.token-action-group,
+.token-action-field,
+.token-action-input,
+.token-command-group,
+.token-command-buttons,
 .token-workbench,
 .token-workbench-heading,
 .token-workbench-title,
@@ -2391,6 +2451,97 @@ a.table-button:hover {
 
 .token-subscription-actions .table-button {
   min-width: 72px;
+}
+
+.token-card-actions {
+  gap: 10px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 244px), 1fr));
+}
+
+.token-action-group,
+.token-command-group {
+  background: var(--fg-control-panel-bg);
+  border: 1px solid var(--fg-control-panel-border);
+  border-radius: var(--fg-radius);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset;
+  min-width: 0;
+  padding: 10px;
+}
+
+.token-action-group {
+  align-items: end;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) max-content;
+}
+
+.token-action-input {
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cfdad8;
+  border-radius: var(--fg-radius-sm);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) max-content;
+  min-height: var(--fg-control-height);
+  overflow: hidden;
+}
+
+.token-action-input:focus-within {
+  border-color: #93bfb8;
+  box-shadow: 0 0 0 3px rgba(16, 129, 114, 0.14);
+}
+
+.token-action-input input {
+  border: 0;
+  box-shadow: none;
+  height: calc(var(--fg-control-height) - 2px);
+  min-height: calc(var(--fg-control-height) - 2px);
+  outline: 0;
+  padding-inline: 10px;
+}
+
+.token-action-input em {
+  align-items: center;
+  align-self: stretch;
+  background: #f7faf9;
+  border-left: 1px solid #e0e9e6;
+  color: var(--muted);
+  display: inline-flex;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 780;
+  justify-content: center;
+  min-width: 42px;
+  padding-inline: 10px;
+}
+
+.token-action-group > .table-button {
+  min-width: 76px;
+  padding-inline: 12px;
+}
+
+.token-command-group {
+  align-content: start;
+  display: grid;
+  gap: 8px;
+}
+
+.token-command-label {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 780;
+  line-height: 1.18;
+}
+
+.token-command-buttons {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.token-command-buttons .table-button {
+  min-width: 0;
+  padding-inline: 10px;
 }
 
 .guide-summary {
@@ -2648,9 +2799,23 @@ body.has-form-drawer-open::before {
 
 .form-drawer:not(.is-collapsed) .form-body {
   align-content: start;
+  gap: 12px;
   grid-template-columns: 1fr;
   min-height: 0;
   overflow: auto;
+  padding: 14px;
+}
+
+.form-drawer:not(.is-collapsed) .form-body label {
+  background: var(--fg-control-panel-bg);
+  border: 1px solid var(--fg-control-panel-border);
+  border-radius: var(--fg-radius);
+  padding: 10px;
+}
+
+.form-drawer:not(.is-collapsed) .form-body button[type="submit"] {
+  justify-self: end;
+  min-width: 116px;
 }
 
 .form-drawer:not(.is-collapsed) .result-box {
@@ -2870,6 +3035,28 @@ body.has-form-drawer-open::before {
 
   .node-edit-form {
     grid-template-columns: 1fr;
+  }
+
+  .token-card-actions,
+  .token-action-group,
+  .token-command-group {
+    width: 100%;
+  }
+
+  .token-card-actions,
+  .token-action-group,
+  .token-command-buttons {
+    grid-template-columns: 1fr;
+  }
+
+  .token-action-group > .table-button,
+  .token-command-buttons .table-button {
+    width: 100%;
+  }
+
+  .form-drawer:not(.is-collapsed) .form-body button[type="submit"] {
+    justify-self: stretch;
+    width: 100%;
   }
 
   .confirm-dialog {

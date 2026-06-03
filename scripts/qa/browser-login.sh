@@ -868,6 +868,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let formDrawerDraftFeedback = {};
   let formDrawerEscapeFeedback = {};
   let formDrawerSideSheetFeedback = {};
+  let formDrawerControlChrome = {};
   let formDrawerSubmitFeedback = {};
   let formDrawerSubmitRestored = {};
   let refreshButtonPendingFeedback = {};
@@ -1064,6 +1065,40 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       formBodyOverflowY: formBody ? getComputedStyle(formBody).overflowY : "",
       openDrawerCount: document.querySelectorAll("[data-form-drawer]:not(.is-collapsed)").length,
       pageOverflow: Math.max(0, document.documentElement.scrollWidth - window.innerWidth),
+    };
+  });
+  formDrawerControlChrome = await page.evaluate(() => {
+    const isVisible = (element) => element && element.offsetParent !== null;
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const drawer = document.querySelector("#source-form:not(.is-collapsed)");
+    const formBody = drawer?.querySelector(".form-body");
+    const labels = Array.from(drawer?.querySelectorAll(".form-body label") || []).filter(isVisible);
+    const controls = Array.from(drawer?.querySelectorAll(".form-body input, .form-body select, .form-body textarea, .form-body button[type='submit']") || []).filter(isVisible);
+    const heightMismatchCount = controls.filter((control) => {
+      const box = control.getBoundingClientRect();
+      return box.height < 36 || box.height > 42;
+    }).length;
+    const labelPanelMismatchCount = labels.filter((label) => {
+      const style = getComputedStyle(label);
+      return style.display !== "grid" || Number.parseFloat(style.gap || "0") < 5 || Number.parseFloat(style.paddingTop || "0") < 8;
+    }).length;
+    const overflowCount = formBody
+      ? [...labels, ...controls].reduce((total, element) => {
+          const box = element.getBoundingClientRect();
+          const parent = formBody.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && outside(box, parent) ? total + 1 : total;
+        }, 0)
+      : 1;
+    return {
+      labelCount: labels.length,
+      controlCount: controls.length,
+      heightMismatchCount,
+      labelPanelMismatchCount,
+      overflowCount,
     };
   });
   workspacePrimaryActionFocus.access = await page.evaluate(() => document.activeElement?.getAttribute("name") || "");
@@ -1995,6 +2030,57 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const tokenActionFieldCount = await page.locator("#tokens .token-action-field").count();
   const tokenCommandGroupCount = await page.locator("#tokens [data-token-command-group]").count();
   const tokenActionButtonSymbolCount = await page.locator("#tokens .token-card-actions .button-symbol").count();
+  const tokenActionControlChrome = await page.evaluate(() => {
+    const isVisible = (element) => element && element.offsetParent !== null;
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const actionGroups = Array.from(document.querySelectorAll("#tokens [data-token-action-group]")).filter(isVisible);
+    const commandGroups = Array.from(document.querySelectorAll("#tokens [data-token-command-group]")).filter(isVisible);
+    const inputShells = Array.from(document.querySelectorAll("#tokens .token-action-input")).filter(isVisible);
+    const rawInputs = Array.from(document.querySelectorAll("#tokens .token-action-input input")).filter(isVisible);
+    const actionButtons = Array.from(document.querySelectorAll("#tokens [data-token-action-group] > .table-button, #tokens .token-command-buttons .table-button")).filter(isVisible);
+    const tokenActionFields = Array.from(document.querySelectorAll("#tokens .token-action-field")).filter(isVisible);
+    const heightMismatchCount = [...inputShells, ...rawInputs, ...actionButtons].filter((element) => {
+      const box = element.getBoundingClientRect();
+      return box.height < 34 || box.height > 42;
+    }).length;
+    const desktopColumnMismatchCount = window.innerWidth > 760
+      ? actionGroups.filter((group) => getComputedStyle(group).gridTemplateColumns.trim().split(/\s+/).length < 2).length
+      : 0;
+    const commandColumnMismatchCount = window.innerWidth > 760
+      ? commandGroups.filter((group) => {
+          const buttons = group.querySelector(".token-command-buttons");
+          return !buttons || getComputedStyle(buttons).gridTemplateColumns.trim().split(/\s+/).length < 3;
+        }).length
+      : 0;
+    const fieldGapMismatchCount = tokenActionFields.filter((field) => Number.parseFloat(getComputedStyle(field).gap || "0") < 5).length;
+    const overflowCount = [...actionGroups, ...commandGroups].reduce((total, group) => {
+      const groupBox = group.getBoundingClientRect();
+      const children = Array.from(group.querySelectorAll(".token-action-field, .token-action-input, .table-button, .token-command-label, .token-command-buttons")).filter(isVisible);
+      return (
+        total +
+        children.reduce((subtotal, child) => {
+          const box = child.getBoundingClientRect();
+          return box.width > 0 && box.height > 0 && outside(box, groupBox) ? subtotal + 1 : subtotal;
+        }, 0)
+      );
+    }, 0);
+    return {
+      actionGroupCount: actionGroups.length,
+      commandGroupCount: commandGroups.length,
+      inputShellCount: inputShells.length,
+      rawInputCount: rawInputs.length,
+      actionButtonCount: actionButtons.length,
+      heightMismatchCount,
+      desktopColumnMismatchCount,
+      commandColumnMismatchCount,
+      fieldGapMismatchCount,
+      overflowCount,
+    };
+  });
   const tokenSectionHeadingCount = await page.locator("#tokens [data-token-section-heading]").count();
   const tokenSectionSymbolCount = await page.locator("#tokens [data-token-section-symbol]").count();
   const tokenSectionMetaCount = await page.locator("#tokens .token-card-section-meta").count();
@@ -2893,6 +2979,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   let nodeEditFieldCount = 0;
   let nodeEditInputNames = [];
   let nodeEditFormOverflowCount = 0;
+  let nodeEditControlChrome = {};
   if (nodeEditCount > 0) {
     await page.locator("#nodes button[data-node-action='edit']").first().click();
     await expect(page.locator("#nodes form[data-node-edit-form]").first()).toBeVisible({ timeout: 5000 });
@@ -2918,6 +3005,29 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         }
         return total;
       }, 0);
+    });
+    nodeEditControlChrome = await page.evaluate(() => {
+      const isVisible = (element) => element && element.offsetParent !== null;
+      const forms = Array.from(document.querySelectorAll("#nodes form[data-node-edit-form]")).filter(isVisible);
+      const fields = Array.from(document.querySelectorAll("#nodes form[data-node-edit-form] .node-edit-field")).filter(isVisible);
+      const controls = Array.from(document.querySelectorAll("#nodes form[data-node-edit-form] input, #nodes form[data-node-edit-form] select, #nodes form[data-node-edit-form] button")).filter(isVisible);
+      const heightMismatchCount = controls.filter((control) => {
+        const box = control.getBoundingClientRect();
+        return box.height < 36 || box.height > 42;
+      }).length;
+      const fieldGapMismatchCount = fields.filter((field) => Number.parseFloat(getComputedStyle(field).gap || "0") < 5).length;
+      const panelMismatchCount = forms.filter((form) => {
+        const style = getComputedStyle(form);
+        return style.display !== "grid" || Number.parseFloat(style.gap || "0") < 10 || style.backgroundColor !== "rgb(248, 250, 252)";
+      }).length;
+      return {
+        formCount: forms.length,
+        fieldCount: fields.length,
+        controlCount: controls.length,
+        heightMismatchCount,
+        fieldGapMismatchCount,
+        panelMismatchCount,
+      };
     });
     await page.locator("#nodes button[data-node-action='cancel']").first().click();
     await page.locator("#nodes .node-card-main").first().click();
@@ -3399,6 +3509,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.formDrawerDraftFeedback = formDrawerDraftFeedback;
   state.formDrawerEscapeFeedback = formDrawerEscapeFeedback;
   state.formDrawerSideSheetFeedback = formDrawerSideSheetFeedback;
+  state.formDrawerControlChrome = formDrawerControlChrome;
   state.formDrawerSubmitFeedback = formDrawerSubmitFeedback;
   state.formDrawerSubmitRestored = formDrawerSubmitRestored;
   state.formSubmitButtonSymbolCount = formSubmitButtonSymbolCount;
@@ -3628,6 +3739,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.nodeEditFieldCount = nodeEditFieldCount;
   state.nodeEditInputNames = nodeEditInputNames;
   state.nodeEditFormOverflowCount = nodeEditFormOverflowCount;
+  state.nodeEditControlChrome = nodeEditControlChrome;
   state.east8TimeSamples = east8TimeSamples;
   state.trafficWorkbenchCount = trafficWorkbenchCount;
   state.trafficWorkbenchStatCount = trafficWorkbenchStatCount;
@@ -3689,6 +3801,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.tokenActionFieldCount = tokenActionFieldCount;
   state.tokenCommandGroupCount = tokenCommandGroupCount;
   state.tokenActionButtonSymbolCount = tokenActionButtonSymbolCount;
+  state.tokenActionControlChrome = tokenActionControlChrome;
   state.tokenSectionHeadingCount = tokenSectionHeadingCount;
   state.tokenSectionSymbolCount = tokenSectionSymbolCount;
   state.tokenSectionMetaCount = tokenSectionMetaCount;
@@ -3869,6 +3982,22 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (tokenRowCount > 0 && (tokenCommandGroupCount !== tokenRowCount || tokenActionButtonSymbolCount < tokenRowCount * 5)) {
     throw new Error(`token action panels missing symbols or command groups: ${JSON.stringify(state)}`);
+  }
+  if (
+    tokenRowCount > 0 &&
+    (!tokenActionControlChrome ||
+      tokenActionControlChrome.actionGroupCount !== tokenRowCount * 2 ||
+      tokenActionControlChrome.commandGroupCount !== tokenRowCount ||
+      tokenActionControlChrome.inputShellCount !== tokenRowCount * 2 ||
+      tokenActionControlChrome.rawInputCount !== tokenRowCount * 2 ||
+      tokenActionControlChrome.actionButtonCount < tokenRowCount * 5 ||
+      tokenActionControlChrome.heightMismatchCount > 0 ||
+      tokenActionControlChrome.desktopColumnMismatchCount > 0 ||
+      tokenActionControlChrome.commandColumnMismatchCount > 0 ||
+      tokenActionControlChrome.fieldGapMismatchCount > 0 ||
+      tokenActionControlChrome.overflowCount > 0)
+  ) {
+    throw new Error(`token action controls should use a unified input rhythm: ${JSON.stringify(state)}`);
   }
   if (
     tokenRowCount > 0 &&
@@ -4159,7 +4288,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     (nodeEditSaveSymbolCount < 1 ||
       nodeEditFieldCount < 4 ||
       ["display_name", "name_mode", "region", "tags"].some((name) => !nodeEditInputNames.includes(name)) ||
-      nodeEditFormOverflowCount > 0)
+      nodeEditFormOverflowCount > 0 ||
+      !nodeEditControlChrome ||
+      nodeEditControlChrome.formCount < 1 ||
+      nodeEditControlChrome.fieldCount < 4 ||
+      nodeEditControlChrome.controlCount < 5 ||
+      nodeEditControlChrome.heightMismatchCount > 0 ||
+      nodeEditControlChrome.fieldGapMismatchCount > 0 ||
+      nodeEditControlChrome.panelMismatchCount > 0)
   ) {
     throw new Error(`node edit form is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
@@ -4373,6 +4509,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     formDrawerSideSheetFeedback.pageOverflow > 2
   ) {
     throw new Error(`form drawer should open as a stable side sheet: ${JSON.stringify(state)}`);
+  }
+  if (
+    !formDrawerControlChrome ||
+    formDrawerControlChrome.labelCount < 5 ||
+    formDrawerControlChrome.controlCount < 6 ||
+    formDrawerControlChrome.heightMismatchCount > 0 ||
+    formDrawerControlChrome.labelPanelMismatchCount > 0 ||
+    formDrawerControlChrome.overflowCount > 0
+  ) {
+    throw new Error(`form drawer controls should share one stable input rhythm: ${JSON.stringify(state)}`);
   }
   if (
     formDrawerDraftFeedback.dirty !== 1 ||

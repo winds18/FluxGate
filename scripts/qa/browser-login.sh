@@ -679,6 +679,55 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       };
     }),
   );
+  const visualBaselineStyles = await page.evaluate(() => {
+    const root = getComputedStyle(document.documentElement);
+    const token = (name) => root.getPropertyValue(name).trim();
+    const sample = (selector) => {
+      const element = document.querySelector(selector);
+      if (!element) return null;
+      const style = getComputedStyle(element);
+      return {
+        selector,
+        backgroundColor: style.backgroundColor,
+        borderColor: style.borderColor,
+        boxShadow: style.boxShadow,
+      };
+    };
+    const samples = {
+      command: sample("[data-view-command-center]"),
+      contentPanel: sample("[data-content-panel]"),
+      contentHeader: sample("[data-content-panel] .panel-header"),
+      workbench: sample("[data-node-workbench]"),
+      workbenchInner: sample("[data-node-workbench-stat]"),
+      metric: sample(".metric"),
+    };
+    const whiteSurface = "rgb(255, 255, 255)";
+    const quietSurface = "rgb(248, 250, 252)";
+    const mismatches = [];
+    ["command", "contentPanel", "workbench", "metric"].forEach((key) => {
+      const entry = samples[key];
+      if (!entry || entry.backgroundColor !== whiteSurface || entry.boxShadow === "none") {
+        mismatches.push(key);
+      }
+    });
+    ["contentHeader", "workbenchInner"].forEach((key) => {
+      const entry = samples[key];
+      if (!entry || entry.backgroundColor !== quietSurface) {
+        mismatches.push(key);
+      }
+    });
+    return {
+      tokens: {
+        surfaceBase: token("--fg-surface-base"),
+        surfaceSubtle: token("--fg-surface-subtle"),
+        borderBase: token("--fg-border-base"),
+        shadowRaised: token("--fg-shadow-raised"),
+        shadowHover: token("--fg-shadow-hover"),
+      },
+      samples,
+      mismatches,
+    };
+  });
   const visibleContentPanelHeaderOverflow = async () => page.evaluate(() => {
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -3848,6 +3897,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.opsResultChipCount = opsResultChipCount;
   state.opsVisualOverflowCount = opsVisualOverflowCount;
   state.unifiedWorkbenchStyles = unifiedWorkbenchStyles;
+  state.visualBaselineStyles = visualBaselineStyles;
   state.calmOpsStylesheetCount = calmOpsStylesheetCount;
   state.calmOpsResponseStatus = calmOpsResponseStatus;
   const overflowingCommandCenter = Object.entries(workspaceCommandCenterOverflow).find(([, overflow]) => overflow > 0);
@@ -3908,6 +3958,17 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (contentPanelCount !== 9 || contentPanelMetaCount !== 9 || overflowingContentPanel || contentPanelStyleMismatches.length > 0) {
     throw new Error(`content panels are incomplete, inconsistent, or overflowing: ${JSON.stringify(state)}`);
+  }
+  if (
+    !visualBaselineStyles ||
+    visualBaselineStyles.tokens.surfaceBase !== "#ffffff" ||
+    visualBaselineStyles.tokens.surfaceSubtle !== "#f8fafc" ||
+    visualBaselineStyles.tokens.borderBase !== "#e4eaf2" ||
+    !visualBaselineStyles.tokens.shadowRaised ||
+    !visualBaselineStyles.tokens.shadowHover ||
+    visualBaselineStyles.mismatches.length > 0
+  ) {
+    throw new Error(`modern visual baseline is incomplete or not applied: ${JSON.stringify(state)}`);
   }
   if (
     !wideDesktopMetrics ||

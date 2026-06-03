@@ -3222,6 +3222,14 @@ body.has-form-drawer-open::before {
   --fg-workbench-symbol-bg: var(--fg-blue-soft);
   --fg-workbench-symbol-border: #cfe1ff;
   --fg-workbench-symbol-color: var(--fg-blue);
+  --fg-surface-base: #ffffff;
+  --fg-surface-subtle: #f8fafc;
+  --fg-surface-raised: #ffffff;
+  --fg-border-base: #e4eaf2;
+  --fg-border-strong: #d5dde8;
+  --fg-shadow-flat: 0 1px 2px rgba(15, 23, 42, 0.05);
+  --fg-shadow-raised: 0 1px 2px rgba(15, 23, 42, 0.05), 0 10px 26px rgba(15, 23, 42, 0.055);
+  --fg-shadow-hover: 0 10px 24px rgba(15, 23, 42, 0.08);
   --fg-module-glyph-bg: #f8fafc;
   --fg-module-glyph-border: #d6dee8;
   --fg-module-glyph-color: #315f9f;
@@ -4930,6 +4938,99 @@ code {
   background: #ffffff;
   border-color: var(--fg-line);
   box-shadow: var(--fg-panel-shadow);
+}
+
+/* FluxGate UI v2 visual baseline */
+.workspace-command-center,
+.content-panel,
+.overview-hero,
+.overview-insight-panel,
+.metric,
+.panel,
+.login-panel,
+.form-panel,
+.overview-panel,
+.token-card,
+.source-card,
+.identity-card,
+.virtual-node-card,
+.policy-card,
+.traffic-card-section,
+.node-card,
+.node-region-card,
+.ops-action-card {
+  background: var(--fg-surface-base);
+  border-color: var(--fg-border-base);
+  box-shadow: var(--fg-shadow-flat);
+}
+
+.content-panel {
+  box-shadow: var(--fg-shadow-raised);
+}
+
+.content-panel > .panel-header,
+.workspace-actions,
+.workspace-insight,
+.overview-hero-stat,
+.overview-health-pill,
+.overview-sync-row,
+.overview-distribution-row,
+.overview-delivery-row,
+.token-subscription-item,
+.detail-item,
+.guide-progress,
+.node-edit-form,
+.source-workbench-stat,
+.source-workbench-type-card,
+.node-workbench-stat,
+.node-workbench-region-card,
+.node-workbench-region-empty,
+.identity-workbench-stat,
+.identity-workbench-stage-card,
+.token-workbench-stat,
+.token-workbench-format-card,
+.policy-workbench-stat,
+.policy-workbench-scope-card,
+.virtual-node-workbench-stat,
+.virtual-node-workbench-strategy-card,
+.traffic-workbench-stat,
+.traffic-workbench-signal-card,
+.ops-workbench-stat,
+.ops-workbench-step-card {
+  background: var(--fg-surface-subtle);
+  border-color: var(--fg-border-base);
+}
+
+.source-workbench,
+[data-source-workbench],
+.node-workbench,
+[data-node-workbench],
+.identity-workbench,
+[data-identity-workbench],
+.token-workbench,
+[data-token-workbench],
+.policy-workbench,
+[data-policy-workbench],
+.virtual-node-workbench,
+[data-virtual-node-workbench],
+.traffic-workbench,
+[data-traffic-workbench],
+.ops-workbench,
+[data-ops-workbench] {
+  background: var(--fg-surface-raised);
+  border-color: var(--fg-border-base);
+  box-shadow: var(--fg-shadow-flat);
+}
+
+.node-card-main:hover,
+.quick-card:hover,
+.guide-action-button:hover,
+.workspace-insight-action:hover,
+.overview-insight-action:hover,
+.table-button:hover,
+.ghost-button:hover,
+a.table-button:hover {
+  box-shadow: var(--fg-shadow-hover);
 }
 
 @media (max-width: 1180px) {

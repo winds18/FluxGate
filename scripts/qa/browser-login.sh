@@ -353,6 +353,103 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       navSymbolOverflow,
     };
   });
+  const sharedSymbolChrome = await page.evaluate(() => {
+    const groups = [
+      { key: "workspaceView", selector: ".workspace-view-symbol" },
+      { key: "workspaceInsight", selector: ".workspace-insight-symbol" },
+      { key: "guideCurrent", selector: ".guide-current-symbol" },
+      { key: "guideAction", selector: ".guide-action-symbol" },
+      { key: "quickCard", selector: ".quick-card .quick-card-symbol" },
+      { key: "drawer", selector: ".drawer-symbol" },
+      { key: "panel", selector: ".panel-symbol" },
+      { key: "metric", selector: ".metric-symbol" },
+      { key: "heroStat", selector: ".overview-hero-stat-symbol" },
+      { key: "overviewInsight", selector: ".overview-insight-symbol" },
+      { key: "overviewDelivery", selector: ".overview-delivery-symbol" },
+      {
+        key: "workbench",
+        selector: [
+          ".source-workbench-symbol",
+          ".source-workbench-stat-symbol",
+          ".source-workbench-type-symbol",
+          ".node-workbench-symbol",
+          ".node-workbench-stat-symbol",
+          ".node-workbench-region-symbol",
+          ".identity-workbench-symbol",
+          ".identity-workbench-stat-symbol",
+          ".identity-workbench-stage-symbol",
+          ".token-workbench-symbol",
+          ".token-workbench-format-symbol",
+          ".policy-workbench-symbol",
+          ".policy-workbench-stat-symbol",
+          ".policy-workbench-scope-symbol",
+          ".virtual-node-workbench-symbol",
+          ".virtual-node-workbench-stat-symbol",
+          ".virtual-node-workbench-strategy-symbol",
+          ".traffic-workbench-symbol",
+          ".traffic-workbench-stat-symbol",
+          ".traffic-workbench-signal-symbol",
+          ".ops-workbench-symbol",
+          ".ops-workbench-stat-symbol",
+          ".ops-workbench-step-symbol",
+        ].join(", "),
+      },
+    ];
+    const classCounts = Object.fromEntries(
+      groups.map((group) => [group.key, document.querySelectorAll(group.selector).length]),
+    );
+    const allSymbols = groups.flatMap((group) => Array.from(document.querySelectorAll(group.selector)));
+    const visibleSymbols = allSymbols.filter((element) => {
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && box.width > 0 && box.height > 0;
+    });
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const visibleBoxes = visibleSymbols.map((element) => {
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      return {
+        borderRadius: style.borderRadius,
+        compact: element.closest(".workspace-command-center") ? 1 : 0,
+        height: Math.round(box.height),
+        width: Math.round(box.width),
+      };
+    });
+    const visibleSymbolOverflow = visibleSymbols.reduce((total, element) => {
+      const parent = element.parentElement;
+      const symbolBox = element.getBoundingClientRect();
+      const parentBox = parent?.getBoundingClientRect();
+      return total + (parentBox && outside(symbolBox, parentBox) ? 1 : 0);
+    }, 0);
+    const backgroundImageMismatchCount = allSymbols.filter(
+      (element) => getComputedStyle(element).backgroundImage !== "none",
+    ).length;
+    const borderRadiusMismatchCount = allSymbols.filter(
+      (element) => !getComputedStyle(element).borderRadius.startsWith("8px"),
+    ).length;
+    const sizeMismatchCount = visibleBoxes.filter((box) => {
+      const minSize = box.compact ? 18 : 23;
+      const maxSize = box.compact ? 34 : 34;
+      return box.width < minSize || box.height < minSize || box.width > maxSize || box.height > maxSize;
+    }).length;
+    return {
+      backgroundImageMismatchCount,
+      borderRadiusMismatchCount,
+      classCounts,
+      sizeMismatchCount,
+      symbolCount: allSymbols.length,
+      visibleHeightMax: visibleBoxes.length ? Math.max(...visibleBoxes.map((box) => box.height)) : 0,
+      visibleHeightMin: visibleBoxes.length ? Math.min(...visibleBoxes.map((box) => box.height)) : 0,
+      visibleSymbolCount: visibleSymbols.length,
+      visibleSymbolOverflow,
+      visibleWidthMax: visibleBoxes.length ? Math.max(...visibleBoxes.map((box) => box.width)) : 0,
+      visibleWidthMin: visibleBoxes.length ? Math.min(...visibleBoxes.map((box) => box.width)) : 0,
+    };
+  });
   const dashboardNavLabels = await page
     .locator(".dashboard-sidebar .nav-label")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
@@ -3198,6 +3295,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardSidebarFootnoteCount = dashboardSidebarFootnoteCount;
   state.dashboardSidebarChrome = dashboardSidebarChrome;
   state.dashboardModuleGlyphChrome = dashboardModuleGlyphChrome;
+  state.sharedSymbolChrome = sharedSymbolChrome;
   state.dashboardNavLabels = dashboardNavLabels;
   state.mobileDockCount = mobileDockCount;
   state.mobileDockDirectNavCount = mobileDockDirectNavCount;
@@ -4092,6 +4190,21 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     !mobileModuleGlyphChrome.activeSymbol.borderRadius.startsWith("8px") ||
     mobileModuleGlyphChrome.activeSymbol.backgroundColor === mobileModuleGlyphChrome.inactiveSymbol.backgroundColor ||
     mobileModuleGlyphChrome.activeSymbol.color === mobileModuleGlyphChrome.inactiveSymbol.color;
+  const sharedSymbolBroken =
+    !sharedSymbolChrome ||
+    sharedSymbolChrome.classCounts.workspaceView < 1 ||
+    sharedSymbolChrome.classCounts.quickCard !== 4 ||
+    sharedSymbolChrome.classCounts.drawer !== 7 ||
+    sharedSymbolChrome.classCounts.panel !== 9 ||
+    sharedSymbolChrome.classCounts.metric !== 6 ||
+    sharedSymbolChrome.classCounts.heroStat !== 3 ||
+    sharedSymbolChrome.classCounts.overviewInsight !== 3 ||
+    sharedSymbolChrome.classCounts.overviewDelivery < 4 ||
+    sharedSymbolChrome.visibleSymbolCount < 24 ||
+    sharedSymbolChrome.visibleSymbolOverflow > 0 ||
+    sharedSymbolChrome.backgroundImageMismatchCount > 0 ||
+    sharedSymbolChrome.borderRadiusMismatchCount > 0 ||
+    sharedSymbolChrome.sizeMismatchCount > 0;
   if (
     dashboardNavCount !== viewNames.length ||
     dashboardNavSymbolCount !== viewNames.length ||
@@ -4114,6 +4227,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     mobileMoreNavCount !== overflowMobileViews.length ||
     mobileMoreBadgeCount !== overflowMobileViews.length ||
     dashboardGlyphBroken ||
+    sharedSymbolBroken ||
     mobileGlyphBroken ||
     populatedNavBadgeCount !== viewNames.length * 2 ||
     dashboardViewCount !== viewNames.length

@@ -2718,12 +2718,80 @@ test("admin login reaches dashboard", async ({ page, context }) => {
 
   await page.setViewportSize({ width: 390, height: 844 });
   await switchView("overview");
+  await page.evaluate(() => window.scrollTo(0, 0));
   const mobileDockVisible = await page.locator(".mobile-dock").isVisible();
   const mobileSidebarVisible = await page.locator(".dashboard-sidebar").isVisible();
   const mobileOverviewOverflow = await pageHorizontalOverflow();
   const mobileDockOverflow = await page.locator(".mobile-dock").evaluate((dock) =>
     Math.max(0, dock.scrollWidth - dock.clientWidth),
   );
+  const mobileCommandCenterMetrics = await page.locator("[data-view-command-center]").evaluate((center) => {
+    const main = center.querySelector(".workspace-command-main");
+    const rail = center.querySelector(".workspace-command-rail");
+    const actions = center.querySelector(".workspace-actions");
+    const insight = center.querySelector("#workspace-insight");
+    const status = center.querySelector(".workspace-session-controls");
+    const columnCount = (value) =>
+      !value || value === "none" ? 0 : value.split(" ").filter((part) => part.trim().length > 0).length;
+    const box = center.getBoundingClientRect();
+    const centerStyle = getComputedStyle(center);
+    return {
+      top: Math.round(box.top),
+      height: Math.round(box.height),
+      width: Math.round(box.width),
+      columnCount: columnCount(centerStyle.gridTemplateColumns),
+      rowCount: columnCount(centerStyle.gridTemplateRows),
+      position: centerStyle.position,
+      overflowX: Math.max(0, center.scrollWidth - center.clientWidth),
+      mainColumnCount: main ? columnCount(getComputedStyle(main).gridTemplateColumns) : 0,
+      railColumnCount: rail ? columnCount(getComputedStyle(rail).gridTemplateColumns) : 0,
+      actionsColumnCount: actions ? columnCount(getComputedStyle(actions).gridTemplateColumns) : 0,
+      insightColumnCount: insight ? columnCount(getComputedStyle(insight).gridTemplateColumns) : 0,
+      statusWidth: Math.round(status?.getBoundingClientRect().width || 0),
+    };
+  });
+  const mobileCommandCenterOverflowDetails = await page.locator("[data-view-command-center]").evaluate((center) => {
+    const centerBox = center.getBoundingClientRect();
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const details = [];
+    Array.from(
+      center.querySelectorAll(
+        ".workspace-command-main, .workspace-command-title, .workspace-title-row, .workspace-view-symbol, #view-title, .workspace-insight, .workspace-insight-symbol, .workspace-insight-copy, .workspace-insight-title, .workspace-insight-action, .workspace-command-rail, #view-context, #view-rail, .workspace-actions, .workspace-session-controls, #status, #view-primary-action, #refresh, #logout",
+      ),
+    )
+      .filter((element) => element.offsetParent !== null)
+      .forEach((element) => {
+        const buttonParent = element.closest("#view-primary-action, #refresh, #logout, .workspace-insight-action");
+        const parent = buttonParent && !element.matches("#view-primary-action, #refresh, #logout, .workspace-insight-action")
+          ? buttonParent.getBoundingClientRect()
+          : centerBox;
+        const box = element.getBoundingClientRect();
+        if (box.width > 0 && box.height > 0 && outside(box, parent)) {
+          details.push({
+            selector: element.id ? `#${element.id}` : element.className || element.tagName,
+            text: (element.textContent || "").trim().replace(/\s+/g, " ").slice(0, 80),
+            parent: {
+              left: Math.round(parent.left),
+              right: Math.round(parent.right),
+              top: Math.round(parent.top),
+              bottom: Math.round(parent.bottom),
+            },
+            box: {
+              left: Math.round(box.left),
+              right: Math.round(box.right),
+              top: Math.round(box.top),
+              bottom: Math.round(box.bottom),
+            },
+          });
+        }
+      });
+    return details;
+  });
+  const mobileCommandCenterOverflow = mobileCommandCenterOverflowDetails.length;
   await page.locator("[data-mobile-more-toggle]").click();
   const mobileMoreMenuVisible = await page.locator("#mobile-more-menu").isVisible();
   const mobileMoreMenuOverflow = await page.locator("#mobile-more-menu").evaluate((menu) =>
@@ -2931,6 +2999,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileSidebarVisible = mobileSidebarVisible;
   state.mobileOverviewOverflow = mobileOverviewOverflow;
   state.mobileDockOverflow = mobileDockOverflow;
+  state.mobileCommandCenterMetrics = mobileCommandCenterMetrics;
+  state.mobileCommandCenterOverflow = mobileCommandCenterOverflow;
+  state.mobileCommandCenterOverflowDetails = mobileCommandCenterOverflowDetails;
   state.mobileMoreMenuVisible = mobileMoreMenuVisible;
   state.mobileMoreMenuOverflow = mobileMoreMenuOverflow;
   state.mobileMoreMenuHidesAfterSelection = mobileMoreMenuHidesAfterSelection;
@@ -3565,6 +3636,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     !mobileNodesVisible ||
     !mobileOpsVisible ||
     mobileDockOverflow > 2 ||
+    !mobileCommandCenterMetrics ||
+    mobileCommandCenterMetrics.position !== "static" ||
+    mobileCommandCenterMetrics.top < 0 ||
+    mobileCommandCenterMetrics.height > 210 ||
+    mobileCommandCenterMetrics.columnCount !== 1 ||
+    mobileCommandCenterMetrics.rowCount < 3 ||
+    mobileCommandCenterMetrics.mainColumnCount !== 1 ||
+    mobileCommandCenterMetrics.railColumnCount !== 1 ||
+    mobileCommandCenterMetrics.actionsColumnCount !== 2 ||
+    mobileCommandCenterMetrics.insightColumnCount < 3 ||
+    mobileCommandCenterMetrics.overflowX > 2 ||
+    mobileCommandCenterOverflow > 0 ||
     mobileMoreMenuOverflow > 2 ||
     mobileOverviewOverflow > 2 ||
     mobilePoliciesOverflow > 2 ||

@@ -4162,37 +4162,152 @@ code {
     top: 8px;
   }
 
+  /* FluxGate UI v2 mobile command center */
   .workspace-command-center {
-    gap: 10px;
-    grid-template-columns: 1fr;
-    padding: 10px;
-    top: 8px;
+    align-items: stretch;
+    gap: 7px;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    max-width: 100%;
+    overflow: hidden;
+    padding: 8px;
+    position: static;
+    top: auto;
+  }
+
+  .workspace-command-center,
+  .workspace-command-center * {
+    box-sizing: border-box;
   }
 
   .workspace-command-main {
-    grid-template-columns: 1fr;
+    gap: 6px;
+    grid-column: 1;
+    grid-row: 1;
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .workspace-command-title {
+    gap: 2px;
+  }
+
+  .workspace-command-center .workspace-title-row {
+    gap: 7px;
+  }
+
+  .workspace-command-center .workspace-view-symbol {
+    height: 24px;
+    width: 24px;
+  }
+
+  .workspace-command-center h2 {
+    font-size: 18px;
+  }
+
+  .workspace-command-center #view-description {
+    display: none;
+  }
+
+  .workspace-command-center .workspace-insight {
+    align-items: center;
+    gap: 5px;
+    grid-template-columns: auto minmax(0, 1fr) max-content;
+    min-height: 32px;
+    overflow: hidden;
+    padding: 4px 5px;
+  }
+
+  .workspace-command-center .workspace-insight-symbol {
+    height: 22px;
+    width: 22px;
+  }
+
+  .workspace-command-center .workspace-insight-kicker,
+  .workspace-command-center .workspace-insight-detail {
+    display: none;
+  }
+
+  .workspace-command-center .workspace-insight-action {
+    grid-column: auto;
+    justify-self: end;
+    max-width: 96px;
+    min-height: 28px;
+    min-width: 0;
+    padding-inline: 6px;
+    width: auto;
+  }
+
+  .workspace-command-center .workspace-insight-action .button-label {
+    max-width: 54px;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .workspace-command-rail {
-    grid-column: auto;
-    grid-row: auto;
-    grid-template-columns: 1fr;
-    padding: 7px;
+    border-top: 1px solid var(--fg-line);
+    gap: 5px;
+    grid-column: 1;
+    grid-row: 3;
+    grid-template-columns: minmax(0, 1fr);
+    overflow: hidden;
+    padding: 6px 0 0;
+  }
+
+  .workspace-command-rail #view-context {
+    display: none;
+  }
+
+  .workspace-command-rail .view-rail {
+    max-width: 100%;
+    min-width: 0;
+    padding-bottom: 0;
+  }
+
+  .workspace-command-rail .view-rail-button {
+    min-height: 24px;
   }
 
   .workspace-command-center .workspace-actions {
-    grid-column: auto;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    gap: 5px;
+    grid-column: 1;
     grid-auto-flow: row;
-    grid-row: auto;
+    grid-row: 2;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     min-width: 0;
+    padding: 0;
+    width: 100%;
+  }
+
+  .workspace-command-center .workspace-actions .primary-link-button,
+  .workspace-command-center .workspace-actions .ghost-button {
+    min-height: 32px;
     width: 100%;
   }
 
   .workspace-session-controls {
     grid-column: 1 / -1;
     justify-content: space-between;
+    min-height: 30px;
+    overflow: hidden;
+    padding: 2px;
     width: 100%;
+  }
+
+  .workspace-session-controls .status {
+    flex: 1 1 auto;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .workspace-command-center .workspace-session-controls #logout {
+    flex: 0 0 auto;
+    max-width: 86px;
+    width: auto;
   }
 
   .content-panel > .panel-header {

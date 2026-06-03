@@ -1015,6 +1015,27 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return total;
     }, 0);
   });
+  const overviewControlRoomMetrics = await page.evaluate(() => {
+    const columnCount = (value) =>
+      !value || value === "none" ? 0 : value.split(" ").filter((part) => part.trim().length > 0).length;
+    const hero = document.querySelector("#overview-hero");
+    const stats = document.querySelector("#overview-hero .overview-hero-stats");
+    const metrics = document.querySelector("#metrics");
+    const metricBoxes = Array.from(document.querySelectorAll("#metrics .metric")).map((metric) => metric.getBoundingClientRect());
+    if (!hero || !metrics || metricBoxes.length === 0) {
+      return null;
+    }
+    const heroBox = hero.getBoundingClientRect();
+    return {
+      heroHeight: Math.round(heroBox.height),
+      heroColumnCount: columnCount(getComputedStyle(hero).gridTemplateColumns),
+      heroStatsColumnCount: stats ? columnCount(getComputedStyle(stats).gridTemplateColumns) : 0,
+      heroOverflowX: Math.max(0, hero.scrollWidth - hero.clientWidth),
+      metricColumnCount: columnCount(getComputedStyle(metrics).gridTemplateColumns),
+      metricMaxHeight: Math.round(Math.max(...metricBoxes.map((box) => box.height))),
+      metricOverflowX: Math.max(0, metrics.scrollWidth - metrics.clientWidth),
+    };
+  });
   const overviewInsightPanelCount = await page.locator("#overview-insights [data-overview-insight]").count();
   const overviewInsightSymbolCount = await page.locator("#overview-insights .overview-insight-symbol").count();
   const overviewInsightTitleCount = await page.locator("#overview-insights .overview-insight-title").count();
@@ -2750,6 +2771,26 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       statusWidth: Math.round(status?.getBoundingClientRect().width || 0),
     };
   });
+  const mobileOverviewControlMetrics = await page.evaluate(() => {
+    const columnCount = (value) =>
+      !value || value === "none" ? 0 : value.split(" ").filter((part) => part.trim().length > 0).length;
+    const hero = document.querySelector("#overview-hero");
+    const stats = document.querySelector("#overview-hero .overview-hero-stats");
+    const metrics = document.querySelector("#metrics");
+    const metricBoxes = Array.from(document.querySelectorAll("#metrics .metric")).map((metric) => metric.getBoundingClientRect());
+    if (!hero || !metrics || metricBoxes.length === 0) {
+      return null;
+    }
+    const heroBox = hero.getBoundingClientRect();
+    return {
+      heroHeight: Math.round(heroBox.height),
+      heroStatsColumnCount: stats ? columnCount(getComputedStyle(stats).gridTemplateColumns) : 0,
+      heroOverflowX: Math.max(0, hero.scrollWidth - hero.clientWidth),
+      metricColumnCount: columnCount(getComputedStyle(metrics).gridTemplateColumns),
+      metricMaxHeight: Math.round(Math.max(...metricBoxes.map((box) => box.height))),
+      metricOverflowX: Math.max(0, metrics.scrollWidth - metrics.clientWidth),
+    };
+  });
   const mobileCommandCenterOverflowDetails = await page.locator("[data-view-command-center]").evaluate((center) => {
     const centerBox = center.getBoundingClientRect();
     const outside = (child, parent) =>
@@ -2945,6 +2986,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.overviewMetricSymbolCount = overviewMetricSymbolCount;
   state.overviewMetricValueCount = overviewMetricValueCount;
   state.overviewMetricOverflowCount = overviewMetricOverflowCount;
+  state.overviewControlRoomMetrics = overviewControlRoomMetrics;
   state.overviewInsightPanelCount = overviewInsightPanelCount;
   state.overviewInsightSymbolCount = overviewInsightSymbolCount;
   state.overviewInsightTitleCount = overviewInsightTitleCount;
@@ -3000,6 +3042,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileOverviewOverflow = mobileOverviewOverflow;
   state.mobileDockOverflow = mobileDockOverflow;
   state.mobileCommandCenterMetrics = mobileCommandCenterMetrics;
+  state.mobileOverviewControlMetrics = mobileOverviewControlMetrics;
   state.mobileCommandCenterOverflow = mobileCommandCenterOverflow;
   state.mobileCommandCenterOverflowDetails = mobileCommandCenterOverflowDetails;
   state.mobileMoreMenuVisible = mobileMoreMenuVisible;
@@ -3647,6 +3690,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     mobileCommandCenterMetrics.actionsColumnCount !== 2 ||
     mobileCommandCenterMetrics.insightColumnCount < 3 ||
     mobileCommandCenterMetrics.overflowX > 2 ||
+    !mobileOverviewControlMetrics ||
+    mobileOverviewControlMetrics.heroHeight > 220 ||
+    mobileOverviewControlMetrics.heroStatsColumnCount !== 3 ||
+    mobileOverviewControlMetrics.heroOverflowX > 2 ||
+    mobileOverviewControlMetrics.metricColumnCount !== 2 ||
+    mobileOverviewControlMetrics.metricMaxHeight > 104 ||
+    mobileOverviewControlMetrics.metricOverflowX > 2 ||
     mobileCommandCenterOverflow > 0 ||
     mobileMoreMenuOverflow > 2 ||
     mobileOverviewOverflow > 2 ||
@@ -3965,7 +4015,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     overviewMetricCount !== 6 ||
     overviewMetricSymbolCount !== 6 ||
     overviewMetricValueCount !== 6 ||
-    overviewMetricOverflowCount > 0
+    overviewMetricOverflowCount > 0 ||
+    !overviewControlRoomMetrics ||
+    overviewControlRoomMetrics.heroHeight > 145 ||
+    overviewControlRoomMetrics.heroColumnCount !== 2 ||
+    overviewControlRoomMetrics.heroStatsColumnCount !== 3 ||
+    overviewControlRoomMetrics.heroOverflowX > 2 ||
+    overviewControlRoomMetrics.metricColumnCount !== 6 ||
+    overviewControlRoomMetrics.metricMaxHeight > 94 ||
+    overviewControlRoomMetrics.metricOverflowX > 2
   ) {
     throw new Error(`overview metric cards are incomplete or overflowing: ${JSON.stringify(state)}`);
   }

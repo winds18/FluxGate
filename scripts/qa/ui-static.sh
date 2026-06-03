@@ -128,6 +128,8 @@ require_pattern "$CALM_CSS_FILE" '--fg-command-rail-bg: #f8fafc;' "workspace com
 require_pattern "$CALM_CSS_FILE" '\.workspace-command-center \{' "workspace command center shell must be visually governed"
 require_pattern "$CALM_CSS_FILE" '\.workspace-command-main \{' "workspace command center main lane must be visually governed"
 require_pattern "$CALM_CSS_FILE" '\.workspace-command-rail \{' "workspace command center rail lane must be visually governed"
+require_multiline_pattern "$CALM_CSS_FILE" '\.workspace-command-center \{[^}]*box-shadow: var\(--fg-soft-shadow\);' "workspace command center must use the quiet toolbar shadow, not panel shadow"
+require_multiline_pattern "$CALM_CSS_FILE" '\.workspace-command-rail \{[^}]*background: transparent;' "workspace command rail must read as a flat toolbar strip"
 require_pattern "$CALM_CSS_FILE" 'grid-column: 1 / -1;' "workspace command rail must collapse into a compact full-width tool strip"
 require_pattern "$APP_FILE" 'document\.body\.classList\.toggle\("is-authenticated"' "authenticated shell must mark body state for desktop layout"
 require_pattern "$CALM_CSS_FILE" 'FluxGate UI v2 authenticated shell' "authenticated shell layout layer must be documented in CSS"

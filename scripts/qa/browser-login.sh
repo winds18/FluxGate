@@ -277,6 +277,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       boxShadow: style.boxShadow,
       display: style.display,
       gridTemplateColumns: style.gridTemplateColumns,
+      usesHeavyShadow: /14px 38px|18px 44px|20px 54px/.test(style.boxShadow) ? 1 : 0,
     };
   });
   const workspaceCommandCenterMetrics = await page.evaluate(() => {
@@ -3165,7 +3166,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     authenticatedShellLayout.commandCenterTop > 32 ||
     authenticatedShellLayout.overlapsCommandCenter !== 0 ||
     workspaceCommandCenterStyle.display !== "grid" ||
-    workspaceCommandCenterMetrics.height > 136 ||
+    workspaceCommandCenterMetrics.height > 112 ||
     workspaceCommandCenterMetrics.columnCount > 2 ||
     workspaceCommandCenterMetrics.mainColumnCount < 2 ||
     workspaceCommandCenterMetrics.railGridColumnStart !== "1" ||
@@ -3175,6 +3176,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     workspaceCommandCenterStyle.backgroundImage !== "none" ||
     !workspaceCommandCenterStyle.borderRadius.startsWith("8px") ||
     workspaceCommandCenterStyle.boxShadow === "none" ||
+    workspaceCommandCenterStyle.usesHeavyShadow !== 0 ||
     overflowingCommandCenter ||
     scrollingCommandRail
   ) {

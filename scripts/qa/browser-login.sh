@@ -3638,13 +3638,18 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     count: new Set(workbenchStyleEntries.map((entry) => entry.selector)).size,
     entries: workbenchStyleEntries,
     mismatches: workbenchStyleEntries.filter(
-      (entry) =>
-        entry.backgroundColor !== "rgb(255, 255, 255)" ||
-        entry.backgroundImage !== "none" ||
-        !entry.borderRadius.startsWith("8px") ||
-        entry.borderColor === "rgba(0, 0, 0, 0)" ||
-        entry.boxShadow === "none" ||
-        entry.maxInnerCardHeight > 78,
+      (entry) => {
+        const maxWorkbenchHeight = entry.selector.includes("ops") ? 250 : 190;
+        return (
+          entry.backgroundColor !== "rgb(255, 255, 255)" ||
+          entry.backgroundImage !== "none" ||
+          !entry.borderRadius.startsWith("8px") ||
+          entry.borderColor === "rgba(0, 0, 0, 0)" ||
+          entry.boxShadow === "none" ||
+          entry.maxInnerCardHeight > 70 ||
+          entry.height > maxWorkbenchHeight
+        );
+      },
     ),
   };
 

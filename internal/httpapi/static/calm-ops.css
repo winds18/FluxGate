@@ -4555,6 +4555,7 @@ button[type="submit"]:hover,
 }
 
 /* FluxGate UI v2 compact module workbenches */
+/* FluxGate UI v2 dense module workbench rhythm */
 .token-workbench,
 .identity-workbench,
 .source-workbench,
@@ -4565,13 +4566,13 @@ button[type="submit"]:hover,
 .ops-workbench {
   background: var(--fg-workbench-bg);
   background-image: none;
-  gap: 8px;
-  margin: 10px 12px 12px;
-  padding: 10px;
+  gap: 6px;
+  margin: 8px 10px 10px;
+  padding: 8px;
 }
 
 .identity-workbench {
-  margin: 0 0 12px;
+  margin: 0 0 10px;
 }
 
 .token-workbench-heading,
@@ -4582,8 +4583,8 @@ button[type="submit"]:hover,
 .policy-workbench-heading,
 .traffic-workbench-heading,
 .ops-workbench-heading {
-  gap: 8px;
-  min-height: 32px;
+  gap: 6px;
+  min-height: 28px;
 }
 
 .token-workbench-symbol,
@@ -4694,6 +4695,39 @@ button[type="submit"]:hover,
   width: var(--fg-shared-symbol-size-sm);
 }
 
+/* FluxGate UI v2 dense module workbench symbols */
+.token-workbench-symbol,
+.token-workbench-format-symbol,
+.identity-workbench-symbol,
+.identity-workbench-stat-symbol,
+.identity-workbench-stage-symbol,
+.source-workbench-symbol,
+.source-workbench-stat-symbol,
+.source-workbench-type-symbol,
+.node-workbench-symbol,
+.node-workbench-stat-symbol,
+.node-workbench-region-symbol,
+.virtual-node-workbench-symbol,
+.virtual-node-workbench-stat-symbol,
+.virtual-node-workbench-strategy-symbol,
+.policy-workbench-symbol,
+.policy-workbench-stat-symbol,
+.policy-workbench-scope-symbol,
+.traffic-workbench-symbol,
+.traffic-workbench-stat-symbol,
+.traffic-workbench-signal-symbol,
+.ops-workbench-symbol,
+.ops-workbench-stat-symbol,
+.ops-workbench-step-symbol {
+  border-radius: 8px;
+  font-size: 11px;
+  height: 24px;
+  max-width: 24px;
+  min-height: 24px;
+  min-width: 24px;
+  width: 24px;
+}
+
 .workspace-command-center .workspace-insight-symbol {
   height: 20px;
   max-width: 20px;
@@ -4777,9 +4811,9 @@ button[type="submit"]:hover,
 .ops-workbench-stat,
 .ops-workbench-step-card {
   border-radius: 7px;
-  gap: 7px;
-  min-height: 48px;
-  padding: 8px;
+  gap: 5px;
+  min-height: 44px;
+  padding: 6px;
 }
 
 .token-workbench-stat strong,
@@ -4790,8 +4824,8 @@ button[type="submit"]:hover,
 .policy-workbench-stat-value,
 .traffic-workbench-stat-value,
 .ops-workbench-stat-value {
-  font-size: 15px;
-  line-height: 1.15;
+  font-size: 14px;
+  line-height: 1.12;
 }
 
 .token-workbench-format-card,
@@ -4802,7 +4836,7 @@ button[type="submit"]:hover,
 .policy-workbench-scope-card,
 .traffic-workbench-signal-card,
 .ops-workbench-step-card {
-  min-height: 50px;
+  min-height: 44px;
 }
 
 .token-workbench-format-hint,
@@ -4816,7 +4850,7 @@ button[type="submit"]:hover,
 .ops-workbench-step-state {
   font-size: 10px;
   max-width: 128px;
-  padding: 3px 7px;
+  padding: 2px 6px;
 }
 
 .token-workbench-command-strip .table-button {

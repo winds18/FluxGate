@@ -5161,6 +5161,180 @@ a.table-button:hover {
   box-shadow: var(--fg-shadow-hover);
 }
 
+/* FluxGate UI v2 dense repeated card rhythm */
+.source-card-list,
+.identity-card-list,
+.virtual-node-card-list,
+.policy-card-list,
+.node-card-grid,
+.token-card-list {
+  gap: 8px;
+  padding: 8px;
+}
+
+.source-card,
+.identity-card,
+.virtual-node-card,
+.policy-card,
+.token-card {
+  background: #ffffff;
+  border: 1px solid var(--fg-border-base);
+  border-radius: 8px;
+  box-shadow: var(--fg-shadow-flat);
+  display: grid;
+  gap: 8px;
+  overflow: hidden;
+  padding: 10px;
+}
+
+.node-card-main {
+  background: #ffffff;
+  border: 1px solid var(--fg-border-base);
+  border-radius: 8px;
+  box-shadow: var(--fg-shadow-flat);
+  display: grid;
+  gap: 8px;
+  min-height: 110px;
+  overflow: hidden;
+  padding: 10px 54px 10px 10px;
+}
+
+.source-card-heading,
+.identity-card-heading,
+.virtual-node-card-heading,
+.policy-card-heading,
+.token-card-heading,
+.node-card-heading {
+  align-items: start;
+  flex-wrap: nowrap;
+  gap: 7px;
+}
+
+.source-card-heading > div,
+.identity-card-heading > div,
+.virtual-node-card-heading > div,
+.policy-card-heading > div,
+.token-card-heading > div,
+.node-card-copy {
+  flex: 1 1 auto;
+  gap: 2px;
+  min-width: 0;
+}
+
+.source-card-heading span,
+.identity-card-heading span,
+.virtual-node-card-heading span,
+.policy-card-heading span,
+.token-card-heading span,
+.source-card-field span,
+.identity-card-field span,
+.virtual-node-card-field span,
+.policy-card-field span,
+.token-card-field span {
+  font-size: 11px;
+  line-height: 1.2;
+}
+
+.source-card-heading strong,
+.identity-card-heading strong,
+.virtual-node-card-heading strong,
+.policy-card-heading strong,
+.token-card-heading strong {
+  font-size: 14px;
+  line-height: 1.25;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.node-card-title {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  font-size: 14px;
+  line-height: 1.25;
+  max-height: 2.5em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.source-card-summary,
+.identity-card-summary,
+.virtual-node-card-summary,
+.policy-card-summary,
+.token-card-summary {
+  gap: 4px;
+}
+
+.source-card-summary-chip,
+.identity-card-summary-chip,
+.virtual-node-card-summary-chip,
+.policy-card-summary-chip,
+.token-card-summary-chip,
+.source-type-badge,
+.identity-card-badge,
+.virtual-node-listen-badge,
+.policy-scope-badge {
+  font-size: 11px;
+  min-height: 22px;
+  padding: 0 7px;
+}
+
+.source-card-grid,
+.identity-card-grid,
+.virtual-node-card-grid,
+.policy-card-grid,
+.token-card-grid {
+  gap: 6px;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 150px), 1fr));
+}
+
+.source-card-field,
+.identity-card-field,
+.virtual-node-card-field,
+.policy-card-field,
+.token-card-field,
+.token-card-meter {
+  background: var(--fg-surface-subtle);
+  border-color: var(--fg-border-base);
+  border-radius: 6px;
+  gap: 3px;
+  padding: 7px 8px;
+}
+
+.source-card-field strong,
+.identity-card-field strong,
+.virtual-node-card-field strong,
+.policy-card-field strong,
+.token-card-field strong {
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  display: -webkit-box;
+  line-height: 1.25;
+  max-height: 2.6em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.token-card-subscriptions,
+.token-card-control {
+  gap: 6px;
+}
+
+.token-action-group,
+.token-command-group {
+  padding: 8px;
+}
+
+.token-card-actions {
+  gap: 8px;
+}
+
+.node-card-chip-row,
+.node-card-tags {
+  gap: 4px;
+}
+
 @media (max-width: 1180px) {
   .app-shell {
     grid-template-columns: 204px minmax(0, 1fr);

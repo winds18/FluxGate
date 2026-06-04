@@ -270,6 +270,87 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     }, selectors);
     workbenchStyleEntries.push(...entries);
   };
+  const cardRhythmEntries = [];
+  const collectCardRhythm = async (selectors) => {
+    const entries = await page.evaluate((requestedSelectors) => {
+      const isVisible = (element) => element.offsetParent !== null;
+      const outside = (child, parent) =>
+        child.left < parent.left - 1 ||
+        child.right > parent.right + 1 ||
+        child.top < parent.top - 1 ||
+        child.bottom > parent.bottom + 1;
+      const cardChildSelectors = [
+        ".token-card-heading",
+        ".source-card-heading",
+        ".identity-card-heading",
+        ".virtual-node-card-heading",
+        ".policy-card-heading",
+        ".node-card-heading",
+        ".token-card-summary",
+        ".source-card-summary",
+        ".identity-card-summary",
+        ".virtual-node-card-summary",
+        ".policy-card-summary",
+        "[data-token-summary-chip]",
+        "[data-source-summary-chip]",
+        "[data-identity-summary-chip]",
+        "[data-virtual-node-summary-chip]",
+        "[data-policy-summary-chip]",
+        ".token-card-field",
+        ".source-card-field",
+        ".identity-card-field",
+        ".virtual-node-card-field",
+        ".policy-card-field",
+        ".node-card-chip-row",
+        "[data-node-card-chip]",
+        ".token-card-actions",
+        ".source-actions",
+        ".identity-card-actions",
+        ".virtual-node-actions",
+        ".policy-actions",
+        ".node-actions",
+      ].join(",");
+      return requestedSelectors.flatMap((selector) =>
+        Array.from(document.querySelectorAll(selector))
+          .filter(isVisible)
+          .slice(0, 4)
+          .map((element) => {
+            const style = getComputedStyle(element);
+            const box = element.getBoundingClientRect();
+            const children = Array.from(element.querySelectorAll(cardChildSelectors)).filter(isVisible);
+            const childOverflowCount = children.reduce((total, child) => {
+              const childBox = child.getBoundingClientRect();
+              return total + (childBox.width > 0 && childBox.height > 0 && outside(childBox, box) ? 1 : 0);
+            }, 0);
+            const fieldHeights = children
+              .filter((child) =>
+                child.matches(
+                  ".token-card-field, .source-card-field, .identity-card-field, .virtual-node-card-field, .policy-card-field, [data-node-card-chip]",
+                ),
+              )
+              .map((child) => Math.round(child.getBoundingClientRect().height));
+            return {
+              selector,
+              backgroundColor: style.backgroundColor,
+              borderColor: style.borderColor,
+              borderRadius: style.borderRadius,
+              boxShadow: style.boxShadow,
+              display: style.display,
+              gap: Number.parseFloat(style.gap || "0") || 0,
+              overflow: style.overflow,
+              paddingTop: Number.parseFloat(style.paddingTop || "0") || 0,
+              paddingRight: Number.parseFloat(style.paddingRight || "0") || 0,
+              paddingBottom: Number.parseFloat(style.paddingBottom || "0") || 0,
+              paddingLeft: Number.parseFloat(style.paddingLeft || "0") || 0,
+              childOverflowCount,
+              maxFieldHeight: Math.max(0, ...fieldHeights),
+              height: Math.round(box.height),
+            };
+          }),
+      );
+    }, selectors);
+    cardRhythmEntries.push(...entries);
+  };
   const pageHorizontalOverflow = async () =>
     page.evaluate(() => Math.max(0, document.documentElement.scrollWidth - window.innerWidth));
   const dashboardNavCount = await page.locator(".dashboard-sidebar [data-view-nav]").count();
@@ -2304,6 +2385,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       }, 0),
     };
   });
+  if (tokenCardCount > 0) {
+    await collectCardRhythm(["#tokens .token-card"]);
+  }
   const tokenSubscriptionCodeLayout = await page.evaluate(() => {
     const codes = Array.from(document.querySelectorAll("#tokens .token-subscription-item code")).filter(
       (element) => element.offsetParent !== null,
@@ -2561,6 +2645,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return total;
     }, 0);
   });
+  if (teamCardCount + userCardCount > 0) {
+    await collectCardRhythm(["#teams .identity-card", "#users .identity-card"]);
+  }
   const teamEditCount = await page.locator("#teams button[data-team-action='edit']").count();
   let teamEditFieldsVisible = false;
   if (teamEditCount > 0) {
@@ -2648,6 +2735,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return total;
     }, 0);
   });
+  if (sourceCardCount > 0) {
+    await collectCardRhythm(["#sources .source-card"]);
+  }
   const sourceActionToolbarChrome = await page.evaluate(() => {
     const isVisible = (element) => element.offsetParent !== null;
     const outside = (child, parent) =>
@@ -2859,6 +2949,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return total;
     }, 0);
   });
+  if (virtualNodeCardCount > 0) {
+    await collectCardRhythm(["#virtual-nodes .virtual-node-card"]);
+  }
   const virtualNodeEditCount = await page.locator("#virtual-nodes button[data-virtual-node-action='edit']").count();
   let virtualNodeEditFieldsVisible = false;
   if (virtualNodeEditCount > 0) {
@@ -2941,6 +3034,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       return total;
     }, 0);
   });
+  if (policyCardCount > 0) {
+    await collectCardRhythm(["#policies .policy-card"]);
+  }
   const policyEditCount = await page.locator("#policies button[data-policy-action='edit']").count();
   let policyEditFieldsVisible = false;
   if (policyEditCount > 0) {
@@ -3114,6 +3210,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         return total;
       }, 0);
     });
+    if (nodeCardCount > 0) {
+      await collectCardRhythm(["#nodes .node-card-main"]);
+    }
   }
 
   const nodeEditCount = await page.locator("#nodes button[data-node-action='edit']").count();
@@ -3652,6 +3751,29 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       },
     ),
   };
+  const unifiedCardRhythmStyles = {
+    count: new Set(cardRhythmEntries.map((entry) => entry.selector)).size,
+    entries: cardRhythmEntries,
+    mismatches: cardRhythmEntries.filter((entry) => {
+      const isNodeCardMain = entry.selector === "#nodes .node-card-main";
+      const expectedMaxFieldHeight = isNodeCardMain ? 54 : 66;
+      const expectedMaxPaddingRight = isNodeCardMain ? 58 : 11;
+      return (
+        entry.backgroundColor !== "rgb(255, 255, 255)" ||
+        entry.borderColor === "rgba(0, 0, 0, 0)" ||
+        !entry.borderRadius.startsWith("8px") ||
+        entry.boxShadow === "none" ||
+        entry.display !== "grid" ||
+        entry.gap > 9 ||
+        entry.paddingTop > 11 ||
+        entry.paddingRight > expectedMaxPaddingRight ||
+        entry.paddingBottom > 11 ||
+        entry.paddingLeft > 11 ||
+        entry.childOverflowCount > 0 ||
+        entry.maxFieldHeight > expectedMaxFieldHeight
+      );
+    }),
+  };
 
   const state = await page.evaluate(() => ({
     loginHidden: document.querySelector("#login-view")?.hidden,
@@ -3680,6 +3802,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardModuleGlyphChrome = dashboardModuleGlyphChrome;
   state.sharedSymbolChrome = sharedSymbolChrome;
   state.actionButtonIconChrome = actionButtonIconChrome;
+  state.unifiedCardRhythmStyles = unifiedCardRhythmStyles;
   state.dashboardNavLabels = dashboardNavLabels;
   state.mobileDockCount = mobileDockCount;
   state.mobileDockDirectNavCount = mobileDockDirectNavCount;
@@ -4172,6 +4295,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (unifiedWorkbenchStyles.count < 8 || unifiedWorkbenchStyles.mismatches.length > 0) {
     throw new Error(`module workbenches do not share the v2 surface style: ${JSON.stringify(state)}`);
+  }
+  if (unifiedCardRhythmStyles.count < 6 || unifiedCardRhythmStyles.mismatches.length > 0) {
+    throw new Error(`repeated module cards do not share the dense v2 rhythm: ${JSON.stringify(state)}`);
   }
   if (
     identityWorkbenchCount !== 1 ||

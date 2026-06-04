@@ -780,6 +780,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     };
     const whiteSurface = "rgb(255, 255, 255)";
     const quietSurface = "rgb(248, 250, 252)";
+    const heavyShadowPattern = /10px 26px|14px 38px|18px 44px|20px 54px/;
     const mismatches = [];
     ["command", "contentPanel", "workbench", "metric"].forEach((key) => {
       const entry = samples[key];
@@ -793,8 +794,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
         mismatches.push(key);
       }
     });
+    const heavyShadowSamples = Object.entries(samples)
+      .filter(([, entry]) => entry && heavyShadowPattern.test(entry.boxShadow))
+      .map(([key]) => key);
     return {
       tokens: {
+        panelShadow: token("--fg-panel-shadow"),
         surfaceBase: token("--fg-surface-base"),
         surfaceSubtle: token("--fg-surface-subtle"),
         borderBase: token("--fg-border-base"),
@@ -803,6 +808,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       },
       samples,
       mismatches,
+      heavyShadowSamples,
     };
   });
   const visibleContentPanelHeaderOverflow = async () => page.evaluate(() => {
@@ -4081,12 +4087,16 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   }
   if (
     !visualBaselineStyles ||
+    visualBaselineStyles.tokens.panelShadow !==
+      "0 1px 2px rgba(15, 23, 42, 0.045), 0 6px 16px rgba(15, 23, 42, 0.035)" ||
     visualBaselineStyles.tokens.surfaceBase !== "#ffffff" ||
     visualBaselineStyles.tokens.surfaceSubtle !== "#f8fafc" ||
     visualBaselineStyles.tokens.borderBase !== "#e4eaf2" ||
-    !visualBaselineStyles.tokens.shadowRaised ||
+    visualBaselineStyles.tokens.shadowRaised !==
+      "0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.032)" ||
     !visualBaselineStyles.tokens.shadowHover ||
-    visualBaselineStyles.mismatches.length > 0
+    visualBaselineStyles.mismatches.length > 0 ||
+    visualBaselineStyles.heavyShadowSamples.length > 0
   ) {
     throw new Error(`modern visual baseline is incomplete or not applied: ${JSON.stringify(state)}`);
   }

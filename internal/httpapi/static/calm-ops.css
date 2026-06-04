@@ -3232,7 +3232,7 @@ body.has-form-drawer-open::before {
   --fg-page-bg: #f5f7fb;
   --fg-sidebar-bg: #ffffff;
   --fg-sidebar-border: #e5eaf0;
-  --fg-panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.05), 0 14px 38px rgba(15, 23, 42, 0.06);
+  --fg-panel-shadow: 0 1px 2px rgba(15, 23, 42, 0.045), 0 6px 16px rgba(15, 23, 42, 0.035);
   --fg-soft-shadow: 0 1px 2px rgba(15, 23, 42, 0.05);
   --fg-blue: #1769e0;
   --fg-blue-soft: #eef5ff;
@@ -3261,8 +3261,8 @@ body.has-form-drawer-open::before {
   --fg-border-base: #e4eaf2;
   --fg-border-strong: #d5dde8;
   --fg-shadow-flat: 0 1px 2px rgba(15, 23, 42, 0.05);
-  --fg-shadow-raised: 0 1px 2px rgba(15, 23, 42, 0.05), 0 10px 26px rgba(15, 23, 42, 0.055);
-  --fg-shadow-hover: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --fg-shadow-raised: 0 1px 2px rgba(15, 23, 42, 0.04), 0 4px 12px rgba(15, 23, 42, 0.032);
+  --fg-shadow-hover: 0 8px 18px rgba(15, 23, 42, 0.06);
   --fg-mobile-dock-bottom: 10px;
   --fg-mobile-dock-height: 60px;
   --fg-mobile-dock-menu-gap: 6px;
@@ -5029,6 +5029,7 @@ code {
   box-shadow: var(--fg-panel-shadow);
 }
 
+/* FluxGate UI v2 quiet elevation */
 /* FluxGate UI v2 visual baseline */
 .workspace-command-center,
 .content-panel,
@@ -5054,7 +5055,7 @@ code {
 }
 
 .content-panel {
-  box-shadow: var(--fg-shadow-raised);
+  box-shadow: var(--fg-panel-shadow);
 }
 
 .content-panel > .panel-header,

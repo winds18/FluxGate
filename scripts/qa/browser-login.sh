@@ -337,6 +337,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     };
     const sidebarBox = sidebar?.getBoundingClientRect();
     const markBox = mark?.getBoundingClientRect();
+    const navIconKeys = navSymbols.map((symbol) => symbol.dataset.moduleIconKey || symbol.querySelector(".module-icon")?.dataset.moduleIconKey || "");
+    const navSvgCount = navSymbols.filter((symbol) => symbol.querySelector(".module-icon")).length;
+    const navFallbackTexts = navSymbols.map((symbol) => symbol.querySelector(".symbol-fallback")?.textContent?.trim() || "");
     const navSymbolOverflow = navSymbols.reduce((total, symbol) => {
       const navItem = symbol.closest(".nav-item");
       const symbolBox = symbol.getBoundingClientRect();
@@ -347,10 +350,15 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       activeSymbol: styleBox(activeSymbol),
       inactiveSymbol: styleBox(inactiveSymbol),
       mark: styleBox(mark),
+      markIconKey: mark?.dataset.moduleIconKey || mark?.querySelector(".module-icon")?.dataset.moduleIconKey || "",
       markInsideSidebar:
         sidebarBox && markBox && markBox.left >= sidebarBox.left - 1 && markBox.right <= sidebarBox.right + 1 ? 1 : 0,
+      markSvgCount: mark?.querySelectorAll(".module-icon").length || 0,
+      navFallbackTexts,
+      navIconKeys,
       navSymbolCount: navSymbols.length,
       navSymbolOverflow,
+      navSvgCount,
     };
   });
   const sharedSymbolChrome = await page.evaluate(() => {
@@ -3360,16 +3368,20 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       const buttonBox = button?.getBoundingClientRect();
       return total + (buttonBox && symbolBox.width > 0 && symbolBox.height > 0 && outside(symbolBox, buttonBox) ? 1 : 0);
     }, 0);
+    const dockIconKeys = dockSymbols.map((symbol) => symbol.dataset.moduleIconKey || symbol.querySelector(".module-icon")?.dataset.moduleIconKey || "");
+    const dockSvgCount = dockSymbols.filter((symbol) => symbol.querySelector(".module-icon")).length;
     const dockBox = dock?.getBoundingClientRect();
     const symbolWidthMin = Math.min(...dockSymbols.map((symbol) => Math.round(symbol.getBoundingClientRect().width)));
     const symbolHeightMin = Math.min(...dockSymbols.map((symbol) => Math.round(symbol.getBoundingClientRect().height)));
     return {
       activeSymbol: styleBox(activeSymbol),
       inactiveSymbol: styleBox(inactiveSymbol),
+      dockIconKeys,
       dockInsideViewport:
         dockBox && dockBox.left >= -1 && dockBox.right <= window.innerWidth + 1 && dockBox.bottom <= window.innerHeight + 1 ? 1 : 0,
       dockSymbolCount: dockSymbols.length,
       dockSymbolOverflow,
+      dockSvgCount,
       symbolHeightMin: Number.isFinite(symbolHeightMin) ? symbolHeightMin : 0,
       symbolWidthMin: Number.isFinite(symbolWidthMin) ? symbolWidthMin : 0,
     };
@@ -4496,8 +4508,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const dashboardGlyphBroken =
     !dashboardModuleGlyphChrome ||
     dashboardModuleGlyphChrome.navSymbolCount !== viewNames.length ||
+    dashboardModuleGlyphChrome.navSvgCount !== viewNames.length ||
+    viewNames.some((view, index) => dashboardModuleGlyphChrome.navIconKeys[index] !== view) ||
+    dashboardModuleGlyphChrome.navFallbackTexts.some((text) => !text) ||
     dashboardModuleGlyphChrome.navSymbolOverflow > 0 ||
     dashboardModuleGlyphChrome.markInsideSidebar !== 1 ||
+    dashboardModuleGlyphChrome.markIconKey !== "brand" ||
+    dashboardModuleGlyphChrome.markSvgCount !== 1 ||
     !dashboardModuleGlyphChrome.mark ||
     dashboardModuleGlyphChrome.mark.width !== 32 ||
     dashboardModuleGlyphChrome.mark.height !== 32 ||
@@ -4513,6 +4530,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const mobileGlyphBroken =
     !mobileModuleGlyphChrome ||
     mobileModuleGlyphChrome.dockSymbolCount !== 5 ||
+    mobileModuleGlyphChrome.dockSvgCount !== 5 ||
+    ["overview", "access", "nodes", "identity", "more"].some((view, index) => mobileModuleGlyphChrome.dockIconKeys[index] !== view) ||
     mobileModuleGlyphChrome.dockSymbolOverflow > 0 ||
     mobileModuleGlyphChrome.dockInsideViewport !== 1 ||
     mobileModuleGlyphChrome.symbolWidthMin < 23 ||

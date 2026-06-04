@@ -37,7 +37,7 @@
     <main id="app-view" class="app-shell" hidden>
       <aside class="dashboard-sidebar" aria-label="主导航">
         <div class="sidebar-brand">
-          <span class="sidebar-mark">FG</span>
+          <span class="sidebar-mark" data-module-icon="brand">FG</span>
           <div>
             <strong>FluxGate</strong>
             <small>控制面板</small>
@@ -46,7 +46,7 @@
         <nav class="side-nav">
           <div class="side-nav-section-title" aria-hidden="true">日常操作</div>
           <button class="nav-item" type="button" data-view-nav="overview">
-            <span class="nav-symbol" aria-hidden="true">概</span>
+            <span class="nav-symbol" data-module-icon="overview" aria-hidden="true">概</span>
             <span class="nav-copy">
               <span class="nav-label">概览</span>
               <small>运行状态</small>
@@ -54,7 +54,7 @@
             <span class="nav-stat" data-view-count="overview">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="access">
-            <span class="nav-symbol" aria-hidden="true">源</span>
+            <span class="nav-symbol" data-module-icon="access" aria-hidden="true">源</span>
             <span class="nav-copy">
               <span class="nav-label">接入</span>
               <small>来源与导入</small>
@@ -62,7 +62,7 @@
             <span class="nav-stat" data-view-count="access">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="nodes">
-            <span class="nav-symbol" aria-hidden="true">点</span>
+            <span class="nav-symbol" data-module-icon="nodes" aria-hidden="true">点</span>
             <span class="nav-copy">
               <span class="nav-label">节点</span>
               <small>地区与网关</small>
@@ -70,7 +70,7 @@
             <span class="nav-stat" data-view-count="nodes">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="identity">
-            <span class="nav-symbol" aria-hidden="true">订</span>
+            <span class="nav-symbol" data-module-icon="identity" aria-hidden="true">订</span>
             <span class="nav-copy">
               <span class="nav-label">订阅</span>
               <small>Token 分发</small>
@@ -79,7 +79,7 @@
           </button>
           <div class="side-nav-section-title" aria-hidden="true">治理与运维</div>
           <button class="nav-item" type="button" data-view-nav="policies">
-            <span class="nav-symbol" aria-hidden="true">策</span>
+            <span class="nav-symbol" data-module-icon="policies" aria-hidden="true">策</span>
             <span class="nav-copy">
               <span class="nav-label">策略</span>
               <small>可见范围</small>
@@ -87,7 +87,7 @@
             <span class="nav-stat" data-view-count="policies">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="traffic">
-            <span class="nav-symbol" aria-hidden="true">量</span>
+            <span class="nav-symbol" data-module-icon="traffic" aria-hidden="true">量</span>
             <span class="nav-copy">
               <span class="nav-label">流量</span>
               <small>用量统计</small>
@@ -95,7 +95,7 @@
             <span class="nav-stat" data-view-count="traffic">--</span>
           </button>
           <button class="nav-item" type="button" data-view-nav="ops">
-            <span class="nav-symbol" aria-hidden="true">运</span>
+            <span class="nav-symbol" data-module-icon="ops" aria-hidden="true">运</span>
             <span class="nav-copy">
               <span class="nav-label">运维</span>
               <small>配置发布</small>
@@ -111,17 +111,17 @@
       </aside>
 
       <nav class="mobile-dock" aria-label="移动导航">
-        <button type="button" data-view-nav="overview"><span class="mobile-dock-symbol" aria-hidden="true">概</span><span>概览</span><span class="mobile-dock-badge" data-view-count="overview">--</span></button>
-        <button type="button" data-view-nav="access"><span class="mobile-dock-symbol" aria-hidden="true">源</span><span>接入</span><span class="mobile-dock-badge" data-view-count="access">--</span></button>
-        <button type="button" data-view-nav="nodes"><span class="mobile-dock-symbol" aria-hidden="true">点</span><span>节点</span><span class="mobile-dock-badge" data-view-count="nodes">--</span></button>
-        <button type="button" data-view-nav="identity"><span class="mobile-dock-symbol" aria-hidden="true">订</span><span>订阅</span><span class="mobile-dock-badge" data-view-count="identity">--</span></button>
-        <button type="button" data-mobile-more-toggle aria-controls="mobile-more-menu" aria-expanded="false"><span class="mobile-dock-symbol" aria-hidden="true">···</span><span>更多</span><span class="mobile-dock-badge">3</span></button>
+        <button type="button" data-view-nav="overview"><span class="mobile-dock-symbol" data-module-icon="overview" aria-hidden="true">概</span><span>概览</span><span class="mobile-dock-badge" data-view-count="overview">--</span></button>
+        <button type="button" data-view-nav="access"><span class="mobile-dock-symbol" data-module-icon="access" aria-hidden="true">源</span><span>接入</span><span class="mobile-dock-badge" data-view-count="access">--</span></button>
+        <button type="button" data-view-nav="nodes"><span class="mobile-dock-symbol" data-module-icon="nodes" aria-hidden="true">点</span><span>节点</span><span class="mobile-dock-badge" data-view-count="nodes">--</span></button>
+        <button type="button" data-view-nav="identity"><span class="mobile-dock-symbol" data-module-icon="identity" aria-hidden="true">订</span><span>订阅</span><span class="mobile-dock-badge" data-view-count="identity">--</span></button>
+        <button type="button" data-mobile-more-toggle aria-controls="mobile-more-menu" aria-expanded="false"><span class="mobile-dock-symbol" data-module-icon="more" aria-hidden="true">···</span><span>更多</span><span class="mobile-dock-badge">3</span></button>
       </nav>
       <div id="mobile-more-menu" class="mobile-more-menu" hidden>
         <div class="mobile-more-panel" role="menu" aria-label="更多模块">
-          <button type="button" data-view-nav="policies" role="menuitem"><span class="mobile-dock-symbol" aria-hidden="true">策</span><span>策略</span><span class="mobile-dock-badge" data-view-count="policies">--</span></button>
-          <button type="button" data-view-nav="traffic" role="menuitem"><span class="mobile-dock-symbol" aria-hidden="true">量</span><span>流量</span><span class="mobile-dock-badge" data-view-count="traffic">--</span></button>
-          <button type="button" data-view-nav="ops" role="menuitem"><span class="mobile-dock-symbol" aria-hidden="true">运</span><span>运维</span><span class="mobile-dock-badge" data-view-count="ops">--</span></button>
+          <button type="button" data-view-nav="policies" role="menuitem"><span class="mobile-dock-symbol" data-module-icon="policies" aria-hidden="true">策</span><span>策略</span><span class="mobile-dock-badge" data-view-count="policies">--</span></button>
+          <button type="button" data-view-nav="traffic" role="menuitem"><span class="mobile-dock-symbol" data-module-icon="traffic" aria-hidden="true">量</span><span>流量</span><span class="mobile-dock-badge" data-view-count="traffic">--</span></button>
+          <button type="button" data-view-nav="ops" role="menuitem"><span class="mobile-dock-symbol" data-module-icon="ops" aria-hidden="true">运</span><span>运维</span><span class="mobile-dock-badge" data-view-count="ops">--</span></button>
         </div>
       </div>
 
@@ -131,7 +131,7 @@
             <div class="workspace-command-title">
               <p class="eyebrow">控制台</p>
               <div class="workspace-title-row">
-                <span id="view-symbol" class="workspace-view-symbol" aria-hidden="true">概</span>
+                <span id="view-symbol" class="workspace-view-symbol" data-module-icon="overview" aria-hidden="true">概</span>
                 <h2 id="view-title">概览</h2>
               </div>
               <p id="view-description">运行状态、资源规模和下一步入口</p>
@@ -172,7 +172,7 @@
           <section class="quick-grid">
             <button class="quick-card" type="button" data-view-jump="access" data-view-jump-target="sources">
               <span class="quick-card-heading">
-                <span class="quick-card-symbol" aria-hidden="true">源</span>
+                <span class="quick-card-symbol" data-module-icon="access" aria-hidden="true">源</span>
                 <strong>接入来源</strong>
                 <span class="quick-card-badge" data-overview-card-count="access">--</span>
               </span>
@@ -180,7 +180,7 @@
             </button>
             <button class="quick-card" type="button" data-view-jump="nodes" data-view-jump-target="nodes">
               <span class="quick-card-heading">
-                <span class="quick-card-symbol" aria-hidden="true">点</span>
+                <span class="quick-card-symbol" data-module-icon="nodes" aria-hidden="true">点</span>
                 <strong>节点池</strong>
                 <span class="quick-card-badge" data-overview-card-count="nodes">--</span>
               </span>
@@ -188,7 +188,7 @@
             </button>
             <button class="quick-card" type="button" data-view-jump="identity" data-view-jump-target="tokens">
               <span class="quick-card-heading">
-                <span class="quick-card-symbol" aria-hidden="true">订</span>
+                <span class="quick-card-symbol" data-module-icon="identity" aria-hidden="true">订</span>
                 <strong>分发订阅</strong>
                 <span class="quick-card-badge" data-overview-card-count="identity">--</span>
               </span>
@@ -196,7 +196,7 @@
             </button>
             <button class="quick-card" type="button" data-view-jump="ops" data-view-jump-target="ops-actions">
               <span class="quick-card-heading">
-                <span class="quick-card-symbol" aria-hidden="true">运</span>
+                <span class="quick-card-symbol" data-module-icon="ops" aria-hidden="true">运</span>
                 <strong>发布网关</strong>
                 <span class="quick-card-badge" data-overview-card-count="ops">--</span>
               </span>

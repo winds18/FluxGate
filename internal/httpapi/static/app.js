@@ -103,6 +103,17 @@ const dashboardViewSymbols = {
   traffic: "量",
   ops: "运",
 };
+const moduleIconPaths = {
+  brand: '<path d="M13 3 5 14h6l-1 7 8-12h-6l1-6Z" />',
+  overview: '<path d="M4 5h6v8H4z" /><path d="M14 5h6v14h-6z" /><path d="M4 17h6v2H4z" />',
+  access: '<path d="M4 12h10" /><path d="m8 8-4 4 4 4" /><path d="M18 6v12" /><path d="M14 8h4" /><path d="M14 16h4" />',
+  nodes: '<path d="M7 7h10" /><path d="M7 17h10" /><path d="M8 8l8 8" /><path d="M16 8l-8 8" /><path d="M5 7h4" /><path d="M15 7h4" /><path d="M5 17h4" /><path d="M15 17h4" />',
+  identity: '<path d="M14 14a5 5 0 1 1 1.4-3.5L21 5v4h-3v3h-3z" /><path d="M7.5 14.5h.01" />',
+  policies: '<path d="M12 3 19 6v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" /><path d="m9 12 2 2 4-4" />',
+  traffic: '<path d="M4 19V5" /><path d="M4 19h16" /><path d="m8 15 3-4 3 2 4-6" />',
+  ops: '<path d="M14 6a4 4 0 0 0 4 4l-8 8a3 3 0 1 1-4-4l8-8z" /><path d="M7 17h.01" />',
+  more: '<path d="M6 12h.01" /><path d="M12 12h.01" /><path d="M18 12h.01" />',
+};
 const dashboardViewRail = {
   overview: [
     ["运行概览", "metrics"],
@@ -273,6 +284,7 @@ document.addEventListener("click", (event) => {
     button.dataset.emptyStateExpand === "true",
   );
 });
+hydrateStaticModuleIcons();
 bootstrap();
 
 let appState = {
@@ -510,6 +522,32 @@ function labelForField(field) {
   return field.getAttribute("aria-label") || field.getAttribute("placeholder") || field.name || "这个字段";
 }
 
+function moduleIconMarkup(key, fallback = "") {
+  const iconKey = moduleIconPaths[key] ? key : "overview";
+  const fallbackText = fallback || dashboardViewSymbols[key] || "";
+  return `
+    <svg class="module-icon" data-module-icon-key="${escapeHTML(iconKey)}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      ${moduleIconPaths[iconKey]}
+    </svg>
+    <span class="symbol-fallback" aria-hidden="true">${escapeHTML(fallbackText)}</span>
+  `;
+}
+
+function hydrateModuleIcon(element, key) {
+  if (!element) return;
+  const nextKey = moduleIconPaths[key] ? key : "overview";
+  const fallback = dashboardViewSymbols[nextKey] || element.dataset.moduleIconFallback || element.textContent?.trim() || "";
+  element.dataset.moduleIconFallback = fallback;
+  element.dataset.moduleIconKey = nextKey;
+  element.innerHTML = moduleIconMarkup(nextKey, fallback);
+}
+
+function hydrateStaticModuleIcons() {
+  document.querySelectorAll("[data-module-icon]").forEach((element) => {
+    hydrateModuleIcon(element, element.dataset.moduleIcon || "overview");
+  });
+}
+
 function confirmDanger({ title, message, confirmLabel = "确认", cancelLabel = "取消" }) {
   const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   return new Promise((resolve) => {
@@ -656,7 +694,7 @@ function setActiveView(view) {
     button.setAttribute("aria-current", isActive ? "page" : "false");
   });
   const [title, description] = dashboardViewMeta[nextView];
-  if (viewSymbolEl) viewSymbolEl.textContent = dashboardViewSymbols[nextView] || title.slice(0, 1);
+  hydrateModuleIcon(viewSymbolEl, nextView);
   viewTitleEl.textContent = title;
   viewDescriptionEl.textContent = description;
   updateWorkspaceInsight();

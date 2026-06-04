@@ -3407,8 +3407,36 @@ body {
   line-height: 1;
   min-width: 0;
   overflow: hidden;
+  position: relative;
   text-align: center;
   white-space: nowrap;
+}
+
+.module-icon {
+  display: block;
+  fill: none;
+  height: 16px;
+  overflow: visible;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.85;
+  vector-effect: non-scaling-stroke;
+  width: 16px;
+}
+
+.sidebar-mark .module-icon {
+  height: 18px;
+  width: 18px;
+}
+
+.symbol-fallback {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
 }
 
 .sidebar-mark {
@@ -4586,6 +4614,7 @@ button[type="submit"]:hover,
   min-width: var(--fg-shared-symbol-size);
   overflow: hidden;
   padding: 0;
+  position: relative;
   text-align: center;
   white-space: nowrap;
   width: var(--fg-shared-symbol-size);

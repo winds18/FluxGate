@@ -1508,6 +1508,37 @@ a.table-button:hover {
   min-width: 0;
 }
 
+.button-symbol {
+  align-items: center;
+  display: inline-flex;
+  flex: 0 0 auto;
+  justify-content: center;
+  position: relative;
+}
+
+/* FluxGate UI v2 action icon system */
+.action-icon {
+  display: block;
+  fill: none;
+  flex: 0 0 auto;
+  height: 16px;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.9;
+  vector-effect: non-scaling-stroke;
+  width: 16px;
+}
+
+.button-symbol-fallback {
+  clip-path: inset(50%);
+  height: 1px;
+  overflow: hidden;
+  position: absolute;
+  white-space: nowrap;
+  width: 1px;
+}
+
 .button-label {
   overflow: hidden;
   text-overflow: ellipsis;

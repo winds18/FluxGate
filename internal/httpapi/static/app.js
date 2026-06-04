@@ -114,6 +114,77 @@ const moduleIconPaths = {
   ops: '<path d="M14 6a4 4 0 0 0 4 4l-8 8a3 3 0 1 1-4-4l8-8z" /><path d="M7 17h.01" />',
   more: '<path d="M6 12h.01" /><path d="M12 12h.01" /><path d="M18 12h.01" />',
 };
+const actionIconPaths = {
+  add: '<path d="M12 5v14" /><path d="M5 12h14" />',
+  check: '<path d="m5 12 4 4 10-10" />',
+  close: '<path d="M6 6l12 12" /><path d="M18 6 6 18" />',
+  edit: '<path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" /><path d="m13 7 4 4" />',
+  refresh: '<path d="M20 12a8 8 0 0 1-13.7 5.6" /><path d="M4 12A8 8 0 0 1 17.7 6.4" /><path d="M7 18H4v3" /><path d="M17 6h3V3" />',
+  reset: '<path d="M5 8a8 8 0 1 1 1.8 8.9" /><path d="M5 4v4h4" />',
+  copy: '<rect x="8" y="8" width="11" height="11" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />',
+  probe: '<path d="M10 14a4 4 0 1 1 4-4" /><path d="m14 14 6 6" /><path d="M14 14h4v4" />',
+  open: '<path d="M14 5h5v5" /><path d="m10 14 9-9" /><path d="M19 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4" />',
+  loading: '<path d="M12 3v4" /><path d="M12 17v4" /><path d="M4.2 4.2 7 7" /><path d="m17 17 2.8 2.8" /><path d="M3 12h4" /><path d="M17 12h4" />',
+  publish: '<path d="M12 19V5" /><path d="m6 11 6-6 6 6" /><path d="M5 19h14" />',
+  ops: '<path d="M14 6a4 4 0 0 0 4 4l-8 8a3 3 0 1 1-4-4l8-8z" /><path d="M7 17h.01" />',
+  source: '<path d="M4 7h16" /><path d="M4 12h16" /><path d="M4 17h10" />',
+  import: '<path d="M12 4v10" /><path d="m8 10 4 4 4-4" /><path d="M5 20h14" />',
+  gateway: '<rect x="4" y="5" width="16" height="14" rx="3" /><path d="M8 9h8" /><path d="M8 13h5" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" />',
+  token: '<path d="M14 14a5 5 0 1 1 1.4-3.5L21 5v4h-3v3h-3z" /><path d="M7.5 14.5h.01" />',
+  team: '<path d="M9 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M3 21a6 6 0 0 1 12 0" /><path d="M17 11a3 3 0 1 0 0-6" /><path d="M18 21a5 5 0 0 0-3-4.6" />',
+  user: '<path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z" /><path d="M4 21a8 8 0 0 1 16 0" />',
+  policy: '<path d="M12 3 19 6v5c0 4.5-3 8-7 10-4-2-7-5.5-7-10V6l7-3z" /><path d="m9 12 2 2 4-4" />',
+  traffic: '<path d="M4 19V5" /><path d="M4 19h16" /><path d="m8 15 3-4 3 2 4-6" />',
+  hour: '<circle cx="12" cy="12" r="8" /><path d="M12 8v5l3 2" />',
+  day: '<path d="M7 3v3" /><path d="M17 3v3" /><rect x="4" y="5" width="16" height="16" rx="2" /><path d="M4 10h16" />',
+  outbound: '<path d="M5 12h13" /><path d="m13 7 5 5-5 5" />',
+  quota: '<path d="M5 19V5" /><path d="M5 19h14" /><rect x="8" y="11" width="3" height="5" rx="1" /><rect x="13" y="8" width="3" height="8" rx="1" />',
+  region: '<path d="M12 21s7-4.8 7-11a7 7 0 1 0-14 0c0 6.2 7 11 7 11z" /><circle cx="12" cy="10" r="2.2" />',
+  route: '<path d="M6 18c4-8 8 0 12-8" /><path d="M16 10h2V8" /><path d="M6 18H4v2" />',
+  step: '<path d="M5 7h6" /><path d="M5 12h10" /><path d="M5 17h14" />',
+  warning: '<path d="m12 4 9 16H3L12 4z" /><path d="M12 9v5" /><path d="M12 17h.01" />',
+  default: '<circle cx="12" cy="12" r="8" /><path d="M12 8v8" /><path d="M8 12h8" />',
+};
+const actionIconSymbolAliases = {
+  "+": "add",
+  "✓": "check",
+  "×": "close",
+  "✎": "edit",
+  "↻": "refresh",
+  "↺": "reset",
+  "⧉": "copy",
+  "测": "probe",
+  "↗": "open",
+  "…": "loading",
+  "检": "check",
+  "发": "publish",
+  "运": "ops",
+  "收": "check",
+  "配": "gateway",
+  "入": "gateway",
+  "上": "source",
+  "源": "source",
+  "导": "import",
+  "网": "gateway",
+  "钥": "token",
+  "订": "token",
+  "团": "team",
+  "员": "user",
+  "策": "policy",
+  "量": "traffic",
+  "时": "hour",
+  "日": "day",
+  "出": "outbound",
+  "额": "quota",
+  "区": "region",
+  "步": "step",
+  "待": "warning",
+  "警": "warning",
+  "查": "probe",
+  "通": "route",
+  "米": "route",
+  "箱": "gateway",
+};
 const dashboardViewRail = {
   overview: [
     ["运行概览", "metrics"],
@@ -548,6 +619,44 @@ function hydrateStaticModuleIcons() {
   });
 }
 
+function actionIconKeyForSymbol(symbol, label = "") {
+  const rawSymbol = String(symbol || "").trim();
+  const rawLabel = String(label || "").trim();
+  if (actionIconSymbolAliases[rawSymbol]) return actionIconSymbolAliases[rawSymbol];
+  if (/复制|copy/i.test(rawLabel)) return "copy";
+  if (/打开|open/i.test(rawLabel)) return "open";
+  if (/探测|检查|probe|check/i.test(rawLabel)) return "probe";
+  if (/刷新|refresh/i.test(rawLabel)) return "refresh";
+  if (/恢复|重置|reset|restore/i.test(rawLabel)) return "reset";
+  if (/保存|save/i.test(rawLabel)) return "check";
+  if (/取消|关闭|cancel|close/i.test(rawLabel)) return "close";
+  if (/编辑|edit/i.test(rawLabel)) return "edit";
+  if (/发布|publish/i.test(rawLabel)) return "publish";
+  if (/导入|import/i.test(rawLabel)) return "import";
+  if (/创建|添加|签发|新增|add|create/i.test(rawLabel)) return "add";
+  return actionIconPaths[rawSymbol] ? rawSymbol : "default";
+}
+
+function actionIconMarkup(symbol, label = "") {
+  const fallbackText = String(symbol || "").trim();
+  const iconKey = actionIconKeyForSymbol(fallbackText, label);
+  return `
+    <svg class="action-icon" data-action-icon-key="${escapeHTML(iconKey)}" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+      ${actionIconPaths[iconKey] || actionIconPaths.default}
+    </svg>
+    <span class="button-symbol-fallback" aria-hidden="true">${escapeHTML(fallbackText)}</span>
+  `;
+}
+
+function setButtonSymbol(button, symbol) {
+  const symbolEl = button?.querySelector(".button-symbol");
+  if (!symbolEl) return;
+  const label = button.querySelector(".button-label")?.textContent || button.getAttribute("aria-label") || "";
+  const iconKey = actionIconKeyForSymbol(symbol, label);
+  symbolEl.dataset.actionIconKey = iconKey;
+  symbolEl.innerHTML = actionIconMarkup(symbol, label);
+}
+
 function confirmDanger({ title, message, confirmLabel = "确认", cancelLabel = "取消" }) {
   const previousFocus = document.activeElement instanceof HTMLElement ? document.activeElement : null;
   return new Promise((resolve) => {
@@ -809,19 +918,19 @@ function setSubmitButtonPending(button, submitting) {
   const label = button.querySelector(".button-label");
   if (submitting) {
     if (!button.dataset.formOriginalSymbol) {
-      button.dataset.formOriginalSymbol = symbol?.textContent || "";
+      button.dataset.formOriginalSymbol = symbol?.textContent?.trim() || "";
     }
     if (!button.dataset.formOriginalLabel) {
       button.dataset.formOriginalLabel = label?.textContent || "提交";
     }
     button.classList.add("is-pending");
-    if (symbol) symbol.textContent = "…";
+    setButtonSymbol(button, "…");
     if (label) label.textContent = `${button.dataset.formOriginalLabel}中`;
     return;
   }
   button.classList.remove("is-pending");
-  if (symbol && button.dataset.formOriginalSymbol) {
-    symbol.textContent = button.dataset.formOriginalSymbol;
+  if (button.dataset.formOriginalSymbol) {
+    setButtonSymbol(button, button.dataset.formOriginalSymbol);
   }
   if (label && button.dataset.formOriginalLabel) {
     label.textContent = button.dataset.formOriginalLabel;
@@ -1753,9 +1862,17 @@ async function copyText(text) {
 
 function showCopyFeedback(button, label, fallbackLabel = "复制") {
   button.dataset.copyLabel =
-    button.dataset.copyLabel || button.getAttribute("data-copy-label") || button.textContent.trim() || fallbackLabel;
-  button.dataset.copySymbol = button.dataset.copySymbol || button.getAttribute("data-button-symbol") || "";
-  button.textContent = label;
+    button.dataset.copyLabel ||
+    button.getAttribute("data-copy-label") ||
+    button.querySelector(".button-label")?.textContent?.trim() ||
+    button.textContent.trim() ||
+    fallbackLabel;
+  button.dataset.copySymbol =
+    button.dataset.copySymbol ||
+    button.getAttribute("data-button-symbol") ||
+    button.querySelector(".button-symbol")?.textContent?.trim() ||
+    "✓";
+  button.innerHTML = buttonLabel("✓", label);
   button.classList.add("is-copied");
   button.setAttribute("aria-label", label);
   window.setTimeout(() => {
@@ -4922,7 +5039,8 @@ function renderSubscriptionCardList(items, tokenID = "") {
 }
 
 function buttonLabel(symbol, label) {
-  return `<span class="button-symbol" aria-hidden="true">${escapeHTML(symbol)}</span><span class="button-label">${escapeHTML(label)}</span>`;
+  const iconKey = actionIconKeyForSymbol(symbol, label);
+  return `<span class="button-symbol" data-action-icon-key="${escapeHTML(iconKey)}" aria-hidden="true">${actionIconMarkup(symbol, label)}</span><span class="button-label">${escapeHTML(label)}</span>`;
 }
 
 function actionLabelAttrs(label) {

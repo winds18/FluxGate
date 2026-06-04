@@ -458,6 +458,50 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       visibleWidthMin: visibleBoxes.length ? Math.min(...visibleBoxes.map((box) => box.width)) : 0,
     };
   });
+  const actionButtonIconChrome = await page.evaluate(() => {
+    const allSymbols = Array.from(document.querySelectorAll("button .button-symbol[data-action-icon-key], a .button-symbol[data-action-icon-key]"));
+    const visibleSymbols = allSymbols.filter((element) => {
+      const style = getComputedStyle(element);
+      const box = element.getBoundingClientRect();
+      return style.display !== "none" && style.visibility !== "hidden" && box.width > 0 && box.height > 0;
+    });
+    const outside = (child, parent) =>
+      child.left < parent.left - 1 ||
+      child.right > parent.right + 1 ||
+      child.top < parent.top - 1 ||
+      child.bottom > parent.bottom + 1;
+    const overflowCount = visibleSymbols.reduce((total, symbol) => {
+      const container = symbol.closest("button, a") || symbol.parentElement;
+      const symbolBox = symbol.getBoundingClientRect();
+      const containerBox = container?.getBoundingClientRect();
+      return total + (containerBox && symbolBox.width > 0 && symbolBox.height > 0 && outside(symbolBox, containerBox) ? 1 : 0);
+    }, 0);
+    const visibleBoxes = visibleSymbols.map((symbol) => {
+      const icon = symbol.querySelector(".action-icon");
+      const iconBox = icon?.getBoundingClientRect();
+      return {
+        iconHeight: Math.round(iconBox?.height || 0),
+        iconWidth: Math.round(iconBox?.width || 0),
+        symbolHeight: Math.round(symbol.getBoundingClientRect().height),
+        symbolWidth: Math.round(symbol.getBoundingClientRect().width),
+      };
+    });
+    const keys = allSymbols.map((symbol) => symbol.dataset.actionIconKey || symbol.querySelector(".action-icon")?.dataset.actionIconKey || "");
+    return {
+      fallbackCount: allSymbols.filter((symbol) => symbol.querySelector(".button-symbol-fallback")).length,
+      keyCount: keys.filter(Boolean).length,
+      missingKeys: keys.filter((key) => !key).length,
+      overflowCount,
+      svgCount: allSymbols.filter((symbol) => symbol.querySelector(".action-icon")).length,
+      symbolCount: allSymbols.length,
+      uniqueKeys: Array.from(new Set(keys.filter(Boolean))).sort(),
+      visibleCount: visibleSymbols.length,
+      visibleIconHeightMin: visibleBoxes.length ? Math.min(...visibleBoxes.map((box) => box.iconHeight)) : 0,
+      visibleIconWidthMin: visibleBoxes.length ? Math.min(...visibleBoxes.map((box) => box.iconWidth)) : 0,
+      visibleSymbolHeightMax: visibleBoxes.length ? Math.max(...visibleBoxes.map((box) => box.symbolHeight)) : 0,
+      visibleSymbolWidthMax: visibleBoxes.length ? Math.max(...visibleBoxes.map((box) => box.symbolWidth)) : 0,
+    };
+  });
   const dashboardNavLabels = await page
     .locator(".dashboard-sidebar .nav-label")
     .evaluateAll((elements) => elements.map((element) => element.textContent.trim()));
@@ -2051,7 +2095,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     const mihomoCopyButton = page.locator("#tokens [data-token-workbench-action='copy-mihomo']").first();
     if ((await mihomoCopyButton.count()) > 0 && !(await mihomoCopyButton.isDisabled())) {
       await mihomoCopyButton.click();
-      await expect(mihomoCopyButton).toHaveText("已复制", { timeout: 5000 });
+      await expect(mihomoCopyButton.locator(".button-label")).toHaveText("已复制", { timeout: 5000 });
       await expect(page.locator("#status")).toContainText("订阅地址已复制", { timeout: 5000 });
       tokenWorkbenchMihomoCopyFeedback = true;
       await page.waitForTimeout(1700);
@@ -2233,7 +2277,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (tokenSubscriptionCopyCount > 0) {
     const firstCopyButton = page.locator("#tokens .token-subscription-item button[data-token-action='copy-subscription']").first();
     await firstCopyButton.click();
-    await expect(firstCopyButton).toHaveText("已复制", { timeout: 5000 });
+    await expect(firstCopyButton.locator(".button-label")).toHaveText("已复制", { timeout: 5000 });
     await expect(page.locator("#status")).toContainText("订阅地址已复制", { timeout: 5000 });
     tokenCopyFeedbackVisible = true;
     await page.waitForTimeout(1700);
@@ -2244,7 +2288,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   if (tokenSubscriptionProbeCount > 0) {
     const firstProbeButton = page.locator("#tokens button[data-token-action='probe-subscription']").first();
     await firstProbeButton.click();
-    await expect(firstProbeButton).toHaveText(/可访问/, { timeout: 5000 });
+    await expect(firstProbeButton.locator(".button-label")).toHaveText(/可访问/, { timeout: 5000 });
     await expect(page.locator("#status")).toContainText("订阅可访问", { timeout: 5000 });
     await expect(page.locator("#tokens [data-token-subscription-probed-at]").first()).toBeVisible({ timeout: 5000 });
     tokenProbeFeedbackVisible = true;
@@ -3121,7 +3165,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     await expect(nodeDetailCopyButton).toBeVisible({ timeout: 5000 });
     nodeDetailCopyVisible = true;
     await nodeDetailCopyButton.click();
-    await expect(nodeDetailCopyButton).toHaveText("已复制", { timeout: 5000 });
+    await expect(nodeDetailCopyButton.locator(".button-label")).toHaveText("已复制", { timeout: 5000 });
     await expect(page.locator("#status")).toContainText("节点 URI 已复制", { timeout: 5000 });
     nodeDetailCopyFeedbackVisible = true;
     nodeDetailCodeOverflowCount = await page.evaluate(() =>
@@ -3285,6 +3329,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     const grid = document.querySelector("#ops-actions");
     const label = document.querySelector("#config-check .button-label")?.textContent?.trim() || "";
     const symbol = document.querySelector("#config-check .button-symbol")?.textContent?.trim() || "";
+    const iconKey = document.querySelector("#config-check .button-symbol")?.dataset.actionIconKey || "";
     const disabled = (selector) => (grid ? Array.from(grid.querySelectorAll(selector)).filter((element) => element.disabled).length : 0);
     return {
       pending: document.querySelectorAll("#ops-actions .ops-action-card.is-action-pending").length,
@@ -3296,6 +3341,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       restartDisabled: disabled("#config-restart"),
       label,
       symbol,
+      iconKey,
     };
   });
   await page.locator("#delivery-readiness").click();
@@ -3576,6 +3622,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.dashboardSidebarChrome = dashboardSidebarChrome;
   state.dashboardModuleGlyphChrome = dashboardModuleGlyphChrome;
   state.sharedSymbolChrome = sharedSymbolChrome;
+  state.actionButtonIconChrome = actionButtonIconChrome;
   state.dashboardNavLabels = dashboardNavLabels;
   state.mobileDockCount = mobileDockCount;
   state.mobileDockDirectNavCount = mobileDockDirectNavCount;
@@ -4447,7 +4494,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       opsActionPendingRestored.rollbackDisabled !== 0 ||
       opsActionPendingRestored.restartDisabled !== 0 ||
       opsActionPendingRestored.label !== "检查配置" ||
-      opsActionPendingRestored.symbol !== "检")
+      opsActionPendingRestored.symbol !== "检" ||
+      opsActionPendingRestored.iconKey !== "check")
   ) {
     throw new Error(`ops action pending feedback missing: ${JSON.stringify(state)}`);
   }
@@ -4556,6 +4604,23 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     sharedSymbolChrome.backgroundImageMismatchCount > 0 ||
     sharedSymbolChrome.borderRadiusMismatchCount > 0 ||
     sharedSymbolChrome.sizeMismatchCount > 0;
+  const actionIconBroken =
+    !actionButtonIconChrome ||
+    actionButtonIconChrome.symbolCount < 40 ||
+    actionButtonIconChrome.svgCount !== actionButtonIconChrome.symbolCount ||
+    actionButtonIconChrome.fallbackCount !== actionButtonIconChrome.symbolCount ||
+    actionButtonIconChrome.keyCount !== actionButtonIconChrome.symbolCount ||
+    actionButtonIconChrome.missingKeys > 0 ||
+    actionButtonIconChrome.visibleCount < 8 ||
+    actionButtonIconChrome.overflowCount > 0 ||
+    actionButtonIconChrome.visibleIconHeightMin < 14 ||
+    actionButtonIconChrome.visibleIconWidthMin < 14 ||
+    !["add", "copy", "edit", "open", "probe", "refresh"].every((key) =>
+      actionButtonIconChrome.uniqueKeys.includes(key),
+    );
+  if (actionIconBroken) {
+    throw new Error(`action button icons are not rendered as stable linear icons: ${JSON.stringify(state)}`);
+  }
   if (
     dashboardNavCount !== viewNames.length ||
     dashboardNavSymbolCount !== viewNames.length ||

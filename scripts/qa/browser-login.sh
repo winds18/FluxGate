@@ -3419,6 +3419,41 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       metricOverflowX: Math.max(0, metrics.scrollWidth - metrics.clientWidth),
     };
   });
+  const mobileDockSafeArea = await page.evaluate(async () => {
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    const dock = document.querySelector(".mobile-dock");
+    const workspace = document.querySelector(".workspace");
+    const activeView = document.querySelector(".dashboard-view:not([hidden])");
+    const lastContent = activeView
+      ? Array.from(activeView.children)
+          .reverse()
+          .find((element) => element.getClientRects().length > 0 && element.getBoundingClientRect().height > 0)
+      : null;
+    if (!dock || !workspace || !lastContent) {
+      return null;
+    }
+    const dockBox = dock.getBoundingClientRect();
+    const lastBox = lastContent.getBoundingClientRect();
+    const workspaceStyle = getComputedStyle(workspace);
+    const dockBottom = Math.round(window.innerHeight - dockBox.bottom);
+    const dockHeight = Math.round(dockBox.height);
+    const workspacePaddingBottom = Math.round(parseFloat(workspaceStyle.paddingBottom) || 0);
+    const guard = Math.round(dockBox.top - lastBox.bottom);
+    const requiredPadding = dockHeight + dockBottom + 12;
+    return {
+      dockBottom,
+      dockHeight,
+      dockTop: Math.round(dockBox.top),
+      guard,
+      lastContentBottom: Math.round(lastBox.bottom),
+      lastContentClass: lastContent.className || lastContent.id || lastContent.tagName,
+      overlaps: guard < 8 ? 1 : 0,
+      requiredPadding,
+      workspacePaddingBottom,
+    };
+  });
+  await page.evaluate(() => window.scrollTo(0, 0));
   const mobileCommandCenterOverflowDetails = await page.locator("[data-view-command-center]").evaluate((center) => {
     const centerBox = center.getBoundingClientRect();
     const outside = (child, parent) =>
@@ -3685,6 +3720,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.mobileModuleGlyphChrome = mobileModuleGlyphChrome;
   state.mobileCommandCenterMetrics = mobileCommandCenterMetrics;
   state.mobileOverviewControlMetrics = mobileOverviewControlMetrics;
+  state.mobileDockSafeArea = mobileDockSafeArea;
   state.mobileCommandCenterOverflow = mobileCommandCenterOverflow;
   state.mobileCommandCenterOverflowDetails = mobileCommandCenterOverflowDetails;
   state.mobileMoreMenuVisible = mobileMoreMenuVisible;
@@ -4444,6 +4480,10 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     mobileOverviewControlMetrics.metricColumnCount !== 2 ||
     mobileOverviewControlMetrics.metricMaxHeight > 104 ||
     mobileOverviewControlMetrics.metricOverflowX > 2 ||
+    !mobileDockSafeArea ||
+    mobileDockSafeArea.overlaps !== 0 ||
+    mobileDockSafeArea.guard < 8 ||
+    mobileDockSafeArea.workspacePaddingBottom < mobileDockSafeArea.requiredPadding ||
     mobileCommandCenterOverflow > 0 ||
     mobileMoreMenuOverflow > 2 ||
     mobileOverviewOverflow > 2 ||

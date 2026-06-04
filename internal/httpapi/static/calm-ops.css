@@ -2864,7 +2864,7 @@ body.has-form-drawer-open::before {
   }
 
   .workspace {
-    padding: 12px 10px 92px;
+    padding: 12px 10px var(--fg-mobile-content-safe);
   }
 
   .workspace-header {
@@ -2892,15 +2892,17 @@ body.has-form-drawer-open::before {
 
   .mobile-dock {
     border-radius: var(--fg-radius);
+    bottom: var(--fg-mobile-dock-bottom);
     box-shadow: 0 16px 42px rgba(18, 32, 30, 0.2);
     gap: 2px;
     left: 8px;
+    min-height: var(--fg-mobile-dock-height);
     padding: 4px;
     right: 8px;
   }
 
   .mobile-more-menu:not([hidden]) {
-    bottom: 76px;
+    bottom: var(--fg-mobile-overlay-bottom);
     left: 8px;
     right: 8px;
   }
@@ -3065,7 +3067,7 @@ body.has-form-drawer-open::before {
 
   .form-drawer:not(.is-collapsed) {
     border-radius: var(--fg-radius) var(--fg-radius) 0 0;
-    bottom: 76px;
+    bottom: var(--fg-mobile-overlay-bottom);
     left: 8px;
     max-height: none;
     max-width: none;
@@ -3093,7 +3095,7 @@ body.has-form-drawer-open::before {
 
   .node-detail-drawer {
     border-radius: var(--fg-radius) var(--fg-radius) 0 0;
-    bottom: 76px;
+    bottom: var(--fg-mobile-overlay-bottom);
     left: 8px;
     max-height: none;
     max-width: none;
@@ -3230,6 +3232,11 @@ body.has-form-drawer-open::before {
   --fg-shadow-flat: 0 1px 2px rgba(15, 23, 42, 0.05);
   --fg-shadow-raised: 0 1px 2px rgba(15, 23, 42, 0.05), 0 10px 26px rgba(15, 23, 42, 0.055);
   --fg-shadow-hover: 0 10px 24px rgba(15, 23, 42, 0.08);
+  --fg-mobile-dock-bottom: 10px;
+  --fg-mobile-dock-height: 60px;
+  --fg-mobile-dock-menu-gap: 6px;
+  --fg-mobile-content-safe: calc(var(--fg-mobile-dock-bottom) + var(--fg-mobile-dock-height) + 24px);
+  --fg-mobile-overlay-bottom: calc(var(--fg-mobile-dock-bottom) + var(--fg-mobile-dock-height) + var(--fg-mobile-dock-menu-gap));
   --fg-module-glyph-bg: #f8fafc;
   --fg-module-glyph-border: #d6dee8;
   --fg-module-glyph-color: #315f9f;
@@ -5067,11 +5074,11 @@ a.table-button:hover {
   }
 
   .workspace {
-    padding: 12px 10px 94px;
+    padding: 12px 10px var(--fg-mobile-content-safe);
   }
 
   body.is-authenticated .workspace {
-    padding: 12px 10px 94px;
+    padding: 12px 10px var(--fg-mobile-content-safe);
   }
 
   .workspace-header,

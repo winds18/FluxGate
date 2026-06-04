@@ -280,6 +280,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const dashboardSidebarChrome = await page.evaluate(() => {
     const sidebar = document.querySelector(".dashboard-sidebar");
     const nav = document.querySelector(".dashboard-sidebar .side-nav");
+    const navItem = document.querySelector(".dashboard-sidebar .nav-item");
+    const navSymbol = document.querySelector(".dashboard-sidebar .nav-symbol");
     const footnote = document.querySelector(".dashboard-sidebar .sidebar-footnote");
     const outside = (child, parent) =>
       child.left < parent.left - 1 ||
@@ -287,6 +289,8 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       child.top < parent.top - 1 ||
       child.bottom > parent.bottom + 1;
     const sidebarStyle = sidebar ? getComputedStyle(sidebar) : null;
+    const navItemStyle = navItem ? getComputedStyle(navItem) : null;
+    const navSymbolStyle = navSymbol ? getComputedStyle(navSymbol) : null;
     const footnoteStyle = footnote ? getComputedStyle(footnote) : null;
     const footnoteBox = footnote?.getBoundingClientRect();
     const sidebarBox = sidebar?.getBoundingClientRect();
@@ -298,6 +302,11 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       : 1;
     return {
       gridTemplateRows: sidebarStyle?.gridTemplateRows || "",
+      sidebarBackground: sidebarStyle?.backgroundColor || "",
+      sidebarWidth: sidebarBox ? Math.round(sidebarBox.width) : 0,
+      navItemMinHeight: navItemStyle ? Number.parseFloat(navItemStyle.minHeight || "0") : 0,
+      navSymbolWidth: navSymbolStyle ? Number.parseFloat(navSymbolStyle.width || "0") : 0,
+      navSymbolHeight: navSymbolStyle ? Number.parseFloat(navSymbolStyle.height || "0") : 0,
       navOverflowY: nav ? getComputedStyle(nav).overflowY : "",
       footnoteBackground: footnoteStyle?.backgroundColor || "",
       footnoteBorderRadius: footnoteStyle?.borderRadius || "",
@@ -4580,14 +4589,14 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     dashboardModuleGlyphChrome.markIconKey !== "brand" ||
     dashboardModuleGlyphChrome.markSvgCount !== 1 ||
     !dashboardModuleGlyphChrome.mark ||
-    dashboardModuleGlyphChrome.mark.width !== 32 ||
-    dashboardModuleGlyphChrome.mark.height !== 32 ||
+    dashboardModuleGlyphChrome.mark.width !== 28 ||
+    dashboardModuleGlyphChrome.mark.height !== 28 ||
     dashboardModuleGlyphChrome.mark.backgroundImage !== "none" ||
     !dashboardModuleGlyphChrome.mark.borderRadius.startsWith("8px") ||
     !dashboardModuleGlyphChrome.activeSymbol ||
     !dashboardModuleGlyphChrome.inactiveSymbol ||
-    dashboardModuleGlyphChrome.activeSymbol.width < 27 ||
-    dashboardModuleGlyphChrome.activeSymbol.height < 27 ||
+    dashboardModuleGlyphChrome.activeSymbol.width !== 24 ||
+    dashboardModuleGlyphChrome.activeSymbol.height !== 24 ||
     !dashboardModuleGlyphChrome.activeSymbol.borderRadius.startsWith("8px") ||
     dashboardModuleGlyphChrome.activeSymbol.backgroundColor === dashboardModuleGlyphChrome.inactiveSymbol.backgroundColor ||
     dashboardModuleGlyphChrome.activeSymbol.color === dashboardModuleGlyphChrome.inactiveSymbol.color;
@@ -4646,6 +4655,12 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     dashboardSidebarFootnoteCount !== 1 ||
     !dashboardSidebarChrome ||
     !dashboardSidebarChrome.gridTemplateRows ||
+    dashboardSidebarChrome.sidebarBackground !== "rgb(255, 255, 255)" ||
+    dashboardSidebarChrome.sidebarWidth < 184 ||
+    dashboardSidebarChrome.sidebarWidth > 200 ||
+    dashboardSidebarChrome.navItemMinHeight > 42 ||
+    dashboardSidebarChrome.navSymbolWidth > 26 ||
+    dashboardSidebarChrome.navSymbolHeight > 26 ||
     dashboardSidebarChrome.navOverflowY !== "auto" ||
     !dashboardSidebarChrome.footnoteBackground.includes("248, 250, 252") ||
     !dashboardSidebarChrome.footnoteBorderRadius.startsWith("8px") ||

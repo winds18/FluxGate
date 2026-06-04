@@ -5,6 +5,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)/lib/common.sh"
 INDEX_FILE="$ROOT_DIR/internal/httpapi/static/index.html"
 APP_FILE="$ROOT_DIR/internal/httpapi/static/app.js"
 CALM_CSS_FILE="$ROOT_DIR/internal/httpapi/static/calm-ops.css"
+SCREENSHOT_SCRIPT="$ROOT_DIR/scripts/qa/screenshot.sh"
 
 require_pattern() {
   local file="$1"
@@ -243,5 +244,11 @@ require_pattern "$APP_FILE" 'aria-modal' "expanded form drawers must expose dial
 require_multiline_pattern "$CALM_CSS_FILE" '\.form-drawer:not\(\.is-collapsed\) \{[^}]*position: fixed;' "expanded form drawers must float as side sheets instead of pushing the page"
 require_multiline_pattern "$CALM_CSS_FILE" '\.form-drawer:not\(\.is-collapsed\) \{[^}]*width: min\(520px, calc\(100vw - 36px\)\);' "desktop form side sheets must use a stable humane width"
 require_multiline_pattern "$CALM_CSS_FILE" 'body\.has-form-drawer-open::before \{[^}]*backdrop-filter: blur\(2px\);' "open form side sheets must calm the background instead of competing with content"
+require_pattern "$SCREENSHOT_SCRIPT" 'SCREENSHOT_VIEWPORTS=' "screenshot QA must expose a configurable viewport matrix"
+require_pattern "$SCREENSHOT_SCRIPT" '1440x900' "screenshot QA must capture the wide desktop viewport"
+require_pattern "$SCREENSHOT_SCRIPT" '1280x720' "screenshot QA must capture the compact desktop viewport"
+require_pattern "$SCREENSHOT_SCRIPT" '390x844' "screenshot QA must capture the mobile viewport"
+require_pattern "$SCREENSHOT_SCRIPT" '--viewport-size' "screenshot QA must pass explicit viewport sizes to Playwright"
+require_pattern "$SCREENSHOT_SCRIPT" 'fluxgate-\$\{viewport\}\.png' "screenshot QA must save one named artifact per viewport"
 
 log "static UI contract checks passed"

@@ -250,5 +250,6 @@ require_pattern "$SCREENSHOT_SCRIPT" '1280x720' "screenshot QA must capture the 
 require_pattern "$SCREENSHOT_SCRIPT" '390x844' "screenshot QA must capture the mobile viewport"
 require_pattern "$SCREENSHOT_SCRIPT" '--viewport-size' "screenshot QA must pass explicit viewport sizes to Playwright"
 require_pattern "$SCREENSHOT_SCRIPT" 'fluxgate-\$\{viewport\}\.png' "screenshot QA must save one named artifact per viewport"
+require_pattern "$SCREENSHOT_SCRIPT" 'capture_viewport "\$viewport" \|\| return \$\?' "screenshot QA must stop the matrix on the first failed viewport before retrying"
 
 log "static UI contract checks passed"

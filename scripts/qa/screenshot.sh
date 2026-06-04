@@ -59,7 +59,7 @@ capture_viewport() {
 capture_matrix() {
   local viewport
   for viewport in "${VIEWPORTS[@]}"; do
-    capture_viewport "$viewport"
+    capture_viewport "$viewport" || return $?
   done
 }
 

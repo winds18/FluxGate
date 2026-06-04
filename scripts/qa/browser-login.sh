@@ -487,7 +487,23 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       };
     });
     const keys = allSymbols.map((symbol) => symbol.dataset.actionIconKey || symbol.querySelector(".action-icon")?.dataset.actionIconKey || "");
+    const defaultSamples = allSymbols
+      .filter((symbol) => (symbol.dataset.actionIconKey || symbol.querySelector(".action-icon")?.dataset.actionIconKey || "") === "default")
+      .slice(0, 8)
+      .map((symbol) => {
+        const container = symbol.closest("button, a");
+        return {
+          label:
+            container?.getAttribute("aria-label") ||
+            container?.getAttribute("title") ||
+            container?.textContent?.replace(/\s+/g, " ").trim() ||
+            "",
+          symbol: symbol.textContent?.trim() || "",
+        };
+      });
     return {
+      defaultCount: keys.filter((key) => key === "default").length,
+      defaultSamples,
       fallbackCount: allSymbols.filter((symbol) => symbol.querySelector(".button-symbol-fallback")).length,
       keyCount: keys.filter(Boolean).length,
       missingKeys: keys.filter((key) => !key).length,
@@ -4610,6 +4626,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
     actionButtonIconChrome.svgCount !== actionButtonIconChrome.symbolCount ||
     actionButtonIconChrome.fallbackCount !== actionButtonIconChrome.symbolCount ||
     actionButtonIconChrome.keyCount !== actionButtonIconChrome.symbolCount ||
+    actionButtonIconChrome.defaultCount > 0 ||
     actionButtonIconChrome.missingKeys > 0 ||
     actionButtonIconChrome.visibleCount < 8 ||
     actionButtonIconChrome.overflowCount > 0 ||

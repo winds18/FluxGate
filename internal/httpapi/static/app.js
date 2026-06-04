@@ -116,14 +116,19 @@ const moduleIconPaths = {
 };
 const actionIconPaths = {
   add: '<path d="M12 5v14" /><path d="M5 12h14" />',
+  back: '<path d="M19 12H5" /><path d="m11 6-6 6 6 6" />',
   check: '<path d="m5 12 4 4 10-10" />',
   close: '<path d="M6 6l12 12" /><path d="M18 6 6 18" />',
+  collapse: '<path d="M5 12h14" />',
   edit: '<path d="M4 20h4l10-10a2.8 2.8 0 0 0-4-4L4 16v4z" /><path d="m13 7 4 4" />',
   refresh: '<path d="M20 12a8 8 0 0 1-13.7 5.6" /><path d="M4 12A8 8 0 0 1 17.7 6.4" /><path d="M7 18H4v3" /><path d="M17 6h3V3" />',
   reset: '<path d="M5 8a8 8 0 1 1 1.8 8.9" /><path d="M5 4v4h4" />',
+  rollback: '<path d="M6 7v5h5" /><path d="M6.5 12a7 7 0 1 0 2-5" />',
+  restart: '<path d="M17 7a7 7 0 0 0-10 9" /><path d="M7 16H4v3" /><path d="M7 17a7 7 0 0 0 10-9" /><path d="M17 8h3V5" />',
   copy: '<rect x="8" y="8" width="11" height="11" rx="2" /><path d="M5 15H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v1" />',
   probe: '<path d="M10 14a4 4 0 1 1 4-4" /><path d="m14 14 6 6" /><path d="M14 14h4v4" />',
   open: '<path d="M14 5h5v5" /><path d="m10 14 9-9" /><path d="M19 14v4a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2h4" />',
+  logout: '<path d="M10 17l5-5-5-5" /><path d="M15 12H4" /><path d="M20 5v14" />',
   loading: '<path d="M12 3v4" /><path d="M12 17v4" /><path d="M4.2 4.2 7 7" /><path d="m17 17 2.8 2.8" /><path d="M3 12h4" /><path d="M17 12h4" />',
   publish: '<path d="M12 19V5" /><path d="m6 11 6-6 6 6" /><path d="M5 19h14" />',
   ops: '<path d="M14 6a4 4 0 0 0 4 4l-8 8a3 3 0 1 1-4-4l8-8z" /><path d="M7 17h.01" />',
@@ -147,17 +152,29 @@ const actionIconPaths = {
 };
 const actionIconSymbolAliases = {
   "+": "add",
+  "加": "add",
+  "建": "add",
+  "→": "route",
+  "←": "back",
+  "−": "collapse",
   "✓": "check",
   "×": "close",
+  "!": "warning",
   "✎": "edit",
   "↻": "refresh",
   "↺": "reset",
+  "⇥": "logout",
+  "↓": "import",
   "⧉": "copy",
   "测": "probe",
   "↗": "open",
   "…": "loading",
   "检": "check",
   "发": "publish",
+  "回": "rollback",
+  "启": "restart",
+  "撤": "warning",
+  "停": "warning",
   "运": "ops",
   "收": "check",
   "配": "gateway",
@@ -627,13 +644,20 @@ function actionIconKeyForSymbol(symbol, label = "") {
   if (/打开|open/i.test(rawLabel)) return "open";
   if (/探测|检查|probe|check/i.test(rawLabel)) return "probe";
   if (/刷新|refresh/i.test(rawLabel)) return "refresh";
+  if (/重启|restart/i.test(rawLabel)) return "restart";
+  if (/回滚|rollback/i.test(rawLabel)) return "rollback";
   if (/恢复|重置|reset|restore/i.test(rawLabel)) return "reset";
   if (/保存|save/i.test(rawLabel)) return "check";
+  if (/返回|back/i.test(rawLabel)) return "back";
+  if (/收起|collapse/i.test(rawLabel)) return "collapse";
   if (/取消|关闭|cancel|close/i.test(rawLabel)) return "close";
+  if (/退出|logout|sign out/i.test(rawLabel)) return "logout";
+  if (/撤销|停用|禁用|revoke|disable/i.test(rawLabel)) return "warning";
   if (/编辑|edit/i.test(rawLabel)) return "edit";
   if (/发布|publish/i.test(rawLabel)) return "publish";
   if (/导入|import/i.test(rawLabel)) return "import";
   if (/创建|添加|签发|新增|add|create/i.test(rawLabel)) return "add";
+  if (/下一步|定位|查看|前往|跳转|处理|next|route/i.test(rawLabel)) return "route";
   return actionIconPaths[rawSymbol] ? rawSymbol : "default";
 }
 

@@ -970,6 +970,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const formDrawerNarrowCount = {};
   const panelTitleOverflow = {};
   const contentPanelHeaderOverflow = {};
+  const contentPanelHeaderChrome = {};
   const viewContextChipCounts = {};
   const viewContextOverflow = {};
   const viewRailButtonCounts = {};
@@ -1160,6 +1161,26 @@ test("admin login reaches dashboard", async ({ page, context }) => {
       }, 0);
     }, view);
     contentPanelHeaderOverflow[view] = await visibleContentPanelHeaderOverflow();
+    contentPanelHeaderChrome[view] = await page.evaluate((viewName) => {
+      const headers = Array.from(document.querySelectorAll(`[data-dashboard-view="${viewName}"] [data-content-panel] > .panel-header`))
+        .filter((header) => header.offsetParent !== null)
+        .map((header) => {
+          const box = header.getBoundingClientRect();
+          const style = getComputedStyle(header);
+          return {
+            height: Math.round(box.height),
+            paddingTop: Number.parseFloat(style.paddingTop || "0"),
+            paddingBottom: Number.parseFloat(style.paddingBottom || "0"),
+          };
+        });
+      return {
+        count: headers.length,
+        maxHeight: headers.length ? Math.max(...headers.map((header) => header.height)) : 0,
+        maxPaddingBlock: headers.length
+          ? Math.max(...headers.map((header) => header.paddingTop + header.paddingBottom))
+          : 0,
+      };
+    }, view);
   }
   let workspaceInsightActionNavigates = false;
   await switchView("overview");
@@ -3713,6 +3734,7 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   state.contentPanelMetaCount = contentPanelMetaCount;
   state.contentPanelStyles = contentPanelStyles;
   state.contentPanelHeaderOverflow = contentPanelHeaderOverflow;
+  state.contentPanelHeaderChrome = contentPanelHeaderChrome;
   state.viewContextChipCounts = viewContextChipCounts;
   state.viewContextOverflow = viewContextOverflow;
   state.viewRailButtonCounts = viewRailButtonCounts;
@@ -4029,6 +4051,9 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   const overflowingCommandCenter = Object.entries(workspaceCommandCenterOverflow).find(([, overflow]) => overflow > 0);
   const scrollingCommandRail = Object.entries(workspaceCommandRailScrollOverflow).find(([, overflow]) => overflow > 0);
   const overflowingContentPanel = Object.entries(contentPanelHeaderOverflow).find(([, overflow]) => overflow > 0);
+  const bulkyContentPanelHeader = Object.entries(contentPanelHeaderChrome).find(
+    ([, chrome]) => chrome.count > 0 && (chrome.maxHeight > 56 || chrome.maxPaddingBlock > 22),
+  );
   const contentPanelStyleMismatches = contentPanelStyles.filter(
     (entry) =>
       entry.backgroundColor !== "rgb(255, 255, 255)" ||
@@ -4082,7 +4107,13 @@ test("admin login reaches dashboard", async ({ page, context }) => {
   ) {
     throw new Error(`workspace command center is incomplete or overflowing: ${JSON.stringify(state)}`);
   }
-  if (contentPanelCount !== 9 || contentPanelMetaCount !== 9 || overflowingContentPanel || contentPanelStyleMismatches.length > 0) {
+  if (
+    contentPanelCount !== 9 ||
+    contentPanelMetaCount !== 9 ||
+    overflowingContentPanel ||
+    bulkyContentPanelHeader ||
+    contentPanelStyleMismatches.length > 0
+  ) {
     throw new Error(`content panels are incomplete, inconsistent, or overflowing: ${JSON.stringify(state)}`);
   }
   if (

@@ -3832,6 +3832,7 @@ body.is-authenticated .workspace-header {
 }
 
 /* FluxGate UI v2 content panels */
+/* FluxGate UI v2 compact content panel headers */
 .content-panel {
   background: #ffffff;
   border: 1px solid var(--fg-line);
@@ -3848,15 +3849,15 @@ body.is-authenticated .workspace-header {
   background: var(--fg-content-panel-header-bg);
   border-bottom: 1px solid var(--fg-line);
   display: flex;
-  min-height: 64px;
-  padding: 12px 14px;
+  min-height: 48px;
+  padding: 8px 12px;
 }
 
 .content-panel .panel-title {
   align-items: center;
   display: grid;
-  gap: 3px 9px;
-  grid-template-columns: auto minmax(0, max-content) auto;
+  gap: 0 8px;
+  grid-template-columns: auto minmax(0, max-content) auto minmax(0, 1fr);
   min-width: 0;
   width: 100%;
 }
@@ -3867,6 +3868,9 @@ body.is-authenticated .workspace-header {
   font-weight: 840;
   line-height: 1.25;
   min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .content-panel .panel-count {
@@ -3875,10 +3879,10 @@ body.is-authenticated .workspace-header {
 
 .content-panel .panel-meta {
   color: var(--fg-muted);
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 650;
-  grid-column: 2 / -1;
-  line-height: 1.35;
+  grid-column: 4;
+  line-height: 1.25;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -5322,19 +5326,19 @@ a.table-button:hover {
   }
 
   .content-panel > .panel-header {
-    align-items: stretch;
+    align-items: center;
   }
 
   .content-panel .panel-title {
-    grid-template-columns: auto minmax(0, 1fr);
+    grid-template-columns: auto minmax(0, 1fr) auto;
   }
 
   .content-panel .panel-count {
-    grid-column: 2;
+    grid-column: 3;
   }
 
   .content-panel .panel-meta {
-    grid-column: 1 / -1;
+    display: none;
   }
 
   .overview-hero {

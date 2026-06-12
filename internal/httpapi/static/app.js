@@ -1,12 +1,8 @@
 const statusEl = document.querySelector("#status");
 const loginView = document.querySelector("#login-view");
 const appView = document.querySelector("#app-view");
-const viewSymbolEl = document.querySelector("#view-symbol");
 const viewTitleEl = document.querySelector("#view-title");
 const viewDescriptionEl = document.querySelector("#view-description");
-const workspaceInsightEl = document.querySelector("#workspace-insight");
-const viewContextEl = document.querySelector("#view-context");
-const viewRailEl = document.querySelector("#view-rail");
 const viewPrimaryActionEl = document.querySelector("#view-primary-action");
 const dashboardViewSections = Array.from(document.querySelectorAll("[data-dashboard-view]"));
 const dashboardNavButtons = Array.from(document.querySelectorAll("[data-view-nav]"));
@@ -350,20 +346,6 @@ document.addEventListener("click", (event) => {
   );
 });
 document.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-workspace-insight-action]");
-  if (!button) return;
-  navigateToDashboardTarget(
-    button.dataset.workspaceInsightView || activeDashboardView,
-    button.dataset.workspaceInsightTarget || "",
-    button.dataset.workspaceInsightExpand === "true",
-  );
-});
-document.addEventListener("click", (event) => {
-  const button = event.target.closest("[data-view-rail-target]");
-  if (!button) return;
-  navigateToDashboardTarget(activeDashboardView, button.dataset.viewRailTarget || "", button.dataset.viewRailExpand === "true");
-});
-document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-empty-state-action]");
   if (!button) return;
   navigateToDashboardTarget(
@@ -494,7 +476,6 @@ function handleInvalidField(event) {
   const target = drawer || form?.closest(".panel") || form || field.closest(".panel") || field;
   if (target?.id) {
     activeDashboardTarget = target.id;
-    updateViewRail();
   }
   setStatus(validationStatusForField(field), "warning");
   highlightDashboardTarget(target);
@@ -827,12 +808,8 @@ function setActiveView(view) {
     button.setAttribute("aria-current", isActive ? "page" : "false");
   });
   const [title, description] = dashboardViewMeta[nextView];
-  hydrateModuleIcon(viewSymbolEl, nextView);
   viewTitleEl.textContent = title;
   viewDescriptionEl.textContent = description;
-  updateWorkspaceInsight();
-  updateViewContext();
-  updateViewRail();
   updateWorkspacePrimaryAction();
   updateNavigationCounts();
   updateOverviewCardCounts();
@@ -1146,7 +1123,6 @@ function cancelFormDrawer(drawer) {
   setFormDrawerCollapsed(drawer, true);
   if (activeDashboardTarget === drawer.id) {
     activeDashboardTarget = "";
-    updateViewRail();
   }
   setStatus(`已取消：${dashboardTargetLabel(drawer.id)}`, "info");
   drawer.querySelector("[data-form-drawer-toggle]")?.focus({ preventScroll: true });
@@ -1158,6 +1134,9 @@ function completeFormDrawerSuccess(drawer) {
   setFormDrawerDirty(drawer, false);
   setFormDrawerCollapsed(drawer, true);
 }
+
+// 空库时列表接口会返回 JSON null，统一归一为数组
+const asList = (value) => (Array.isArray(value) ? value : []);
 
 async function load() {
   setRefreshPending(true);
@@ -1179,18 +1158,18 @@ async function load() {
       trafficTokens,
     ] = await Promise.all([
       getJSON("/api/overview"),
-      getJSON("/api/teams"),
-      getJSON("/api/users"),
-      getJSON("/api/sources"),
-      getJSON("/api/nodes"),
-      getJSON("/api/virtual-nodes"),
-      getJSON("/api/policies"),
-      getJSON("/api/tokens"),
+      getJSON("/api/teams").then(asList),
+      getJSON("/api/users").then(asList),
+      getJSON("/api/sources").then(asList),
+      getJSON("/api/nodes").then(asList),
+      getJSON("/api/virtual-nodes").then(asList),
+      getJSON("/api/policies").then(asList),
+      getJSON("/api/tokens").then(asList),
       getJSON("/api/delivery/readiness"),
-      getJSON("/api/traffic/hourly?hours=24"),
-      getJSON("/api/traffic/daily?days=14"),
-      getJSON("/api/traffic/outbounds?days=14"),
-      getJSON("/api/traffic/tokens"),
+      getJSON("/api/traffic/hourly?hours=24").then(asList),
+      getJSON("/api/traffic/daily?days=14").then(asList),
+      getJSON("/api/traffic/outbounds?days=14").then(asList),
+      getJSON("/api/traffic/tokens").then(asList),
     ]);
     appState = {
       ...appState,
@@ -1233,9 +1212,6 @@ async function load() {
     renderTrafficTokens(trafficTokens);
     renderOpsWorkbench(deliveryReadiness);
     updatePanelCounts();
-    updateWorkspaceInsight();
-    updateViewContext();
-    updateViewRail();
     updateWorkspacePrimaryAction();
     updateNavigationCounts();
     updateOverviewCardCounts();
@@ -2720,241 +2696,6 @@ function renderOverviewReadiness(data) {
   `;
 }
 
-function updateViewContext() {
-  if (!viewContextEl) return;
-  const items = viewContextItems(activeDashboardView);
-  viewContextEl.hidden = items.length === 0;
-  viewContextEl.innerHTML = items.map(renderContextChip).join("");
-}
-
-function updateWorkspaceInsight() {
-  if (!workspaceInsightEl) return;
-  const insight = workspaceInsightForView(activeDashboardView);
-  workspaceInsightEl.hidden = !insight;
-  if (!insight) {
-    workspaceInsightEl.replaceChildren();
-    return;
-  }
-  workspaceInsightEl.dataset.tone = insight.tone || "info";
-  workspaceInsightEl.innerHTML = `
-    <span class="workspace-insight-symbol" aria-hidden="true">${escapeHTML(insight.symbol || "现")}</span>
-    <span class="workspace-insight-copy">
-      <span class="workspace-insight-kicker">${escapeHTML(insight.kicker || "当前重点")}</span>
-      <strong class="workspace-insight-title">${escapeHTML(insight.title || "保持可测试")}</strong>
-      <span class="workspace-insight-detail">${escapeHTML(insight.detail || "")}</span>
-    </span>
-    ${renderWorkspaceInsightAction(insight.action)}
-  `;
-}
-
-function renderWorkspaceInsightAction(action) {
-  if (!action) return "";
-  return `
-    <button
-      class="workspace-insight-action"
-      type="button"
-      data-workspace-insight-action
-      data-workspace-insight-view="${escapeHTML(action.view || activeDashboardView)}"
-      data-workspace-insight-target="${escapeHTML(action.target || "")}"
-      data-workspace-insight-expand="${action.expand ? "true" : "false"}"
-    >
-      ${buttonLabel(action.symbol || "→", action.label || "处理")}
-    </button>
-  `;
-}
-
-function workspaceInsightForView(view) {
-  const overview = appState.overview || {};
-  const sources = appState.sources || [];
-  const nodes = appState.nodes || [];
-  const virtualNodes = appState.virtualNodes || [];
-  const teams = appState.teams || [];
-  const users = appState.users || [];
-  const policies = appState.policies || [];
-  const tokens = appState.tokens || [];
-  const trafficHourly = appState.trafficHourly || [];
-  const trafficDaily = appState.trafficDaily || [];
-  const trafficOutbounds = appState.trafficOutbounds || [];
-  const trafficTokens = appState.trafficTokens || [];
-  const activeNodes = countBy(nodes, (row) => row.status === "active");
-  const activeVirtualNodes = countBy(virtualNodes, (row) => row.status === "active");
-  const activeTokens = countBy(tokens, (row) => row.status === "active");
-  const activePolicies = countBy(policies, (row) => row.status === "active");
-
-  if (view === "overview") {
-    const checks = overviewReadinessChecks(overview);
-    const readyCount = checks.filter(([, ready]) => ready).length;
-    const firstMissing = checks.find(([, ready]) => !ready);
-    const action = firstMissing
-      ? { label: `补齐${firstMissing[0]}`, symbol: firstMissing[4] || "步", view: firstMissing[3], target: firstMissing[6] || "", expand: !!firstMissing[7] }
-      : { label: "发布配置", symbol: "发", view: "ops", target: "config-publish" };
-    return {
-      tone: firstMissing ? "warning" : "success",
-      symbol: firstMissing ? "待" : "测",
-      kicker: "真实测试闭环",
-      title: firstMissing ? `还差 ${formatPlainNumber(checks.length - readyCount)} 步` : "现在可以真实测试",
-      detail: firstMissing
-        ? `闭环 ${formatPlainNumber(readyCount)}/${formatPlainNumber(checks.length)}，优先处理：${firstMissing[0]}。`
-        : "来源、节点、网关、Token、策略和发布检查都已就绪。",
-      action,
-    };
-  }
-
-  if (view === "access") {
-    const subscriptionSources = countBy(sources, (row) => row.type === "subscription");
-    const erroredSources = countBy(sources, (row) => row.last_error);
-    if (sources.length === 0) {
-      return {
-        tone: "warning",
-        symbol: "源",
-        kicker: "接入状态",
-        title: "还没有上游来源",
-        detail: "先添加订阅来源或导入节点，后续分发才有真实节点池。",
-        action: { label: "添加来源", symbol: "源", view: "access", target: "source-form", expand: true },
-      };
-    }
-    return {
-      tone: erroredSources > 0 ? "warning" : "success",
-      symbol: erroredSources > 0 ? "警" : "同",
-      kicker: "接入状态",
-      title: erroredSources > 0 ? `${formatPlainNumber(erroredSources)} 个来源异常` : "来源可同步",
-      detail: `${formatPlainNumber(sources.length)} 个来源，${formatPlainNumber(subscriptionSources)} 个订阅源，刷新后会进入节点池。`,
-      action: { label: erroredSources > 0 ? "查看来源" : "添加来源", symbol: erroredSources > 0 ? "查" : "源", view: "access", target: "sources", expand: false },
-    };
-  }
-
-  if (view === "nodes") {
-    const regions = groupNodesByRegion(nodes).length;
-    if (nodes.length === 0) {
-      return {
-        tone: "warning",
-        symbol: "点",
-        kicker: "节点池",
-        title: "节点池为空",
-        detail: "先从接入模块同步订阅或导入节点，再按地区检查详情。",
-        action: { label: "导入节点", symbol: "导", view: "access", target: "node-import-form", expand: true },
-      };
-    }
-    if (virtualNodes.length === 0) {
-      return {
-        tone: "warning",
-        symbol: "网",
-        kicker: "节点池",
-        title: "缺少虚拟网关",
-        detail: `${formatPlainNumber(regions)} 个地区、${formatPlainNumber(activeNodes)} 个可用节点，创建网关后才能分发。`,
-        action: { label: "创建网关", symbol: "网", view: "nodes", target: "virtual-node-form", expand: true },
-      };
-    }
-    return {
-      tone: "success",
-      symbol: "区",
-      kicker: "节点池",
-      title: `${formatPlainNumber(regions)} 个地区已聚合`,
-      detail: `${formatPlainNumber(nodes.length)} 个节点，${formatPlainNumber(activeNodes)} 个可用，可进入地区查看单节点详情。`,
-      action: { label: "查看地区", symbol: "区", view: "nodes", target: "nodes", expand: false },
-    };
-  }
-
-  if (view === "identity") {
-    if (teams.length === 0 || users.length === 0) {
-      return {
-        tone: "warning",
-        symbol: "订",
-        kicker: "订阅分发",
-        title: "团队或成员未齐",
-        detail: `${formatPlainNumber(teams.length)} 个团队、${formatPlainNumber(users.length)} 个成员，先补齐归属再签发 Token。`,
-        action: { label: teams.length === 0 ? "建团队" : "加成员", symbol: teams.length === 0 ? "团" : "员", view: "identity", target: teams.length === 0 ? "team-form" : "user-form", expand: true },
-      };
-    }
-    if (tokens.length === 0) {
-      return {
-        tone: "warning",
-        symbol: "钥",
-        kicker: "订阅分发",
-        title: "还没有可复制订阅",
-        detail: "为成员签发 Token 后，后台会给出通用、Mihomo 和 sing-box 地址。",
-        action: { label: "签发 Token", symbol: "钥", view: "identity", target: "token-form", expand: true },
-      };
-    }
-    return {
-      tone: activeTokens > 0 ? "success" : "warning",
-      symbol: "订",
-      kicker: "订阅分发",
-      title: activeTokens > 0 ? "订阅可分发" : "Token 待启用",
-      detail: `${formatPlainNumber(tokens.length)} 个 Token，${formatPlainNumber(activeTokens)} 个有效，可在卡片里反复复制地址。`,
-      action: { label: "查看 Token", symbol: "钥", view: "identity", target: "tokens", expand: false },
-    };
-  }
-
-  if (view === "policies") {
-    const constrainedPolicies = countBy(
-      policies,
-      (row) => row.allowed_virtual_nodes || row.include_tags || row.exclude_tags || Number(row.max_nodes || 0) > 0,
-    );
-    if (policies.length === 0) {
-      return {
-        tone: "warning",
-        symbol: "策",
-        kicker: "访问策略",
-        title: "还没有访问边界",
-        detail: "创建策略后可以按团队、成员或 Token 控制可见节点范围。",
-        action: { label: "创建策略", symbol: "策", view: "policies", target: "policy-form", expand: true },
-      };
-    }
-    return {
-      tone: activePolicies > 0 ? "success" : "warning",
-      symbol: "限",
-      kicker: "访问策略",
-      title: `${formatPlainNumber(activePolicies)} 条策略生效`,
-      detail: `${formatPlainNumber(constrainedPolicies)} 条带限制，分发前可快速确认可见范围。`,
-      action: { label: "查看策略", symbol: "策", view: "policies", target: "policies", expand: false },
-    };
-  }
-
-  if (view === "traffic") {
-    const sampleCount = trafficHourly.length + trafficDaily.length + trafficOutbounds.length + trafficTokens.length;
-    if (sampleCount === 0) {
-      return {
-        tone: "warning",
-        symbol: "量",
-        kicker: "流量统计",
-        title: "暂无流量样本",
-        detail: "发布配置并让客户端连入网关后，Token、出口和小时统计会开始出现。",
-        action: { label: "发布配置", symbol: "发", view: "ops", target: "config-publish", expand: false },
-      };
-    }
-    return {
-      tone: "success",
-      symbol: "量",
-      kicker: "流量统计",
-      title: "已有统计样本",
-      detail: `${formatPlainNumber(trafficTokens.length)} 个 Token 用量，${formatPlainNumber(trafficOutbounds.length)} 个出口摘要。`,
-      action: { label: "看 Token", symbol: "钥", view: "traffic", target: "traffic-tokens", expand: false },
-    };
-  }
-
-  if (view === "ops") {
-    const ready = activeNodes > 0 && activeVirtualNodes > 0 && activeTokens > 0;
-    return {
-      tone: ready ? "success" : "warning",
-      symbol: ready ? "发" : "检",
-      kicker: "发布状态",
-      title: ready ? "具备发布条件" : "发布前待补齐",
-      detail: `${formatPlainNumber(activeNodes)} 可用节点，${formatPlainNumber(activeVirtualNodes)} 个网关，${formatPlainNumber(activeTokens)} 个有效 Token。`,
-      action: { label: ready ? "发布配置" : "检查收口", symbol: ready ? "发" : "收", view: "ops", target: ready ? "config-publish" : "ops-actions", expand: false },
-    };
-  }
-
-  return null;
-}
-
-function updateViewRail() {
-  if (!viewRailEl) return;
-  const items = dashboardViewRail[activeDashboardView] || [];
-  viewRailEl.hidden = items.length === 0;
-  viewRailEl.innerHTML = items.map(renderViewRailButton).join("");
-}
-
 function updateWorkspacePrimaryAction() {
   if (!viewPrimaryActionEl) return;
   const action = workspacePrimaryActionForView(activeDashboardView);
@@ -2996,81 +2737,6 @@ function overviewPrimaryAction() {
     "访问策略": { label: "创建策略", symbol: "策", view: "policies", target: "policy-form", expand: true },
   };
   return actions[firstMissing[0]] || { label: "继续初始化", symbol: "步", view: firstMissing[3], target: "overview-next-step" };
-}
-
-function renderViewRailButton([label, target, expand]) {
-  const metric = viewRailMetricForTarget(target, expand);
-  const symbol = viewRailSymbolForTarget(label, target, expand);
-  const isCurrent = target === activeDashboardTarget;
-  return `
-    <button class="view-rail-button${isCurrent ? " is-current" : ""}" type="button" data-view-rail-target="${escapeHTML(target)}" data-view-rail-expand="${expand ? "true" : "false"}" aria-current="${isCurrent ? "true" : "false"}">
-      <span class="view-rail-symbol" aria-hidden="true">${escapeHTML(symbol)}</span>
-      <span class="view-rail-label">${escapeHTML(label)}</span>
-      <span class="view-rail-count" data-view-rail-count>${escapeHTML(metric)}</span>
-    </button>
-  `;
-}
-
-function viewRailSymbolForTarget(label, target, expand) {
-  const symbols = {
-    metrics: "概",
-    "overview-readiness": "向",
-    "overview-next-step": "步",
-    sources: "源",
-    "source-form": "加",
-    "node-import-form": "导",
-    nodes: "点",
-    "virtual-nodes": "网",
-    "virtual-node-form": "建",
-    tokens: "钥",
-    teams: "团",
-    users: "员",
-    "token-form": "钥",
-    "team-form": "团",
-    "user-form": "员",
-    policies: "策",
-    "policy-form": "建",
-    "traffic-tokens": "量",
-    "traffic-hourly": "时",
-    "traffic-daily": "日",
-    "traffic-outbounds": "出",
-    "config-check-result": "运",
-  };
-  if (symbols[target]) return symbols[target];
-  if (expand) return "+";
-  return label.slice(0, 1) || "项";
-}
-
-function viewRailMetricForTarget(target, expand) {
-  if (expand) return "+";
-  const state = appState || {};
-  const nodes = state.nodes || [];
-  const virtualNodes = state.virtualNodes || [];
-  const tokens = state.tokens || [];
-  const readiness = overviewReadinessChecks(state.overview || {});
-  const readyCount = readiness.filter(([, ready]) => ready).length;
-  const activeNodes = countBy(nodes, (row) => row.status === "active");
-  const activeVirtualNodes = countBy(virtualNodes, (row) => row.status === "active");
-  const activeTokens = countBy(tokens, (row) => row.status === "active");
-  const configReady = activeNodes > 0 && activeVirtualNodes > 0 && activeTokens > 0;
-  const values = {
-    metrics: `${formatPlainNumber(state.overview?.nodes || nodes.length)} 节点`,
-    "overview-readiness": `${readyCount}/${readiness.length}`,
-    "overview-next-step": readyCount === readiness.length ? "可测" : "待补",
-    sources: formatPlainNumber((state.sources || []).length),
-    nodes: `${formatPlainNumber(groupNodesByRegion(nodes).length)} 地区`,
-    "virtual-nodes": formatPlainNumber(virtualNodes.length),
-    teams: formatPlainNumber((state.teams || []).length),
-    users: formatPlainNumber((state.users || []).length),
-    tokens: formatPlainNumber(tokens.length),
-    policies: formatPlainNumber((state.policies || []).length),
-    "traffic-tokens": formatPlainNumber((state.trafficTokens || []).length),
-    "traffic-hourly": formatPlainNumber((state.trafficHourly || []).length),
-    "traffic-daily": formatPlainNumber((state.trafficDaily || []).length),
-    "traffic-outbounds": formatPlainNumber((state.trafficOutbounds || []).length),
-    "config-check-result": configReady ? "就绪" : "待检",
-  };
-  return values[target] || "0";
 }
 
 function updatePanelCounts() {
@@ -3178,99 +2844,6 @@ function setPanelCount(key, value, tone = "") {
   element.classList.toggle("panel-count-warning", tone === "warning");
 }
 
-function viewContextItems(view) {
-  const overview = appState.overview || {};
-  const sources = appState.sources || [];
-  const nodes = appState.nodes || [];
-  const virtualNodes = appState.virtualNodes || [];
-  const teams = appState.teams || [];
-  const users = appState.users || [];
-  const policies = appState.policies || [];
-  const tokens = appState.tokens || [];
-  const trafficHourly = appState.trafficHourly || [];
-  const trafficDaily = appState.trafficDaily || [];
-  const trafficOutbounds = appState.trafficOutbounds || [];
-  const trafficTokens = appState.trafficTokens || [];
-  const activeNodes = countBy(nodes, (row) => row.status === "active");
-  const activeTokens = countBy(tokens, (row) => row.status === "active");
-  const activePolicies = countBy(policies, (row) => row.status === "active");
-  const readiness = overviewReadinessChecks(overview);
-  const readyCount = readiness.filter(([, ready]) => ready).length;
-
-  if (view === "access") {
-    const subscriptionSources = countBy(sources, (row) => row.type === "subscription");
-    const erroredSources = countBy(sources, (row) => row.last_error);
-    return [
-      contextItem("来源", sources.length),
-      contextItem("订阅源", subscriptionSources),
-      contextItem("异常", erroredSources, erroredSources > 0 ? "warning" : "success"),
-    ];
-  }
-  if (view === "nodes") {
-    const regions = groupNodesByRegion(nodes).length;
-    return [
-      contextItem("地区", regions),
-      contextItem("节点", nodes.length),
-      contextItem("可用", activeNodes, activeNodes > 0 ? "success" : "warning"),
-      contextItem("虚拟网关", virtualNodes.length, virtualNodes.length > 0 ? "success" : "warning"),
-    ];
-  }
-  if (view === "identity") {
-    return [
-      contextItem("团队", teams.length),
-      contextItem("成员", users.length),
-      contextItem("Token", tokens.length),
-      contextItem("有效", activeTokens, activeTokens > 0 ? "success" : "warning"),
-    ];
-  }
-  if (view === "policies") {
-    const constrainedPolicies = countBy(
-      policies,
-      (row) => row.allowed_virtual_nodes || row.include_tags || row.exclude_tags || Number(row.max_nodes || 0) > 0,
-    );
-    return [
-      contextItem("策略", policies.length),
-      contextItem("生效", activePolicies, activePolicies > 0 ? "success" : "warning"),
-      contextItem("限制项", constrainedPolicies),
-    ];
-  }
-  if (view === "traffic") {
-    return [
-      contextItem("24h 样本", trafficHourly.length),
-      contextItem("14天样本", trafficDaily.length),
-      contextItem("Token 用量", trafficTokens.length),
-      contextItem("出口摘要", trafficOutbounds.length),
-    ];
-  }
-  if (view === "ops") {
-    return [
-      contextItem("虚拟网关", virtualNodes.length, virtualNodes.length > 0 ? "success" : "warning"),
-      contextItem("活跃 Token", activeTokens, activeTokens > 0 ? "success" : "warning"),
-      contextItem("可用节点", activeNodes, activeNodes > 0 ? "success" : "warning"),
-    ];
-  }
-  return [
-    contextItem("闭环", `${readyCount}/${readiness.length}`, readyCount === readiness.length ? "success" : "warning"),
-    contextItem("节点", Number(overview.nodes || nodes.length || 0)),
-    contextItem("Token", Number(overview.tokens || tokens.length || 0)),
-    contextItem("策略", Number(overview.policies || policies.length || 0)),
-  ];
-}
-
-function contextItem(label, value, tone = "") {
-  return { label, value, tone };
-}
-
-function renderContextChip(item) {
-  const toneClass = item.tone ? ` context-chip-${item.tone}` : "";
-  return `
-    <span class="context-chip${toneClass}">
-      <span>${escapeHTML(item.label)}</span>
-      <strong>${escapeHTML(String(item.value ?? 0))}</strong>
-    </span>
-  `;
-}
-
 function navigateToDashboardTarget(view, targetID, expand = false) {
   if (view && dashboardViewMeta[view]) {
     setActiveView(view);
@@ -3282,7 +2855,6 @@ function openDashboardTarget(targetID, expand = false) {
   const target = document.getElementById(targetID || "");
   if (!target) return;
   activeDashboardTarget = targetID || "";
-  updateViewRail();
   if (expand) {
     const drawer = target.closest("[data-form-drawer]");
     if (drawer) {

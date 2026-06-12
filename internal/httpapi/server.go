@@ -58,7 +58,6 @@ func (s *Server) routes() {
 	s.mux.HandleFunc("GET /", s.handleIndex)
 	s.mux.HandleFunc("GET /assets/app.js", s.handleStatic("static/app.js", "application/javascript; charset=utf-8"))
 	s.mux.HandleFunc("GET /assets/styles.css", s.handleStatic("static/styles.css", "text/css; charset=utf-8"))
-	s.mux.HandleFunc("GET /assets/calm-ops.css", s.handleStatic("static/calm-ops.css", "text/css; charset=utf-8"))
 
 	s.mux.HandleFunc("GET /healthz", s.handleHealth)
 	s.mux.HandleFunc("GET /readyz", s.handleReady)

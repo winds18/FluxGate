@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>FluxGate</title>
     <link rel="stylesheet" href="/assets/styles.css" />
-    <link rel="stylesheet" href="/assets/calm-ops.css" />
   </head>
   <body>
     <header class="topbar">
@@ -49,7 +48,6 @@
             <span class="nav-symbol" data-module-icon="overview" aria-hidden="true">概</span>
             <span class="nav-copy">
               <span class="nav-label">概览</span>
-              <small>运行状态</small>
             </span>
             <span class="nav-stat" data-view-count="overview">--</span>
           </button>
@@ -57,7 +55,6 @@
             <span class="nav-symbol" data-module-icon="access" aria-hidden="true">源</span>
             <span class="nav-copy">
               <span class="nav-label">接入</span>
-              <small>来源与导入</small>
             </span>
             <span class="nav-stat" data-view-count="access">--</span>
           </button>
@@ -65,7 +62,6 @@
             <span class="nav-symbol" data-module-icon="nodes" aria-hidden="true">点</span>
             <span class="nav-copy">
               <span class="nav-label">节点</span>
-              <small>地区与网关</small>
             </span>
             <span class="nav-stat" data-view-count="nodes">--</span>
           </button>
@@ -73,7 +69,6 @@
             <span class="nav-symbol" data-module-icon="identity" aria-hidden="true">订</span>
             <span class="nav-copy">
               <span class="nav-label">订阅</span>
-              <small>Token 分发</small>
             </span>
             <span class="nav-stat" data-view-count="identity">--</span>
           </button>
@@ -82,7 +77,6 @@
             <span class="nav-symbol" data-module-icon="policies" aria-hidden="true">策</span>
             <span class="nav-copy">
               <span class="nav-label">策略</span>
-              <small>可见范围</small>
             </span>
             <span class="nav-stat" data-view-count="policies">--</span>
           </button>
@@ -90,7 +84,6 @@
             <span class="nav-symbol" data-module-icon="traffic" aria-hidden="true">量</span>
             <span class="nav-copy">
               <span class="nav-label">流量</span>
-              <small>用量统计</small>
             </span>
             <span class="nav-stat" data-view-count="traffic">--</span>
           </button>
@@ -98,16 +91,10 @@
             <span class="nav-symbol" data-module-icon="ops" aria-hidden="true">运</span>
             <span class="nav-copy">
               <span class="nav-label">运维</span>
-              <small>配置发布</small>
             </span>
             <span class="nav-stat" data-view-count="ops">--</span>
           </button>
         </nav>
-        <div class="sidebar-footnote" aria-label="真实测试路径">
-          <span class="sidebar-footnote-kicker">真实测试</span>
-          <strong>复制订阅，再发布网关</strong>
-          <span>Mihomo / sing-box 可反复取用</span>
-        </div>
       </aside>
 
       <nav class="mobile-dock" aria-label="移动导航">
@@ -126,21 +113,12 @@
       </div>
 
       <section class="workspace">
-        <div class="workspace-header workspace-command-center" data-view-command-center>
-          <div class="workspace-command-main">
-            <div class="workspace-command-title">
-              <p class="eyebrow">控制台</p>
-              <div class="workspace-title-row">
-                <span id="view-symbol" class="workspace-view-symbol" data-module-icon="overview" aria-hidden="true">概</span>
-                <h2 id="view-title">概览</h2>
-              </div>
-              <p id="view-description">运行状态、资源规模和下一步入口</p>
+        <div class="workspace-header" data-view-command-center>
+          <div class="workspace-command-title">
+            <div class="workspace-title-row">
+              <h2 id="view-title">概览</h2>
             </div>
-            <div id="workspace-insight" class="workspace-insight" aria-label="当前模块重点"></div>
-          </div>
-          <div class="workspace-command-rail" aria-label="当前模块上下文">
-            <div id="view-context" class="view-context" aria-label="当前模块摘要"></div>
-            <div id="view-rail" class="view-rail" aria-label="当前模块面板入口"></div>
+            <p id="view-description">运行状态、资源规模和下一步入口</p>
           </div>
           <div class="workspace-actions">
             <button id="view-primary-action" class="primary-link-button workspace-primary-action" type="button" hidden>
@@ -638,7 +616,6 @@
                   <span class="ops-action-chip" data-ops-action-chip>真实可测</span>
                 </div>
                 <button id="delivery-readiness" type="button">
-                  <span class="button-symbol" aria-hidden="true">收</span>
                   <span class="button-label">检查收口</span>
                 </button>
               </article>
@@ -650,7 +627,6 @@
                   <span class="ops-action-chip" data-ops-action-chip>预检配置</span>
                 </div>
                 <button id="config-check" type="button">
-                  <span class="button-symbol" aria-hidden="true">检</span>
                   <span class="button-label">检查配置</span>
                 </button>
               </article>
@@ -662,7 +638,6 @@
                   <span class="ops-action-chip" data-ops-action-chip>生成配置</span>
                 </div>
                 <button id="config-publish" type="button">
-                  <span class="button-symbol" aria-hidden="true">发</span>
                   <span class="button-label">发布配置</span>
                 </button>
               </article>
@@ -674,7 +649,6 @@
                   <span class="ops-action-chip" data-ops-action-chip>保留备份</span>
                 </div>
                 <button id="config-rollback" type="button">
-                  <span class="button-symbol" aria-hidden="true">回</span>
                   <span class="button-label">回滚配置</span>
                 </button>
               </article>
@@ -686,7 +660,6 @@
                   <span class="ops-action-chip" data-ops-action-chip>受控执行</span>
                 </div>
                 <button id="config-restart" type="button">
-                  <span class="button-symbol" aria-hidden="true">启</span>
                   <span class="button-label">重启服务</span>
                 </button>
               </article>
